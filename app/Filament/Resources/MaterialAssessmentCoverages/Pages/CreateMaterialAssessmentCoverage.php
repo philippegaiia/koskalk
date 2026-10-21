@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\MaterialAssessmentCoverages\Pages;
 
+use App\Filament\Concerns\MapsServiceValidationToForm;
 use App\Filament\Resources\MaterialAssessmentCoverages\MaterialAssessmentCoverageResource;
 use App\Models\Ingredient;
 use App\Models\Substance;
@@ -12,6 +13,8 @@ use Illuminate\Validation\ValidationException;
 
 class CreateMaterialAssessmentCoverage extends CreateRecord
 {
+    use MapsServiceValidationToForm;
+
     protected static string $resource = MaterialAssessmentCoverageResource::class;
 
     /**
@@ -25,12 +28,6 @@ class CreateMaterialAssessmentCoverage extends CreateRecord
             default => throw ValidationException::withMessages(['data.coverable_type' => 'Choose an ingredient or a substance.']),
         };
 
-        try {
-            return app(MaterialAssessmentCoverageService::class)->review(auth()->user(), $material, $data);
-        } catch (ValidationException $exception) {
-            throw ValidationException::withMessages(
-                collect($exception->errors())->mapWithKeys(fn (array $messages, string $key): array => ["data.{$key}" => $messages])->all(),
-            );
-        }
+        return $this->withFormValidationErrors(fn (): Model => app(MaterialAssessmentCoverageService::class)->review(auth()->user(), $material, $data));
     }
 }

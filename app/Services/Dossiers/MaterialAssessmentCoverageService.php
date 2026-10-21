@@ -9,8 +9,10 @@ use App\Models\MaterialAssessmentCoverage;
 use App\Models\Substance;
 use App\Models\ToxicologyProfile;
 use App\Models\User;
+use App\Models\Workspace;
 use App\Services\WorkspaceAuthorization;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -32,21 +34,33 @@ class MaterialAssessmentCoverageService
     }
 
     /**
+     * Records a review. Each supporting reference stores the toxicological profile version current at review time.
+     * Sufficient coverage always rests on at least one profiled reference; constituent coverage additionally needs
+     * every tracked constituent among those references. (Supplier assessments as evidence arrive with phase 2.)
+     *
      * @param  array{review_state: string, insufficient_reason?: string|null, covers_whole_material?: bool,
      *               covers_constituents?: bool, supporting_substance_ids?: list<int>, note?: string|null}  $review
      */
     public function review(User $actor, Ingredient|Substance $material, array $review): MaterialAssessmentCoverage
     {
-        $this->assertCanReview($actor, $material);
-
         $state = AssessmentReviewState::from($review['review_state']);
         $coversWhole = (bool) ($review['covers_whole_material'] ?? false);
         $coversConstituents = (bool) ($review['covers_constituents'] ?? false);
         $substanceIds = collect($review['supporting_substance_ids'] ?? [])->map(fn (mixed $id): int => (int) $id)->unique()->values();
 
-        $this->assertConsistent($material, $state, $review['insufficient_reason'] ?? null, $coversWhole, $coversConstituents, $substanceIds->all());
-
         return DB::transaction(function () use ($actor, $material, $review, $state, $coversWhole, $coversConstituents, $substanceIds): MaterialAssessmentCoverage {
+            $this->lockOwningWorkspace($material);
+            $this->assertCanReview($actor, $material);
+
+            $currentProfiles = ToxicologyProfile::query()
+                ->current()
+                ->whereIn('substance_id', $substanceIds->all())
+                ->lockForUpdate()
+                ->get()
+                ->keyBy('substance_id');
+
+            $this->assertConsistent($material, $state, $review['insufficient_reason'] ?? null, $coversWhole, $coversConstituents, $substanceIds, $currentProfiles);
+
             MaterialAssessmentCoverage::query()
                 ->where('coverable_type', $material::class)
                 ->where('coverable_id', $material->getKey())
@@ -67,19 +81,31 @@ class MaterialAssessmentCoverageService
                 ],
             );
 
-            $coverage->supportingSubstances()->sync($substanceIds->all());
+            $coverage->supportingSubstances()->sync(
+                $currentProfiles->mapWithKeys(fn (ToxicologyProfile $profile): array => [
+                    $profile->substance_id => ['toxicology_profile_id' => $profile->id],
+                ])->all(),
+            );
 
             return $coverage->load('supportingSubstances');
         }, attempts: 5);
     }
 
+    private function lockOwningWorkspace(Ingredient|Substance $material): void
+    {
+        if ($material instanceof Ingredient && $material->workspace_id !== null) {
+            Workspace::withoutGlobalScopes()->whereKey($material->workspace_id)->lockForUpdate()->first();
+        }
+    }
+
     private function assertCanReview(User $actor, Ingredient|Substance $material): void
     {
         $workspaceId = $material instanceof Ingredient ? $material->workspace_id : null;
+        $freshActor = $actor->fresh();
 
-        $allowed = $workspaceId === null
-            ? (bool) $actor->is_admin
-            : $this->authorization->canEditModule($actor, $workspaceId, WorkspaceModule::ProductDossiers);
+        $allowed = $freshActor instanceof User && ($workspaceId === null
+            ? (bool) $freshActor->is_admin
+            : $this->authorization->canEditModule($freshActor, $workspaceId, WorkspaceModule::ProductDossiers));
 
         if (! $allowed) {
             throw new AuthorizationException;
@@ -87,7 +113,8 @@ class MaterialAssessmentCoverageService
     }
 
     /**
-     * @param  list<int>  $substanceIds
+     * @param  Collection<int, int>  $substanceIds
+     * @param  Collection<int, ToxicologyProfile>  $currentProfiles  Keyed by substance id.
      */
     private function assertConsistent(
         Ingredient|Substance $material,
@@ -95,7 +122,8 @@ class MaterialAssessmentCoverageService
         ?string $insufficientReason,
         bool $coversWhole,
         bool $coversConstituents,
-        array $substanceIds,
+        Collection $substanceIds,
+        Collection $currentProfiles,
     ): void {
         $errors = [];
 
@@ -107,16 +135,20 @@ class MaterialAssessmentCoverageService
             $errors['covers_whole_material'] = 'Sufficient coverage needs the whole material, its constituents, or both.';
         }
 
-        if ($coversWhole) {
-            $profiled = ToxicologyProfile::query()->current()->whereIn('substance_id', $substanceIds)->distinct()->count('substance_id');
+        $unprofiled = $substanceIds->diff($currentProfiles->keys());
 
-            if ($substanceIds === [] || $profiled !== count($substanceIds)) {
-                $errors['supporting_substance_ids'] = 'Whole-material coverage needs profile references, each with a current toxicological profile.';
-            }
+        if ($unprofiled->isNotEmpty()) {
+            $errors['supporting_substance_ids'] = 'Every profile reference needs a current toxicological profile.';
+        } elseif (($coversWhole || $state === AssessmentReviewState::Sufficient) && $substanceIds->isEmpty()) {
+            $errors['supporting_substance_ids'] = 'Sufficient coverage needs at least one profile reference.';
         }
 
-        if ($coversConstituents && ! $this->tracksConstituents($material)) {
-            $errors['covers_constituents'] = 'No constituents are tracked for this material.';
+        if ($coversConstituents) {
+            $constituentError = $this->constituentCoverageError($material, $substanceIds);
+
+            if ($constituentError !== null) {
+                $errors['covers_constituents'] = $constituentError;
+            }
         }
 
         if ($errors !== []) {
@@ -124,9 +156,31 @@ class MaterialAssessmentCoverageService
         }
     }
 
-    private function tracksConstituents(Ingredient|Substance $material): bool
+    /**
+     * @param  Collection<int, int>  $substanceIds
+     */
+    private function constituentCoverageError(Ingredient|Substance $material, Collection $substanceIds): ?string
     {
-        return $material instanceof Ingredient
-            && ($material->substanceEntries()->exists() || $material->allergenEntries()->exists() || $material->components()->exists());
+        if (! $material instanceof Ingredient) {
+            return 'Only ingredients have tracked constituents.';
+        }
+
+        $substanceConstituents = $material->substanceEntries()->pluck('substance_id');
+        $allergenIds = $material->allergenEntries()->pluck('allergen_id');
+        $allergenSubstances = Substance::query()->whereIn('allergen_id', $allergenIds)->pluck('id', 'allergen_id');
+
+        if ($substanceConstituents->isEmpty() && $allergenIds->isEmpty()) {
+            return 'No constituents are tracked for this material.';
+        }
+
+        if ($allergenIds->diff($allergenSubstances->keys())->isNotEmpty()) {
+            return 'A tracked allergen has no assessed material linked to it.';
+        }
+
+        $uncovered = $substanceConstituents->merge($allergenSubstances->values())->unique()->diff($substanceIds);
+
+        return $uncovered->isEmpty()
+            ? null
+            : 'Every tracked constituent must be among the profile references.';
     }
 }

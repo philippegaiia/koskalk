@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceDossierGrant;
 use App\Services\Dossiers\MaterialAssessmentCoverageService;
+use App\Services\Dossiers\ToxicologyProfilePublisher;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
@@ -57,19 +58,68 @@ it('accepts whole-material coverage for an ingredient with an empty constituent 
         ->and($coverage->supportingSubstances->pluck('id')->all())->toBe([$profiled->id]);
 });
 
-it('accepts whole-material plus constituent coverage', function (): void {
+it('accepts whole-material plus constituent coverage when every constituent is referenced', function (): void {
     $rosemary = Ingredient::factory()->create();
-    IngredientSubstanceEntry::factory()->create(['ingredient_id' => $rosemary->id]);
+    $cineole = profiledSubstance('1,8-Cineole');
+    IngredientSubstanceEntry::factory()->create(['ingredient_id' => $rosemary->id, 'substance_id' => $cineole->id]);
 
     $coverage = app(MaterialAssessmentCoverageService::class)->review(User::factory()->admin()->create(), $rosemary, [
         'review_state' => 'sufficient',
         'covers_whole_material' => true,
         'covers_constituents' => true,
-        'supporting_substance_ids' => [profiledSubstance('Rosmarinus officinalis leaf oil')->id],
+        'supporting_substance_ids' => [profiledSubstance('Rosmarinus officinalis leaf oil')->id, $cineole->id],
     ]);
 
     expect($coverage->covers_whole_material)->toBeTrue()
         ->and($coverage->covers_constituents)->toBeTrue();
+});
+
+it('refuses constituent coverage without evidence for each tracked constituent', function (array $supporting, string $errorKey): void {
+    $ingredient = Ingredient::factory()->create();
+    $tracked = profiledSubstance('Limonene');
+    IngredientSubstanceEntry::factory()->create(['ingredient_id' => $ingredient->id, 'substance_id' => $tracked->id]);
+    $other = profiledSubstance('Linalool');
+
+    try {
+        app(MaterialAssessmentCoverageService::class)->review(User::factory()->admin()->create(), $ingredient, [
+            'review_state' => 'sufficient',
+            'covers_constituents' => true,
+            'supporting_substance_ids' => array_map(fn (string $key): int => ['other' => $other->id, 'tracked_unprofiled' => Substance::factory()->create()->id][$key], $supporting),
+        ]);
+        $this->fail('Expected a validation error.');
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toHaveKey($errorKey);
+    }
+})->with([
+    'no references at all' => [[], 'supporting_substance_ids'],
+    'references that miss the tracked constituent' => [['other'], 'covers_constituents'],
+    'an unprofiled reference' => [['tracked_unprofiled'], 'supporting_substance_ids'],
+]);
+
+it('records the profile version reviewed and detects when it is superseded', function (): void {
+    $admin = User::factory()->admin()->create();
+    $olive = Ingredient::factory()->create();
+    $profiled = profiledSubstance('Olea europaea fruit oil');
+    $reviewedProfile = $profiled->currentToxicologyProfile()->sole();
+
+    $coverage = app(MaterialAssessmentCoverageService::class)->review($admin, $olive, [
+        'review_state' => 'sufficient',
+        'covers_whole_material' => true,
+        'supporting_substance_ids' => [$profiled->id],
+    ]);
+
+    expect($coverage->supportingProfiles->pluck('id')->all())->toBe([$reviewedProfile->id])
+        ->and($coverage->reliesOnSupersededProfiles())->toBeFalse();
+
+    app(ToxicologyProfilePublisher::class)->publish($profiled, [
+        'noael_mg_kg_bw_day' => '200',
+        'noael_route' => 'oral',
+        'references' => [['number' => 1, 'citation' => 'Newer study', 'url' => null]],
+        'value_references' => ['noael_mg_kg_bw_day' => '1'],
+    ], $admin);
+
+    expect($coverage->refresh()->supportingProfiles->pluck('id')->all())->toBe([$reviewedProfile->id])
+        ->and($coverage->reliesOnSupersededProfiles())->toBeTrue();
 });
 
 it('covers a final soap material such as sodium olivate', function (): void {

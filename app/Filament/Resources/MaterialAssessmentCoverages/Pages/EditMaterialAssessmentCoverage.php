@@ -2,15 +2,17 @@
 
 namespace App\Filament\Resources\MaterialAssessmentCoverages\Pages;
 
+use App\Filament\Concerns\MapsServiceValidationToForm;
 use App\Filament\Resources\MaterialAssessmentCoverages\MaterialAssessmentCoverageResource;
 use App\Models\MaterialAssessmentCoverage;
 use App\Services\Dossiers\MaterialAssessmentCoverageService;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Validation\ValidationException;
 
 class EditMaterialAssessmentCoverage extends EditRecord
 {
+    use MapsServiceValidationToForm;
+
     protected static string $resource = MaterialAssessmentCoverageResource::class;
 
     /**
@@ -35,12 +37,6 @@ class EditMaterialAssessmentCoverage extends EditRecord
      */
     protected function handleRecordUpdate(Model $record, array $data): Model
     {
-        try {
-            return app(MaterialAssessmentCoverageService::class)->review(auth()->user(), $record->coverable, $data);
-        } catch (ValidationException $exception) {
-            throw ValidationException::withMessages(
-                collect($exception->errors())->mapWithKeys(fn (array $messages, string $key): array => ["data.{$key}" => $messages])->all(),
-            );
-        }
+        return $this->withFormValidationErrors(fn (): Model => app(MaterialAssessmentCoverageService::class)->review(auth()->user(), $record->coverable, $data));
     }
 }

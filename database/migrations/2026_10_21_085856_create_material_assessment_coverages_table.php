@@ -28,6 +28,8 @@ return new class extends Migration
             $table->foreignId('material_assessment_coverage_id')->constrained(indexName: 'macs_coverage_id_foreign')->cascadeOnDelete();
             $table->unsignedBigInteger('substance_id');
             $table->foreign('substance_id', 'macs_substance_id_foreign')->references('id')->on('substance_catalog')->restrictOnDelete();
+            $table->unsignedBigInteger('toxicology_profile_id');
+            $table->foreign('toxicology_profile_id', 'macs_profile_id_foreign')->references('id')->on('toxicology_profiles')->restrictOnDelete();
             $table->primary(['material_assessment_coverage_id', 'substance_id']);
         });
     }

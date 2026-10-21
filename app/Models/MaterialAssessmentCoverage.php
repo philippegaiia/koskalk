@@ -39,7 +39,24 @@ class MaterialAssessmentCoverage extends Model
 
     public function supportingSubstances(): BelongsToMany
     {
-        return $this->belongsToMany(Substance::class, 'material_assessment_coverage_substance');
+        return $this->belongsToMany(Substance::class, 'material_assessment_coverage_substance')
+            ->withPivot('toxicology_profile_id');
+    }
+
+    /**
+     * The exact profile versions the reviewer relied on.
+     */
+    public function supportingProfiles(): BelongsToMany
+    {
+        return $this->belongsToMany(ToxicologyProfile::class, 'material_assessment_coverage_substance', 'material_assessment_coverage_id', 'toxicology_profile_id');
+    }
+
+    /**
+     * True when a newer profile version has replaced one the review relied on, so the review should be repeated.
+     */
+    public function reliesOnSupersededProfiles(): bool
+    {
+        return $this->supportingProfiles()->where('is_current', false)->exists();
     }
 
     public function reviewedBy(): BelongsTo

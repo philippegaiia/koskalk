@@ -25,7 +25,7 @@ class DossierEvidenceDownloadController extends Controller
         $disk = Storage::disk($file->disk);
         abort_unless($disk->exists($file->path), 404);
 
-        return $disk->response($file->path, $file->original_filename, [
+        return $disk->response($file->path, $file->downloadFilename(), [
             'Content-Type' => $file->mime_type,
             'X-Content-Type-Options' => 'nosniff',
             'Cache-Control' => 'private, no-store',

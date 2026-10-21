@@ -120,3 +120,56 @@ it('refuses evidence for another workspace qualification or without the module',
     ]))->toThrow(AuthorizationException::class)
         ->and(DossierEvidenceItem::query()->count())->toBe(0);
 });
+
+it('rejects PDFs above 2 MB but keeps accepting larger images for compression', function (): void {
+    [$owner, $workspace, $qualification] = evidenceWorkspace();
+
+    expect(fn () => app(StoreDossierEvidence::class)->handle($owner, $workspace, UploadedFile::fake()->create('big.pdf', 2049, 'application/pdf'), [
+        'type' => 'technical_sheet',
+        'supplier_qualification_id' => $qualification->id,
+    ]))->toThrow(ValidationException::class);
+
+    $item = app(StoreDossierEvidence::class)->handle($owner, $workspace, UploadedFile::fake()->create('ok.pdf', 2048, 'application/pdf'), [
+        'type' => 'technical_sheet',
+        'supplier_qualification_id' => $qualification->id,
+    ]);
+
+    expect($item->file->storage_processing)->toBe('as_received')
+        ->and($item->file->original_sha256)->toBe($item->file->sha256);
+});
+
+it('compresses images to WebP and keeps the original fingerprint for provenance', function (): void {
+    [$owner, $workspace, $qualification] = evidenceWorkspace();
+    $scan = UploadedFile::fake()->image('IFRA certificate.png', 3000, 1500);
+    $originalHash = hash_file('sha256', $scan->getRealPath());
+    $originalSize = filesize($scan->getRealPath());
+
+    $item = app(StoreDossierEvidence::class)->handle($owner, $workspace, $scan, [
+        'type' => 'ifra_certificate',
+        'supplier_qualification_id' => $qualification->id,
+    ]);
+
+    $file = $item->file;
+    $stored = Storage::disk(config('dossiers.evidence_disk'))->get($file->path);
+    [$width, $height] = getimagesizefromstring($stored);
+
+    expect($file->storage_processing)->toBe('compressed_webp')
+        ->and($file->mime_type)->toBe('image/webp')
+        ->and($file->path)->toEndWith('.webp')
+        ->and(max($width, $height))->toBe(2000)
+        ->and($file->sha256)->toBe(hash('sha256', $stored))
+        ->and($file->size_bytes)->toBe(strlen($stored))
+        ->and($file->original_sha256)->toBe($originalHash)
+        ->and($file->original_size_bytes)->toBe($originalSize)
+        ->and($file->original_filename)->toBe('IFRA certificate.png')
+        ->and($file->downloadFilename())->toBe('IFRA certificate.webp');
+});
+
+it('rejects images above the upload limit', function (): void {
+    [$owner, $workspace, $qualification] = evidenceWorkspace();
+
+    app(StoreDossierEvidence::class)->handle($owner, $workspace, UploadedFile::fake()->create('huge.jpg', 10241, 'image/jpeg'), [
+        'type' => 'ifra_certificate',
+        'supplier_qualification_id' => $qualification->id,
+    ]);
+})->throws(ValidationException::class);

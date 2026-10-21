@@ -1056,6 +1056,18 @@
     },
     {
       "group": "dossiers",
+      "key": "evidence.image_unreadable",
+      "text": {
+        "de": "Dieses Bild konnte nicht gelesen werden. Exportieren Sie es als JPEG, PNG oder PDF.",
+        "es": "No se pudo leer esta imagen. Pruebe a exportarla como JPEG, PNG o PDF.",
+        "fr": "Cette image n’a pas pu être lue. Essayez de l’exporter en JPEG, PNG ou PDF.",
+        "it": "Impossibile leggere questa immagine. Prova a esportarla come JPEG, PNG o PDF.",
+        "nl": "Deze afbeelding kon niet worden gelezen. Exporteer haar als JPEG, PNG of PDF.",
+        "pt_BR": "Não foi possível ler esta imagem. Tente exportá-la como JPEG, PNG ou PDF."
+      }
+    },
+    {
+      "group": "dossiers",
       "key": "evidence.needs_products",
       "text": {
         "de": "Hängen Sie dieses Dokument an mindestens ein Produkt dieses Arbeitsbereichs an.",
@@ -1910,12 +1922,12 @@
       "group": "dossiers",
       "key": "raw_materials.file",
       "text": {
-        "de": "Datei (PDF, JPEG oder PNG, bis 10 MB)",
-        "es": "Archivo (PDF, JPEG o PNG, hasta 10 MB)",
-        "fr": "Fichier (PDF, JPEG ou PNG, 10 Mo maximum)",
-        "it": "File (PDF, JPEG o PNG, fino a 10 MB)",
-        "nl": "Bestand (PDF, JPEG of PNG, tot 10 MB)",
-        "pt_BR": "Arquivo (PDF, JPEG ou PNG, até 10 MB)"
+        "de": "Datei: PDF bis 2 MB oder Bild (JPEG, PNG, WebP) bis 10 MB, beim Speichern komprimiert",
+        "es": "Archivo: PDF de hasta 2 MB o imagen (JPEG, PNG, WebP) de hasta 10 MB, comprimida al guardar",
+        "fr": "Fichier : PDF jusqu’à 2 Mo, ou image (JPEG, PNG, WebP) jusqu’à 10 Mo, compressée à l’enregistrement",
+        "it": "File: PDF fino a 2 MB o immagine (JPEG, PNG, WebP) fino a 10 MB, compressa al salvataggio",
+        "nl": "Bestand: pdf tot 2 MB of afbeelding (JPEG, PNG, WebP) tot 10 MB, gecomprimeerd bij opslaan",
+        "pt_BR": "Arquivo: PDF até 2 MB ou imagem (JPEG, PNG, WebP) até 10 MB, comprimida ao salvar"
       }
     },
     {

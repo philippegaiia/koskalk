@@ -129,8 +129,9 @@ class RawMaterialDetail extends Component implements HasForms
                 FileUpload::make('file')
                     ->label(__('dossiers.raw_materials.file'))
                     ->storeFiles(false)
-                    ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png'])
-                    ->maxSize((int) config('dossiers.evidence_max_kb'))
+                    ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/webp'])
+                    // The largest accepted upload; the per-type limit (PDF 2 MB) is enforced when the document is saved.
+                    ->maxSize((int) config('dossiers.evidence_image_upload_max_kb'))
                     ->required(),
             ])
             ->columns(['md' => 2])

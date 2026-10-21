@@ -38,6 +38,7 @@ return [
         'no_use_limits_for_type' => 'This document type does not state use limits.',
         'unknown_facts_for_type' => 'This document type does not carry that information.',
         'percent_above_100' => 'A percentage cannot exceed 100.',
+        'image_unreadable' => 'This image could not be read. Try exporting it as JPEG, PNG or PDF.',
     ],
     'raw_materials' => [
         'title' => 'Raw materials',
@@ -62,7 +63,7 @@ return [
         'document_type' => 'Document type',
         'issued_on' => 'Issued on',
         'revision_due_on' => 'Revision or expiry date',
-        'file' => 'File (PDF, JPEG or PNG, up to 10 MB)',
+        'file' => 'File: PDF up to 2 MB, or image (JPEG, PNG, WebP) up to 10 MB, compressed when saved',
         'upload' => 'Upload document',
         'save_document' => 'Save document',
         'replace' => 'Replace',

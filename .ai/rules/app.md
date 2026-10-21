@@ -30,6 +30,8 @@ Prefer ->updateOrCreate([...], [...]) or ->firstOrCreate([...], [...]) for idemp
 ## Treat compliance output as live guidance
 Saved formulas stabilize formula composition only; linked platform or private ingredient facts and regulatory reference data remain live. Any linked ingredient change requires the formula's INCI and regulatory guidance to be reviewed again. Koskalk output is point-in-time, non-authoritative guidance and must not be presented or persisted as a compliance certification or toxicological assessment.
 
+Exception — Product Information File (DIP) versions: a submitted or approved DIP version persists a frozen snapshot of computed Part A data and an unsigned Part B draft, because a signed DIP is a legal record. Koskalk still does not author the safety assessment: the assessment is the document a qualified safety assessor signs, and Koskalk only records which version was signed and stores that signed file. Everything outside the DIP module keeps the live-guidance rule. See docs/superpowers/specs/2026-10-21-product-information-file-dip-design.md §8.
+
 ## Keep IFRA classification optional and evidence-based
 IFRA classification is optional, non-blocking guidance. Suggest from amendment-scoped Product Type mappings, persist automatic/manual selection evidence on the Saved Formula, and never infer IFRA new/existing fragrance-creation status from a finished Product.
 

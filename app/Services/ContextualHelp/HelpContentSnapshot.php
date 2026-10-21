@@ -43,7 +43,7 @@ final class HelpContentSnapshot
                     'published_at' => $locale->published_at?->toISOString(),
                     'revisions' => $revisions->where('help_topic_locale_id', $locale->id)->map(fn (HelpTopicRevision $revision): array => $this->revision($revision, $revisionUuids->get($revision->source_english_revision_id), null))->values()->all(),
                     'translation_requests' => $requests->where('help_topic_locale_id', $locale->id)->map(function (HelpTranslationRequest $request) use ($revisionUuids): array {
-                        $data = $request->only(['public_id', 'expected_target_lock_version', 'result', 'model', 'response_model', 'prompt_version', 'reasoning_effort', 'response_id', 'request_id', 'input_tokens', 'output_tokens', 'error_code', 'error_message']);
+                        $data = $request->only(['public_id', 'expected_target_lock_version', 'result', 'model', 'response_model', 'prompt_version', 'reasoning_effort', 'publish_automatically', 'response_id', 'request_id', 'input_tokens', 'output_tokens', 'error_code', 'error_message']);
                         $data['status'] = $request->status->value;
                         $data['source_english_revision_uuid'] = $revisionUuids->get($request->source_english_revision_id);
                         $data['accepted_revision_uuid'] = $revisionUuids->get($request->accepted_revision_id);

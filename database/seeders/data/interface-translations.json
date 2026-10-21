@@ -4979,6 +4979,138 @@
       }
     },
     {
+      "group": "help_admin",
+      "key": "bulk.completed",
+      "text": {
+        "de": "Sammelaktion für Hilfe abgeschlossen",
+        "es": "Acción masiva de ayuda completada",
+        "fr": "Action groupée sur l’aide terminée",
+        "it": "Azione collettiva sulla guida completata",
+        "nl": "Bulkactie voor hulp voltooid",
+        "pt_BR": "Ação em massa da ajuda concluída"
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "bulk.languages",
+      "text": {
+        "de": "Sprachen",
+        "es": "Idiomas",
+        "fr": "Langues",
+        "it": "Lingue",
+        "nl": "Talen",
+        "pt_BR": "Idiomas"
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "bulk.limit",
+      "text": {
+        "de": "Wählen Sie weniger Themen oder Sprachen. Pro Stapel sind höchstens :limit Übersetzungsanfragen möglich.",
+        "es": "Selecciona menos temas o idiomas. Cada lote admite como máximo :limit solicitudes de traducción.",
+        "fr": "Sélectionnez moins de sujets ou de langues. Un lot permet au maximum :limit demandes de traduction.",
+        "it": "Seleziona meno argomenti o lingue. Ogni gruppo consente al massimo :limit richieste di traduzione.",
+        "nl": "Selecteer minder onderwerpen of talen. Per batch zijn maximaal :limit vertaalaanvragen toegestaan.",
+        "pt_BR": "Selecione menos tópicos ou idiomas. Cada lote permite no máximo :limit solicitações de tradução."
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "bulk.publish",
+      "text": {
+        "de": "Ausgewählte englische Entwürfe veröffentlichen",
+        "es": "Publicar los borradores en inglés seleccionados",
+        "fr": "Publier les brouillons anglais sélectionnés",
+        "it": "Pubblica le bozze inglesi selezionate",
+        "nl": "Geselecteerde Engelse concepten publiceren",
+        "pt_BR": "Publicar os rascunhos em inglês selecionados"
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "bulk.publish_description",
+      "text": {
+        "de": "Die ausgewählten gespeicherten englischen Entwürfe veröffentlichen. Geänderte, archivierte oder fehlende Entwürfe werden übersprungen. Nicht ausgewählte Themen bleiben unverändert. Vorhandene Übersetzungen fallen auf Englisch zurück, bis sie anhand der neuen englischen Version übersetzt wurden.",
+        "es": "Publicar los borradores en inglés guardados y seleccionados. Se omiten los borradores modificados, archivados o ausentes. Los temas no seleccionados no cambian. Las traducciones existentes vuelven al inglés hasta que se traduzcan a partir de la nueva versión inglesa.",
+        "fr": "Publier les brouillons anglais sélectionnés et enregistrés. Les brouillons modifiés, archivés ou manquants sont ignorés. Les rubriques non sélectionnées restent inchangées. Les traductions existantes affichent l’anglais jusqu’à leur traduction à partir de la nouvelle version anglaise.",
+        "it": "Pubblicare le bozze inglesi selezionate e salvate. Le bozze modificate, archiviate o mancanti vengono ignorate. Gli argomenti non selezionati restano invariati. Le traduzioni esistenti mostrano l’inglese finché non vengono tradotte dalla nuova versione inglese.",
+        "nl": "Publiceer de geselecteerde opgeslagen Engelse concepten. Gewijzigde, gearchiveerde of ontbrekende concepten worden overgeslagen. Niet-geselecteerde onderwerpen blijven ongewijzigd. Bestaande vertalingen vallen terug op Engels totdat ze vanuit de nieuwe Engelse versie zijn vertaald.",
+        "pt_BR": "Publicar os rascunhos em inglês selecionados e salvos. Rascunhos alterados, arquivados ou ausentes são ignorados. Os tópicos não selecionados permanecem inalterados. As traduções existentes passam a exibir o inglês até serem traduzidas a partir da nova versão inglesa."
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "bulk.request_count",
+      "text": {
+        "de": "Bis zu :count KI-Anfragen. Grenze: :limit pro Stapel. Themen mit vorhandener Arbeit werden übersprungen.",
+        "es": "Hasta :count solicitudes de IA. Límite: :limit por lote. Se omiten los temas con trabajo existente.",
+        "fr": "Jusqu’à :count demandes IA. Limite : :limit par lot. Les sujets avec un travail en cours sont ignorés.",
+        "it": "Fino a :count richieste IA. Limite: :limit per gruppo. Gli argomenti con lavoro esistente vengono saltati.",
+        "nl": "Maximaal :count AI-aanvragen. Limiet: :limit per batch. Onderwerpen met bestaand werk worden overgeslagen.",
+        "pt_BR": "Até :count solicitações de IA. Limite: :limit por lote. Tópicos com trabalho existente são ignorados."
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "bulk.result",
+      "text": {
+        "de": ":published englische Entwürfe veröffentlicht; :queued Übersetzungen eingereiht; :skipped Themen oder Sprachen übersprungen, weil sie aktuell oder geändert sind, Arbeit zur Prüfung vorliegt oder sie nicht verarbeitet werden konnten.",
+        "es": ":published borradores en inglés publicados; :queued traducciones en cola; :skipped temas o idiomas omitidos porque están al día, han cambiado, tienen trabajo por revisar o no se pudieron procesar.",
+        "fr": ":published brouillons anglais publiés ; :queued traductions en attente ; :skipped sujets ou langues ignorés car ils sont à jour, ont changé, ont du contenu à relire ou n’ont pas pu être traités.",
+        "it": ":published bozze inglesi pubblicate; :queued traduzioni in coda; :skipped argomenti o lingue saltati perché aggiornati, modificati, con lavoro da rivedere o non elaborabili.",
+        "nl": ":published Engelse concepten gepubliceerd; :queued vertalingen in de wachtrij; :skipped onderwerpen of talen overgeslagen omdat ze actueel of gewijzigd zijn, werk ter beoordeling hebben of niet konden worden verwerkt.",
+        "pt_BR": ":published rascunhos em inglês publicados; :queued traduções na fila; :skipped tópicos ou idiomas ignorados por estarem atualizados, terem mudado, terem trabalho para revisão ou não terem sido processados."
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "bulk.review",
+      "text": {
+        "de": "Übersetzungen vor der Veröffentlichung prüfen",
+        "es": "Revisar las traducciones antes de publicarlas",
+        "fr": "Relire les traductions avant publication",
+        "it": "Rivedi le traduzioni prima della pubblicazione",
+        "nl": "Vertalingen vóór publicatie beoordelen",
+        "pt_BR": "Revisar traduções antes de publicar"
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "bulk.review_help",
+      "text": {
+        "de": "Aktiviert: Übersetzungskandidaten zur manuellen Prüfung behalten. Deaktiviert: erfolgreiche Übersetzungen automatisch veröffentlichen, sofern englische Quelle und Ziel unverändert sind.",
+        "es": "Marcado: conservar las traducciones candidatas para revisión manual. Sin marcar: publicar automáticamente las traducciones correctas si la fuente en inglés y el destino no han cambiado.",
+        "fr": "Coché : conserver les propositions de traduction pour relecture manuelle. Décoché : publier automatiquement les traductions réussies si la source anglaise et la cible restent inchangées.",
+        "it": "Selezionato: conservare le traduzioni candidate per la revisione manuale. Non selezionato: pubblicare automaticamente le traduzioni riuscite se la fonte inglese e la destinazione restano invariate.",
+        "nl": "Aangevinkt: vertaalvoorstellen bewaren voor handmatige beoordeling. Uitgevinkt: geslaagde vertalingen automatisch publiceren als de Engelse bron en de doeltekst ongewijzigd blijven.",
+        "pt_BR": "Marcado: manter as propostas de tradução para revisão manual. Desmarcado: publicar automaticamente as traduções bem-sucedidas se a fonte em inglês e o destino permanecerem inalterados."
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "bulk.translate",
+      "text": {
+        "de": "Ausgewählte Themen übersetzen",
+        "es": "Traducir los temas seleccionados",
+        "fr": "Traduire les rubriques sélectionnées",
+        "it": "Traduci gli argomenti selezionati",
+        "nl": "Geselecteerde onderwerpen vertalen",
+        "pt_BR": "Traduzir os tópicos selecionados"
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "bulk.translate_description",
+      "text": {
+        "de": "Ausgewählte englische Entwürfe veröffentlichen und in die gewählten Sprachen übersetzen. Aktuelle Übersetzungen, vorhandene manuelle Entwürfe und ausstehende Kandidaten werden übersprungen. Für jedes Thema und jede Sprache wird eine KI-Anfrage verwendet.",
+        "es": "Publicar los borradores en inglés seleccionados y traducirlos a los idiomas elegidos. Se omiten las traducciones actuales, los borradores manuales existentes y los candidatos pendientes. Cada tema e idioma utiliza una solicitud de IA.",
+        "fr": "Publier les brouillons anglais sélectionnés, puis les traduire dans les langues choisies. Les traductions à jour, les brouillons manuels existants et les propositions en attente sont ignorés. Chaque rubrique et chaque langue utilisent une requête IA.",
+        "it": "Pubblicare le bozze inglesi selezionate e tradurle nelle lingue scelte. Le traduzioni aggiornate, le bozze manuali esistenti e i candidati in attesa vengono ignorati. Ogni argomento e lingua utilizza una richiesta IA.",
+        "nl": "Publiceer geselecteerde Engelse concepten en vertaal ze naar de gekozen talen. Actuele vertalingen, bestaande handmatige concepten en wachtende kandidaten worden overgeslagen. Elk onderwerp en elke taal gebruikt een AI-aanvraag.",
+        "pt_BR": "Publicar os rascunhos em inglês selecionados e traduzi-los para os idiomas escolhidos. Traduções atualizadas, rascunhos manuais existentes e propostas pendentes são ignorados. Cada tópico e idioma utiliza uma solicitação de IA."
+      }
+    },
+    {
       "group": "ingredients",
       "key": "accessibility.close_removal",
       "text": {

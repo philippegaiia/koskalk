@@ -164,6 +164,9 @@ final class HelpContentManifest
         foreach (['started_at', 'completed_at', 'created_at', 'updated_at'] as $field) {
             $rules[$field] = ['present', 'nullable', 'date'];
         }
+        if (array_key_exists('publish_automatically', $request)) {
+            $rules['publish_automatically'] = ['required', 'boolean'];
+        }
         Validator::make($request, $rules)->validate();
         $this->keys($request, array_keys($rules));
         if ($request['result'] !== null) {

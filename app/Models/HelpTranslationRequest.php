@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'response_model',
     'prompt_version',
     'reasoning_effort',
+    'publish_automatically',
     'processing_token',
     'response_id',
     'request_id',
@@ -73,6 +74,7 @@ class HelpTranslationRequest extends Model
         return [
             'expected_target_lock_version' => 'integer',
             'status' => HelpTranslationRequestStatus::class,
+            'publish_automatically' => 'boolean',
             'result' => 'array',
             'input_tokens' => 'integer',
             'output_tokens' => 'integer',

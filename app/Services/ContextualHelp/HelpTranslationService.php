@@ -14,6 +14,7 @@ use App\Models\HelpTranslationRequest;
 use App\Models\SupportedLocale;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\ConcurrencyErrorDetector;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -21,13 +22,13 @@ use Throwable;
 
 final class HelpTranslationService
 {
-    public function __construct(private readonly HelpTranslationClient $client, private readonly HelpContentEditor $editor, private readonly HelpContentValidator $validator) {}
+    public function __construct(private readonly HelpTranslationClient $client, private readonly HelpContentEditor $editor, private readonly HelpContentValidator $validator, private readonly HelpContentPublisher $publisher, private readonly ConcurrencyErrorDetector $concurrencyErrors) {}
 
-    public function request(User $actor, HelpTopicLocale $locale, int $sourceEnglishRevisionId, int $expectedLockVersion): HelpTranslationRequest
+    public function request(User $actor, HelpTopicLocale $locale, int $sourceEnglishRevisionId, int $expectedLockVersion, bool $publishAutomatically = false): HelpTranslationRequest
     {
         $this->authorize($actor);
 
-        return DB::transaction(function () use ($actor, $locale, $sourceEnglishRevisionId, $expectedLockVersion): HelpTranslationRequest {
+        return DB::transaction(function () use ($actor, $locale, $sourceEnglishRevisionId, $expectedLockVersion, $publishAutomatically): HelpTranslationRequest {
             $locked = $this->editor->lockLocale($locale, $expectedLockVersion);
             $this->assertEligible($locked, $sourceEnglishRevisionId);
             $existing = $locked->translationRequests()->whereIn('status', [Status::Pending, Status::Running])->lockForUpdate()->first();
@@ -38,6 +39,7 @@ final class HelpTranslationService
                 'source_english_revision_id' => $sourceEnglishRevisionId,
                 'expected_target_lock_version' => $expectedLockVersion,
                 'status' => Status::Pending,
+                'publish_automatically' => $publishAutomatically,
                 'requested_by' => $actor->id,
                 'model' => config('contextual-help.translation.model') ?: config('ingredient-enrichment.openai.localization_model'),
                 'reasoning_effort' => config('contextual-help.translation.reasoning_effort') ?: config('ingredient-enrichment.openai.localization_reasoning_effort'),
@@ -98,10 +100,48 @@ final class HelpTranslationService
         } catch (Throwable) {
             $changes = ['status' => Status::Failed, 'error_code' => 'translation_failed', 'error_message' => 'Translation failed or returned invalid content. Request a new translation to retry.'];
         }
-        HelpTranslationRequest::query()->whereKey($request->id)->where('status', Status::Running)->where('processing_token', $token)
+        $completed = HelpTranslationRequest::query()->whereKey($request->id)->where('status', Status::Running)->where('processing_token', $token)
             ->update([...$audit, ...$changes, 'processing_token' => null, 'completed_at' => now()]);
 
+        if ($completed && $changes['status'] === Status::Completed && $request->publish_automatically) {
+            $this->publishAutomatically($request);
+        }
+
         return $request->refresh();
+    }
+
+    private function publishAutomatically(HelpTranslationRequest $request): void
+    {
+        try {
+            DB::transaction(function () use ($request): void {
+                $this->lockTopic($request->topicLocale);
+                $request->refresh();
+                if ($request->status !== Status::Completed || $request->error_code !== null) {
+                    return;
+                }
+                $this->authorize($request->requester);
+                if (! HelpTopicLocale::query()->where('help_topic_id', $request->topicLocale->help_topic_id)->where('locale', 'en')
+                    ->where('latest_revision_id', $request->source_english_revision_id)->where('published_revision_id', $request->source_english_revision_id)->exists()) {
+                    throw ValidationException::withMessages(['source_english_revision_id' => __('help_admin.validation.translation_source')]);
+                }
+                $revision = $this->accept($request->requester, $request, $request->expected_target_lock_version);
+                $locale = $revision->topicLocale->fresh();
+                $this->publisher->publish($request->requested_by, $locale, $revision->id, $locale->lock_version);
+            }, attempts: 5);
+        } catch (Throwable $exception) {
+            if ($this->concurrencyErrors->causedByConcurrencyError($exception)) {
+                report($exception);
+
+                return;
+            }
+            if (! $exception instanceof AuthorizationException && ! $exception instanceof ValidationException) {
+                report($exception);
+            }
+            HelpTranslationRequest::query()->whereKey($request->id)->where('status', Status::Completed)->update([
+                'error_code' => 'automatic_publication_blocked',
+                'error_message' => 'Automatic publication could not complete. The translation candidate is retained for manual review.',
+            ]);
+        }
     }
 
     public function accept(User $actor, HelpTranslationRequest $request, int $expectedLockVersion): HelpTopicRevision
@@ -154,6 +194,8 @@ final class HelpTranslationService
                 ->update(['status' => Status::Failed, 'processing_token' => null, 'completed_at' => now(), 'error_code' => 'worker_expired', 'error_message' => 'The translation worker expired. Its provider outcome is unknown; request a new translation to retry.']);
         });
         HelpTranslationRequest::query()->where('status', Status::Pending)->eachById(fn (HelpTranslationRequest $request) => $this->dispatch($request));
+        HelpTranslationRequest::query()->where('status', Status::Completed)->where('publish_automatically', true)->whereNotNull('requested_by')->whereNull('error_code')
+            ->eachById(fn (HelpTranslationRequest $request) => $this->publishAutomatically($request));
     }
 
     private function authorize(?User $actor): void

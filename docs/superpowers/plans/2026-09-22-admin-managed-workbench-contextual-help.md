@@ -390,7 +390,7 @@ interface HelpTranslationClient
 - [ ] Store resolved `model`, `reasoning_effort`, and prompt_version in the Task 1 request columns at request creation; source revision is immutable. Bind HelpTranslationClient in AppServiceProvider using the existing dependency-injection convention. No change to ingredient translation behavior.
 - [ ] Add Generate translation / Generate missing translations controls. Batch action queues one request for each selected target; present target languages before submission. A completed candidate offers English/candidate/current comparison, Accept as draft, and Dismiss. Acceptance checks both English publication and target lock_version, then creates an immutable `origin=ai` revision and updates only latest pointer. A repeated accept returns accepted_revision_id.
 - [ ] Add Mark reviewed against current English as an explicit editor action: preview current English and existing translated words, then call SaveHelpTopicDraft with the current English revision ID. This creates a new human revision even if words are unchanged because its source changed; publication stays explicit.
-- [ ] Add recovery command `help:recover-jobs`, scheduled in Task 7: dispatch missed pending rows, mark expired running translations failed, and leave completed/accepted/dismissed jobs untouched. No automatic repeat of an uncertain paid request. Scope errors to the request and allow other languages to finish.
+- [ ] Add recovery command `help:recover-jobs`, scheduled in Task 7: dispatch missed pending rows, mark expired running translations failed, and leave accepted/dismissed jobs untouched. Update authorized on 2026-10-21: recover completed, explicitly automatic-publication requests with a local requester and no blocking error by accepting/publishing the saved candidate, without another provider call; recheck source, target and actor. Imported history is excluded. No automatic repeat of an uncertain paid request. Scope errors to the request and allow other languages to finish.
 - [ ] Run `php artisan test --compact tests/Feature/ContextualHelpTranslationTest.php tests/Feature/ContextualHelpTranslationClientTest.php tests/Feature/ContextualHelpAdminTest.php`; use Http::preventStrayRequests and exact endpoint fakes. No real paid calls in validation. Run filacheck/Pint; commit as `feat: generate reviewable help translations`.
 
 ### Task 7: Add verified offsite snapshots and recovery scheduling
@@ -608,7 +608,7 @@ Expected: all selected tests pass, no unresolved Filament issues, formatter comp
 - [ ] The actual desktop/mobile/keyboard/navigation checks pass.
 - [ ] Export verification, safe merge preview, and empty-database round trip are proven.
 - [ ] Backup failures are visible and recoverable; publication does not falsely claim a successful snapshot.
-- [ ] No WordPress dependency, production-help content, automatic publication, or new package was introduced.
+- [ ] No WordPress dependency, production-help content, or new package was introduced. Update authorized on 2026-10-21: manual translation review remains the default; selected-topic bulk translation may automatically publish only when an administrator explicitly opts in, with durable intent and fresh source/target/actor checks. Preserve manual work and keep imports draft-only. Limit a run to 100 topics and 600 topic-language pairs, show the maximum request count, and continue past recoverable topic failures.
 
 ## Plan self-review (2026-09-22)
 

@@ -216,6 +216,7 @@ final class HelpContentImporter
                     foreach (['model', 'prompt_version', 'reasoning_effort', 'expected_target_lock_version'] as $field) {
                         $this->ensure($request->{$field} === $incomingRequest[$field], 'Request UUID conflicts with generation configuration.');
                     }
+                    $this->ensure($request->publish_automatically === ($incomingRequest['publish_automatically'] ?? false), 'Request UUID conflicts with publication intent.');
                     $this->ensure($request->created_at->equalTo(CarbonImmutable::parse($incomingRequest['created_at'])), 'Request UUID conflicts with original creation time.');
                     if ($request->result !== null && $incomingRequest['result'] !== null) {
                         $this->ensure($request->result == $incomingRequest['result'], 'Request UUID conflicts with candidate content.');

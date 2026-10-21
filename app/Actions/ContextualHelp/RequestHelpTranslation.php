@@ -12,10 +12,10 @@ final class RequestHelpTranslation
 {
     public function __construct(private readonly HelpTranslationService $service) {}
 
-    public function handle(User $actor, HelpTopicLocale $locale, int $sourceEnglishRevisionId, int $expectedLockVersion): HelpTranslationRequest
+    public function handle(User $actor, HelpTopicLocale $locale, int $sourceEnglishRevisionId, int $expectedLockVersion, bool $publishAutomatically = false): HelpTranslationRequest
     {
         Gate::forUser($actor)->authorize('update', $locale->topic);
 
-        return $this->service->request($actor, $locale, $sourceEnglishRevisionId, $expectedLockVersion);
+        return $this->service->request($actor, $locale, $sourceEnglishRevisionId, $expectedLockVersion, $publishAutomatically);
     }
 }

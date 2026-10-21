@@ -70,7 +70,12 @@ class RegulatoryLegalEntryResource extends Resource
                     Textarea::make('substance_description')->label('Substance as named in the annex')->rows(2)->required()->columnSpanFull(),
                     Select::make('substances')
                         ->label('Linked substances')
-                        ->relationship(name: 'substances', titleAttribute: 'name')
+                        ->relationship(
+                            name: 'substances',
+                            titleAttribute: 'name',
+                            // PostgreSQL cannot apply DISTINCT to substance_catalog's json columns.
+                            modifyQueryUsing: fn (Builder $query): Builder => $query->select(['substance_catalog.id', 'substance_catalog.name']),
+                        )
                         ->multiple()
                         ->searchable()
                         ->preload()

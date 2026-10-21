@@ -24,7 +24,9 @@ class DeleteSupplier
                 ->lockForUpdate()
                 ->findOrFail($supplier->id);
 
-            if ($lockedSupplier->purchaseOrders()->exists() || $lockedSupplier->listings()->exists()) {
+            if ($lockedSupplier->purchaseOrders()->exists()
+                || $lockedSupplier->listings()->exists()
+                || $lockedSupplier->qualifications()->exists()) {
                 $lockedSupplier->update(['is_active' => false]);
 
                 return false;

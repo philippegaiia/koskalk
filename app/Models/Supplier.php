@@ -45,6 +45,11 @@ class Supplier extends Model
         return $this->hasMany(SupplierListing::class);
     }
 
+    public function qualifications(): HasMany
+    {
+        return $this->hasMany(SupplierQualification::class);
+    }
+
     public function purchaseOrders(): HasMany
     {
         return $this->hasMany(PurchaseOrder::class);

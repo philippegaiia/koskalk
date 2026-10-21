@@ -23,6 +23,10 @@ return [
         'save' => 'Save dossier settings',
         'saved' => 'Dossier settings saved.',
     ],
+    'qualification' => [
+        'supplier_not_in_workspace' => 'This supplier does not belong to this workspace.',
+        'ingredient_not_usable' => 'This ingredient is not available in this workspace.',
+    ],
     'validation' => [
         'siret' => 'The SIRET must be 14 digits.',
         'numbering_prefix' => 'Use 1 to 8 capital letters or digits.',

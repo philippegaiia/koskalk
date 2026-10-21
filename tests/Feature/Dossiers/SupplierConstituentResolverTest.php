@@ -171,3 +171,15 @@ it('treats a complete allergen declaration with no allergens as declaring none',
 
     expect(app(SupplierConstituentResolver::class)->allergens($workspace, $olive)->sole()['suppliers_without_declaration'])->toBe([]);
 });
+
+it('reports suppliers without a declaration even when no supplier declares anything', function (): void {
+    $workspace = Workspace::factory()->create();
+    $olive = Ingredient::factory()->create();
+    $qualification = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $olive->id]);
+    DossierEvidenceItem::factory()->create(['supplier_qualification_id' => $qualification->id, 'type' => EvidenceType::TechnicalSheet, 'constituents_complete' => true]);
+    $resolver = app(SupplierConstituentResolver::class);
+
+    expect($resolver->impurities($workspace, $olive))->toBeEmpty()
+        ->and($resolver->suppliersWithoutDeclaration($workspace, $olive, ConstituentKind::Impurity))->toBe([$qualification->id])
+        ->and($resolver->suppliersWithoutDeclaration($workspace, $olive, ConstituentKind::Allergen))->toBe([$qualification->id]);
+});

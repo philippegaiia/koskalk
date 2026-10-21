@@ -47,7 +47,8 @@
                                     @forelse ($item->constituents as $constituent)
                                         {{ $constituent->allergen?->inci_name ?? $constituent->substance?->name }} ≤ {{ rtrim(rtrim($constituent->max_value, '0'), '.') }} {{ $constituent->unit === 'ppm' ? 'ppm' : '%' }}@if (! $loop->last) · @endif
                                     @empty
-                                        @if ($item->useLimits->isEmpty() && blank($item->facts)) {{ __('dossiers.evidence_data.none') }} @endif
+                                        @if ($item->constituents_complete) {{ __('dossiers.evidence_data.complete_without_contents') }}
+                                        @elseif ($item->useLimits->isEmpty() && blank($item->facts)) {{ __('dossiers.evidence_data.none') }} @endif
                                     @endforelse
                                     @foreach ($item->useLimits as $limit)
                                         · {{ $limit->ifraProductCategory?->code ?? $limit->product_class_label }} ≤ {{ rtrim(rtrim($limit->max_percent, '0'), '.') }} %

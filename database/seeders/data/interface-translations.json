@@ -1188,6 +1188,18 @@
     },
     {
       "group": "dossiers",
+      "key": "evidence_data.complete_without_contents",
+      "text": {
+        "de": "Vollständig erfasst: Dieses Dokument nennt keine Gehalte.",
+        "es": "Registrado por completo: este documento no indica contenidos.",
+        "fr": "Saisi en entier : ce document n’indique aucune teneur.",
+        "it": "Inserito per intero: questo documento non indica contenuti.",
+        "nl": "Volledig ingevoerd: dit document vermeldt geen gehaltes.",
+        "pt_BR": "Registrado por completo: este documento não indica teores."
+      }
+    },
+    {
+      "group": "dossiers",
       "key": "evidence_data.constituents",
       "text": {
         "de": "Angegebene Gehalte",

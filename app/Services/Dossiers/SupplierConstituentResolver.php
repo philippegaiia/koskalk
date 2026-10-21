@@ -25,8 +25,7 @@ class SupplierConstituentResolver
      */
     public function allergens(Workspace $workspace, Ingredient $ingredient): Collection
     {
-        // A complete allergen declaration listing nothing does declare "no allergens".
-        $silent = $this->qualificationsWithout($workspace, $ingredient, null, EvidenceType::AllergenDeclaration);
+        $silent = $this->suppliersWithoutDeclaration($workspace, $ingredient, ConstituentKind::Allergen);
         $declared = $this->worstCase($workspace, $ingredient, ConstituentKind::Allergen, 'allergen_id', $silent);
 
         $fallback = IngredientAllergenEntry::query()
@@ -52,10 +51,26 @@ class SupplierConstituentResolver
      */
     public function impurities(Workspace $workspace, Ingredient $ingredient): Collection
     {
-        // A technical sheet that does not mention impurities is not a declaration of none: an explicit value is required.
-        $silent = $this->qualificationsWithout($workspace, $ingredient, ConstituentKind::Impurity, EvidenceType::TechnicalSheet, EvidenceType::CertificateOfAnalysis);
+        $silent = $this->suppliersWithoutDeclaration($workspace, $ingredient, ConstituentKind::Impurity);
 
         return $this->worstCase($workspace, $ingredient, ConstituentKind::Impurity, 'substance_id', $silent)->values();
+    }
+
+    /**
+     * Validated suppliers of the ingredient that have not declared this kind of content. Independent of the per-substance
+     * rows, so "nobody declared anything" is reported instead of looking like "nothing to declare".
+     *
+     * @return list<int>
+     */
+    public function suppliersWithoutDeclaration(Workspace $workspace, Ingredient $ingredient, ConstituentKind $kind): array
+    {
+        return match ($kind) {
+            // A complete allergen declaration listing nothing does declare "no allergens".
+            ConstituentKind::Allergen => $this->qualificationsWithout($workspace, $ingredient, null, EvidenceType::AllergenDeclaration),
+            // A technical sheet that does not mention impurities is not a declaration of none: an explicit value is required.
+            ConstituentKind::Impurity => $this->qualificationsWithout($workspace, $ingredient, ConstituentKind::Impurity, EvidenceType::TechnicalSheet, EvidenceType::CertificateOfAnalysis),
+            ConstituentKind::RestrictedSubstance => $this->qualificationsWithout($workspace, $ingredient, null, EvidenceType::RegulatoryConformityCertificate),
+        };
     }
 
     /**

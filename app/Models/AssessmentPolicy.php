@@ -28,6 +28,17 @@ class AssessmentPolicy extends Model
         return [];
     }
 
+    public static function publicationRules(): array
+    {
+        return [
+            'default_dermal_absorption_percent' => ['required', 'numeric', 'gt:0', 'lte:100'],
+            'default_oral_bioavailability_percent' => ['required', 'numeric', 'gt:0', 'lte:100'],
+            'mos_threshold' => ['required', 'numeric', 'gt:0'],
+            'body_weight_kg' => ['required', 'numeric', 'gt:0'],
+            'source_reference' => ['required', 'string'],
+        ];
+    }
+
     protected function casts(): array
     {
         return [

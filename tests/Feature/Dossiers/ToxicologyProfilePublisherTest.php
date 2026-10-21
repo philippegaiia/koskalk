@@ -86,3 +86,16 @@ it('never edits or deletes a published version', function (): void {
 
     expect(ToxicologyProfile::query()->sole()->nesil_ug_cm2)->toBe('15000.000000');
 });
+
+it('rejects out-of-range toxicological values', function (string $field, string $value): void {
+    try {
+        app(ToxicologyProfilePublisher::class)->publish(Substance::factory()->create(), [...linaloolProfileData(), $field => $value], User::factory()->admin()->create());
+        $this->fail('Expected a validation error.');
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toHaveKey($field);
+    }
+})->with([
+    'dermal absorption above 100%' => ['dermal_absorption_percent', '101'],
+    'zero NOAEL' => ['noael_mg_kg_bw_day', '0'],
+    'negative NESIL' => ['nesil_ug_cm2', '-5'],
+]);

@@ -37,10 +37,10 @@ class CreateToxicologyProfile extends CreateRecord
      */
     protected function handleRecordCreation(array $data): Model
     {
-        return app(ToxicologyProfilePublisher::class)->publish(
+        return $this->withFormValidationErrors(fn (): Model => app(ToxicologyProfilePublisher::class)->publish(
             Substance::query()->findOrFail($data['substance_id']),
             $data,
             auth()->user(),
-        );
+        ));
     }
 }

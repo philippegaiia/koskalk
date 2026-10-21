@@ -30,6 +30,19 @@ class Qra2Parameter extends Model
         return ['ifra_product_category_id', 'ifra_amendment_id'];
     }
 
+    public static function publicationRules(): array
+    {
+        return [
+            'ifra_product_category_id' => ['required', 'integer', 'exists:ifra_product_categories,id'],
+            'ifra_amendment_id' => ['required', 'integer', 'exists:ifra_amendments,id'],
+            'sensitization_assessment_factor' => ['required', 'numeric', 'gt:0'],
+            'consumer_exposure_level_mg_cm2_day' => ['required', 'numeric', 'gt:0'],
+            'applies_qra2_factor' => ['required', 'boolean'],
+            'qra2_factor' => ['nullable', 'required_if_accepted:applies_qra2_factor', 'numeric', 'gt:0', 'lte:1'],
+            'source_reference' => ['required', 'string'],
+        ];
+    }
+
     public function ifraProductCategory(): BelongsTo
     {
         return $this->belongsTo(IfraProductCategory::class);

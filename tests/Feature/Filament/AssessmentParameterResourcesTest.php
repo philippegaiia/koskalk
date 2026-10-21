@@ -70,3 +70,18 @@ it('publishes QRA2 parameters for a category and amendment', function (): void {
 
     expect(Qra2Parameter::query()->sole()->version)->toBe(1);
 });
+
+it('shows range errors on the policy form', function (): void {
+    Livewire::test(CreateAssessmentPolicy::class)
+        ->fillForm([
+            'default_dermal_absorption_percent' => '101',
+            'default_oral_bioavailability_percent' => '-1',
+            'mos_threshold' => '100',
+            'body_weight_kg' => '0',
+            'source_reference' => 'SCCS Notes of Guidance',
+        ])
+        ->call('create')
+        ->assertHasFormErrors(['default_dermal_absorption_percent', 'default_oral_bioavailability_percent', 'body_weight_kg']);
+
+    expect(AssessmentPolicy::query()->count())->toBe(0);
+});

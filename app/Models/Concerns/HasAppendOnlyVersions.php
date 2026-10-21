@@ -19,6 +19,13 @@ trait HasAppendOnlyVersions
      */
     abstract public static function versionScopeColumns(): array;
 
+    /**
+     * Domain validation applied to every publication (ranges, positive divisors, required sources).
+     *
+     * @return array<string, mixed>
+     */
+    abstract public static function publicationRules(): array;
+
     protected static function bootHasAppendOnlyVersions(): void
     {
         static::updating(function (Model $model): void {

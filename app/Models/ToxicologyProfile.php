@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Validation\Rule;
 
 /**
  * One version of the toxicological data of an assessed material (a substance_catalog row).
@@ -55,6 +56,26 @@ class ToxicologyProfile extends Model
     public static function versionScopeColumns(): array
     {
         return ['substance_id'];
+    }
+
+    public static function publicationRules(): array
+    {
+        $percent = ['nullable', 'numeric', 'gt:0', 'lte:100'];
+        $positive = ['nullable', 'numeric', 'gt:0'];
+
+        return [
+            'substance_id' => ['required', 'integer', 'exists:substance_catalog,id'],
+            'noael_mg_kg_bw_day' => $positive,
+            'noael_route' => ['nullable', Rule::enum(NoaelRoute::class)],
+            'oral_bioavailability_percent' => $percent,
+            'ld50_mg_kg' => $positive,
+            'ld50_route' => ['nullable', Rule::enum(NoaelRoute::class)],
+            'dermal_absorption_percent' => $percent,
+            'cmax_percent' => $percent,
+            'adi_mg_kg_bw_day' => $positive,
+            'ttc_mg_kg_bw_day' => $positive,
+            'nesil_ug_cm2' => $positive,
+        ];
     }
 
     public function substance(): BelongsTo

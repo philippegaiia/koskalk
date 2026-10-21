@@ -24,8 +24,11 @@ class ToxicologyProfilePublisher
         $values = collect(Arr::only($data, ToxicologyProfile::VALUE_COLUMNS))
             ->map(fn (mixed $value): mixed => $value === '' ? null : $value);
 
-        $this->assertSourced($values, $references, $valueReferences);
-        $this->assertReasoned($values);
+        $errors = [...$this->sourcingErrors($values, $references, $valueReferences), ...$this->reasoningErrors($values)];
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
 
         /** @var ToxicologyProfile */
         return $this->versions->publish(ToxicologyProfile::class, [
@@ -86,8 +89,9 @@ class ToxicologyProfilePublisher
      * @param  Collection<string, mixed>  $values
      * @param  Collection<int, array{number: int, citation: string, url: string|null}>  $references
      * @param  Collection<string, list<int>>  $valueReferences
+     * @return array<string, string>
      */
-    private function assertSourced(Collection $values, Collection $references, Collection $valueReferences): void
+    private function sourcingErrors(Collection $values, Collection $references, Collection $valueReferences): array
     {
         $errors = collect(ToxicologyProfile::REFERENCED_VALUES)
             ->filter(fn (string $field): bool => $values->get($field) !== null)
@@ -105,15 +109,14 @@ class ToxicologyProfilePublisher
                     : ["value_references.{$field}" => 'Unknown reference numbers: '.implode(', ', $missing).'.'];
             });
 
-        if ($errors->isNotEmpty()) {
-            throw ValidationException::withMessages($errors->all());
-        }
+        return $errors->all();
     }
 
     /**
      * @param  Collection<string, mixed>  $values
+     * @return array<string, string>
      */
-    private function assertReasoned(Collection $values): void
+    private function reasoningErrors(Collection $values): array
     {
         $errors = [];
 
@@ -130,8 +133,6 @@ class ToxicologyProfilePublisher
             $errors['ttc_reasoning'] = 'A TTC needs its class and the reason it applies.';
         }
 
-        if ($errors !== []) {
-            throw ValidationException::withMessages($errors);
-        }
+        return $errors;
     }
 }

@@ -59,3 +59,21 @@ it('keeps toxicology profiles out of reach of non-admin users', function (): voi
 
     $this->get(ToxicologyProfileResource::getUrl(panel: 'admin'))->assertForbidden();
 });
+
+it('shows publisher validation errors on the visible form fields', function (): void {
+    $this->actingAs(User::factory()->admin()->create());
+
+    Livewire::test(CreateToxicologyProfile::class)
+        ->fillForm([
+            'substance_id' => Substance::factory()->create()->id,
+            'noael_mg_kg_bw_day' => '117',
+            'noael_route' => null,
+            'nesil_ug_cm2' => '15000',
+            'references' => [['number' => 1, 'citation' => 'OECD SIDS', 'url' => null]],
+            'value_references' => ['noael_mg_kg_bw_day' => '1', 'nesil_ug_cm2' => '9'],
+        ])
+        ->call('create')
+        ->assertHasFormErrors(['noael_route', 'value_references']);
+
+    expect(ToxicologyProfile::query()->count())->toBe(0);
+});

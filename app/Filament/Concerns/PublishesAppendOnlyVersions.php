@@ -13,6 +13,8 @@ use Livewire\Attributes\Url;
  */
 trait PublishesAppendOnlyVersions
 {
+    use MapsServiceValidationToForm;
+
     #[Url]
     public ?int $from = null;
 
@@ -41,6 +43,8 @@ trait PublishesAppendOnlyVersions
      */
     protected function handleRecordCreation(array $data): Model
     {
-        return app(AppendOnlyVersionPublisher::class)->publish(static::getResource()::getModel(), $data, auth()->user());
+        return $this->withFormValidationErrors(
+            fn (): Model => app(AppendOnlyVersionPublisher::class)->publish(static::getResource()::getModel(), $data, auth()->user()),
+        );
     }
 }

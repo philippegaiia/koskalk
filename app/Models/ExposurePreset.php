@@ -30,6 +30,22 @@ class ExposurePreset extends Model
         return ['product_type_id'];
     }
 
+    public static function publicationRules(): array
+    {
+        return [
+            'product_type_id' => ['required', 'integer', 'exists:product_types,id'],
+            'amount_per_use_g' => ['required', 'numeric', 'gt:0'],
+            'uses_per_day' => ['required', 'numeric', 'gt:0'],
+            'retention_factor' => ['required', 'numeric', 'gt:0', 'lte:1'],
+            'is_rinse_off' => ['required', 'boolean'],
+            'application_sites' => ['required', 'array', 'min:1'],
+            'direct_routes' => ['required', 'array', 'min:1'],
+            'secondary_routes' => ['present', 'array'],
+            'target_population' => ['required', 'string', 'max:255'],
+            'source_reference' => ['required', 'string'],
+        ];
+    }
+
     public function productType(): BelongsTo
     {
         return $this->belongsTo(ProductType::class);

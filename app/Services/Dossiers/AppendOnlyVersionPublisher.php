@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use InvalidArgumentException;
 
 class AppendOnlyVersionPublisher
@@ -32,6 +33,8 @@ class AppendOnlyVersionPublisher
                 throw new InvalidArgumentException("Missing version scope column [{$column}].");
             }
         }
+
+        Validator::make($attributes, $modelClass::publicationRules())->validate();
 
         // Locking existing rows cannot serialize the first version of a series, so a concurrent publisher may take
         // the same version number; the unique (series, version) index rejects it and the publication is retried.

@@ -4,6 +4,7 @@ namespace App\Livewire\Dashboard;
 
 use App\Enums\MassDisplaySystem;
 use App\Enums\WorkspaceMemberRole;
+use App\Enums\WorkspaceModule;
 use App\Models\RegulatoryRegime;
 use App\Models\SupportedLocale;
 use App\Models\User;
@@ -227,10 +228,15 @@ class SettingsIndex extends Component
             $canManageMembers = app(WorkspaceAuthorization::class)->canManage($user->fresh(), $this->workspaceId);
         }
 
+        $canManageDossiers = $user instanceof User
+            && $this->workspaceId !== null
+            && app(WorkspaceAuthorization::class)->canEditModule($user->fresh(), $this->workspaceId, WorkspaceModule::ProductDossiers);
+
         return view('livewire.dashboard.settings-index', [
             'currencyOptions' => $currencyOptions,
             'marketOptions' => RegulatoryRegime::selectableMarkets(),
             'canManageMembers' => $canManageMembers,
+            'canManageDossiers' => $canManageDossiers,
             'canManageWorkspace' => $this->workspaceId === null
                 ? auth()->user()->can('create', Workspace::class)
                 : auth()->user()->can('update', Workspace::withoutGlobalScopes()->findOrFail($this->workspaceId)),

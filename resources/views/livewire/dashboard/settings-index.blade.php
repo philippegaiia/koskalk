@@ -35,6 +35,17 @@
                 ])
             >{{ __('workspaces.tabs.members') }}</button>
         @endif
+        @if ($canManageDossiers)
+            <button
+                type="button"
+                wire:click="$set('activeTab', 'dossiers')"
+                @class([
+                    '-mb-px rounded-t-lg border-b-2 px-4 py-2.5 text-sm font-medium transition',
+                    'border-[var(--color-ink-strong)] text-[var(--color-ink-strong)]' => $activeTab === 'dossiers',
+                    'border-transparent text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]' => $activeTab !== 'dossiers',
+                ])
+            >{{ __('dossiers.settings.tab') }}</button>
+        @endif
     </div>
 
     @if ($activeTab === 'preferences')
@@ -215,5 +226,9 @@
 
     @if ($activeTab === 'members' && $canManageMembers)
         <livewire:dashboard.workspace-members :workspace-id="$workspaceId" :key="'workspace-members-'.$workspaceId" />
+    @endif
+
+    @if ($activeTab === 'dossiers' && $canManageDossiers)
+        <livewire:dashboard.dossier-settings :key="'dossier-settings-'.$workspaceId" />
     @endif
 </div>

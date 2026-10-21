@@ -7,6 +7,7 @@ return [
         'contextual_help' => ['*'],
         'account' => ['*'],
         'dashboard' => ['*'],
+        'dossiers' => ['*'],
         'editing' => ['*'],
         'formula_documents' => ['*'],
         'help_admin' => ['bulk.*', 'list.*', 'translation.*'],

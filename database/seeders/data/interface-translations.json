@@ -1055,6 +1055,270 @@
       }
     },
     {
+      "group": "dossiers",
+      "key": "settings.assessor",
+      "text": {
+        "de": "Sicherheitsbewerter",
+        "es": "Evaluador de seguridad",
+        "fr": "Évaluateur de la sécurité",
+        "it": "Valutatore della sicurezza",
+        "nl": "Veiligheidsbeoordelaar",
+        "pt_BR": "Avaliador de segurança"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "settings.assessor_address",
+      "text": {
+        "de": "Adresse",
+        "es": "Dirección",
+        "fr": "Adresse",
+        "it": "Indirizzo",
+        "nl": "Adres",
+        "pt_BR": "Endereço"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "settings.assessor_name",
+      "text": {
+        "de": "Name",
+        "es": "Nombre",
+        "fr": "Nom",
+        "it": "Nome",
+        "nl": "Naam",
+        "pt_BR": "Nome"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "settings.assessor_qualification",
+      "text": {
+        "de": "Qualifikation",
+        "es": "Cualificación",
+        "fr": "Qualification",
+        "it": "Qualifica",
+        "nl": "Kwalificatie",
+        "pt_BR": "Qualificação"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "settings.description",
+      "text": {
+        "de": "Wird in jeder PIF dieses Arbeitsbereichs verwendet. Die verantwortliche Person ist das Unternehmen, das die Produkte auf dem EU-Markt in Verkehr bringt.",
+        "es": "Se usa en cada PIF de este espacio de trabajo. La persona responsable es la empresa que comercializa los productos en el mercado de la UE.",
+        "fr": "Utilisés dans chaque DIP de cet espace de travail. La personne responsable est l’entreprise qui met les produits sur le marché de l’UE.",
+        "it": "Usati in ogni PIF di questo spazio di lavoro. La persona responsabile è l’azienda che immette i prodotti sul mercato dell’UE.",
+        "nl": "Gebruikt in elk PIF van deze werkruimte. De verantwoordelijke persoon is het bedrijf dat de producten in de EU in de handel brengt.",
+        "pt_BR": "Usadas em cada PIF deste espaço de trabalho. A pessoa responsável é a empresa que coloca os produtos no mercado da UE."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "settings.heading",
+      "text": {
+        "de": "Einstellungen der Produktinformationsdatei",
+        "es": "Ajustes del expediente de información del producto",
+        "fr": "Paramètres du dossier d’information produit",
+        "it": "Impostazioni del fascicolo informativo sul prodotto",
+        "nl": "Instellingen productinformatiedossier",
+        "pt_BR": "Configurações do dossiê de informações do produto"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "settings.manufacturer",
+      "text": {
+        "de": "Herstellungsort",
+        "es": "Lugar de fabricación",
+        "fr": "Site de fabrication",
+        "it": "Sito di produzione",
+        "nl": "Productielocatie",
+        "pt_BR": "Local de fabricação"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "settings.numbering_help",
+      "text": {
+        "de": "Dossiers werden als DIP.<Präfix>.<Produktreferenz> nummeriert, zum Beispiel DIP.GA.007.",
+        "es": "Los expedientes se numeran DIP.<prefijo>.<referencia del producto>, por ejemplo DIP.GA.007.",
+        "fr": "Les dossiers sont numérotés DIP.<préfixe>.<référence produit>, par exemple DIP.GA.007.",
+        "it": "I fascicoli sono numerati DIP.<prefisso>.<riferimento prodotto>, ad esempio DIP.GA.007.",
+        "nl": "Dossiers worden genummerd als DIP.<prefix>.<productreferentie>, bijvoorbeeld DIP.GA.007.",
+        "pt_BR": "Os dossiês são numerados DIP.<prefixo>.<referência do produto>, por exemplo DIP.GA.007."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "settings.numbering_prefix",
+      "text": {
+        "de": "DIP-Nummernpräfix",
+        "es": "Prefijo de numeración DIP",
+        "fr": "Préfixe de numérotation DIP",
+        "it": "Prefisso di numerazione DIP",
+        "nl": "DIP-nummerprefix",
+        "pt_BR": "Prefixo de numeração DIP"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "settings.packer",
+      "text": {
+        "de": "Abpackort",
+        "es": "Lugar de envasado",
+        "fr": "Site de conditionnement",
+        "it": "Sito di confezionamento",
+        "nl": "Verpakkingslocatie",
+        "pt_BR": "Local de envase"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "settings.responsible_person",
+      "text": {
+        "de": "Verantwortliche Person",
+        "es": "Persona responsable",
+        "fr": "Personne responsable",
+        "it": "Persona responsabile",
+        "nl": "Verantwoordelijke persoon",
+        "pt_BR": "Pessoa responsável"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "settings.responsible_person_address",
+      "text": {
+        "de": "Adresse",
+        "es": "Dirección",
+        "fr": "Adresse",
+        "it": "Indirizzo",
+        "nl": "Adres",
+        "pt_BR": "Endereço"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "settings.responsible_person_name",
+      "text": {
+        "de": "Firmenname",
+        "es": "Razón social",
+        "fr": "Raison sociale",
+        "it": "Ragione sociale",
+        "nl": "Bedrijfsnaam",
+        "pt_BR": "Razão social"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "settings.responsible_person_siret",
+      "text": {
+        "de": "SIRET",
+        "es": "SIRET",
+        "fr": "SIRET",
+        "it": "SIRET",
+        "nl": "SIRET",
+        "pt_BR": "SIRET"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "settings.save",
+      "text": {
+        "de": "Dossier-Einstellungen speichern",
+        "es": "Guardar ajustes de expedientes",
+        "fr": "Enregistrer les paramètres des dossiers",
+        "it": "Salva impostazioni dei fascicoli",
+        "nl": "Dossierinstellingen opslaan",
+        "pt_BR": "Salvar configurações dos dossiês"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "settings.saved",
+      "text": {
+        "de": "Dossier-Einstellungen gespeichert.",
+        "es": "Ajustes de expedientes guardados.",
+        "fr": "Paramètres des dossiers enregistrés.",
+        "it": "Impostazioni dei fascicoli salvate.",
+        "nl": "Dossierinstellingen opgeslagen.",
+        "pt_BR": "Configurações dos dossiês salvas."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "settings.site_address",
+      "text": {
+        "de": "Adresse",
+        "es": "Dirección",
+        "fr": "Adresse",
+        "it": "Indirizzo",
+        "nl": "Adres",
+        "pt_BR": "Endereço"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "settings.site_help",
+      "text": {
+        "de": "Leer lassen, wenn es die verantwortliche Person ist.",
+        "es": "Déjelo vacío si es la persona responsable.",
+        "fr": "Laisser vide s’il s’agit de la personne responsable.",
+        "it": "Lasciare vuoto se coincide con la persona responsabile.",
+        "nl": "Leeg laten als dit de verantwoordelijke persoon is.",
+        "pt_BR": "Deixe vazio quando for a pessoa responsável."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "settings.site_name",
+      "text": {
+        "de": "Name",
+        "es": "Nombre",
+        "fr": "Nom",
+        "it": "Nome",
+        "nl": "Naam",
+        "pt_BR": "Nome"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "settings.tab",
+      "text": {
+        "de": "Produktdossiers (PIF)",
+        "es": "Expedientes de producto (PIF)",
+        "fr": "Dossiers produit (DIP)",
+        "it": "Fascicoli prodotto (PIF)",
+        "nl": "Productdossiers (PIF)",
+        "pt_BR": "Dossiês de produto (PIF)"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "validation.numbering_prefix",
+      "text": {
+        "de": "Verwenden Sie 1 bis 8 Großbuchstaben oder Ziffern.",
+        "es": "Use de 1 a 8 letras mayúsculas o cifras.",
+        "fr": "Utilisez de 1 à 8 lettres majuscules ou chiffres.",
+        "it": "Usa da 1 a 8 lettere maiuscole o cifre.",
+        "nl": "Gebruik 1 tot 8 hoofdletters of cijfers.",
+        "pt_BR": "Use de 1 a 8 letras maiúsculas ou dígitos."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "validation.siret",
+      "text": {
+        "de": "Die SIRET muss aus 14 Ziffern bestehen.",
+        "es": "El SIRET debe tener 14 cifras.",
+        "fr": "Le SIRET doit comporter 14 chiffres.",
+        "it": "Il SIRET deve avere 14 cifre.",
+        "nl": "Het SIRET-nummer moet uit 14 cijfers bestaan.",
+        "pt_BR": "O SIRET deve ter 14 dígitos."
+      }
+    },
+    {
       "group": "editing",
       "key": "changed",
       "text": {

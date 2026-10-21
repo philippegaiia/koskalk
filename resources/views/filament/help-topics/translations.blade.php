@@ -4,6 +4,8 @@
         <div wire:key="translation-{{ $request->public_id }}" class="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-gray-200 p-3 dark:border-gray-700">
             <div>
                 <p class="text-sm font-medium">{{ ucfirst($request->status->value) }} · {{ $request->created_at->format('Y-m-d H:i') }}</p>
+                <p class="text-sm text-gray-500">{{ __('help_admin.translation.requested', ['model' => $request->model, 'effort' => $request->reasoning_effort]) }}</p>
+                <p class="text-sm text-gray-500">{{ __('help_admin.translation.reported', ['model' => $request->response_model ?: __('help_admin.translation.not_reported')]) }}</p>
                 @if ($request->error_code)
                     <p class="text-sm text-gray-500">{{ $request->error_message }} Use “Generate translations” to request a new candidate.</p>
                 @endif

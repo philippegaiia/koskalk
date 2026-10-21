@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'help_topic_id',
@@ -46,6 +47,11 @@ class HelpTopicLocale extends Model
     public function publishedRevision(): BelongsTo
     {
         return $this->belongsTo(HelpTopicRevision::class, 'published_revision_id');
+    }
+
+    public function latestTranslationRequest(): HasOne
+    {
+        return $this->hasOne(HelpTranslationRequest::class)->latestOfMany();
     }
 
     public function publisher(): BelongsTo

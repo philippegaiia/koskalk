@@ -5040,6 +5040,30 @@
     },
     {
       "group": "help_admin",
+      "key": "bulk.publish_translations",
+      "text": {
+        "de": "Abgeschlossene Übersetzungen veröffentlichen",
+        "es": "Publicar traducciones completadas",
+        "fr": "Publier les traductions terminées",
+        "it": "Pubblica traduzioni completate",
+        "nl": "Voltooide vertalingen publiceren",
+        "pt_BR": "Publicar traduções concluídas"
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "bulk.publish_translations_description",
+      "text": {
+        "de": "Veröffentlichen Sie gespeicherte Übersetzungskandidaten für die ausgewählten Themen und Sprachen ohne Einzelprüfung oder neue KI-Anfragen. Geänderte Quellen, manuelle Entwürfe und aktuelle Übersetzungen werden übersprungen.",
+        "es": "Publica las propuestas guardadas de los temas e idiomas seleccionados sin revisión individual ni nuevas solicitudes de IA. Se omiten las fuentes modificadas, los borradores manuales y las traducciones al día.",
+        "fr": "Publiez les traductions proposées pour les sujets et langues sélectionnés sans relecture individuelle ni nouvelle demande IA. Les sources modifiées, les brouillons manuels et les traductions à jour sont ignorés.",
+        "it": "Pubblica le traduzioni proposte salvate per gli argomenti e le lingue selezionati senza revisione individuale né nuove richieste IA. Le fonti modificate, le bozze manuali e le traduzioni aggiornate vengono saltate.",
+        "nl": "Publiceer opgeslagen vertaalvoorstellen voor de geselecteerde onderwerpen en talen zonder individuele beoordeling of nieuwe AI-aanvragen. Gewijzigde bronnen, handmatige concepten en actuele vertalingen worden overgeslagen.",
+        "pt_BR": "Publique as propostas de tradução salvas para os tópicos e idiomas selecionados sem revisão individual nem novas solicitações de IA. Fontes alteradas, rascunhos manuais e traduções atualizadas são ignorados."
+      }
+    },
+    {
+      "group": "help_admin",
       "key": "bulk.request_count",
       "text": {
         "de": "Bis zu :count KI-Anfragen. Grenze: :limit pro Stapel. Themen mit vorhandener Arbeit werden übersprungen.",
@@ -5108,6 +5132,210 @@
         "it": "Pubblicare le bozze inglesi selezionate e tradurle nelle lingue scelte. Le traduzioni aggiornate, le bozze manuali esistenti e i candidati in attesa vengono ignorati. Ogni argomento e lingua utilizza una richiesta IA.",
         "nl": "Publiceer geselecteerde Engelse concepten en vertaal ze naar de gekozen talen. Actuele vertalingen, bestaande handmatige concepten en wachtende kandidaten worden overgeslagen. Elk onderwerp en elke taal gebruikt een AI-aanvraag.",
         "pt_BR": "Publicar os rascunhos em inglês selecionados e traduzi-los para os idiomas escolhidos. Traduções atualizadas, rascunhos manuais existentes e propostas pendentes são ignorados. Cada tópico e idioma utiliza uma solicitação de IA."
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "bulk.translation_result",
+      "text": {
+        "de": ":published Übersetzungen veröffentlicht; :skipped Sprachen übersprungen, weil sie fehlen, geändert oder bereits veröffentlicht sind oder einen manuellen Entwurf haben.",
+        "es": ":published traducciones publicadas; :skipped idiomas omitidos porque faltan, han cambiado, ya están publicados o tienen un borrador manual.",
+        "fr": ":published traductions publiées ; :skipped langues ignorées car elles sont absentes, ont changé, sont déjà publiées ou ont un brouillon manuel.",
+        "it": ":published traduzioni pubblicate; :skipped lingue saltate perché mancanti, modificate, già pubblicate o con una bozza manuale.",
+        "nl": ":published vertalingen gepubliceerd; :skipped talen overgeslagen omdat ze ontbreken, gewijzigd of al gepubliceerd zijn, of een handmatig concept hebben.",
+        "pt_BR": ":published traduções publicadas; :skipped idiomas ignorados por estarem ausentes, alterados, já publicados ou terem um rascunho manual."
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "list.changes",
+      "text": {
+        "de": "Unveröffentlichte Änderungen",
+        "es": "Cambios sin publicar",
+        "fr": "Modifications non publiées",
+        "it": "Modifiche non pubblicate",
+        "nl": "Niet-gepubliceerde wijzigingen",
+        "pt_BR": "Alterações não publicadas"
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "list.failed",
+      "text": {
+        "de": ":count fehlgeschlagen",
+        "es": ":count fallidas",
+        "fr": ":count en échec",
+        "it": ":count non riuscite",
+        "nl": ":count mislukt",
+        "pt_BR": ":count com falha"
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "list.publication",
+      "text": {
+        "de": "Englische Veröffentlichung",
+        "es": "Publicación en inglés",
+        "fr": "Publication anglaise",
+        "it": "Pubblicazione inglese",
+        "nl": "Engelse publicatie",
+        "pt_BR": "Publicação em inglês"
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "list.published",
+      "text": {
+        "de": "Veröffentlicht",
+        "es": "Publicado",
+        "fr": "Publié",
+        "it": "Pubblicato",
+        "nl": "Gepubliceerd",
+        "pt_BR": "Publicado"
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "list.queue_summary",
+      "text": {
+        "de": ":queued Übersetzungen eingereiht · :running in Bearbeitung. Abgeschlossene Übersetzungen erscheinen in der Tabelle.",
+        "es": ":queued traducciones en cola · :running en curso. Las traducciones completadas aparecen en la tabla.",
+        "fr": ":queued traductions en attente · :running en cours. Les traductions terminées apparaissent dans le tableau.",
+        "it": ":queued traduzioni in coda · :running in corso. Le traduzioni completate appaiono nella tabella.",
+        "nl": ":queued vertalingen in de wachtrij · :running actief. Voltooide vertalingen verschijnen in de tabel.",
+        "pt_BR": ":queued traduções na fila · :running em andamento. As traduções concluídas aparecem na tabela."
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "list.queued",
+      "text": {
+        "de": ":count eingereiht",
+        "es": ":count en cola",
+        "fr": ":count en attente",
+        "it": ":count in coda",
+        "nl": ":count in wachtrij",
+        "pt_BR": ":count na fila"
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "list.running",
+      "text": {
+        "de": ":count in Bearbeitung",
+        "es": ":count en curso",
+        "fr": ":count en cours",
+        "it": ":count in corso",
+        "nl": ":count actief",
+        "pt_BR": ":count em andamento"
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "list.translation_summary",
+      "text": {
+        "de": ":current aktuell / :review zur Prüfung",
+        "es": ":current al día / :review por revisar",
+        "fr": ":current à jour / :review à relire",
+        "it": ":current aggiornate / :review da rivedere",
+        "nl": ":current actueel / :review te beoordelen",
+        "pt_BR": ":current atualizadas / :review para revisão"
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "list.unpublished",
+      "text": {
+        "de": "Nicht veröffentlicht",
+        "es": "Sin publicar",
+        "fr": "Non publié",
+        "it": "Non pubblicato",
+        "nl": "Niet gepubliceerd",
+        "pt_BR": "Não publicado"
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "list.worker_wait",
+      "text": {
+        "de": "Derzeit wird keine Übersetzung bearbeitet. Wenn Aufträge hier eingereiht bleiben, prüfen Sie den Forge-Worker für die Datenbankwarteschlange „:queue“.",
+        "es": "No hay ninguna traducción en curso. Si los trabajos siguen en cola, comprueba el proceso de Forge para la cola de base de datos «:queue».",
+        "fr": "Aucune traduction n’est en cours. Si les tâches restent en attente, vérifiez le worker Forge pour la file de base de données « :queue ».",
+        "it": "Nessuna traduzione è attualmente in corso. Se i processi restano in coda, controlla il worker Forge per la coda del database «:queue».",
+        "nl": "Er wordt momenteel geen vertaling uitgevoerd. Als taken in de wachtrij blijven staan, controleer dan de Forge-worker voor de databasewachtrij ‘:queue’.",
+        "pt_BR": "Nenhuma tradução está em andamento. Se as tarefas permanecerem na fila, verifique o worker do Forge para a fila de banco de dados “:queue”."
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "translation.no_candidates",
+      "text": {
+        "de": "In dieser Auswahl wurden keine abgeschlossenen Kandidaten gefunden.",
+        "es": "No se encontraron propuestas completadas en esta selección.",
+        "fr": "Aucune traduction proposée terminée n’a été trouvée dans cette sélection.",
+        "it": "Nessuna proposta completata trovata in questa selezione.",
+        "nl": "Er zijn geen voltooide voorstellen gevonden in deze selectie.",
+        "pt_BR": "Nenhuma proposta concluída foi encontrada nesta seleção."
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "translation.not_reported",
+      "text": {
+        "de": "Nicht gemeldet",
+        "es": "No indicado",
+        "fr": "Non indiqué",
+        "it": "Non indicato",
+        "nl": "Niet gemeld",
+        "pt_BR": "Não informado"
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "translation.reported",
+      "text": {
+        "de": "Vom Anbieter gemeldetes Modell: :model",
+        "es": "Modelo indicado por el proveedor: :model",
+        "fr": "Modèle indiqué par le fournisseur : :model",
+        "it": "Modello indicato dal fornitore: :model",
+        "nl": "Door de aanbieder gemeld model: :model",
+        "pt_BR": "Modelo informado pelo provedor: :model"
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "translation.requested",
+      "text": {
+        "de": "Angefragtes Modell: :model · Denkaufwand: :effort",
+        "es": "Modelo solicitado: :model · Esfuerzo de razonamiento: :effort",
+        "fr": "Modèle demandé : :model · Effort de raisonnement : :effort",
+        "it": "Modello richiesto: :model · Livello di ragionamento: :effort",
+        "nl": "Aangevraagd model: :model · Redeneerinspanning: :effort",
+        "pt_BR": "Modelo solicitado: :model · Esforço de raciocínio: :effort"
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "translation.saved_models",
+      "text": {
+        "de": "Für gespeicherte Kandidaten dieser Themen angefragte Modelle: :models.",
+        "es": "Modelos solicitados para las propuestas guardadas de estos temas: :models.",
+        "fr": "Modèles demandés pour les traductions proposées de ces sujets : :models.",
+        "it": "Modelli richiesti per le proposte salvate di questi argomenti: :models.",
+        "nl": "Aangevraagde modellen voor opgeslagen voorstellen bij deze onderwerpen: :models.",
+        "pt_BR": "Modelos solicitados para as propostas salvas destes tópicos: :models."
+      }
+    },
+    {
+      "group": "help_admin",
+      "key": "translation.saved_reported",
+      "text": {
+        "de": "Vom Anbieter gemeldete Modelle gespeicherter Kandidaten: :models.",
+        "es": "Modelos indicados por el proveedor en las propuestas guardadas: :models.",
+        "fr": "Modèles indiqués par le fournisseur pour les traductions proposées : :models.",
+        "it": "Modelli indicati dal fornitore per le proposte salvate: :models.",
+        "nl": "Door de aanbieder gemelde modellen voor opgeslagen voorstellen: :models.",
+        "pt_BR": "Modelos informados pelo provedor nas propostas salvas: :models."
       }
     },
     {

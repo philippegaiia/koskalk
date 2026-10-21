@@ -9,7 +9,7 @@ return [
         'dashboard' => ['*'],
         'editing' => ['*'],
         'formula_documents' => ['*'],
-        'help_admin' => ['bulk.*'],
+        'help_admin' => ['bulk.*', 'list.*', 'translation.*'],
         'ingredients' => ['*'],
         'lot_numbering' => ['*'],
         'media' => ['*'],

@@ -28,11 +28,11 @@ final class HelpTopicBulkOperations
 
     /**
      * @param  Collection<int, HelpTopic>  $topics
-     * @return list<array{topic_id: int, revision_id: int|null, lock_version: int, locale_locks: array<string, int>}>
+     * @return list<array{topic_id: int, revision_id: int|null, lock_version: int, locale_locks: array<string, int>, candidate_requests: array<string, int>}>
      */
     public function snapshot(Collection $topics): array
     {
-        $byTopic = HelpTopicLocale::query()->whereIn('help_topic_id', $topics->pluck('id'))->get()->groupBy('help_topic_id');
+        $byTopic = HelpTopicLocale::query()->whereIn('help_topic_id', $topics->pluck('id'))->with('latestTranslationRequest:id,help_topic_locale_id,status')->get()->groupBy('help_topic_id');
 
         return $topics->map(function (HelpTopic $topic) use ($byTopic): array {
             $locales = $byTopic->get($topic->id, collect());
@@ -43,12 +43,13 @@ final class HelpTopicBulkOperations
                 'revision_id' => $english?->latest_revision_id,
                 'lock_version' => $english?->lock_version ?? 0,
                 'locale_locks' => $locales->pluck('lock_version', 'locale')->all(),
+                'candidate_requests' => $locales->filter(fn ($locale): bool => $locale->latestTranslationRequest?->status === Status::Completed)->mapWithKeys(fn ($locale): array => [$locale->locale => $locale->latestTranslationRequest->id])->all(),
             ];
         })->values()->all();
     }
 
     /**
-     * @param  list<array{topic_id: int, revision_id: int|null, lock_version: int, locale_locks: array<string, int>}>  $selection
+     * @param  list<array{topic_id: int, revision_id: int|null, lock_version: int, locale_locks: array<string, int>, candidate_requests?: array<string, int>}>  $selection
      * @param  list<string>  $targetLocales
      * @return array{published: int, queued: int, skipped: int}
      */

@@ -1,7 +1,30 @@
 <?php
 
 return [
+    'list' => [
+        'publication' => 'English publication',
+        'unpublished' => 'Unpublished',
+        'published' => 'Published',
+        'changes' => 'Unpublished changes',
+        'translation_summary' => ':current current / :review need review',
+        'queued' => ':count queued',
+        'running' => ':count running',
+        'failed' => ':count failed',
+        'queue_summary' => ':queued translations queued · :running running. Completed translations appear in the table.',
+        'worker_wait' => 'No translation is currently running. If queued jobs remain here, check the Forge worker for the database queue “:queue”.',
+    ],
+    'translation' => [
+        'requested' => 'Requested model: :model · Reasoning effort: :effort',
+        'reported' => 'Provider-reported model: :model',
+        'not_reported' => 'Not reported',
+        'saved_reported' => 'Provider-reported models in saved candidates: :models.',
+        'saved_models' => 'Models requested for saved candidates across these topics: :models.',
+        'no_candidates' => 'No completed candidates were found in this selection.',
+    ],
     'bulk' => [
+        'publish_translations' => 'Publish completed translations',
+        'publish_translations_description' => 'Publish the saved translation candidates for the selected topics and languages without individual review or new AI requests. Changed sources, manual drafts and current translations are skipped.',
+        'translation_result' => ':published translations published; :skipped languages skipped because they are missing, changed, already published or have a manual draft.',
         'publish' => 'Publish selected English drafts',
         'publish_description' => 'Publish the selected saved English drafts. Changed, archived or missing drafts are skipped. Unselected topics stay unchanged. Existing translations fall back to English until translated against the new English version.',
         'translate' => 'Translate selected topics',

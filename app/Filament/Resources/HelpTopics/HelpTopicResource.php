@@ -41,7 +41,7 @@ class HelpTopicResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->with(['locales.latestRevision', 'locales.publishedRevision']);
+        return parent::getEloquentQuery()->with(['locales.latestRevision', 'locales.publishedRevision', 'locales.latestTranslationRequest:id,help_topic_locale_id,status,error_code,error_message,created_at,source_english_revision_id']);
     }
 
     public static function form(Schema $schema): Schema

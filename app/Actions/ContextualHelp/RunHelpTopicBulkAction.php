@@ -12,7 +12,7 @@ final class RunHelpTopicBulkAction
     public function __construct(private readonly HelpTopicBulkOperations $service) {}
 
     /**
-     * @param  list<array{topic_id: int, revision_id: int|null, lock_version: int, locale_locks: array<string, int>}>  $selection
+     * @param  list<array{topic_id: int, revision_id: int|null, lock_version: int, locale_locks: array<string, int>, candidate_requests?: array<string, int>}>  $selection
      * @param  list<string>  $targetLocales
      * @return array{published: int, queued: int, skipped: int}
      */

@@ -148,7 +148,7 @@ class EditHelpTopic extends EditRecord
                     $this->translationLockVersions = $this->getRecord()->locales()->pluck('lock_version', 'locale')->all();
                     $schema->fill(['locales' => $this->editingLocale === 'en' ? [] : [$this->editingLocale]]);
                 })
-                ->modalDescription('Translate the published English revision into reviewable candidates. Existing drafts and published help stay in place. Each language uses an AI request.')
+                ->modalDescription(fn (): string => 'Translate the published English revision into reviewable candidates. Existing drafts and published help stay in place. Each language uses an AI request. '.__('help_admin.translation.requested', ['model' => config('contextual-help.translation.model') ?: config('ingredient-enrichment.openai.localization_model'), 'effort' => config('contextual-help.translation.reasoning_effort') ?: config('ingredient-enrichment.openai.localization_reasoning_effort')]))
                 ->action(function (array $data): void {
                     Gate::authorize('translate', $this->getRecord());
                     if (! $this->translationSourceId || $this->publishedEnglish()?->published_revision_id !== $this->translationSourceId) {

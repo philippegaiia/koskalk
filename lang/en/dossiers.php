@@ -27,6 +27,11 @@ return [
         'supplier_not_in_workspace' => 'This supplier does not belong to this workspace.',
         'ingredient_not_usable' => 'This ingredient is not available in this workspace.',
     ],
+    'evidence' => [
+        'needs_qualification' => 'Attach this supplier document to a qualified supplier of this workspace.',
+        'needs_products' => 'Attach this document to at least one product of this workspace.',
+        'not_replaceable' => 'Only a current document of this workspace can be replaced.',
+    ],
     'validation' => [
         'siret' => 'The SIRET must be 14 digits.',
         'numbering_prefix' => 'Use 1 to 8 capital letters or digits.',

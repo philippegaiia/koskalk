@@ -1,12 +1,15 @@
 <?php
 
 use App\Enums\AssessmentReviewState;
+use App\Enums\EvidenceType;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
+use App\Models\DossierEvidenceItem;
 use App\Models\Ingredient;
 use App\Models\IngredientComponent;
 use App\Models\IngredientSubstanceEntry;
 use App\Models\Substance;
+use App\Models\SupplierQualification;
 use App\Models\ToxicologyProfile;
 use App\Models\User;
 use App\Models\Workspace;
@@ -217,5 +220,68 @@ it('refuses constituent coverage of a blend while a component ingredient is not 
         $this->fail('Expected a validation error.');
     } catch (ValidationException $exception) {
         expect($exception->errors())->toHaveKey('covers_constituents');
+    }
+});
+
+it('accepts a validated supplier safety assessment as whole-material evidence for a private ingredient', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    WorkspaceDossierGrant::factory()->for($workspace)->create();
+    $perfume = privateIngredientFor($workspace);
+    $qualification = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $perfume->id]);
+    $assessment = DossierEvidenceItem::factory()->create([
+        'supplier_qualification_id' => $qualification->id,
+        'type' => EvidenceType::SupplierSafetyAssessment,
+    ]);
+
+    $coverage = app(MaterialAssessmentCoverageService::class)->review($owner, $perfume, [
+        'review_state' => 'sufficient',
+        'covers_whole_material' => true,
+        'supporting_evidence_item_ids' => [$assessment->id],
+    ]);
+
+    expect($coverage->supportingEvidenceItems->pluck('id')->all())->toBe([$assessment->id]);
+});
+
+it('refuses supplier evidence that is not a valid assessment for this ingredient', function (string $case): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    WorkspaceDossierGrant::factory()->for($workspace)->create();
+    $perfume = privateIngredientFor($workspace);
+    $qualification = SupplierQualification::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $case === 'other ingredient' ? privateIngredientFor($workspace)->id : $perfume->id,
+        'status' => $case === 'not validated' ? 'en_evaluation' : 'valide',
+    ]);
+    $item = DossierEvidenceItem::factory()->create([
+        'supplier_qualification_id' => $qualification->id,
+        'type' => $case === 'wrong type' ? EvidenceType::TechnicalSheet : EvidenceType::SupplierSafetyAssessment,
+        'retired_at' => $case === 'retired' ? now() : null,
+    ]);
+
+    try {
+        app(MaterialAssessmentCoverageService::class)->review($owner, $perfume, [
+            'review_state' => 'sufficient',
+            'covers_whole_material' => true,
+            'supporting_evidence_item_ids' => [$item->id],
+        ]);
+        $this->fail('Expected a validation error.');
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toHaveKey('supporting_evidence_item_ids');
+    }
+})->with(['wrong type', 'not validated', 'retired', 'other ingredient']);
+
+it('does not accept supplier evidence for platform coverage', function (): void {
+    $item = DossierEvidenceItem::factory()->create(['type' => EvidenceType::SupplierSafetyAssessment]);
+
+    try {
+        app(MaterialAssessmentCoverageService::class)->review(User::factory()->admin()->create(), Ingredient::factory()->create(), [
+            'review_state' => 'sufficient',
+            'covers_whole_material' => true,
+            'supporting_evidence_item_ids' => [$item->id],
+        ]);
+        $this->fail('Expected a validation error.');
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toHaveKey('supporting_evidence_item_ids');
     }
 });

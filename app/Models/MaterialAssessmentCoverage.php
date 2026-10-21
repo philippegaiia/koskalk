@@ -44,6 +44,14 @@ class MaterialAssessmentCoverage extends Model
     }
 
     /**
+     * Supplier safety assessments the reviewer relied on (private ingredients only).
+     */
+    public function supportingEvidenceItems(): BelongsToMany
+    {
+        return $this->belongsToMany(DossierEvidenceItem::class, 'material_assessment_coverage_evidence');
+    }
+
+    /**
      * The exact profile versions the reviewer relied on.
      */
     public function supportingProfiles(): BelongsToMany

@@ -9,6 +9,7 @@ use App\Models\WorkspaceDossierSetting;
 use App\Services\Dossiers\DossierSettingsService;
 use App\Services\WorkspaceAuthorization;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Facades\DB;
 
 class SaveDossierSettings
 {
@@ -18,14 +19,24 @@ class SaveDossierSettings
     ) {}
 
     /**
+     * Access is checked after the workspace row is locked, so a membership removal or role change that holds
+     * the same lock cannot be overtaken by this write.
+     *
      * @param  array<string, mixed>  $data  Already validated input.
      */
     public function handle(User $actor, Workspace $workspace, array $data): WorkspaceDossierSetting
     {
-        if (! $this->authorization->canEditModule($actor, $workspace->id, WorkspaceModule::ProductDossiers)) {
-            throw new AuthorizationException;
-        }
+        return DB::transaction(function () use ($actor, $workspace, $data): WorkspaceDossierSetting {
+            Workspace::withoutGlobalScopes()->whereKey($workspace->id)->lockForUpdate()->firstOrFail();
 
-        return $this->settings->save($workspace, $data);
+            $freshActor = $actor->fresh();
+
+            if (! $freshActor instanceof User
+                || ! $this->authorization->canEditModule($freshActor, $workspace->id, WorkspaceModule::ProductDossiers)) {
+                throw new AuthorizationException;
+            }
+
+            return $this->settings->save($workspace, $data);
+        }, attempts: 5);
     }
 }

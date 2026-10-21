@@ -2,6 +2,7 @@
 
 use App\Actions\Dossiers\SaveDossierSettings;
 use App\Enums\WorkspaceMemberRole;
+use App\Enums\WorkspaceModule;
 use App\Livewire\Dashboard\DossierSettings;
 use App\Livewire\Dashboard\SettingsIndex;
 use App\Models\Plan;
@@ -11,8 +12,11 @@ use App\Models\Workspace;
 use App\Models\WorkspaceDossierGrant;
 use App\Models\WorkspaceDossierSetting;
 use App\Models\WorkspaceMember;
+use App\Services\WorkspaceAuthorization;
+use App\Services\WorkspaceCapabilities;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
@@ -123,4 +127,32 @@ it('shows the dossier tab in settings only when the module is available', functi
     WorkspaceDossierGrant::factory()->for($workspace)->create();
 
     Livewire::test(SettingsIndex::class)->assertSee(__('dossiers.settings.tab'));
+});
+
+it('checks module access inside the transaction that holds the workspace lock', function (): void {
+    $owner = User::factory()->create();
+    $workspace = Workspace::factory()->for($owner, 'owner')->create();
+    WorkspaceDossierGrant::factory()->for($workspace)->create();
+    $levels = [];
+
+    app()->instance(WorkspaceAuthorization::class, new class(app(WorkspaceCapabilities::class), $levels) extends WorkspaceAuthorization
+    {
+        /** @param  list<int>  $levels */
+        public function __construct(WorkspaceCapabilities $capabilities, private array &$levels)
+        {
+            parent::__construct($capabilities);
+        }
+
+        public function canEditModule(User $user, int $workspaceId, WorkspaceModule $module): bool
+        {
+            $this->levels[] = DB::transactionLevel();
+
+            return parent::canEditModule($user, $workspaceId, $module);
+        }
+    });
+
+    app(SaveDossierSettings::class)->handle($owner, $workspace, dossierSettingsPayload());
+
+    expect($levels)->not->toBeEmpty()
+        ->and(max($levels))->toBeGreaterThan(DB::transactionLevel());
 });

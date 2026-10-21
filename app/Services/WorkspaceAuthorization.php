@@ -73,6 +73,8 @@ class WorkspaceAuthorization
                 ->where('workspace_id', $workspaceId)
                 ->whereIn('status', [ProductionBenchEntitlementStatus::Active, ProductionBenchEntitlementStatus::Cancelled])
                 ->exists(),
+            WorkspaceModule::ProductDossiers => $this->canManage($user, $workspaceId)
+                && $this->capabilities->allowsProductDossiers($workspaceId),
         };
     }
 
@@ -84,6 +86,8 @@ class WorkspaceAuthorization
                 ->where('workspace_id', $workspaceId)
                 ->where('status', ProductionBenchEntitlementStatus::Active)
                 ->exists(),
+            WorkspaceModule::ProductDossiers => $this->canManage($user, $workspaceId)
+                && $this->capabilities->allowsProductDossiers($workspaceId),
         };
     }
 }

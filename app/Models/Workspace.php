@@ -102,6 +102,11 @@ class Workspace extends Model
         return $this->hasOne(WorkspaceProductionEntitlement::class);
     }
 
+    public function dossierGrant(): HasOne
+    {
+        return $this->hasOne(WorkspaceDossierGrant::class);
+    }
+
     public function productionRunNumberSetting(): HasOne
     {
         return $this->hasOne(ProductionRunNumberSetting::class);

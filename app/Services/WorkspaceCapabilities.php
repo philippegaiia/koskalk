@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\ProductionBenchEntitlementStatus;
 use App\Models\Workspace;
+use App\Models\WorkspaceDossierGrant;
 use App\Models\WorkspaceProductionEntitlement;
 use Illuminate\Support\Facades\DB;
 
@@ -14,6 +15,14 @@ class WorkspaceCapabilities
     public function allowsCollaboration(Workspace $workspace): bool
     {
         return $this->entitlementService->planForWorkspace($workspace)?->allows_collaboration === true;
+    }
+
+    public function allowsProductDossiers(int $workspaceId): bool
+    {
+        return WorkspaceDossierGrant::query()
+            ->where('workspace_id', $workspaceId)
+            ->active()
+            ->exists();
     }
 
     public function canProvisionProductionBench(Workspace $workspace): bool

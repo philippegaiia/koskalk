@@ -64,6 +64,7 @@ return [
         'revision_due_on' => 'Revision or expiry date',
         'file' => 'File (PDF, JPEG or PNG, up to 10 MB)',
         'upload' => 'Upload document',
+        'save_document' => 'Save document',
         'replace' => 'Replace',
         'download' => 'Download',
         'fingerprint' => 'Fingerprint',

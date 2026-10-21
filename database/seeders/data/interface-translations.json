@@ -2040,6 +2040,18 @@
     },
     {
       "group": "dossiers",
+      "key": "raw_materials.save_document",
+      "text": {
+        "de": "Dokument speichern",
+        "es": "Guardar documento",
+        "fr": "Enregistrer le document",
+        "it": "Salva documento",
+        "nl": "Document opslaan",
+        "pt_BR": "Salvar documento"
+      }
+    },
+    {
+      "group": "dossiers",
       "key": "raw_materials.save_qualification",
       "text": {
         "de": "Speichern",

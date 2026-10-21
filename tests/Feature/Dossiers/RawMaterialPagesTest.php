@@ -171,3 +171,15 @@ it('keeps constituent notes and the completeness flag when data is opened and sa
     expect($item->constituents()->sole()->note)->toBe('Batch 2023-14 chromatography')
         ->and($item->refresh()->constituents_complete)->toBeTrue();
 });
+
+it('labels the document form submit differently from the button that opens it', function (): void {
+    [$owner, $workspace] = rawMaterialWorkspace();
+    $olive = ingredientUsedIn($workspace, 'Olive');
+    $qualification = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $olive->id]);
+    $this->actingAs($owner);
+
+    Livewire::test(RawMaterialDetail::class, ['ingredient' => $olive->public_id])
+        ->assertDontSee(__('dossiers.raw_materials.save_document'))
+        ->call('startUpload', $qualification->id)
+        ->assertSee(__('dossiers.raw_materials.save_document'));
+});

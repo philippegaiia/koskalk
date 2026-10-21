@@ -85,7 +85,7 @@
                     <form wire:submit="uploadEvidence" class="space-y-4 border-t border-[var(--color-line)] pt-4">
                         {{ $this->evidenceForm }}
                         <div class="flex justify-end">
-                            <button type="submit" class="sk-btn sk-btn-primary min-h-11 py-2.5">{{ __('dossiers.raw_materials.upload') }}</button>
+                            <button type="submit" class="sk-btn sk-btn-primary min-h-11 py-2.5">{{ __('dossiers.raw_materials.save_document') }}</button>
                         </div>
                     </form>
                 @endif

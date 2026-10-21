@@ -78,3 +78,26 @@ it('refuses to edit a published parameter version', function (): void {
 
     expect(fn () => $policy->update(['mos_threshold' => '50']))->toThrow(LogicException::class);
 });
+
+it('retries when a concurrent publication takes the same version number', function (): void {
+    $productType = ProductType::factory()->create();
+    $raced = false;
+
+    ExposurePreset::creating(function (ExposurePreset $preset) use (&$raced, $productType): void {
+        if ($raced) {
+            return;
+        }
+
+        $raced = true;
+        ExposurePreset::factory()->create(['product_type_id' => $productType->id, 'version' => $preset->version]);
+    });
+
+    $published = app(AppendOnlyVersionPublisher::class)->publish(ExposurePreset::class, [
+        ...ExposurePreset::factory()->raw(['product_type_id' => $productType->id]),
+    ], User::factory()->admin()->create());
+
+    // The simulated competitor shares the publisher's transaction, so it rolls back with the failed attempt;
+    // what matters is that the collision is retried instead of escaping as an error.
+    expect($raced)->toBeTrue()
+        ->and(ExposurePreset::query()->where('product_type_id', $productType->id)->current()->sole()->is($published))->toBeTrue();
+});

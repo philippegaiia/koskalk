@@ -4,11 +4,14 @@ namespace App\Services\Dossiers;
 
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class AppendOnlyVersionPublisher
 {
+    private const MAX_ATTEMPTS = 3;
+
     /**
      * Publish a new current version in the series identified by the model's scope columns.
      *
@@ -30,6 +33,29 @@ class AppendOnlyVersionPublisher
             }
         }
 
+        // Locking existing rows cannot serialize the first version of a series, so a concurrent publisher may take
+        // the same version number; the unique (series, version) index rejects it and the publication is retried.
+        for ($attempt = 1; ; $attempt++) {
+            try {
+                return $this->publishOnce($modelClass, $attributes, $scope, $publisher);
+            } catch (UniqueConstraintViolationException $exception) {
+                if ($attempt >= self::MAX_ATTEMPTS) {
+                    throw $exception;
+                }
+            }
+        }
+    }
+
+    /**
+     * @template TModel of Model
+     *
+     * @param  class-string<TModel>  $modelClass
+     * @param  array<string, mixed>  $attributes
+     * @param  array<string, mixed>  $scope
+     * @return TModel
+     */
+    private function publishOnce(string $modelClass, array $attributes, array $scope, ?User $publisher): Model
+    {
         return DB::transaction(function () use ($modelClass, $attributes, $scope, $publisher): Model {
             $existing = $modelClass::query()->where($scope)->lockForUpdate()->get();
 

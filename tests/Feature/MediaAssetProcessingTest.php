@@ -20,6 +20,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Spatie\Image\Enums\ImageDriver as ImageDriverEnum;
 
 use function Pest\Laravel\mock;
 
@@ -459,6 +460,27 @@ it('fails pdfs above the configured page limit while retaining the pending sourc
         ->and($asset->failure_reason)->toContain('50 pages')
         ->and(Storage::disk('local')->exists($pendingPath))->toBeTrue();
 });
+
+it('applies the EXIF orientation of a photo exactly once', function (ImageDriverEnum $driver) {
+    Queue::fake();
+    [$user, $workspace] = mediaProcessingWorkspace(limit: 2);
+    $path = tempnam(sys_get_temp_dir(), 'media-exif-upload-');
+    // Stored 400 × 200 with orientation 6 (rotate 90° clockwise): a portrait photo of 200 × 400.
+    file_put_contents($path, jpegWithExifOrientation(400, 200, 6));
+    $asset = app(MediaAssetUploadService::class)->start(
+        $user,
+        $workspace,
+        new UploadedFile($path, 'portrait.jpg', 'image/jpeg', null, true),
+    );
+
+    (new NormalizeMediaAssetJob($asset->id, $asset->processing_token))
+        ->handle(new MediaAssetProcessingService(app(PdfPreviewRenderer::class), $driver));
+
+    expect(mediaImageDimensions($asset->refresh()->getFirstMedia('master')->getPath()))->toBe([200, 400]);
+})->with([
+    'gd' => [ImageDriverEnum::Gd],
+    'imagick' => [ImageDriverEnum::Imagick],
+]);
 
 it('upscales small source images to every required square conversion size', function () {
     Queue::fake();

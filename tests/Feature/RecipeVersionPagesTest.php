@@ -280,7 +280,8 @@ it('renders an existing formula workbench within its initial query budget', func
     DB::disableQueryLog();
 
     // Includes snapshot locks/revisions and fresh update/create policy checks; render reuses the mount result.
-    expect($queries->count() - $helpQueries->count())->toBeLessThanOrEqual(57)
+    // +1 for the sidebar's DIP module grant lookup (role checks only run for granted workspaces).
+    expect($queries->count() - $helpQueries->count())->toBeLessThanOrEqual(58)
         ->and($helpQueries->count())->toBeLessThanOrEqual(2);
 });
 

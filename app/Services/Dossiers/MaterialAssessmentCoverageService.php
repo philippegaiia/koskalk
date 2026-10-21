@@ -35,8 +35,9 @@ class MaterialAssessmentCoverageService
 
     /**
      * Records a review. Each supporting reference stores the toxicological profile version current at review time.
-     * Sufficient coverage always rests on at least one profiled reference; constituent coverage additionally needs
-     * every tracked constituent among those references. (Supplier assessments as evidence arrive with phase 2.)
+     * Sufficient coverage rests on profiled references, or — for a blend recorded through component ingredients —
+     * on each component's own sufficient coverage. Constituent coverage needs every tracked substance or allergen
+     * among the references and every component sufficiently covered. (Supplier assessments arrive with phase 2.)
      *
      * @param  array{review_state: string, insufficient_reason?: string|null, covers_whole_material?: bool,
      *               covers_constituents?: bool, supporting_substance_ids?: list<int>, note?: string|null}  $review
@@ -136,10 +137,13 @@ class MaterialAssessmentCoverageService
         }
 
         $unprofiled = $substanceIds->diff($currentProfiles->keys());
+        $hasComponentEvidence = $coversConstituents && $this->hasOnlyCoveredComponents($material);
 
         if ($unprofiled->isNotEmpty()) {
             $errors['supporting_substance_ids'] = 'Every profile reference needs a current toxicological profile.';
-        } elseif (($coversWhole || $state === AssessmentReviewState::Sufficient) && $substanceIds->isEmpty()) {
+        } elseif ($coversWhole && $substanceIds->isEmpty()) {
+            $errors['supporting_substance_ids'] = 'Whole-material coverage needs at least one profile reference.';
+        } elseif ($state === AssessmentReviewState::Sufficient && $substanceIds->isEmpty() && ! $hasComponentEvidence) {
             $errors['supporting_substance_ids'] = 'Sufficient coverage needs at least one profile reference.';
         }
 
@@ -168,9 +172,22 @@ class MaterialAssessmentCoverageService
         $substanceConstituents = $material->substanceEntries()->pluck('substance_id');
         $allergenIds = $material->allergenEntries()->pluck('allergen_id');
         $allergenSubstances = Substance::query()->whereIn('allergen_id', $allergenIds)->pluck('id', 'allergen_id');
+        $components = $material->components()->get(['component_ingredient_id']);
 
-        if ($substanceConstituents->isEmpty() && $allergenIds->isEmpty()) {
+        if ($substanceConstituents->isEmpty() && $allergenIds->isEmpty() && $components->isEmpty()) {
             return 'No constituents are tracked for this material.';
+        }
+
+        if ($components->contains(fn ($component): bool => $component->component_ingredient_id === null)) {
+            return 'A component has no ingredient record to assess.';
+        }
+
+        $uncoveredComponents = $components->filter(fn ($component): bool => $this->stateFor(
+            Ingredient::query()->findOrFail($component->component_ingredient_id),
+        ) !== AssessmentReviewState::Sufficient);
+
+        if ($uncoveredComponents->isNotEmpty()) {
+            return 'Every component ingredient needs sufficient coverage of its own.';
         }
 
         if ($allergenIds->diff($allergenSubstances->keys())->isNotEmpty()) {
@@ -182,5 +199,18 @@ class MaterialAssessmentCoverageService
         return $uncovered->isEmpty()
             ? null
             : 'Every tracked constituent must be among the profile references.';
+    }
+
+    /**
+     * A blend recorded only through component ingredients, each with sufficient coverage of its own:
+     * the components' coverage is the evidence, so no direct profile reference is needed.
+     */
+    private function hasOnlyCoveredComponents(Ingredient|Substance $material): bool
+    {
+        return $material instanceof Ingredient
+            && $material->components()->exists()
+            && ! $material->substanceEntries()->exists()
+            && ! $material->allergenEntries()->exists()
+            && $this->constituentCoverageError($material, collect()) === null;
     }
 }

@@ -4,6 +4,7 @@ use App\Enums\AssessmentReviewState;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
 use App\Models\Ingredient;
+use App\Models\IngredientComponent;
 use App\Models\IngredientSubstanceEntry;
 use App\Models\Substance;
 use App\Models\ToxicologyProfile;
@@ -183,3 +184,38 @@ it('refuses private-ingredient review without the module grant', function (): vo
 
     app(MaterialAssessmentCoverageService::class)->review($owner, privateIngredientFor($workspace), ['review_state' => 'not_reviewed']);
 })->throws(AuthorizationException::class);
+
+it('accepts constituent coverage of a blend whose component ingredients are sufficiently covered', function (): void {
+    $admin = User::factory()->admin()->create();
+    $component = Ingredient::factory()->create();
+    app(MaterialAssessmentCoverageService::class)->review($admin, $component, [
+        'review_state' => 'sufficient',
+        'covers_whole_material' => true,
+        'supporting_substance_ids' => [profiledSubstance('Lavandula hybrida oil')->id],
+    ]);
+    $blend = Ingredient::factory()->create();
+    IngredientComponent::factory()->create(['ingredient_id' => $blend->id, 'component_ingredient_id' => $component->id]);
+
+    $coverage = app(MaterialAssessmentCoverageService::class)->review($admin, $blend, [
+        'review_state' => 'sufficient',
+        'covers_constituents' => true,
+        'supporting_substance_ids' => [],
+    ]);
+
+    expect($coverage->review_state)->toBe(AssessmentReviewState::Sufficient);
+});
+
+it('refuses constituent coverage of a blend while a component ingredient is not sufficiently covered', function (): void {
+    $blend = Ingredient::factory()->create();
+    IngredientComponent::factory()->create(['ingredient_id' => $blend->id, 'component_ingredient_id' => Ingredient::factory()->create()->id]);
+
+    try {
+        app(MaterialAssessmentCoverageService::class)->review(User::factory()->admin()->create(), $blend, [
+            'review_state' => 'sufficient',
+            'covers_constituents' => true,
+        ]);
+        $this->fail('Expected a validation error.');
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toHaveKey('covers_constituents');
+    }
+});

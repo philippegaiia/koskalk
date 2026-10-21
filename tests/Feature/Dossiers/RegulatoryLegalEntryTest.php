@@ -70,3 +70,10 @@ it('freezes a reviewed entry except for its end date', function (): void {
         ->and(fn () => $entry->update(['max_concentration_percent' => '1']))->toThrow(LogicException::class)
         ->and(fn () => $entry->delete())->toThrow(LogicException::class);
 });
+
+it('rejects an update from a stale draft model once the stored entry is reviewed', function (): void {
+    $stale = RegulatoryLegalEntry::factory()->create(['substance_description' => 'Original']);
+    RegulatoryLegalEntry::query()->whereKey($stale->getKey())->update(['review_status' => LegalEntryReviewStatus::Reviewed->value]);
+
+    expect(fn () => $stale->update(['substance_description' => 'Changed']))->toThrow(LogicException::class);
+});

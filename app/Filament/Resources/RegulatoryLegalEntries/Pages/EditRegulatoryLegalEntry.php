@@ -11,14 +11,19 @@ class EditRegulatoryLegalEntry extends EditRecord
 {
     protected static string $resource = RegulatoryLegalEntryResource::class;
 
+    /**
+     * Field and substance-link writes share one transaction, so the row lock taken in beforeSave
+     * serializes them against a concurrent review.
+     */
+    protected ?bool $hasDatabaseTransactions = true;
+
     protected function beforeSave(): void
     {
-        /** @var RegulatoryLegalEntry $record */
-        $record = $this->getRecord();
+        $stored = RegulatoryLegalEntry::query()->whereKey($this->getRecord()->getKey())->lockForUpdate()->firstOrFail();
 
-        if ($record->isReviewed()) {
+        if ($stored->isReviewed()) {
             Notification::make()->title('Reviewed entries are frozen')->body('End this entry and add a new one for an amendment.')->warning()->send();
-            $this->halt();
+            $this->halt(shouldRollbackDatabaseTransaction: true);
         }
     }
 

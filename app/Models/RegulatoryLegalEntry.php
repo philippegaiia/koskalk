@@ -33,7 +33,9 @@ class RegulatoryLegalEntry extends Model
     protected static function booted(): void
     {
         static::updating(function (RegulatoryLegalEntry $entry): void {
-            if ($entry->getOriginal('review_status') !== LegalEntryReviewStatus::Reviewed) {
+            $storedStatus = static::query()->whereKey($entry->getKey())->toBase()->value('review_status');
+
+            if ($storedStatus !== LegalEntryReviewStatus::Reviewed->value) {
                 return;
             }
 

@@ -63,3 +63,22 @@ it('sets the end date of a reviewed entry', function (): void {
 
     expect($entry->refresh()->effective_until->toDateString())->toBe('2027-06-30');
 });
+
+it('does not save a stale draft edit after the entry was reviewed elsewhere', function (): void {
+    $original = Substance::factory()->create();
+    $entry = RegulatoryLegalEntry::factory()->create(['substance_description' => 'Original']);
+    $entry->substances()->attach($original);
+
+    $component = Livewire::test(EditRegulatoryLegalEntry::class, ['record' => $entry->getKey()])
+        ->fillForm(['substance_description' => 'Changed', 'substances' => [Substance::factory()->create()->id]]);
+
+    RegulatoryLegalEntry::query()->whereKey($entry->getKey())->update([
+        'review_status' => LegalEntryReviewStatus::Reviewed->value,
+        'reviewed_at' => now(),
+    ]);
+
+    $component->call('save');
+
+    expect($entry->refresh()->substance_description)->toBe('Original')
+        ->and($entry->substances->pluck('id')->all())->toBe([$original->id]);
+});

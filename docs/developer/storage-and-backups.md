@@ -12,6 +12,7 @@ Final media and database backups are stored outside the VPS in three isolated R2
 | --- | --- | --- | --- |
 | Platform catalog media | `r2_public` | `soapkraft-public-media` | `https://media.soapkraft.com` |
 | Recipe and user-owned media | `r2_private` | `soapkraft-private-media` | Disabled |
+| DIP evidence (supplier documents, test reports) | `r2_private` (via `MEDIA_ASSET_DISK`) | `soapkraft-private-media`, prefix `dossier-evidence/` | Disabled |
 | PostgreSQL backups | `r2_backups` | `soapkraft-backups` | Disabled |
 
 Each bucket uses separate least-privilege R2 credentials. The private media and backup disks intentionally have no configured public URL. R2 credentials live only in Forge's environment management and may be restricted to the application server's IP address.
@@ -29,6 +30,7 @@ RECIPE_MEDIA_DISK=r2_private
 USER_MEDIA_DISK=r2_private
 MEDIA_ASSET_DISK=r2_private
 MEDIA_ASSET_PENDING_DISK=local
+# DOSSIER_EVIDENCE_DISK is normally left unset: it falls back to MEDIA_ASSET_DISK.
 
 R2_REGION=auto
 R2_ENDPOINT=https://<cloudflare-account-id>.r2.cloudflarestorage.com
@@ -135,6 +137,16 @@ Application services delete the previous object when an image is replaced and de
 
 Deletion must continue to go through `MediaStorage` and the relevant authoring or mutation service. Do not delete database rows directly and assume their R2 objects will disappear automatically.
 
+## DIP evidence storage
+
+Product Information File (DIP) evidence — supplier technical sheets, safety data sheets, IFRA certificates, allergen declarations, test reports — is stored outside the media library on purpose:
+
+- **Disk:** `config('dossiers.evidence_disk')`, from `DOSSIER_EVIDENCE_DISK`, falling back to `MEDIA_ASSET_DISK`, then `RECIPE_MEDIA_DISK`, then `local`. In production this resolves to `r2_private`, so evidence lives off the VPS in the private media bucket under `dossier-evidence/{workspace-id}/{uuid}.{ext}`. Never leave production evidence on `local`: the server's private storage has no off-server backup.
+- **Each file row records its own disk.** Changing the configured disk affects new uploads only; existing files keep downloading from where they were written.
+- **Not the media library:** no image processing, no media allowances, no deletion. Files are kept as received (up to 10 MB, PDF/JPEG/PNG) with a SHA-256 fingerprint; a newer document *replaces* or *withdraws* an older one, never deletes it. DIP records must be retained for ten years after the product's last batch is placed on the market.
+- **Access:** only through the authenticated `dossiers.evidence.download` route, which checks the workspace's DIP module access. Never link R2 objects directly.
+- **Protection still to add:** the media bucket has no second copy or retention lock (see *Backup boundaries*). Before relying on the DIP module in production, enable R2 object versioning or a retention rule covering `dossier-evidence/`.
+
 ## Database backup flow
 
 The `backup:database` Artisan command calls `PostgreSqlBackupService` and performs these steps:
@@ -223,7 +235,7 @@ For a real recovery, restore into a new empty database, validate it, then switch
 
 ## Backup boundaries and remaining work
 
-The automated backup covers PostgreSQL only. It does not copy either media bucket.
+The automated backup covers PostgreSQL only. It does not copy either media bucket, which also holds DIP evidence under `dossier-evidence/`.
 
 R2 provides off-VPS object storage, but the current setup does not provide a second independent copy of private media against accidental application deletion, compromised R2 credentials, or account loss. Before storing irreplaceable customer media, add a separate media-copy strategy or an appropriate Cloudflare retention protection and test recovery.
 

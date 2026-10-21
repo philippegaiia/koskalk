@@ -141,3 +141,33 @@ it('does not treat a technical sheet with only microbiology data as an impurity 
     expect($row['suppliers_without_declaration'])->toBe([$microOnly->id])
         ->and($row['needs_justification'])->toBeTrue();
 });
+
+it('does not treat a complete technical sheet that states no impurity values as an impurity declaration', function (): void {
+    $workspace = Workspace::factory()->create();
+    $olive = Ingredient::factory()->create();
+    $declared = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $olive->id]);
+    $silentSheet = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $olive->id]);
+    $sheet = DossierEvidenceItem::factory()->create(['supplier_qualification_id' => $declared->id, 'type' => EvidenceType::TechnicalSheet, 'constituents_complete' => true]);
+    DossierEvidenceConstituent::factory()->create([
+        'dossier_evidence_item_id' => $sheet->id, 'kind' => ConstituentKind::Impurity,
+        'allergen_id' => null, 'substance_id' => Substance::factory(), 'max_value' => '0', 'unit' => 'ppm',
+    ]);
+    DossierEvidenceItem::factory()->create(['supplier_qualification_id' => $silentSheet->id, 'type' => EvidenceType::TechnicalSheet, 'constituents_complete' => true]);
+
+    $row = app(SupplierConstituentResolver::class)->impurities($workspace, $olive)->sole();
+
+    expect($row['max_value'])->toBe('0.000000')
+        ->and($row['suppliers_without_declaration'])->toBe([$silentSheet->id])
+        ->and($row['needs_justification'])->toBeTrue();
+});
+
+it('treats a complete allergen declaration with no allergens as declaring none', function (): void {
+    $workspace = Workspace::factory()->create();
+    $olive = Ingredient::factory()->create();
+    $none = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $olive->id]);
+    $declared = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $olive->id]);
+    DossierEvidenceItem::factory()->create(['supplier_qualification_id' => $none->id, 'type' => EvidenceType::AllergenDeclaration, 'constituents_complete' => true]);
+    declaredAllergen($declared, Allergen::factory()->create(), '0.01');
+
+    expect(app(SupplierConstituentResolver::class)->allergens($workspace, $olive)->sole()['suppliers_without_declaration'])->toBe([]);
+});

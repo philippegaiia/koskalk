@@ -25,7 +25,8 @@ class SupplierConstituentResolver
      */
     public function allergens(Workspace $workspace, Ingredient $ingredient): Collection
     {
-        $silent = $this->qualificationsWithout($workspace, $ingredient, EvidenceType::AllergenDeclaration);
+        // A complete allergen declaration listing nothing does declare "no allergens".
+        $silent = $this->qualificationsWithout($workspace, $ingredient, null, EvidenceType::AllergenDeclaration);
         $declared = $this->worstCase($workspace, $ingredient, ConstituentKind::Allergen, 'allergen_id', $silent);
 
         $fallback = IngredientAllergenEntry::query()
@@ -51,7 +52,8 @@ class SupplierConstituentResolver
      */
     public function impurities(Workspace $workspace, Ingredient $ingredient): Collection
     {
-        $silent = $this->qualificationsWithout($workspace, $ingredient, EvidenceType::TechnicalSheet, EvidenceType::CertificateOfAnalysis);
+        // A technical sheet that does not mention impurities is not a declaration of none: an explicit value is required.
+        $silent = $this->qualificationsWithout($workspace, $ingredient, ConstituentKind::Impurity, EvidenceType::TechnicalSheet, EvidenceType::CertificateOfAnalysis);
 
         return $this->worstCase($workspace, $ingredient, ConstituentKind::Impurity, 'substance_id', $silent)->values();
     }
@@ -89,11 +91,12 @@ class SupplierConstituentResolver
 
     /**
      * Validated qualifications of the ingredient with no current, fully transcribed document of the given types.
-     * A document that is merely uploaded, or transcribed only in part, does not clear the flag.
+     * A document that is merely uploaded, or transcribed only in part, does not clear the flag. When $requiredKind
+     * is given, the document must also state at least one explicit value of that kind (zero included).
      *
      * @return list<int>
      */
-    private function qualificationsWithout(Workspace $workspace, Ingredient $ingredient, EvidenceType ...$types): array
+    private function qualificationsWithout(Workspace $workspace, Ingredient $ingredient, ?ConstituentKind $requiredKind, EvidenceType ...$types): array
     {
         return SupplierQualification::query()
             ->where('workspace_id', $workspace->id)
@@ -102,7 +105,8 @@ class SupplierConstituentResolver
             ->whereDoesntHave('evidenceItems', fn ($query) => $query
                 ->whereNull('retired_at')
                 ->where('constituents_complete', true)
-                ->whereIn('type', array_map(fn (EvidenceType $type): string => $type->value, $types)))
+                ->whereIn('type', array_map(fn (EvidenceType $type): string => $type->value, $types))
+                ->when($requiredKind !== null, fn ($items) => $items->whereHas('constituents', fn ($rows) => $rows->where('kind', $requiredKind->value))))
             ->orderBy('id')
             ->pluck('id')
             ->all();

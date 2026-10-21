@@ -10,12 +10,15 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * IFRA QRA2 method parameters for one IFRA category under one amendment.
- * Whether the QRA2 factor multiplies Cmax is an explicit, recorded decision (spec §11 open question 1).
+ * A reviewed QRA2 preset: the IFRA method constants for one QRA2 category under one amendment
+ * (IFRA guidance Table 6: SAF, CEL and the aggregate exposure adjustment factor).
+ * The adjustment factor is part of the method and is applied; not applying it is an expert deviation
+ * that must state its reason.
  */
 #[Fillable([
-    'ifra_product_category_id', 'ifra_amendment_id', 'version', 'is_current', 'superseded_at',
+    'ifra_product_category_id', 'ifra_amendment_id', 'preset_label', 'version', 'is_current', 'superseded_at',
     'sensitization_assessment_factor', 'consumer_exposure_level_mg_cm2_day', 'qra2_factor', 'applies_qra2_factor',
+    'factor_deviation_reason',
     'source_reference', 'change_note', 'published_by_user_id',
 ])]
 class Qra2Parameter extends Model
@@ -35,10 +38,12 @@ class Qra2Parameter extends Model
         return [
             'ifra_product_category_id' => ['required', 'integer', 'exists:ifra_product_categories,id'],
             'ifra_amendment_id' => ['required', 'integer', 'exists:ifra_amendments,id'],
+            'preset_label' => ['required', 'string', 'max:255'],
             'sensitization_assessment_factor' => ['required', 'numeric', 'gt:0'],
             'consumer_exposure_level_mg_cm2_day' => ['required', 'numeric', 'gt:0'],
+            'qra2_factor' => ['required', 'numeric', 'gt:0', 'lte:1'],
             'applies_qra2_factor' => ['required', 'boolean'],
-            'qra2_factor' => ['nullable', 'required_if_accepted:applies_qra2_factor', 'numeric', 'gt:0', 'lte:1'],
+            'factor_deviation_reason' => ['nullable', 'required_if_declined:applies_qra2_factor', 'string'],
             'source_reference' => ['required', 'string'],
         ];
     }

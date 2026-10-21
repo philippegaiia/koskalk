@@ -54,21 +54,42 @@ it('requires a source for an exposure preset', function (): void {
     expect(ExposurePreset::query()->count())->toBe(0);
 });
 
-it('publishes QRA2 parameters for a category and amendment', function (): void {
+it('publishes a QRA2 preset for a category and amendment', function (): void {
     Livewire::test(CreateQra2Parameter::class)
         ->fillForm([
+            'preset_label' => 'Bar soap — IFRA category 9 — amendment 51',
+            'ifra_product_category_id' => IfraProductCategory::factory()->create()->id,
+            'ifra_amendment_id' => IfraAmendment::factory()->create()->id,
+            'sensitization_assessment_factor' => '300',
+            'consumer_exposure_level_mg_cm2_day' => '0.2',
+            'qra2_factor' => '0.5',
+            'source_reference' => 'IFRA 51st Amendment — Guidance for the use of IFRA Standards, Table 6, p. 28',
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    expect(Qra2Parameter::query()->sole())
+        ->version->toBe(1)
+        ->applies_qra2_factor->toBeTrue();
+});
+
+it('asks for a reason when the adjustment factor is switched off', function (): void {
+    Livewire::test(CreateQra2Parameter::class)
+        ->fillForm([
+            'preset_label' => 'Bar soap — IFRA category 9 — amendment 51',
             'ifra_product_category_id' => IfraProductCategory::factory()->create()->id,
             'ifra_amendment_id' => IfraAmendment::factory()->create()->id,
             'sensitization_assessment_factor' => '300',
             'consumer_exposure_level_mg_cm2_day' => '0.2',
             'qra2_factor' => '0.5',
             'applies_qra2_factor' => false,
-            'source_reference' => 'IFRA 49th amendment guidance',
+            'factor_deviation_reason' => '',
+            'source_reference' => 'IFRA 51st guidance',
         ])
         ->call('create')
-        ->assertHasNoFormErrors();
+        ->assertHasFormErrors(['factor_deviation_reason']);
 
-    expect(Qra2Parameter::query()->sole()->version)->toBe(1);
+    expect(Qra2Parameter::query()->count())->toBe(0);
 });
 
 it('shows range errors on the policy form', function (): void {

@@ -20,13 +20,15 @@ class Qra2ParameterFactory extends Factory
         return [
             'ifra_product_category_id' => IfraProductCategory::factory(),
             'ifra_amendment_id' => IfraAmendment::factory(),
+            'preset_label' => 'Bar soap — IFRA category 9 — amendment 51',
             'version' => 1,
             'is_current' => true,
             'superseded_at' => null,
             'sensitization_assessment_factor' => '300',
             'consumer_exposure_level_mg_cm2_day' => '0.2',
-            'qra2_factor' => null,
-            'applies_qra2_factor' => false,
+            'qra2_factor' => '0.5',
+            'applies_qra2_factor' => true,
+            'factor_deviation_reason' => null,
             'source_reference' => 'Factory QRA2 parameters',
         ];
     }

@@ -57,20 +57,21 @@ it('versions exposure presets per product type', function (): void {
         ->and($balmPreset->application_sites)->toBe(['body', 'face']);
 });
 
-it('versions QRA2 parameters per IFRA category and amendment and keeps the factor decision explicit', function (): void {
+it('versions QRA2 presets per IFRA category and amendment and applies the adjustment factor by default', function (): void {
     $admin = User::factory()->admin()->create();
     $parameters = app(AppendOnlyVersionPublisher::class)->publish(Qra2Parameter::class, [
         'ifra_product_category_id' => IfraProductCategory::factory()->create()->id,
         'ifra_amendment_id' => IfraAmendment::factory()->create()->id,
+        'preset_label' => 'Bar soap — IFRA category 9 — amendment 51',
         'sensitization_assessment_factor' => '300',
         'consumer_exposure_level_mg_cm2_day' => '0.2',
         'qra2_factor' => '0.5',
-        'applies_qra2_factor' => false,
-        'source_reference' => 'IFRA 49th amendment guidance',
+        'applies_qra2_factor' => true,
+        'source_reference' => 'IFRA 51st Amendment — Guidance for the use of IFRA Standards, Table 6, p. 28',
     ], $admin);
 
     expect($parameters->version)->toBe(1)
-        ->and($parameters->applies_qra2_factor)->toBeFalse()
+        ->and($parameters->applies_qra2_factor)->toBeTrue()
         ->and($parameters->qra2_factor)->toBe('0.5000');
 });
 
@@ -131,6 +132,22 @@ it('rejects out-of-range scientific inputs before publication', function (string
     'no application site' => [ExposurePreset::class, ['application_sites' => []], 'application_sites'],
     'zero SAF' => [Qra2Parameter::class, ['sensitization_assessment_factor' => '0'], 'sensitization_assessment_factor'],
     'zero CEL' => [Qra2Parameter::class, ['consumer_exposure_level_mg_cm2_day' => '0'], 'consumer_exposure_level_mg_cm2_day'],
-    'factor applied without a factor' => [Qra2Parameter::class, ['applies_qra2_factor' => true, 'qra2_factor' => null], 'qra2_factor'],
+    'no adjustment factor' => [Qra2Parameter::class, ['qra2_factor' => null], 'qra2_factor'],
+    'no preset name' => [Qra2Parameter::class, ['preset_label' => ''], 'preset_label'],
+    'factor not applied without a reason' => [Qra2Parameter::class, ['applies_qra2_factor' => false, 'factor_deviation_reason' => null], 'factor_deviation_reason'],
     'factor above 1' => [Qra2Parameter::class, ['qra2_factor' => '2'], 'qra2_factor'],
 ]);
+
+it('records an expert deviation from the adjustment factor with its reason', function (): void {
+    $deviation = app(AppendOnlyVersionPublisher::class)->publish(Qra2Parameter::class, [
+        ...Qra2Parameter::factory()->raw([
+            'ifra_product_category_id' => IfraProductCategory::factory()->create()->id,
+            'ifra_amendment_id' => IfraAmendment::factory()->create()->id,
+        ]),
+        'applies_qra2_factor' => false,
+        'factor_deviation_reason' => 'Assessor J. Doe: single-product use scenario documented in the CPSR.',
+    ], User::factory()->admin()->create());
+
+    expect($deviation->applies_qra2_factor)->toBeFalse()
+        ->and($deviation->factor_deviation_reason)->toContain('Assessor');
+});

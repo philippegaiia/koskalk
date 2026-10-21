@@ -32,7 +32,7 @@ it('starts a share from the sharing page using a selected Saved Product', functi
 
     Livewire::test(FormulaSharesIndex::class)->assertSee('Share a formula')
         ->callAction('shareFormula', data: ['product' => $fixture['recipe']->public_id])
-        ->assertHasNoActionErrors()->assertRedirect(route('formula-shares.create', $fixture['recipe']));
+        ->assertHasNoFormErrors()->assertRedirect(route('formula-shares.create', $fixture['recipe']));
     expect(FormulaShare::query()->count())->toBe(1);
 });
 
@@ -47,7 +47,7 @@ it('rejects foreign, unsaved and manufactured Products in the sharing picker', f
 
     Livewire::test(FormulaSharesIndex::class)
         ->callAction('shareFormula', data: ['product' => $fixture['recipe']->public_id])
-        ->assertHasActionErrors(['product']);
+        ->assertHasFormErrors(['product']);
     expect(FormulaShare::query()->count())->toBe(1);
 })->with(['foreign', 'unsaved', 'manufactured']);
 

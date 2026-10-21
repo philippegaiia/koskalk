@@ -86,7 +86,7 @@ it('retains a scheduling modal baseline through a newer register refresh', funct
         ->and($action->hasFormWrapper())->toBeFalse()->and($button->canSubmitForm())->toBeFalse();
     DB::table('production_runs')->where('id', $run->id)->update(['edit_revision' => 1]);
     $page->call('refreshProductionRegister')->assertSet('schedulingRevision', 0)
-        ->setActionData(['planned_for' => today()->toDateString()])->callMountedAction()->assertHasActionErrors();
+        ->fillForm(['planned_for' => today()->toDateString()])->callMountedAction()->assertHasFormErrors();
     expect($run->fresh()->status)->toBe(ProductionRunStatus::Draft)->and($run->fresh()->edit_revision)->toBe(1);
     $this->assertDatabaseCount('production_edit_leases', 0);
 });

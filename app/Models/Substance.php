@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'name',
@@ -42,6 +43,16 @@ class Substance extends Model
     public function regulatoryRegimeRules(): HasMany
     {
         return $this->hasMany(RegulatoryRegimeSubstanceRule::class);
+    }
+
+    public function toxicologyProfiles(): HasMany
+    {
+        return $this->hasMany(ToxicologyProfile::class);
+    }
+
+    public function currentToxicologyProfile(): HasOne
+    {
+        return $this->hasOne(ToxicologyProfile::class)->where('is_current', true);
     }
 
     protected function casts(): array

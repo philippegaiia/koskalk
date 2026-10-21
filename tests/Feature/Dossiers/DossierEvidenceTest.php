@@ -10,11 +10,13 @@ use App\Models\SupplierQualification;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceDossierGrant;
+use App\Services\Dossiers\DossierEvidenceStorage;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
+use Spatie\Image\Enums\ImageDriver as ImageDriverEnum;
 
 uses(RefreshDatabase::class);
 
@@ -173,3 +175,88 @@ it('rejects images above the upload limit', function (): void {
         'supplier_qualification_id' => $qualification->id,
     ]);
 })->throws(ValidationException::class);
+
+/**
+ * A real upload whose type is detected from its contents, not from its name.
+ */
+function evidenceUpload(string $contents, string $clientName): UploadedFile
+{
+    $path = tempnam(sys_get_temp_dir(), 'dip-test-');
+    file_put_contents($path, $contents);
+
+    return new UploadedFile($path, $clientName, null, null, true);
+}
+
+/**
+ * A landscape JPEG (width × height as stored) carrying an EXIF orientation tag.
+ */
+function jpegWithExifOrientation(int $width, int $height, int $orientation): string
+{
+    $image = imagecreatetruecolor($width, $height);
+    ob_start();
+    imagejpeg($image);
+    $jpeg = (string) ob_get_clean();
+
+    // Big-endian TIFF header, one IFD entry: Orientation (0x0112), SHORT, count 1.
+    $tiff = 'MM'.pack('n', 42).pack('N', 8).pack('n', 1)
+        .pack('n', 0x0112).pack('n', 3).pack('N', 1).pack('n', $orientation).pack('n', 0)
+        .pack('N', 0);
+    $app1 = "Exif\0\0".$tiff;
+
+    return substr($jpeg, 0, 2)."\xFF\xE1".pack('n', strlen($app1) + 2).$app1.substr($jpeg, 2);
+}
+
+function pngBytes(int $width, int $height): string
+{
+    ob_start();
+    imagepng(imagecreatetruecolor($width, $height));
+
+    return (string) ob_get_clean();
+}
+
+it('classifies uploads by their contents and rejects a mismatched extension', function (string $contents, string $name): void {
+    [$owner, $workspace, $qualification] = evidenceWorkspace();
+
+    app(StoreDossierEvidence::class)->handle($owner, $workspace, evidenceUpload($contents, $name), [
+        'type' => 'technical_sheet',
+        'supplier_qualification_id' => $qualification->id,
+    ]);
+})->with([
+    'png named .pdf' => [fn () => pngBytes(300, 150), 'scan.pdf'],
+    'pdf named .png' => ['%PDF-1.4 technical sheet', 'scan.png'],
+])->throws(ValidationException::class);
+
+it('accepts a PDF and an image whose extension matches their contents', function (): void {
+    [$owner, $workspace, $qualification] = evidenceWorkspace();
+
+    $pdf = app(StoreDossierEvidence::class)->handle($owner, $workspace, evidenceUpload('%PDF-1.4 technical sheet', 'FT.PDF'), [
+        'type' => 'technical_sheet',
+        'supplier_qualification_id' => $qualification->id,
+    ]);
+    $jpeg = app(StoreDossierEvidence::class)->handle($owner, $workspace, evidenceUpload(jpegWithExifOrientation(40, 20, 1), 'scan.jpeg'), [
+        'type' => 'ifra_certificate',
+        'supplier_qualification_id' => $qualification->id,
+    ]);
+
+    expect($pdf->file->storage_processing)->toBe('as_received')
+        ->and($pdf->file->mime_type)->toBe('application/pdf')
+        ->and($jpeg->file->storage_processing)->toBe('compressed_webp');
+});
+
+it('applies the EXIF orientation of a photographed document exactly once', function (ImageDriverEnum $driver): void {
+    [$owner, $workspace, $qualification] = evidenceWorkspace();
+    app()->instance(DossierEvidenceStorage::class, new DossierEvidenceStorage($driver));
+
+    // Stored 400 × 200 with orientation 6 (rotate 90° clockwise): a portrait page of 200 × 400.
+    $item = app(StoreDossierEvidence::class)->handle($owner, $workspace, evidenceUpload(jpegWithExifOrientation(400, 200, 6), 'IFRA.jpg'), [
+        'type' => 'ifra_certificate',
+        'supplier_qualification_id' => $qualification->id,
+    ]);
+
+    [$width, $height] = getimagesizefromstring(Storage::disk(config('dossiers.evidence_disk'))->get($item->file->path));
+
+    expect([$width, $height])->toBe([200, 400]);
+})->with([
+    'gd' => [ImageDriverEnum::Gd],
+    'imagick' => [ImageDriverEnum::Imagick],
+]);

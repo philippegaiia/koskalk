@@ -1164,6 +1164,18 @@
     },
     {
       "group": "dossiers",
+      "key": "evidence.type_mismatch",
+      "text": {
+        "de": "Der Dateiname passt nicht zum Inhalt. Laden Sie eine PDF-, JPEG-, PNG- oder WebP-Datei mit ihrer echten Endung hoch.",
+        "es": "El nombre del archivo no corresponde a su contenido. Suba un archivo PDF, JPEG, PNG o WebP con su extensión real.",
+        "fr": "Le nom du fichier ne correspond pas à son contenu. Déposez un fichier PDF, JPEG, PNG ou WebP avec sa véritable extension.",
+        "it": "Il nome del file non corrisponde al contenuto. Carica un file PDF, JPEG, PNG o WebP con la sua estensione reale.",
+        "nl": "De bestandsnaam komt niet overeen met de inhoud. Upload een PDF-, JPEG-, PNG- of WebP-bestand met de echte extensie.",
+        "pt_BR": "O nome do arquivo não corresponde ao conteúdo. Envie um arquivo PDF, JPEG, PNG ou WebP com a extensão real."
+      }
+    },
+    {
+      "group": "dossiers",
       "key": "evidence.unknown_facts_for_type",
       "text": {
         "de": "Dieser Dokumenttyp enthält diese Angabe nicht.",

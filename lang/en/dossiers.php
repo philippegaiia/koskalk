@@ -39,6 +39,7 @@ return [
         'unknown_facts_for_type' => 'This document type does not carry that information.',
         'percent_above_100' => 'A percentage cannot exceed 100.',
         'image_unreadable' => 'This image could not be read. Try exporting it as JPEG, PNG or PDF.',
+        'type_mismatch' => 'The file name does not match its contents. Upload a PDF, JPEG, PNG or WebP file with its real extension.',
     ],
     'raw_materials' => [
         'title' => 'Raw materials',

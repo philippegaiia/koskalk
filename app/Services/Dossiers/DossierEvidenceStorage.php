@@ -12,11 +12,31 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use RuntimeException;
 use Spatie\Image\Enums\Fit;
+use Spatie\Image\Enums\ImageDriver as ImageDriverEnum;
 use Spatie\Image\Image;
 use Throwable;
 
 class DossierEvidenceStorage
 {
+    /**
+     * @param  ImageDriverEnum|null  $imageDriver  null lets spatie/image choose (Imagick when installed, else GD)
+     */
+    public function __construct(private readonly ?ImageDriverEnum $imageDriver = null) {}
+
+    /**
+     * Detected content type → extensions a matching file may carry. Anything else is refused.
+     */
+    private const ACCEPTED_TYPES = [
+        'application/pdf' => ['pdf'],
+        'image/jpeg' => ['jpg', 'jpeg'],
+        'image/png' => ['png'],
+        'image/webp' => ['webp'],
+    ];
+
+    /**
+     * The file is classified by its detected contents, never by its name: the name's extension must agree with the
+     * contents, and the size limit follows the detected kind.
+     */
     public function assertAcceptable(UploadedFile $file): void
     {
         $maxKb = $this->isPdf($file) ? config('dossiers.evidence_pdf_max_kb') : config('dossiers.evidence_image_upload_max_kb');
@@ -24,6 +44,12 @@ class DossierEvidenceStorage
         Validator::make(['file' => $file], [
             'file' => ['required', 'file', 'max:'.$maxKb, 'mimes:'.implode(',', config('dossiers.evidence_mimes'))],
         ])->validate();
+
+        $extensions = self::ACCEPTED_TYPES[$this->detectedType($file)] ?? [];
+
+        if (! in_array(Str::lower($file->getClientOriginalExtension()), $extensions, true)) {
+            throw ValidationException::withMessages(['file' => __('dossiers.evidence.type_mismatch')]);
+        }
     }
 
     /**
@@ -36,7 +62,7 @@ class DossierEvidenceStorage
         $received = (string) file_get_contents($file->getRealPath());
         $compress = ! $this->isPdf($file);
         $contents = $compress ? $this->compressedWebp($file) : $received;
-        $extension = $compress ? 'webp' : Str::lower($file->getClientOriginalExtension() ?: (string) $file->extension());
+        $extension = $compress ? 'webp' : 'pdf';
         $path = config('dossiers.evidence_directory').'/'.$workspace->id.'/'.Str::uuid().'.'.$extension;
 
         if (! Storage::disk($disk)->put($path, $contents)) {
@@ -48,7 +74,7 @@ class DossierEvidenceStorage
             'disk' => $disk,
             'path' => $path,
             'original_filename' => $file->getClientOriginalName(),
-            'mime_type' => $compress ? 'image/webp' : (string) ($file->getMimeType() ?: 'application/octet-stream'),
+            'mime_type' => $compress ? 'image/webp' : 'application/pdf',
             'size_bytes' => strlen($contents),
             'sha256' => hash('sha256', $contents),
             'storage_processing' => $compress ? 'compressed_webp' : 'as_received',
@@ -58,14 +84,19 @@ class DossierEvidenceStorage
         ]);
     }
 
+    private function detectedType(UploadedFile $file): string
+    {
+        return Str::lower((string) $file->getMimeType());
+    }
+
     private function isPdf(UploadedFile $file): bool
     {
-        return Str::lower((string) $file->guessExtension()) === 'pdf'
-            || Str::lower($file->getClientOriginalExtension()) === 'pdf';
+        return $this->detectedType($file) === 'application/pdf';
     }
 
     /**
-     * Same recipe as the media pipeline: honour EXIF orientation, fit within the max edge, encode WebP.
+     * Fit within the max edge and encode WebP. Both drivers apply the EXIF orientation while loading, so it must not be
+     * applied again here (a second pass under GD turns a portrait scan sideways).
      */
     private function compressedWebp(UploadedFile $file): string
     {
@@ -74,8 +105,11 @@ class DossierEvidenceStorage
         $edge = (int) config('dossiers.evidence_image_max_edge');
 
         try {
-            Image::load($file->getRealPath())
-                ->orientation()
+            $image = $this->imageDriver
+                ? Image::useImageDriver($this->imageDriver)->loadFile($file->getRealPath())
+                : Image::load($file->getRealPath());
+
+            $image
                 ->fit(Fit::Max, $edge, $edge)
                 ->format('webp')
                 ->quality((int) config('dossiers.evidence_image_quality'))

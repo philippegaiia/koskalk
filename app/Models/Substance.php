@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
@@ -48,6 +49,11 @@ class Substance extends Model
     public function toxicologyProfiles(): HasMany
     {
         return $this->hasMany(ToxicologyProfile::class);
+    }
+
+    public function legalEntries(): BelongsToMany
+    {
+        return $this->belongsToMany(RegulatoryLegalEntry::class, 'regulatory_legal_entry_substance');
     }
 
     public function currentToxicologyProfile(): HasOne

@@ -1,0 +1,104 @@
+<?php
+
+use App\Enums\ConstituentKind;
+use App\Enums\EvidenceType;
+use App\Models\Allergen;
+use App\Models\DossierEvidenceConstituent;
+use App\Models\DossierEvidenceItem;
+use App\Models\Ingredient;
+use App\Models\IngredientAllergenEntry;
+use App\Models\Substance;
+use App\Models\SupplierQualification;
+use App\Models\Workspace;
+use App\Services\Dossiers\SupplierConstituentResolver;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+
+uses(RefreshDatabase::class);
+
+function declaredAllergen(SupplierQualification $qualification, Allergen $allergen, string $value, bool $retired = false): DossierEvidenceItem
+{
+    $item = DossierEvidenceItem::factory()->create([
+        'supplier_qualification_id' => $qualification->id,
+        'type' => EvidenceType::AllergenDeclaration,
+        'retired_at' => $retired ? now() : null,
+    ]);
+    DossierEvidenceConstituent::factory()->create([
+        'dossier_evidence_item_id' => $item->id,
+        'kind' => ConstituentKind::Allergen,
+        'allergen_id' => $allergen->id,
+        'max_value' => $value,
+    ]);
+
+    return $item;
+}
+
+it('takes the worst case across validated suppliers and ignores retired documents and withdrawn suppliers', function (): void {
+    $workspace = Workspace::factory()->create();
+    $lavandin = Ingredient::factory()->create();
+    $linalool = Allergen::factory()->create();
+    $a = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $lavandin->id]);
+    $b = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $lavandin->id]);
+    $withdrawn = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $lavandin->id, 'status' => 'retire']);
+    declaredAllergen($a, $linalool, '30');
+    $worst = declaredAllergen($b, $linalool, '36');
+    declaredAllergen($b, $linalool, '50', retired: true);
+    declaredAllergen($withdrawn, $linalool, '80');
+
+    $row = app(SupplierConstituentResolver::class)->allergens($workspace, $lavandin)->sole();
+
+    expect($row['allergen_id'])->toBe($linalool->id)
+        ->and($row['max_value'])->toBe('36.000000')
+        ->and($row['source'])->toBe('supplier')
+        ->and($row['evidence_item_ids'])->toContain($worst->id)
+        ->and($row['suppliers_without_declaration'])->toBe([])
+        ->and($row['needs_justification'])->toBeFalse();
+});
+
+it('flags a validated supplier that has no allergen declaration', function (): void {
+    $workspace = Workspace::factory()->create();
+    $lavandin = Ingredient::factory()->create();
+    $declared = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $lavandin->id]);
+    $silent = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $lavandin->id]);
+    declaredAllergen($declared, Allergen::factory()->create(), '30');
+
+    $row = app(SupplierConstituentResolver::class)->allergens($workspace, $lavandin)->sole();
+
+    expect($row['suppliers_without_declaration'])->toBe([$silent->id])
+        ->and($row['needs_justification'])->toBeTrue();
+});
+
+it('falls back to the platform composition only where no supplier document gives a value, flagged', function (): void {
+    $workspace = Workspace::factory()->create();
+    $lavandin = Ingredient::factory()->create();
+    $linalool = Allergen::factory()->create();
+    $limonene = Allergen::factory()->create();
+    $qualification = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $lavandin->id]);
+    declaredAllergen($qualification, $linalool, '30');
+    IngredientAllergenEntry::factory()->create(['ingredient_id' => $lavandin->id, 'allergen_id' => $linalool->id, 'concentration_percent' => 45]);
+    IngredientAllergenEntry::factory()->create(['ingredient_id' => $lavandin->id, 'allergen_id' => $limonene->id, 'concentration_percent' => 0.5]);
+
+    $rows = app(SupplierConstituentResolver::class)->allergens($workspace, $lavandin)->keyBy('allergen_id');
+
+    expect($rows[$linalool->id]['source'])->toBe('supplier')
+        ->and($rows[$linalool->id]['max_value'])->toBe('30.000000')
+        ->and($rows[$limonene->id]['source'])->toBe('platform')
+        ->and($rows[$limonene->id]['max_value'])->toBe('0.500000')
+        ->and($rows[$limonene->id]['needs_justification'])->toBeTrue();
+});
+
+it('resolves impurities in ppm the same way', function (): void {
+    $workspace = Workspace::factory()->create();
+    $olive = Ingredient::factory()->create();
+    $qualification = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $olive->id]);
+    $sheet = DossierEvidenceItem::factory()->create(['supplier_qualification_id' => $qualification->id, 'type' => EvidenceType::TechnicalSheet]);
+    $lead = DossierEvidenceConstituent::factory()->create([
+        'dossier_evidence_item_id' => $sheet->id, 'kind' => ConstituentKind::Impurity,
+        'allergen_id' => null, 'substance_id' => Substance::factory(), 'max_value' => '0.1', 'unit' => 'ppm',
+    ]);
+
+    $row = app(SupplierConstituentResolver::class)->impurities($workspace, $olive)->sole();
+
+    expect($row['substance_id'])->toBe($lead->substance_id)
+        ->and($row['unit'])->toBe('ppm')
+        ->and($row['max_value'])->toBe('0.100000');
+});

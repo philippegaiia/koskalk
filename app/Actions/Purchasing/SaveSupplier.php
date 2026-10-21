@@ -6,7 +6,7 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\CurrencyCatalog;
-use App\Services\ProductionBenchAccess;
+use App\Services\SupplierDirectoryAccess;
 use Closure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -17,7 +17,7 @@ use Illuminate\Validation\ValidationException;
 class SaveSupplier
 {
     public function __construct(
-        private readonly ProductionBenchAccess $access,
+        private readonly SupplierDirectoryAccess $access,
         private readonly CurrencyCatalog $currencyCatalog,
     ) {}
 
@@ -30,11 +30,11 @@ class SaveSupplier
         array $attributes,
         ?Supplier $supplier = null,
     ): Supplier {
-        $this->access->assertWritable($actor, $workspace);
+        $this->access->assertCanManage($actor, $workspace);
 
         return DB::transaction(function () use ($actor, $attributes, $supplier, $workspace): Supplier {
             $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
-            $this->access->assertWritable($actor, $lockedWorkspace);
+            $this->access->assertCanManage($actor, $lockedWorkspace);
 
             $currentSupplier = $supplier instanceof Supplier
                 ? Supplier::query()

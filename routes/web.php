@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\BetaInviteAcceptanceController;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DossierEvidenceDownloadController;
 use App\Http\Controllers\FileExportController;
 use App\Http\Controllers\FormulaShareController;
 use App\Http\Controllers\HelpContentExportDownloadController;
@@ -107,6 +108,9 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get('/dashboard/media/{mediaAsset}/download', MediaAssetDownloadController::class)
         ->middleware('throttle:120,1')
         ->name('media.download');
+    Route::get('/dashboard/dossiers/evidence/{item}/download', DossierEvidenceDownloadController::class)
+        ->middleware('throttle:60,1')
+        ->name('dossiers.evidence.download');
     Route::get('/dashboard/media/{mediaAsset}/{conversion}', MediaAssetController::class)
         ->middleware('throttle:240,1')
         ->name('media.show');

@@ -33,6 +33,11 @@ return [
         'not_replaceable' => 'Only a current document of this workspace can be replaced.',
         'withdrawal_reason_required' => 'Say why this document is withdrawn.',
         'not_withdrawable' => 'Only a current document of this workspace can be withdrawn.',
+        'not_editable' => 'Only a current document of this workspace can be edited.',
+        'no_constituents_for_type' => 'This document type does not declare constituents.',
+        'no_use_limits_for_type' => 'This document type does not state use limits.',
+        'unknown_facts_for_type' => 'This document type does not carry that information.',
+        'percent_above_100' => 'A percentage cannot exceed 100.',
     ],
     'raw_materials' => [
         'title' => 'Raw materials',

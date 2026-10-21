@@ -1,8 +1,10 @@
 <?php
 
+use App\Enums\EvidenceType;
 use App\Livewire\Dossiers\QuickSupplierCreate;
 use App\Livewire\Dossiers\RawMaterialDetail;
 use App\Livewire\Dossiers\RawMaterialsIndex;
+use App\Models\Allergen;
 use App\Models\DossierEvidenceItem;
 use App\Models\Ingredient;
 use App\Models\Recipe;
@@ -109,4 +111,38 @@ it('shows the raw materials page and link only to workspaces with the DIP module
     $plain = User::factory()->create();
     Workspace::factory()->for($plain, 'owner')->create();
     $this->actingAs($plain)->get(route('dossiers.raw-materials'))->assertForbidden();
+});
+
+it('records an allergen declaration from the document data panel', function (): void {
+    [$owner, $workspace] = rawMaterialWorkspace();
+    $lavandin = ingredientUsedIn($workspace, 'Lavandin');
+    $qualification = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $lavandin->id]);
+    $item = DossierEvidenceItem::factory()->create(['supplier_qualification_id' => $qualification->id, 'type' => EvidenceType::AllergenDeclaration]);
+    $linalool = Allergen::factory()->create(['inci_name' => 'Linalool']);
+    $this->actingAs($owner);
+
+    Livewire::test(RawMaterialDetail::class, ['ingredient' => $lavandin->public_id])
+        ->call('startEditData', $item->id)
+        ->fillForm(['constituents' => [['kind' => 'allergen', 'allergen_id' => $linalool->id, 'max_value' => '35']]], 'evidenceDataForm')
+        ->call('saveEvidenceData')
+        ->assertHasNoFormErrors([], 'evidenceDataForm')
+        ->assertSee('Linalool');
+
+    expect($item->constituents()->sole()->max_value)->toBe('35.000000');
+});
+
+it('withdraws a document from the page with a reason', function (): void {
+    [$owner, $workspace] = rawMaterialWorkspace();
+    $olive = ingredientUsedIn($workspace, 'Olive');
+    $qualification = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $olive->id]);
+    $item = DossierEvidenceItem::factory()->create(['supplier_qualification_id' => $qualification->id]);
+    $this->actingAs($owner);
+
+    Livewire::test(RawMaterialDetail::class, ['ingredient' => $olive->public_id])
+        ->call('startWithdraw', $item->id)
+        ->set('withdrawReason', 'Uploaded by mistake')
+        ->call('withdrawEvidence')
+        ->assertHasNoErrors();
+
+    expect($item->refresh()->withdrawn_reason)->toBe('Uploaded by mistake');
 });

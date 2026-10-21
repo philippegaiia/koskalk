@@ -1080,6 +1080,42 @@
     },
     {
       "group": "dossiers",
+      "key": "evidence.no_constituents_for_type",
+      "text": {
+        "de": "Dieser Dokumenttyp gibt keine Bestandteile an.",
+        "es": "Este tipo de documento no declara componentes.",
+        "fr": "Ce type de document ne déclare pas de constituants.",
+        "it": "Questo tipo di documento non dichiara componenti.",
+        "nl": "Dit documenttype vermeldt geen bestanddelen.",
+        "pt_BR": "Este tipo de documento não declara constituintes."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence.no_use_limits_for_type",
+      "text": {
+        "de": "Dieser Dokumenttyp nennt keine Einsatzgrenzen.",
+        "es": "Este tipo de documento no indica límites de uso.",
+        "fr": "Ce type de document n’indique pas de limites d’utilisation.",
+        "it": "Questo tipo di documento non indica limiti d’uso.",
+        "nl": "Dit documenttype vermeldt geen gebruikslimieten.",
+        "pt_BR": "Este tipo de documento não indica limites de uso."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence.not_editable",
+      "text": {
+        "de": "Nur ein aktuelles Dokument dieses Arbeitsbereichs kann bearbeitet werden.",
+        "es": "Solo se puede editar un documento vigente de este espacio de trabajo.",
+        "fr": "Seul un document en vigueur de cet espace de travail peut être modifié.",
+        "it": "Solo un documento in vigore di questo spazio di lavoro può essere modificato.",
+        "nl": "Alleen een geldig document van deze werkruimte kan worden bewerkt.",
+        "pt_BR": "Apenas um documento vigente deste espaço de trabalho pode ser editado."
+      }
+    },
+    {
+      "group": "dossiers",
       "key": "evidence.not_replaceable",
       "text": {
         "de": "Nur ein aktuelles Dokument dieses Arbeitsbereichs kann ersetzt werden.",
@@ -1088,6 +1124,258 @@
         "it": "Solo un documento in vigore di questo spazio di lavoro può essere sostituito.",
         "nl": "Alleen een geldig document van deze werkruimte kan worden vervangen.",
         "pt_BR": "Apenas um documento vigente deste espaço de trabalho pode ser substituído."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence.not_withdrawable",
+      "text": {
+        "de": "Nur ein aktuelles Dokument dieses Arbeitsbereichs kann zurückgezogen werden.",
+        "es": "Solo se puede retirar un documento vigente de este espacio de trabajo.",
+        "fr": "Seul un document en vigueur de cet espace de travail peut être retiré.",
+        "it": "Solo un documento in vigore di questo spazio di lavoro può essere ritirato.",
+        "nl": "Alleen een geldig document van deze werkruimte kan worden ingetrokken.",
+        "pt_BR": "Apenas um documento vigente deste espaço de trabalho pode ser retirado."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence.percent_above_100",
+      "text": {
+        "de": "Ein Prozentsatz darf 100 nicht überschreiten.",
+        "es": "Un porcentaje no puede superar 100.",
+        "fr": "Un pourcentage ne peut pas dépasser 100.",
+        "it": "Una percentuale non può superare 100.",
+        "nl": "Een percentage kan niet hoger zijn dan 100.",
+        "pt_BR": "Uma porcentagem não pode exceder 100."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence.unknown_facts_for_type",
+      "text": {
+        "de": "Dieser Dokumenttyp enthält diese Angabe nicht.",
+        "es": "Este tipo de documento no contiene esa información.",
+        "fr": "Ce type de document ne porte pas cette information.",
+        "it": "Questo tipo di documento non contiene questa informazione.",
+        "nl": "Dit documenttype bevat die informatie niet.",
+        "pt_BR": "Este tipo de documento não contém essa informação."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence.withdrawal_reason_required",
+      "text": {
+        "de": "Geben Sie an, warum dieses Dokument zurückgezogen wird.",
+        "es": "Indique por qué se retira este documento.",
+        "fr": "Indiquez pourquoi ce document est retiré.",
+        "it": "Indica perché questo documento viene ritirato.",
+        "nl": "Geef aan waarom dit document wordt ingetrokken.",
+        "pt_BR": "Informe por que este documento é retirado."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.allergen",
+      "text": {
+        "de": "Allergen",
+        "es": "Alérgeno",
+        "fr": "Allergène",
+        "it": "Allergene",
+        "nl": "Allergeen",
+        "pt_BR": "Alergênico"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.constituents",
+      "text": {
+        "de": "Angegebene Gehalte",
+        "es": "Contenidos declarados",
+        "fr": "Contenus déclarés",
+        "it": "Contenuti dichiarati",
+        "nl": "Opgegeven gehaltes",
+        "pt_BR": "Teores declarados"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.edit",
+      "text": {
+        "de": "Daten",
+        "es": "Datos",
+        "fr": "Données",
+        "it": "Dati",
+        "nl": "Gegevens",
+        "pt_BR": "Dados"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.ifra_category",
+      "text": {
+        "de": "IFRA-Kategorie",
+        "es": "Categoría IFRA",
+        "fr": "Catégorie IFRA",
+        "it": "Categoria IFRA",
+        "nl": "IFRA-categorie",
+        "pt_BR": "Categoria IFRA"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.kind",
+      "text": {
+        "de": "Art",
+        "es": "Tipo",
+        "fr": "Nature",
+        "it": "Tipo",
+        "nl": "Soort",
+        "pt_BR": "Tipo"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.kinds.allergen",
+      "text": {
+        "de": "Allergen",
+        "es": "Alérgeno",
+        "fr": "Allergène",
+        "it": "Allergene",
+        "nl": "Allergeen",
+        "pt_BR": "Alergênico"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.kinds.impurity",
+      "text": {
+        "de": "Verunreinigung",
+        "es": "Impureza",
+        "fr": "Impureté",
+        "it": "Impurezza",
+        "nl": "Verontreiniging",
+        "pt_BR": "Impureza"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.kinds.restricted_substance",
+      "text": {
+        "de": "Eingeschränkter Stoff",
+        "es": "Sustancia restringida",
+        "fr": "Substance restreinte",
+        "it": "Sostanza soggetta a restrizioni",
+        "nl": "Beperkte stof",
+        "pt_BR": "Substância restrita"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.max_percent",
+      "text": {
+        "de": "Maximale Einsatzkonzentration",
+        "es": "Uso máximo",
+        "fr": "Utilisation maximale",
+        "it": "Uso massimo",
+        "nl": "Maximaal gebruik",
+        "pt_BR": "Uso máximo"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.max_value",
+      "text": {
+        "de": "Höchstgehalt",
+        "es": "Contenido máximo",
+        "fr": "Teneur maximale",
+        "it": "Contenuto massimo",
+        "nl": "Maximumgehalte",
+        "pt_BR": "Teor máximo"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.microbiology",
+      "text": {
+        "de": "Mikrobiologische Spezifikation",
+        "es": "Especificación microbiológica",
+        "fr": "Spécification microbiologique",
+        "it": "Specifica microbiologica",
+        "nl": "Microbiologische specificatie",
+        "pt_BR": "Especificação microbiológica"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.none",
+      "text": {
+        "de": "Keine Daten erfasst.",
+        "es": "No hay datos registrados.",
+        "fr": "Aucune donnée enregistrée.",
+        "it": "Nessun dato registrato.",
+        "nl": "Geen gegevens vastgelegd.",
+        "pt_BR": "Nenhum dado registrado."
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.peroxide_value",
+      "text": {
+        "de": "Peroxidzahl",
+        "es": "Índice de peróxido",
+        "fr": "Indice de peroxyde",
+        "it": "Numero di perossidi",
+        "nl": "Peroxidegetal",
+        "pt_BR": "Índice de peróxido"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.product_class",
+      "text": {
+        "de": "Produktklasse",
+        "es": "Clase de producto",
+        "fr": "Classe de produits",
+        "it": "Classe di prodotti",
+        "nl": "Productklasse",
+        "pt_BR": "Classe de produto"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.save",
+      "text": {
+        "de": "Daten speichern",
+        "es": "Guardar datos",
+        "fr": "Enregistrer les données",
+        "it": "Salva dati",
+        "nl": "Gegevens opslaan",
+        "pt_BR": "Salvar dados"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.substance",
+      "text": {
+        "de": "Stoff",
+        "es": "Sustancia",
+        "fr": "Substance",
+        "it": "Sostanza",
+        "nl": "Stof",
+        "pt_BR": "Substância"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.use_limits",
+      "text": {
+        "de": "Maximale Einsatzkonzentrationen",
+        "es": "Niveles máximos de uso",
+        "fr": "Niveaux d’utilisation maximaux",
+        "it": "Livelli massimi d’uso",
+        "nl": "Maximale gebruiksniveaus",
+        "pt_BR": "Níveis máximos de uso"
       }
     },
     {
@@ -1856,6 +2144,54 @@
         "it": "Fornitori convalidati",
         "nl": "Gevalideerde leveranciers",
         "pt_BR": "Fornecedores validados"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.withdraw",
+      "text": {
+        "de": "Zurückziehen",
+        "es": "Retirar",
+        "fr": "Retirer",
+        "it": "Ritira",
+        "nl": "Intrekken",
+        "pt_BR": "Retirar"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.withdraw_confirm",
+      "text": {
+        "de": "Dokument zurückziehen",
+        "es": "Retirar documento",
+        "fr": "Retirer le document",
+        "it": "Ritira documento",
+        "nl": "Document intrekken",
+        "pt_BR": "Retirar documento"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.withdraw_reason",
+      "text": {
+        "de": "Warum wird dieses Dokument zurückgezogen?",
+        "es": "¿Por qué se retira este documento?",
+        "fr": "Pourquoi ce document est-il retiré ?",
+        "it": "Perché questo documento viene ritirato?",
+        "nl": "Waarom wordt dit document ingetrokken?",
+        "pt_BR": "Por que este documento é retirado?"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "raw_materials.withdrawn",
+      "text": {
+        "de": "Dokument zurückgezogen.",
+        "es": "Documento retirado.",
+        "fr": "Document retiré.",
+        "it": "Documento ritirato.",
+        "nl": "Document ingetrokken.",
+        "pt_BR": "Documento retirado."
       }
     },
     {

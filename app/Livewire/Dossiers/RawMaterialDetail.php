@@ -3,14 +3,20 @@
 namespace App\Livewire\Dossiers;
 
 use App\Actions\Dossiers\ReplaceDossierEvidence;
+use App\Actions\Dossiers\SaveDossierEvidenceData;
 use App\Actions\Dossiers\SaveSupplierQualification;
 use App\Actions\Dossiers\StoreDossierEvidence;
+use App\Actions\Dossiers\WithdrawDossierEvidence;
+use App\Enums\ConstituentKind;
 use App\Enums\EvidenceLevel;
 use App\Enums\EvidenceType;
 use App\Enums\SupplierQualificationStatus;
 use App\Enums\WorkspaceModule;
+use App\Models\Allergen;
 use App\Models\DossierEvidenceItem;
+use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
+use App\Models\Substance;
 use App\Models\Supplier;
 use App\Models\SupplierQualification;
 use App\Models\User;
@@ -19,10 +25,13 @@ use App\Services\WorkspaceAuthorization;
 use Closure;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Concerns\RestrictsFileUploadsToSchemaComponents;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
@@ -59,6 +68,15 @@ class RawMaterialDetail extends Component implements HasForms
 
     public string $status = '';
 
+    public ?int $dataItemId = null;
+
+    /** @var array<string, mixed> */
+    public array $evidenceDataState = [];
+
+    public ?int $withdrawItemId = null;
+
+    public string $withdrawReason = '';
+
     public function mount(string $ingredient): void
     {
         $workspace = $this->workspace();
@@ -70,6 +88,7 @@ class RawMaterialDetail extends Component implements HasForms
             ->id;
         $this->qualificationForm->fill(['status' => SupplierQualificationStatus::EnEvaluation->value]);
         $this->evidenceForm->fill();
+        $this->evidenceDataForm->fill();
     }
 
     public function qualificationForm(Schema $schema): Schema
@@ -115,6 +134,117 @@ class RawMaterialDetail extends Component implements HasForms
             ])
             ->columns(['md' => 2])
             ->statePath('evidenceData');
+    }
+
+    public function evidenceDataForm(Schema $schema): Schema
+    {
+        $item = $this->dataItemId !== null
+            ? DossierEvidenceItem::query()->where('workspace_id', $this->workspaceId)->find($this->dataItemId)
+            : null;
+        $type = $item?->type;
+        $kinds = $type?->constituentKinds() ?? [];
+        $basis = $type?->useLimitBasis();
+        $facts = $type?->factKeys() ?? [];
+
+        return $schema
+            ->components(array_values(array_filter([
+                $kinds === [] ? null : Repeater::make('constituents')
+                    ->label(__('dossiers.evidence_data.constituents'))
+                    ->schema([
+                        Select::make('kind')
+                            ->label(__('dossiers.evidence_data.kind'))
+                            ->options(collect($kinds)->mapWithKeys(fn (ConstituentKind $kind): array => [$kind->value => __('dossiers.evidence_data.kinds.'.$kind->value)])->all())
+                            ->default($kinds[0]->value)
+                            ->live()
+                            ->required(),
+                        Select::make('allergen_id')
+                            ->label(__('dossiers.evidence_data.allergen'))
+                            ->options(fn (): array => Allergen::query()->orderBy('inci_name')->pluck('inci_name', 'id')->all())
+                            ->searchable()
+                            ->visible(fn (Get $get): bool => $get('kind') === ConstituentKind::Allergen->value)
+                            ->required(fn (Get $get): bool => $get('kind') === ConstituentKind::Allergen->value),
+                        Select::make('substance_id')
+                            ->label(__('dossiers.evidence_data.substance'))
+                            ->options(fn (): array => Substance::query()->orderBy('name')->pluck('name', 'id')->all())
+                            ->searchable()
+                            ->visible(fn (Get $get): bool => $get('kind') !== ConstituentKind::Allergen->value)
+                            ->required(fn (Get $get): bool => $get('kind') !== ConstituentKind::Allergen->value),
+                        TextInput::make('max_value')
+                            ->label(__('dossiers.evidence_data.max_value'))
+                            ->numeric()
+                            ->suffix(fn (Get $get): string => ConstituentKind::tryFrom((string) $get('kind'))?->unit() === 'ppm' ? 'ppm' : '%')
+                            ->required(),
+                    ])
+                    ->columns(['md' => 3])
+                    ->defaultItems(0),
+                $basis === null ? null : Repeater::make('use_limits')
+                    ->label(__('dossiers.evidence_data.use_limits'))
+                    ->schema([
+                        $basis === 'ifra_category'
+                            ? Select::make('ifra_product_category_id')
+                                ->label(__('dossiers.evidence_data.ifra_category'))
+                                ->options(fn (): array => IfraProductCategory::query()->orderBy('code')->get()->mapWithKeys(fn (IfraProductCategory $category): array => [$category->id => $category->code.' — '.$category->localizedName()])->all())
+                                ->required()
+                            : TextInput::make('product_class_label')->label(__('dossiers.evidence_data.product_class'))->required()->maxLength(255),
+                        TextInput::make('max_percent')->label(__('dossiers.evidence_data.max_percent'))->numeric()->suffix('%')->required(),
+                    ])
+                    ->columns(['md' => 2])
+                    ->defaultItems(0),
+                in_array('peroxide_value_mmol_l', $facts, true)
+                    ? TextInput::make('facts.peroxide_value_mmol_l')->label(__('dossiers.evidence_data.peroxide_value'))->numeric()->suffix('mmol/L')
+                    : null,
+                in_array('microbiology_specification', $facts, true)
+                    ? Textarea::make('facts.microbiology_specification')->label(__('dossiers.evidence_data.microbiology'))->rows(2)
+                    : null,
+            ])))
+            ->statePath('evidenceDataState');
+    }
+
+    public function startEditData(int $itemId): void
+    {
+        $item = DossierEvidenceItem::query()->where('workspace_id', $this->workspaceId)->with(['constituents', 'useLimits'])->findOrFail($itemId);
+        $this->dataItemId = $item->id;
+        $this->withdrawItemId = null;
+        $this->evidenceDataForm->fill([
+            'constituents' => $item->constituents->map(fn ($row): array => [
+                'kind' => $row->kind->value,
+                'allergen_id' => $row->allergen_id,
+                'substance_id' => $row->substance_id,
+                'max_value' => $row->max_value,
+            ])->all(),
+            'use_limits' => $item->useLimits->map(fn ($row): array => $row->only(['ifra_product_category_id', 'product_class_label', 'max_percent']))->all(),
+            'facts' => $item->facts ?? [],
+        ]);
+    }
+
+    public function saveEvidenceData(SaveDossierEvidenceData $saveData): void
+    {
+        $state = $this->evidenceDataForm->getState();
+        $item = DossierEvidenceItem::query()->where('workspace_id', $this->workspaceId)->findOrFail($this->dataItemId);
+
+        $this->withFormErrors('evidenceDataState', fn () => $saveData->handle($this->user(), $this->lockedWorkspace(), $item, [
+            'constituents' => array_values($state['constituents'] ?? []),
+            'use_limits' => array_values($state['use_limits'] ?? []),
+            'facts' => $state['facts'] ?? [],
+        ]));
+
+        $this->dataItemId = null;
+        $this->status = __('dossiers.raw_materials.saved');
+    }
+
+    public function startWithdraw(int $itemId): void
+    {
+        $this->withdrawItemId = DossierEvidenceItem::query()->where('workspace_id', $this->workspaceId)->findOrFail($itemId)->id;
+        $this->dataItemId = null;
+        $this->withdrawReason = '';
+    }
+
+    public function withdrawEvidence(WithdrawDossierEvidence $withdraw): void
+    {
+        $item = DossierEvidenceItem::query()->where('workspace_id', $this->workspaceId)->findOrFail($this->withdrawItemId);
+        $withdraw->handle($this->user(), $this->lockedWorkspace(), $item, $this->withdrawReason);
+        $this->reset('withdrawItemId', 'withdrawReason');
+        $this->status = __('dossiers.raw_materials.withdrawn');
     }
 
     #[On('dossier-supplier-created')]
@@ -185,7 +315,7 @@ class RawMaterialDetail extends Component implements HasForms
             'qualifications' => SupplierQualification::query()
                 ->where('workspace_id', $this->workspaceId)
                 ->where('ingredient_id', $this->ingredientId)
-                ->with(['supplier', 'evidenceItems' => fn ($query) => $query->active()->with('file')->latest()])
+                ->with(['supplier', 'evidenceItems' => fn ($query) => $query->active()->with(['file', 'constituents.allergen', 'constituents.substance', 'useLimits.ifraProductCategory'])->latest()])
                 ->orderBy('status')
                 ->get(),
         ]);

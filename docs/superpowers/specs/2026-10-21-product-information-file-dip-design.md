@@ -14,7 +14,7 @@
 | D2 | **Activated per workspace** by the platform admin (Filament), following the `WorkspaceCapabilities` / Production Bench provisioning shape. When off: no navigation entry, routes and policies refuse, no rows are created. Plan coupling is not required. |
 | D3 | **Platform-owned reference data** (Filament): toxicological profiles, assessment parameters (exposure presets, method parameters, policies), EU annex legal entries. **Workspace-owned data**: dossier settings, supplier qualifications, evidence, dossiers and their versions. |
 | D4 | Both **platform and private ingredients** can appear in a dossier. Toxicology attaches to an **assessed material** (a `substance_catalog` row: a single substance, a whole botanical oil, or a mixture), never to an ingredient. |
-| D5 | Each ingredient carries an explicit **assessment status**; an empty `ingredient_substance_entries` list is allowed and means only "no separately tracked constituents recorded". Submission is blocked by *insufficient identity or safety evidence*, never by an empty constituent list. |
+| D5 | Material identity, composition and assessment are separate. Each material carries an explicit **review state** (`not_reviewed` / `sufficient` / `insufficient` with a named reason) and an additive **coverage** (whole material, constituents, or both) backed by profile references and/or supplier assessments. An empty `ingredient_substance_entries` list is allowed and selects no state. Submission is blocked by unreviewed or insufficient materials — including the final soap materials — never by an empty constituent list. |
 | D6 | **Supplier qualification** is a new per-workspace record (ingredient × supplier × supplier grade/reference), separate from `supplier_listings` (purchasing). Supplier documents attach to it. The dossier uses the **worst case** across qualified suppliers and lists the supplier set it covered. |
 | D7 | **Both soap compositions** are explicit and linked: the initial (as-manufactured) composition and the final (assessed, cured) composition, with a traceable mass balance. Allergens and impurities are overlays, never extra mass. The final composition is a **theoretical estimate** labelled as such, unless a measured cure loss is entered. |
 | D8 | **Calculations are plain, tested code** at full precision; rounding happens only for display. No AI in calculations or in the Part B conclusion. |
@@ -51,18 +51,25 @@
 
   A plain "food-safe" boolean is not enough: an ADI-based or "common food" justification needs its reasoning and source.
 
-### 2.2 Ingredient assessment status
+### 2.2 Material identity, composition and assessment coverage
 
-Each ingredient has one assessment status, owned by the platform for platform ingredients and by the workspace for private ones:
+Three things are kept apart:
 
-| Status | Meaning | Needs |
-| --- | --- | --- |
-| `whole_material` | Assessed as a whole | Link to an assessed material with a current profile |
-| `constituents` | Assessed through its constituents | Constituent entries (`ingredient_substance_entries` / `ingredient_components`) resolving to assessed materials |
-| `supplier_assessment` | Covered by a supplier's safety assessment (e.g. confidential perfume compositions) | Supplier evidence of the right type on each qualified supplier |
-| `not_assessed` | No basis yet | Blocks submission |
+- **Identity:** the ingredient identifies the material used (and, through supplier qualification, the supplied grade).
+- **Composition:** the ingredient may record separately tracked constituents — allergens, impurities, other substances (`ingredient_substance_entries`, `ingredient_allergen_entries`, `ingredient_components`). An empty list is valid and means only that none are tracked.
+- **Assessment coverage:** what the safety assessment of that material rests on. It is a small model, not a generic assessment framework:
 
-  Matching by INCI/CAS alone is a suggestion, not proof of equivalent grade; the status is set explicitly. Soap ingredients also map their saponified name (`soap_inci_naoh_name` / `soap_inci_koh_name`) to an assessed material for the final composition.
+| Field | Values |
+| --- | --- |
+| Review state | `not_reviewed`; `sufficient`; `insufficient` with a named reason (e.g. "no NESIL for citral", "grade not equivalent to profiled material") |
+| Coverage | `whole_material`, `constituents`, or both (e.g. rosemary oil: whole-material profile **and** its tracked allergens feeding QRA2) |
+| Supporting evidence | One or more profile references (assessed materials and profile versions) and/or supplier assessments (evidence items on qualified suppliers, e.g. a confidential perfume's safety assessment). Both may coexist. |
+| Reviewed by / at, note | Who set the state and why |
+
+- Coverage is owned by the platform for platform ingredients and by the workspace for private ones; a dossier version snapshots the coverage it used.
+- The review state is set explicitly. Matching by INCI/CAS alone is a suggestion, not proof of an equivalent grade; an empty constituent list selects no state.
+- **Final materials need coverage too.** For soap, every final-composition material — soap salts (through `soap_inci_naoh_name` / `soap_inci_koh_name`), glycerin, the unsaponified share of each oil, residual water — is an assessed material with its own review state and coverage, evaluated at its actual final concentration and use.
+- The application checks that coverage exists, is `sufficient` and that every covered material has an evaluated row at its actual concentration; whether the coverage is adequate is the reviewer's judgement, recorded in the review state.
 
 ### 2.3 Versioned assessment parameters
 
@@ -121,6 +128,8 @@ All values are computed at full precision; display rounds. Each step records its
 
 - **Initial composition:** every saved-formula row with its supplier set, INCI, CAS, function and % of the total batch, including alkali and water.
 - **Final composition (soap):** per oil, the soap salt (saponified INCI), glycerin and the unsaponified share from the lye reduction; residual water from the residual-water parameter or a measured cure loss; alkali fully reacted (excess alkali is reported, never silently dropped); other ingredients carried at unchanged mass; all normalised to the cured mass. A **mass-balance table** shows initial mass, water lost and final total.
+- **Ingredient tracing, before normalisation:** a total of 100% does not prove the allocation is right (the source workbook of DIP.GA.007 totals 100% with wrong essential-oil rows). The engine records, in grams before normalisation, every initial ingredient's contribution to each final material and every loss: oil → soap salt + glycerin + unsaponified share (stoichiometry from the SAP data used by `SoapCalculationService`); alkali → consumed (or reported excess); water → residual + lost; every other ingredient → itself at unchanged mass. Each initial gram must land in exactly one final material or one documented loss. Any gap larger than the rounding tolerance **blocks submission**; tolerances cover representation only and never absorb an unexplained difference.
+- A measured cure loss replaces the estimated water loss only; it cannot rescale individual non-water materials.
 - Reuse `SoapCalculationService`, `SoapCuredOutputBuilder` and the saponified names from `InciGenerationService`, but do not feed label percentages into exposure: label `percent_of_formula` uses the initial batch denominator.
 - **Overlays:** allergen and impurity concentrations = Σ (worst-case constituent % in the raw material × raw-material % in the composition), computed for both compositions; impurities may add a primary-packaging contribution.
 
@@ -129,10 +138,15 @@ All values are computed at full precision; display rounds. Each step records its
 - `SED [mg/kg bw/day] = A [g/day] × 1000 × C/100 × DAp/100 × R ÷ bw`, with `A = amount per use × frequency`.
 - `NOAELsys = NOAEL × bioavailability` (oral) or `× DAp` (dermal NOAEL).
 - `MoS = NOAELsys ÷ SED`.
-- **Row verdict:** `conforme` when one of these passes, naming the test used — MoS ≥ threshold; C ≤ Cmax; SED ≤ ADI (with reasoning); SED ≤ TTC (with applicability); listed in an annex entry and within its conditions. `non_conforme` when a binding requirement is exceeded or a banned substance is present. Otherwise `a_justifier`.
+- **Indicators, not automatic conclusions.** For every row the engine computes all available indicators — MoS against the threshold, C against Cmax, SED against ADI, SED against TTC, compliance with each applicable annex entry — and shows them all. Passing one indicator never settles the row by itself.
+- **Binding requirements are automatic:** a banned substance present, an exceeded legal maximum, or an unmet annex condition makes the row `non_conforme`, whatever the other indicators say.
+- **Assessment route:** the draft *suggests* a route from the available data (e.g. MoS when a systemic NOAEL exists; Cmax when only a sourced maximum exists). A row is concluded only when a route is **confirmed** with a justification and the relevant endpoints recorded in the profile's hazard notes (irritation, sensitisation, phototoxicity, CMR) are addressed — for fragrance allergens, sensitisation is addressed through QRA2. The confirmed route's indicator must pass; the other alternatives need not.
+- **Row states:** `non_conforme`; `route_suggere` (suggested, not yet confirmed — prints as « À justifier par l'évaluateur »); `conforme` (route confirmed, its indicator passes, endpoints addressed, no binding breach); `a_justifier` (no route available or the confirmed route fails).
+- In the pilot the owner confirms routes in Koskalk, following the assessor's instructions on the submitted draft, before the final version is submitted for signature. Route selection moves to the assessor with the in-app assessor phase.
 - **QRA2 (fragrance allergens):** `AEL = NESIL ÷ SAF`; `Cmax % = AEL ÷ (CEL × 1000) × 100`, multiplied by the QRA2 factor when the method parameter says it applies. Whether the factor applies is an open question (§11); the engine supports both and the snapshot records which was used. Output also states whether the allergen must be declared on the label.
 - **Impurities:** concentration in ppm, SED in µg/kg bw/day, compared with SEDmax, Cmax or TTC.
 - **Annex checks:** every legal entry linked to a present assessed material, evaluated against the product type, body area and concentration; mandatory warnings collected for Part B 2.B.2.
+- **Fragrance allergens and other sensitisation, irritation or local effects** are never considered resolved by a large systemic MoS; they need their own addressed endpoint. The overall safety conclusion belongs to the qualified assessor.
 
 ## 5. Dossiers and versions
 
@@ -140,11 +154,17 @@ All values are computed at full precision; display rounds. Each step records its
 - **Versions** are numbered (1, 2, …) and each is pinned to a **saved formula** (`RecipeVersion`).
 - States: `brouillon` → `soumis` → `approuve`; a returned version goes back to `brouillon`; an approved version becomes `perime` (out of date) or `remplace` (superseded by a newer approved version). Only one version per dossier is `brouillon` at a time.
 - **Draft:** everything is recomputed live from current data; the owner can set dossier-level overrides of scientific assumptions, each with a mandatory justification.
-- **Submission** freezes the version into a snapshot (§6). Submission is blocked only by: no saved formula; no exposure preset for the product type; an ingredient whose assessment status is `not_assessed` or cannot be resolved; a calculation that cannot run. Everything else is a visible warning carried into the snapshot.
+- **Submission** freezes the version into a snapshot (§6). Submission is blocked only by:
+  - no saved formula, or no exposure preset for the product type;
+  - any initial **or final** material whose review state is `not_reviewed` or `insufficient`, or that has no evaluated row at its actual concentration;
+  - an ingredient-tracing gap larger than the rounding tolerance (§4.1);
+  - a calculation that cannot run.
+
+  `non_conforme` rows do not block submission (the assessor must see them) but block approval. Everything else — missing optional evidence, `route_suggere` and `a_justifier` rows, expired documents — is a visible warning carried into the snapshot. A version cannot be **approved** while any row is `route_suggere`, `a_justifier` or `non_conforme`.
 
 ## 6. Snapshot, fingerprint and retention
 
-- The snapshot is self-contained: dossier settings, product description, both compositions with mass balance, supplier set per ingredient, every parameter value used (with source and overrides), every toxicological profile version used (values copied), every legal entry used (values copied), computed Part A tables and verdicts, the Part B text, the checklist with its warnings, and **copies of the evidence files** with their SHA-256.
+- The snapshot is self-contained: dossier settings, product description, both compositions with mass balance, supplier set per ingredient, every parameter value used (with source and overrides), every toxicological profile version used (values copied), every legal entry used (values copied), the ingredient-tracing ledger, computed Part A tables with every indicator, row state, confirmed route and justification, the coverage of every material, the Part B text, the checklist with its warnings, and **copies of the evidence files** with their SHA-256.
 - The **fingerprint** is a deterministic hash of the snapshot, displayed as a short code (e.g. `3F9A-72C1`).
 - **Retention:** a submitted or approved version and everything it holds cannot be deleted. The saved formula it pins is excluded from history pruning. Approved versions are kept at least ten years after the product's last batch was placed on the market (the owner records that date when a product is discontinued).
 - **Out-of-date detection** (on view, no background jobs): an approved version shows `perime` when the product has a newer saved formula, a toxicological profile it used has a newer version, a legal entry it used changed, an evidence item it used was replaced or expired, or the qualified-supplier set of one of its ingredients changed.
@@ -153,7 +173,7 @@ All values are computed at full precision; display rounds. Each step records its
 
 - 2.B.1 Conclusion: fixed text with the product name, stating the regulatory basis, the duty to reassess on any change, and the cosmetovigilance obligation.
 - 2.B.2 Warnings: directions for use plus the mandatory warnings collected from the legal entries, or « Aucune ».
-- 2.B.3 Reasoning, assembled from rules: stability/PAO results; microbiology (challenge test result, or the documented exemption); skin tolerance (test on this product or on a linked similar product — otherwise flagged); eye contact under normal use; the ingredient table with each row's verdict and test; the QRA2 allergen table; the impurity table.
+- 2.B.3 Reasoning, assembled from rules: stability/PAO results; microbiology (challenge test result, or the documented exemption); skin tolerance (test on this product or on a linked similar product — otherwise flagged); eye contact under normal use; the ingredient table with each row's state, confirmed route, justification and indicators; the QRA2 allergen table; the impurity table.
 - 2.B.4 Assessor: name, address and qualification from the dossier settings; signature left blank.
 - Each paragraph records whether it is generated or edited by the owner. All wording is Koskalk's own French text, written from the Regulation and the Commission guidelines (Implementing Decision 2013/674/EU), not taken from the consultant documents.
 
@@ -191,7 +211,7 @@ Grouped by the DIP structure, which follows Annex I and Art. 11. Each item is co
 2. The assessor signs by hand (printed and scanned) or with their own e-signature tool.
 3. The owner uploads the signed PDF to that version and enters the assessor's name, the signature date and, for a wet-ink original, where the paper original is kept.
 4. Koskalk stores the file with its SHA-256, the uploader and the time. It runs `pdftotext`; if the PDF contains text, it checks that the version fingerprint appears. A missing fingerprint shows a warning that the file may belong to another version; a scanned image (no text) asks the owner to confirm the match. Approval with an unconfirmed match requires an explicit confirmation with a note.
-5. The version becomes `approuve` and is locked; a previously approved version becomes `remplace`.
+5. If no row is `route_suggere`, `a_justifier` or `non_conforme` (§5), the version becomes `approuve` and is locked; a previously approved version becomes `remplace`. Otherwise the upload is refused with the list of open rows.
 
 ### 9.4 Annex ZIP and archive package
 
@@ -202,11 +222,11 @@ Grouped by the DIP structure, which follows Annex I and Art. 11. Each item is co
 
 | Phase | Content | Done when |
 | --- | --- | --- |
-| 1. Foundations | Per-workspace activation; dossier settings; rule-file exception; assessed materials and versioned toxicological profiles (Filament); ingredient assessment status; versioned assessment parameters with the toilet-soap preset; legal-entry model with the entries the pilot needs | An admin can enter everything the pilot soap needs, and a workspace without activation sees nothing |
+| 1. Foundations | Per-workspace activation; dossier settings; rule-file exception; assessed materials and versioned toxicological profiles (Filament); material review state and coverage; versioned assessment parameters with the toilet-soap preset; legal-entry model with the entries the pilot needs | An admin can enter everything the pilot soap needs, and a workspace without activation sees nothing |
 | 2. Suppliers and evidence | Supplier qualifications; evidence items with structured summaries, own size limit and deletion protection; generated annexes b, l, o, t; one-time folder importer | The pilot soap's raw-material and finished-product evidence is in Koskalk |
-| 3. Calculation engine | Both compositions with mass balance; overlays; SED, NOAELsys, MoS and alternative tests; QRA2 with the factor parameter; impurities; annex checks; verdicts | Unit tests reproduce the reference arithmetic (§12) |
+| 3. Calculation engine | Both compositions with mass balance and ingredient tracing; overlays; SED, NOAELsys, MoS and the other indicators; QRA2 with the factor parameter; impurities; annex checks; suggested routes and row states | Independent fixtures, boundary and failure cases pass (§12) |
 | 4. Dossier, signing, archive | Dossiers and versions; checklist; Part B draft; snapshot, fingerprint, retention, out-of-date detection; print view; signed-PDF upload and check; annex ZIP and archive package | The pilot soap's DIP is submitted, printed, signed by the assessor and archived |
-| Pilot review | The owner and the assessor review the pilot DIP; findings feed back into phases 1–4 | Assessor accepts the method and output |
+| Pilot review | The owner and the assessor review the pilot DIP; findings feed back into phases 1–4; the approved pilot's snapshot becomes the end-to-end reference test | Assessor accepts the method and output |
 | 5. After the pilot | Leave-on products (balm) and deodorants with their presets; bulk import of Annexes II–VI and workbench alignment; AI-assisted extraction from supplier PDFs (always human-confirmed); in-app assessor role after the shared-workspace release; integrated e-signature provider if needed | Planned separately |
 
 Each phase gets its own implementation plan.
@@ -223,9 +243,13 @@ Each phase gets its own implementation plan.
 ## 12. Testing
 
 - **Calculation unit tests** with DIP.GA.007's stated inputs (A = 10 g/day, R = 0.01, bw = 60 kg): olive oil at 22.694% gives SED 0.378233; limonene 0.09660%, DAp 100%, NOAELsys 75 gives MoS ≈ 46,584; linalool 0.03262%, DAp 14.4%, NOAELsys 58.5 gives SED 0.000078288 and MoS ≈ 747,241 at full precision (the printed 731,300 comes from early rounding); glycerin 7.944%, DAp 7.34%, NOAELsys 590 gives MoS ≈ 60,711. QRA2 limonene (NESIL 10000, SAF 300, CEL 0.2) gives 16.667% without the factor and 8.333% with 0.5.
-- DIP.GA.007's **final composition is not a reference answer**: its essential-oil rows come from an inconsistent column of the source workbook (juniper 0.743% vs a consistent 0.4215%; mint 0.280% vs 0.351%; rosemary 1.133% vs 1.194%). Composition tests use Koskalk's own calculation and assert the mass balance (initial mass − water lost = final mass; final composition totals 100% within the stated tolerance).
-- Verdict tests: each alternative test (MoS, Cmax, ADI, TTC, annex entry) can make a row `conforme`; none passing gives `a_justifier`; an exceeded binding maximum or a banned substance gives `non_conforme` regardless of other tests.
-- Assessment status: an empty constituent list with `whole_material` submits; `not_assessed` blocks.
+- **Three layers of reference.** (1) Independently calculated arithmetic fixtures — the values above, computed by hand from stated inputs, not produced by the implementation. (2) Boundary and failure cases — MoS exactly at the threshold, C exactly at Cmax, SED exactly at ADI/TTC, missing NOAEL, zero or missing DAp, unknown QRA2 category. (3) The assessor-approved pilot DIP as the end-to-end reference for the complete dossier output, added after the pilot review. Layer 3 never replaces layers 1–2, so an error shared by the implementation and the generated pilot cannot become an accepted expected result.
+- DIP.GA.007's **final composition is not a reference answer**: its essential-oil rows come from an inconsistent column of the source workbook (juniper 0.743% vs a consistent 0.4215%; mint 0.280% vs 0.351%; rosemary 1.133% vs 1.194%).
+- **Composition tests, independently of each other and before normalisation:** reaction stoichiometry per oil (soap salt, glycerin, unsaponified share in grams); each initial ingredient's contribution to each final material; water and other losses; then the mass balance (initial mass − losses = final mass) and the 100% total within tolerance.
+- **Inconsistent-composition regression case:** a fixture shaped like the DIP.GA.007 workbook's column J (totals 100%, non-water rows rescaled inconsistently) must fail ingredient tracing and block submission; a tolerance change must not make it pass.
+- **Row-state tests:** an exceeded legal maximum, banned substance or unmet annex condition gives `non_conforme` even when MoS passes; a passing indicator alone leaves the row `route_suggere`; a confirmed route with a passing indicator and addressed endpoints gives `conforme`; a confirmed route whose indicator fails gives `a_justifier`; a fragrance allergen with a large MoS but no QRA2 result is not `conforme`.
+- **Coverage tests:** an empty constituent list with review state `sufficient` and whole-material coverage submits; `not_reviewed` or `insufficient` blocks; a final soap material (e.g. sodium olivate) without coverage blocks; coverage combining a profile reference and a supplier assessment is accepted.
+- **Gate tests:** submission allowed with `route_suggere` / `a_justifier` / `non_conforme` rows; approval refused while any of them remains.
 - Snapshot: deterministic fingerprint; approved versions immutable; evidence copies survive deletion of the original media; pinned saved formula survives history pruning.
 - Out-of-date detection for each trigger in §6.
 - Signed upload: fingerprint found, fingerprint missing (warning), image-only PDF (manual confirmation).

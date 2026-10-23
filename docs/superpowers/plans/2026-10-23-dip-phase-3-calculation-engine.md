@@ -4,7 +4,7 @@
 
 **Goal:** Compute, for a saved bar-soap formula, everything Part A of the DIP needs: both compositions with a mass balance and an ingredient-tracing ledger, allergen/impurity/restricted-substance overlays, exposure (SED), systemic NOAEL, MoS and the other indicators, QRA2 with the preset's adjustment factor, EU annex checks, suggested routes and row states — at full precision, with every input recorded, and with the blockers and warnings phase 4 will show and snapshot.
 
-**Architecture:** Pure calculators (`ExposureCalculator`, `Qra2Calculator`, `IngredientTracingVerifier`, `RowStateResolver`) do the arithmetic and the state rules on decimal strings and are tested against hand-calculated values. Builders read the data: `DossierCompositionBuilder` turns a saved formula's workbench snapshot into the initial composition, the final (cured) composition and the ledger, reusing `SoapCalculationService::calculateOilReactionProducts`; `ConstituentOverlayBuilder` sums the supplier worst cases from `SupplierConstituentResolver`; `AssessedMaterialResolver`, `AssessmentParameterResolver` and `LegalEntryChecker` load profiles, coverage, parameters and annex entries. `DossierAssessmentEngine` orchestrates them and returns one array. **Read-only:** no tables, no migrations, no screens. Route confirmations and dossier overrides are engine *inputs*; phase 4 stores them on dossier versions.
+**Architecture:** Pure calculators (`ExposureCalculator`, `Qra2Calculator`, `IngredientTracingVerifier`, `RowStateResolver`) do the arithmetic and the state rules on decimal strings and are tested against hand-calculated values. Builders read the data: `DossierCompositionBuilder` turns a saved formula's workbench snapshot into the initial composition, the final (cured) composition and the ledger, from the saved weights, reusing `SoapCalculationService::calculateOilReactionProducts` for triglyceride oils only; `ConstituentOverlayBuilder` sums the supplier worst cases from `SupplierConstituentResolver`; `AssessedMaterialResolver` separates each material's legal identity from the profile it is assessed with; `AssessmentParameterResolver` and `LegalEntryChecker` load bounded parameters and annex entries. `DossierAssessmentEngine` sums every contribution of the same substance into one row, then evaluates it, and returns one array. **Read-only:** no tables, no migrations, no screens. Route confirmations and dossier overrides are engine *inputs*; phase 4 stores them on dossier versions.
 
 **Tech Stack:** Laravel 13, PHP 8.5 (bcmath), Pest 4. No new dependencies.
 
@@ -22,29 +22,39 @@
 
 ## Decisions taken while planning
 
-1. **Pilot scope of the engine: bar soap only, superfat ≥ 0.** A cosmetic family (`calculation_basis = total_formula`), a liquid-soap family, a negative superfat or any excess alkali makes the calculation **not run** with a named reason (`unsupported_family`, `liquid_soap_unsupported`, `negative_superfat`, `excess_alkali`). They are spec blockers ("a calculation that cannot run"); leave-on and liquid products come after the pilot (spec §10, phase 5). The engine also refuses the working copy (`working_copy`): a dossier pins a saved formula.
-2. **Final composition model** (matches the label's cured output, verified on a probe formula: 1000 g olive oil, 3 % lavender → cured 1300.384 g, sodium olivate 979.6072 g, glycerin 97.7346 g):
-   - each oil → its soap salt(s), glycerin and the unsaponified share, from `calculateOilReactionProducts` with the formula's own superfat, lye type, dual-lye share and KOH purity;
-   - NaOH and active KOH → the soap salts; the **non-active share of KOH 90 %** stays in the bar as its own final row (« Part non active de l'hydroxyde de potassium », no assessed material, so it shows as unidentified until an admin adds one);
-   - the lye liquid (water plus any `lye_water` substitutes such as a hydrosol) keeps the residual share and loses the rest by evaporation; the residual is split across the liquid rows by their fresh share, as `LyeLiquidAllocationService` does for labels;
-   - cured mass = non-liquid mass ÷ (1 − residual %), residual % from the formula (`curedWaterPercentage`) or a justified override; with a **measured cure loss** (% of the initial batch) the lost mass replaces the estimate, and nothing else is rescaled (spec §4.1);
+Revised on 2026-10-23 after Codex's plan review (six P1 and three P2 findings, all verified against the code and accepted; see "Review changes" at the end).
+
+1. **Pilot scope: bar soap with supported chemistry only.** The calculation **does not run**, with a named reason, for:
+   - a cosmetic family (`unsupported_family`), a liquid-soap family (`liquid_soap_unsupported`) or the working copy (`working_copy`);
+   - a negative superfat (`negative_superfat`) or any excess alkali (`excess_alkali`);
+   - a reacting material that is not a triglyceride oil, butter or animal fat (`unsupported_reacting_material`). The shared reaction helper uses triglyceride stoichiometry, including glycerin release; a fatty acid such as stearic acid or a liquid wax such as jojoba has no glycerol backbone and needs another reaction model. Allowed: category `lipids` with subcategory `vegetable_oils`, `butters` or `animal_fats`;
+   - any lye-water substitute (`lye_substitute_unsupported`). The workbench accepts substitutes other than hydrosols (glycerin, for example), and without a known water fraction the evaporated mass cannot be stated;
+   - KOH below 100 % purity (`koh_non_active_share_unsupported`). The non-active share of technical KOH has no evidence-backed composition, so it can be neither assessed nor assumed to evaporate.
+   These are spec blockers ("a calculation that cannot run"). Leave-on and liquid products, other reaction models, lye substitutes and KOH 90 % come after the pilot.
+2. **Quantities come from the saved weights**, as the workbench preview does: a row's saved weight (in the formula's unit) when positive, otherwise oil weight × percentage. In weight-editing mode, weights and percentages are rounded independently (verified: 1.2345 g is saved with 0.0123 %, and 0.001 g with 0.0000 %), so percentages alone would change or drop ingredients.
+3. **Final composition model** (verified on a probe formula: 1000 g olive oil, 3 % lavender → cured 1300.384 g, sodium olivate 979.6072 g, glycerin 97.7346 g):
+   - each oil → its soap salt(s), glycerin and the unsaponified share, from `calculateOilReactionProducts` with the formula's own superfat, lye type and dual-lye share;
+   - NaOH and KOH (100 %) → the soap salts;
+   - the lye water keeps the residual share and loses the rest by evaporation; nothing else evaporates;
+   - cured mass = non-water mass ÷ (1 − residual %), residual % from the formula (`curedWaterPercentage`) or a justified override; with a **measured cure loss** (% of the initial batch) the lost mass is taken from the water only, and nothing else changes (spec §4.1);
    - every other phase is carried at unchanged mass.
-3. **Ledger convention.** Contributions are recorded in grams before normalisation: oil → glycerin (the glycerol backbone), oil → each soap salt (salt − its reacting alkali), alkali → each soap salt, oil → unsaponified share, liquid → residual, liquid → evaporated (a loss), carried ingredient → itself, KOH non-active share → its own row. The initial NaOH/KOH rows hold the amounts actually weighed (the formula's values); the per-oil reacting alkali is recomputed at 12 decimals, so a difference beyond the tolerance shows as an unallocated gap.
-4. **Tolerances are explicit config:** `dossiers.mass_balance_tolerance_g` = `0.001` g (inputs carry 4-decimal gram values) and `dossiers.percent_tolerance` = `0.000001`. A tolerance never absorbs an unexplained difference: the regression fixture shaped like DIP.GA.007's column J fails even with a 1 g tolerance.
-5. **Which material is assessed for each final row:**
-   - soap salt, glycerin, residual water → the `substance_catalog` row whose `inci_name` matches (case-insensitive); none or several → `unidentified` (blocks submission);
-   - unsaponified share, carried ingredient, residual hydrosol → the ingredient itself;
-   - an ingredient is evaluated through the **whole-material references** of its coverage (supporting substances that are not tracked constituents — no `allergen_id`, not in the ingredient's substance entries), one evaluated row per reference at the ingredient's concentration; constituents are evaluated in their overlay rows; a blend with no whole-material reference is evaluated through its components (concentration × `percentage_in_parent`);
-   - a substance material with no supporting reference is evaluated through its own current profile.
-6. **Profiles: the current version is used while the dossier is live** (spec D10 "live while draft"). A coverage that relied on a profile version since superseded is a warning (`coverage_relies_on_superseded_profiles`); phase 4's out-of-date detection covers the frozen case.
-7. **Overlays** use `SupplierConstituentResolver` per ingredient (supplier worst case first, flagged platform fallback). Contributions of the same allergen from every ingredient are summed (spec §4.2). Allergen mass in a saponified oil is carried as an overlay on that oil's initial mass (conservative). A blend with components and no validated supplier of its own is expanded into its components. `SupplierConstituentResolver` gains `restrictedSubstances()` (RCE values first, the platform `ingredient_substance_entries` with a concentration as flagged fallback).
-8. **Indicators are all computed and shown; none concludes a row on its own.** MoS passes at ≥ threshold, C passes at ≤ Cmax, SED passes at ≤ ADI or TTC (boundary cases pass). NOAELsys = NOAEL × oral bioavailability (oral NOAEL) or × DAp (dermal NOAEL), as the spec states; an inhalation NOAEL is not converted (`route_not_convertible`). Impurities are compared in % internally and also reported in ppm and µg/kg bw/day. The profile has no separate SEDmax field: ADI and TTC are the SED limits.
-9. **Row states** follow spec §4.2 exactly: binding breach → `non_conforme`; no confirmation → `route_suggere` when an indicator is available, else `a_justifier`; confirmed route → `conforme` only when its indicator passes, the profile's hazard endpoints are addressed, any annex condition that cannot be checked automatically is verified, and — for an allergen — QRA2 is available and passes; otherwise `a_justifier` with the reason. A confirmation without a justification counts as no confirmation.
-10. **Annex checks** use reviewed `regulatory_legal_entries` of the `eu` regime in force on the evaluation date. Annex II present → banned. A maximum exceeded → breach (exactly at the maximum passes). `rinse_off_only` / `leave_on_only` follow the exposure preset's `is_rinse_off`. `see_conditions`, `other_limitations` or `product_type_body_parts` → `needs_verification`. Transition dates (`placing_on_market_until`, `making_available_until`) are shown but not evaluated in the pilot. Draft entries linked to a present substance are reported as a warning, never used.
-11. **Label declaration of allergens** uses the active `eu` `regulatory_regime_allergens` row: rinse-off or leave-on threshold by preset, with its operator, against the **final** concentration.
-12. **Submission blockers computed now** (phase 4 enforces them): calculation cannot run (includes no assessment policy, no exposure preset); tracing gap; an initial recipe ingredient or a final material whose coverage is not `sufficient`; an unidentified final material. Initial NaOH, KOH and lye water are not checked as initial materials: they are assessed through the final materials they become.
-13. **Peroxide value unit (open since phase 2b):** the engine does not use peroxide values; they belong to the 2.A.2 raw-material specification table in phase 4. The unit question (meq O₂/kg on technical sheets vs mmol/L stored) is settled there.
-14. **Output is plain arrays with documented shapes**, enum values as strings, decimals as full-precision strings (round only for display with `DecimalMath::round()`), so phase 4 can snapshot it as JSON without conversion.
+4. **Ledger convention.** Contributions in grams before normalisation: oil → glycerin (the glycerol backbone), oil → each soap salt (salt − its reacting alkali), alkali → each soap salt, oil → unsaponified share, water → residual water, water → evaporated (a loss), carried ingredient → itself. The initial NaOH/KOH rows hold the amounts actually weighed (the formula's values); the per-oil reacting alkali is recomputed at 12 decimals, so a difference beyond the tolerance shows as an unallocated gap.
+5. **Tolerances are explicit and bounded:** `dossiers.mass_balance_tolerance_g` = `0.001` g (inputs carry 4-decimal gram values), never above `dossiers.mass_balance_tolerance_max_g` = `0.01` g; `dossiers.percent_tolerance` = `0.000001`. The verifier refuses a larger tolerance, so the column-J regression (≈ 3.81 g displaced) cannot be made to pass by configuration. The ledger proves conservation of mass; it does not prove the source weights or the chemistry, which decisions 1–3 guard.
+6. **Identity and profile are separate.** Each assessed row has:
+   - an **identity**: the substance the material *is*, used for annex checks and label rules: soap salt, glycerin, water → the `substance_catalog` row whose `inci_name` matches (case-insensitive); an ingredient → the substance with the ingredient's INCI, when exactly one exists; a constituent → the allergen's linked substance, or the impurity or restricted substance itself;
+   - a **profile**: the identity's own current profile; otherwise, as a recorded read-across, the single whole-material reference of the material's coverage (supporting substances that are not tracked constituents); several distinct references → no profile (`ambiguous_reference`).
+   A material with no identity (an INCI that is not in the catalogue) is assessed on its own row through its coverage references and gets no annex check (warning `no_legal_identity`). A soap salt, glycerin or water row without an identity blocks submission.
+7. **One assessed row per substance, summed across every source.** Contributions of the same identity are added before any indicator or limit is evaluated: a neat ingredient and the same substance declared in another ingredient, reaction glycerin and added glycerin, an allergen from several oils. Each row keeps the list of its contributions. A constituent contribution is skipped when its source ingredient *is* that substance, so a neat material is never counted twice. A blend with components is assessed through its components (concentration × `percentage_in_parent`).
+8. **Profiles: the current version is used while the dossier is live** (spec D10). A coverage that relied on a superseded version is a warning (`coverage_relies_on_superseded_profiles`); phase 4's out-of-date detection covers the frozen case.
+9. **Overlays** use `SupplierConstituentResolver` per ingredient (supplier worst case first, flagged platform fallback). Allergen mass in a saponified oil is carried on that oil's initial mass (conservative). A blend with components and no validated supplier of its own is read through its components. `SupplierConstituentResolver` gains `restrictedSubstances()` (RCE values first, the platform `ingredient_substance_entries` with a concentration as flagged fallback).
+10. **Indicators are all computed and shown; none concludes a row on its own.** MoS passes at ≥ threshold, C at ≤ Cmax, SED at ≤ ADI or TTC, C at ≤ QRA2 Cmax. NOAELsys is computed automatically **only for an oral NOAEL** (NOAEL × oral bioavailability). A dermal NOAEL is not converted (`dermal_study_absorption_unknown`): reusing the product DAp would cancel it out of the MoS, and the study's own absorption is not recorded; the assessor confirms another route or the policy is agreed with them (spec open question added). An inhalation NOAEL is not converted (`route_not_convertible`). Impurities are compared in % and reported in ppm and µg/kg bw/day; ADI and TTC are the SED limits (the profile has no separate SEDmax).
+11. **Physical bounds are enforced before any calculation:** amount per use > 0 g, uses per day > 0, 0 < retention factor ≤ 1, body weight > 0 kg, 0 ≤ DAp ≤ 100 %, 0 ≤ oral bioavailability ≤ 100 % (zero absorption is legitimate), 0 ≤ residual water ≤ 30 % (the workbench limit), 0 ≤ measured cure loss < 100 %. An override outside its bounds is refused when the options are built (`InvalidArgumentException`); a stored policy or preset value outside them makes the calculation not run (`invalid_parameter`).
+12. **Row states** follow spec §4.2: binding breach → `non_conforme`; an annex condition recorded as **not met** → `non_conforme`; no confirmation → `route_suggere` when an indicator is available, else `a_justifier`; a confirmed route → `conforme` only when its indicator passes, the profile's hazard endpoints are addressed, every annex condition that cannot be checked automatically is recorded as **met**, and — for an allergen — QRA2 is available and passes; otherwise `a_justifier` with the reason. A confirmation without a justification counts as none.
+13. **Annex checks** use reviewed `regulatory_legal_entries` of the `eu` regime in force on the evaluation date, on the row's identity at its summed concentration. Annex II present → banned. A maximum exceeded → breach (exactly at the maximum passes). `rinse_off_only` / `leave_on_only` follow the preset's `is_rinse_off`. `see_conditions`, `other_limitations` or `product_type_body_parts` → `needs_verification`. Transition dates are shown, not evaluated, in the pilot. Draft entries linked to a present substance are a warning, never used.
+14. **Label declaration of allergens** uses the active `eu` `regulatory_regime_allergens` row (rinse-off or leave-on threshold by preset, with its operator) against the summed **final** concentration.
+15. **Submission blockers computed now** (phase 4 enforces them): calculation cannot run; tracing gap; an initial recipe ingredient or a final material whose coverage is not `sufficient`; an unidentified soap salt, glycerin or water. Initial NaOH, KOH and water are transformed materials: they are assessed through what they become (soap salts, residual water) and get no finished-product row of their own. Task 13 states this in spec §5.
+16. **Peroxide value unit (open since phase 2b):** not used by the engine; settled with the 2.A.2 raw-material table in phase 4.
+17. **Output is plain arrays with documented shapes**, enum values as strings, decimals as full-precision strings (rounded only for display with `DecimalMath::round()`), so phase 4 can snapshot it as JSON.
 
 ## File structure
 
@@ -60,12 +70,12 @@
 | Annex checks | create `app/Services/Dossiers/Calculation/LegalEntryChecker.php`; test `tests/Feature/Dossiers/Calculation/LegalEntryCheckerTest.php` |
 | Indicators | create `app/Services/Dossiers/Calculation/RowIndicatorEvaluator.php`; test `tests/Feature/Dossiers/Calculation/RowIndicatorEvaluatorTest.php` |
 | Routes and states | create `app/Enums/DossierRowState.php`, `app/Services/Dossiers/Calculation/RowStateResolver.php`; test `tests/Feature/Dossiers/Calculation/RowStateResolverTest.php` |
-| Materials | create `app/Services/Dossiers/Calculation/AssessedMaterialResolver.php`; test `tests/Feature/Dossiers/Calculation/AssessedMaterialResolverTest.php` |
+| Identity and profile | create `app/Services/Dossiers/Calculation/AssessedMaterialResolver.php`; test `tests/Feature/Dossiers/Calculation/AssessedMaterialResolverTest.php` |
 | Engine | create `app/Services/Dossiers/Calculation/DossierAssessmentEngine.php`; test `tests/Feature/Dossiers/Calculation/DossierAssessmentEngineTest.php` |
 
 ## Reference values (computed by hand, not by the implementation)
 
-Exposure inputs from DIP.GA.007: A = 1 g × 10/day, R = 0.01, bw = 60 kg.
+Exposure inputs from DIP.GA.007: A = 1 g × 10/day, R = 0.01, bw = 60 kg. Codex reproduced every value independently on 2026-10-23.
 
 | Case | Inputs | Expected |
 | --- | --- | --- |
@@ -94,7 +104,14 @@ Probe soap: 1000 g olive oil (KOH SAP 0.188 → NaOH SAP 0.134044), NaOH, superf
 | Limonene at 40 % in lavender | — | 12 g: 0.922804 % final, 0.780568 % initial; SED 0.015380072; MoS (NOAELsys 75) 4876.44 |
 | Glycerin row (DAp 7.34 %, NOAELsys 590) | — | MoS 64169.75 |
 
-Variants of the olive-only soap: lye water with 25 % lavender hydrosol → hydrosol 95 g fresh, 34.833595 g residual, 60.166405 g evaporated; water 285 g fresh, 104.500785 g residual. Measured cure loss 15 % → 226.101270 g lost, residual water 153.898730 g, cured mass 1281.240530 g (water 12.011697 %). Residual-water override 9 % → cured mass 1238.837143 g, residual 111.495343 g.
+Variants of the olive-only soap: measured cure loss 15 % → 226.101270 g lost, residual water 153.898730 g, cured mass 1281.240530 g (water 12.011697 %). Residual-water override 9 % → cured mass 1238.837143 g, residual 111.495343 g.
+
+Summing across sources (decision 7):
+
+| Formula | Values |
+| --- | --- |
+| Lavender soap (olive soap + 30 g lavender) + 20 g glycerin in the additives | cured mass 1322.855955 g; glycerin 8.900034 % in total = 7.388153 % from the reaction + 1.511880 % added |
+| Lavender soap (40 % limonene) + 6 g neat limonene in the fragrance | cured mass 1307.125618 g; limonene 1.377067 % in total = 0.918045 % from lavender + 0.459022 % neat |
 
 ---
 
@@ -276,6 +293,8 @@ Append to the array in `config/dossiers.php`, after `evidence_mimes`:
      * grams are representation only. A tolerance never absorbs an unexplained difference.
      */
     'mass_balance_tolerance_g' => '0.001',
+    // The verifier refuses any tolerance above this bound: a larger one could hide a displaced ingredient.
+    'mass_balance_tolerance_max_g' => '0.01',
     'percent_tolerance' => '0.000001',
 
     // INCI names under which these final soap materials are found in the substance catalogue.
@@ -334,12 +353,12 @@ it('computes margins of safety at full precision', function (string $concentrati
     'glycerin' => ['7.944', '7.34', '590', '0.009718160', '60711.08'],
 ]);
 
-it('derives the systemic NOAEL from the study route', function (): void {
+it('converts only an oral NOAEL automatically', function (): void {
     $calculator = app(ExposureCalculator::class);
 
-    expect(DecimalMath::round($calculator->systemicNoael('150', NoaelRoute::Oral, '50', '100'), 6))->toBe('75.000000')
-        ->and(DecimalMath::round($calculator->systemicNoael('100', NoaelRoute::Dermal, '50', '14.4'), 6))->toBe('14.400000')
-        ->and($calculator->systemicNoael('100', NoaelRoute::Inhalation, '50', '100'))->toBeNull();
+    expect(DecimalMath::round($calculator->systemicNoael('150', NoaelRoute::Oral, '50'), 6))->toBe('75.000000')
+        ->and($calculator->systemicNoael('100', NoaelRoute::Dermal, '50'))->toBeNull()
+        ->and($calculator->systemicNoael('100', NoaelRoute::Inhalation, '50'))->toBeNull();
 });
 
 it('gives no margin of safety without exposure', function (): void {
@@ -465,15 +484,15 @@ class ExposureCalculator
     }
 
     /**
-     * NOAELsys = NOAEL × oral bioavailability (oral study) or × DAp (dermal study). An inhalation NOAEL is not converted.
+     * NOAELsys = NOAEL × oral bioavailability for an oral study. A dermal NOAEL is not converted (decision 10): the
+     * study's own absorption is not recorded, and reusing the product DAp would cancel it out of the MoS. An inhalation
+     * NOAEL is not converted either.
      */
-    public function systemicNoael(string $noael, NoaelRoute $route, string $oralBioavailabilityPercent, string $dermalAbsorptionPercent): ?string
+    public function systemicNoael(string $noael, NoaelRoute $route, string $oralBioavailabilityPercent): ?string
     {
-        return match ($route) {
-            NoaelRoute::Oral => DecimalMath::mul($noael, DecimalMath::div($oralBioavailabilityPercent, '100')),
-            NoaelRoute::Dermal => DecimalMath::mul($noael, DecimalMath::div($dermalAbsorptionPercent, '100')),
-            NoaelRoute::Inhalation => null,
-        };
+        return $route === NoaelRoute::Oral
+            ? DecimalMath::mul($noael, DecimalMath::div($oralBioavailabilityPercent, '100'))
+            : null;
     }
 
     /**
@@ -681,7 +700,7 @@ it('reports an initial ingredient that is not fully allocated', function (): voi
         ->and(collect($result['gaps'])->pluck('type')->all())->toContain('unallocated_initial', 'mass_balance');
 });
 
-it('fails a composition shaped like the DIP.GA.007 workbook column J whatever the tolerance', function (string $tolerance): void {
+it('fails a composition shaped like the DIP.GA.007 workbook column J at any permitted tolerance', function (?string $tolerance): void {
     [$initial, $contributions, $losses, $final] = consistentLedger();
     // The juniper row is rescaled as in column J (0.743 % instead of a consistent 0.4215 %) and the soap salt row absorbs
     // the difference, so the grams and the percentages still total exactly as before.
@@ -696,7 +715,11 @@ it('fails a composition shaped like the DIP.GA.007 workbook column J whatever th
 
     expect($result['passes'])->toBeFalse()
         ->and(collect($result['gaps'])->where('type', 'unexplained_final')->pluck('key')->sort()->values()->all())->toBe(['juniper', 'salt']);
-})->with(['configured tolerance' => [null], 'a tolerance of 1 g' => ['1']]);
+})->with(['configured tolerance' => [null], 'the largest permitted tolerance' => ['0.01']]);
+
+it('refuses a tolerance large enough to hide a displaced ingredient', function (string $tolerance): void {
+    app(IngredientTracingVerifier::class)->verify(...[...consistentLedger(), $tolerance]);
+})->with(['4 g' => ['4'], 'negative' => ['-0.001']])->throws(InvalidArgumentException::class);
 
 it('reports percentages that do not match the grams, unknown keys and negative amounts', function (): void {
     [$initial, $contributions, $losses, $final] = consistentLedger();
@@ -723,6 +746,7 @@ Expected: FAIL, class not found.
 namespace App\Services\Dossiers\Calculation;
 
 use App\Support\DecimalMath;
+use InvalidArgumentException;
 
 /**
  * Ingredient tracing before normalisation (spec §4.1): a total of 100 % does not prove the allocation is right.
@@ -740,6 +764,11 @@ class IngredientTracingVerifier
     public function verify(array $initial, array $contributions, array $losses, array $final, ?string $toleranceGrams = null): array
     {
         $tolerance = DecimalMath::of($toleranceGrams ?? config('dossiers.mass_balance_tolerance_g'));
+
+        if (DecimalMath::cmp($tolerance, '0') < 0 || DecimalMath::cmp($tolerance, DecimalMath::of(config('dossiers.mass_balance_tolerance_max_g'))) > 0) {
+            throw new InvalidArgumentException('The tracing tolerance must stay within the representation bound.');
+        }
+
         $percentTolerance = DecimalMath::of(config('dossiers.percent_tolerance'));
         $initialGrams = collect($initial)->mapWithKeys(fn (array $row): array => [$row['key'] => DecimalMath::of($row['grams'])]);
         $finalGrams = collect($final)->mapWithKeys(fn (array $row): array => [$row['key'] => DecimalMath::of($row['grams'])]);
@@ -849,7 +878,7 @@ class IngredientTracingVerifier
 - [ ] **Step 4: Run the test**
 
 Run: `php artisan test --compact tests/Feature/Dossiers/Calculation/IngredientTracingVerifierTest.php`
-Expected: PASS (5 tests).
+Expected: PASS (7 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -873,6 +902,7 @@ Add these imports and methods to `tests/Support/DossierCalculationFixtures.php`:
 
 ```php
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
 use App\Models\ProductFamily;
@@ -887,44 +917,39 @@ use App\Services\RecipeWorkbenchService;
 ```php
     /**
      * 1000 g olive oil (KOH SAP 0.188), NaOH, superfat 5 %, water 38 % of oils, saved through the workbench in a
-     * workspace that has the DIP module. Extra rows (e.g. 'fragrance' or 'lye_water') come through $phaseItems.
+     * workspace that has the DIP module. Extra rows come through $phaseItems (e.g. 'fragrance', 'additives').
      *
      * @param  array<string, list<array{ingredient_id: int, percentage: int|float, weight: int|float, note: null}>>  $phaseItems
      * @param  array<string, mixed>  $payloadOverrides
      * @return array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion, workingCopy: RecipeVersion, olive: Ingredient}
      */
-    public static function oliveSoap(array $phaseItems = [], array $payloadOverrides = []): array
+    public static function oliveSoap(array $phaseItems = [], array $payloadOverrides = [], ?Ingredient $oil = null, int|float $oilWeight = 1000): array
     {
         $owner = User::factory()->create();
         $workspace = Workspace::factory()->for($owner, 'owner')->create();
         WorkspaceDossierGrant::factory()->for($workspace)->create();
         $family = ProductFamily::query()->where('slug', 'soap')->first()
             ?? ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap', 'calculation_basis' => 'oil_weight']);
-        $olive = self::ingredient('Olive Oil', 'OLEA EUROPAEA FRUIT OIL', IngredientCategory::Lipids, [
-            'soap_inci_naoh_name' => 'SODIUM OLIVATE',
-            'soap_inci_koh_name' => 'POTASSIUM OLIVATE',
-            'is_soap_saponification_trusted' => true,
-        ]);
-        IngredientSapProfile::factory()->create(['ingredient_id' => $olive->id, 'koh_sap_value' => 0.188]);
+        $olive = $oil ?? self::oil('Olive Oil', 'OLEA EUROPAEA FRUIT OIL', 'SODIUM OLIVATE', 'POTASSIUM OLIVATE', 0.188);
 
         $payload = [
             'name' => 'DIP engine soap',
             'product_type_id' => testProductTypeIdForFamily('soap'),
             'oil_unit' => 'g',
-            'oil_weight' => 1000,
+            'oil_weight' => $oilWeight,
             'manufacturing_mode' => 'saponify_in_formula',
             'exposure_mode' => 'rinse_off',
             'regulatory_regime' => 'eu',
             'editing_mode' => 'percentage',
             'lye_type' => 'naoh',
-            'koh_purity_percentage' => 90,
+            'koh_purity_percentage' => 100,
             'dual_lye_koh_percentage' => 40,
             'water_mode' => 'percent_of_oils',
             'water_value' => 38,
             'superfat' => 5,
             'ifra_product_category_id' => null,
             'phase_items' => [
-                'saponified_oils' => [['ingredient_id' => $olive->id, 'percentage' => 100, 'weight' => 1000, 'note' => null]],
+                'saponified_oils' => [self::row($olive, 100, $oilWeight)],
                 'additives' => [],
                 'fragrance' => [],
                 ...$phaseItems,
@@ -946,6 +971,22 @@ use App\Services\RecipeWorkbenchService;
             'workingCopy' => $versions->firstWhere('is_current', true),
             'olive' => $olive,
         ];
+    }
+
+    /**
+     * A trusted saponifiable lipid with its SAP profile; a vegetable oil unless another subcategory is given.
+     */
+    public static function oil(string $name, string $inci, string $sodiumSalt, string $potassiumSalt, float $kohSap, ?IngredientSubcategory $subcategory = IngredientSubcategory::VegetableOils): Ingredient
+    {
+        $oil = self::ingredient($name, $inci, IngredientCategory::Lipids, [
+            'subcategory' => $subcategory,
+            'soap_inci_naoh_name' => $sodiumSalt,
+            'soap_inci_koh_name' => $potassiumSalt,
+            'is_soap_saponification_trusted' => true,
+        ]);
+        IngredientSapProfile::factory()->create(['ingredient_id' => $oil->id, 'koh_sap_value' => $kohSap]);
+
+        return $oil;
     }
 
     /**
@@ -977,6 +1018,7 @@ use App\Services\RecipeWorkbenchService;
 <?php
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Exceptions\DossierCalculationException;
 use App\Models\ProductFamily;
 use App\Services\Dossiers\Calculation\DossierCompositionBuilder;
@@ -1004,6 +1046,16 @@ function compositionFinal(array $composition, string $key): array
 function gramsAndPercent(array $row): array
 {
     return [DecimalMath::round($row['grams'], 6), DecimalMath::round($row['percent'], 6)];
+}
+
+/**
+ * @param  Closure(): mixed  $build
+ */
+function expectCalculationRefused(Closure $build, string $reason): void
+{
+    expect($build)->toThrow(function (DossierCalculationException $exception) use ($reason): void {
+        expect($exception->reason)->toBe($reason);
+    });
 }
 
 it('builds the initial and final composition of a simple olive soap', function (): void {
@@ -1045,21 +1097,24 @@ it('carries a fragrance at unchanged mass and agrees with the label cured output
         ->and($composition['tracing']['passes'])->toBeTrue();
 });
 
-it('splits the residual liquid across water and a hydrosol by their fresh share', function (): void {
-    $hydrosol = Fixtures::ingredient('Lavender Hydrosol', 'LAVANDULA ANGUSTIFOLIA FLOWER WATER', IngredientCategory::BotanicalsExtracts);
-    $soap = Fixtures::oliveSoap(['lye_water' => [Fixtures::row($hydrosol, 25, 95)]]);
+it('uses the saved weights, not the independently rounded percentages', function (): void {
+    // In weight-editing mode the workbench stores 1.2345 g with 0.0123 % and 0.001 g with 0.0000 % on a 10 kg basis.
+    $lavender = Fixtures::ingredient('Lavender Oil', 'LAVANDULA ANGUSTIFOLIA OIL', IngredientCategory::AromaticMaterials);
+    $mint = Fixtures::ingredient('Peppermint Oil', 'MENTHA PIPERITA OIL', IngredientCategory::AromaticMaterials);
+    $soap = Fixtures::oliveSoap(
+        ['fragrance' => [Fixtures::row($lavender, 0.0123, 1.2345), Fixtures::row($mint, 0, 0.001)]],
+        ['editing_mode' => 'weight'],
+        oilWeight: 10000,
+    );
 
     $composition = app(DossierCompositionBuilder::class)->build($soap['version']);
-    $losses = collect($composition['losses'])->keyBy('from');
 
-    expect(DecimalMath::round(compositionFinal($composition, 'residual_liquid:ingredient:'.$hydrosol->id)['grams'], 6))->toBe('34.833595')
-        ->and(DecimalMath::round(compositionFinal($composition, 'residual_water')['grams'], 6))->toBe('104.500785')
-        ->and(DecimalMath::round($losses['item:lye_water:0']['grams'], 6))->toBe('60.166405')
-        ->and(DecimalMath::round($losses['water']['grams'], 6))->toBe('180.499215')
+    expect(DecimalMath::round(compositionFinal($composition, 'carried:ingredient:'.$lavender->id)['grams'], 4))->toBe('1.2345')
+        ->and(DecimalMath::round(compositionFinal($composition, 'carried:ingredient:'.$mint->id)['grams'], 4))->toBe('0.0010')
         ->and($composition['tracing']['passes'])->toBeTrue();
 });
 
-it('uses a measured cure loss instead of the estimate without rescaling other materials', function (): void {
+it('takes a measured cure loss from the water only', function (): void {
     $soap = Fixtures::oliveSoap();
 
     $composition = app(DossierCompositionBuilder::class)->build($soap['version'], measuredCureLossPercent: '15');
@@ -1081,26 +1136,62 @@ it('uses a justified residual water percentage', function (): void {
         ->and(DecimalMath::round(compositionFinal($composition, 'residual_water')['grams'], 6))->toBe('111.495343');
 });
 
-it('refuses what the pilot engine does not support', function (string $reason): void {
-    $soap = Fixtures::oliveSoap();
+it('traces a dual-lye soap with KOH 100 % into both soap salts', function (): void {
+    $soap = Fixtures::oliveSoap(payloadOverrides: ['lye_type' => 'dual', 'dual_lye_koh_percentage' => 40, 'koh_purity_percentage' => 100]);
+
+    $composition = app(DossierCompositionBuilder::class)->build($soap['version']);
+    $initial = collect($composition['initial'])->keyBy('key');
+
+    expect($composition['tracing']['passes'])->toBeTrue()
+        ->and(DecimalMath::isPositive(compositionFinal($composition, 'soap_salt:SODIUM OLIVATE')['grams']))->toBeTrue()
+        ->and(DecimalMath::isPositive(compositionFinal($composition, 'soap_salt:POTASSIUM OLIVATE')['grams']))->toBeTrue()
+        ->and(DecimalMath::round($composition['reactions'][0]['koh_g'], 4))->toBe(DecimalMath::round($initial['koh']['grams'], 4));
+});
+
+it('refuses formulas and materials the pilot engine does not support', function (string $reason): void {
     $builder = app(DossierCompositionBuilder::class);
 
-    // Pest would call closures placed in a dataset, so each case is selected by its expected reason.
-    $build = match ($reason) {
-        'working_copy' => fn () => $builder->build($soap['workingCopy']),
-        'unsupported_family' => function () use ($builder, $soap) {
+    // Pest calls closures placed in a dataset, so each case is selected by its expected reason.
+    match ($reason) {
+        'working_copy' => expectCalculationRefused(fn () => $builder->build(Fixtures::oliveSoap()['workingCopy']), $reason),
+        'unsupported_family' => expectCalculationRefused(function () use ($builder) {
+            $soap = Fixtures::oliveSoap();
             ProductFamily::query()->whereKey($soap['recipe']->product_family_id)->update(['calculation_basis' => 'total_formula']);
 
             return $builder->build($soap['version']);
-        },
-        'measured_loss_out_of_range' => fn () => $builder->build($soap['version'], measuredCureLossPercent: '30'),
+        }, $reason),
+        'measured_loss_out_of_range' => expectCalculationRefused(fn () => $builder->build(Fixtures::oliveSoap()['version'], measuredCureLossPercent: '30'), $reason),
+        'unsupported_reacting_material' => expectCalculationRefused(fn () => $builder->build(Fixtures::oliveSoap(oil: Fixtures::oil(
+            'Fractionated Coconut Oil', 'CAPRYLIC/CAPRIC TRIGLYCERIDE', 'SODIUM CAPRYLATE', 'POTASSIUM CAPRYLATE', 0.33, IngredientSubcategory::FractionatedModifiedLipids,
+        ))['version']), $reason),
+        'lye_substitute_unsupported' => expectCalculationRefused(fn () => $builder->build(Fixtures::oliveSoap([
+            'lye_water' => [Fixtures::row(Fixtures::ingredient('Glycerin', 'GLYCERIN', IngredientCategory::HumectantsPolyols), 25, 95)],
+        ])['version']), $reason),
+        'koh_non_active_share_unsupported' => expectCalculationRefused(fn () => $builder->build(Fixtures::oliveSoap(
+            payloadOverrides: ['lye_type' => 'koh', 'koh_purity_percentage' => 90],
+        )['version']), $reason),
     };
+})->with([
+    'working_copy',
+    'unsupported_family',
+    'measured_loss_out_of_range',
+    'unsupported_reacting_material',
+    'lye_substitute_unsupported',
+    'koh_non_active_share_unsupported',
+]);
 
-    expect($build)->toThrow(function (DossierCalculationException $exception) use ($reason): void {
-        expect($exception->reason)->toBe($reason);
-    });
-})->with(['working_copy', 'unsupported_family', 'measured_loss_out_of_range']);
+it('names the lye settings it cannot assess', function (array $lye, ?string $reason): void {
+    expect(app(DossierCompositionBuilder::class)->unsupportedLyeReason($lye))->toBe($reason);
+})->with([
+    'supported' => [['superfat_percentage' => 5, 'excess' => ['naoh_weight' => 0, 'koh_weight' => 0], 'selected' => ['koh_weight' => 0, 'koh_to_weigh' => 0]], null],
+    'negative superfat' => [['superfat_percentage' => -1, 'excess' => ['naoh_weight' => 0, 'koh_weight' => 0], 'selected' => []], 'negative_superfat'],
+    'excess NaOH' => [['superfat_percentage' => 0, 'excess' => ['naoh_weight' => 0.5, 'koh_weight' => 0], 'selected' => []], 'excess_alkali'],
+    'excess KOH' => [['superfat_percentage' => 0, 'excess' => ['naoh_weight' => 0, 'koh_weight' => 0.5], 'selected' => []], 'excess_alkali'],
+    'KOH 90 %' => [['superfat_percentage' => 5, 'excess' => ['naoh_weight' => 0, 'koh_weight' => 0], 'selected' => ['koh_weight' => 90, 'koh_to_weigh' => 100]], 'koh_non_active_share_unsupported'],
+]);
 ```
+
+Note for the weight-mode test: if the workbench recomputes a weight-mode row from its percentage, the test fails at its first assertion; that would mean the saved weight is not the authority and decision 2 must be revisited with the owner. (Probe on 2026-10-23: the weights above are stored as given.)
 
 - [ ] **Step 3: Run it to see it fail**
 
@@ -1140,7 +1231,10 @@ class DossierCalculationException extends RuntimeException
 
 namespace App\Services\Dossiers\Calculation;
 
+use App\Enums\IngredientCategory;
+use App\Enums\IngredientSubcategory;
 use App\Exceptions\DossierCalculationException;
+use App\Models\Ingredient;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Services\MassConverter;
@@ -1152,7 +1246,8 @@ use Illuminate\Support\Arr;
 
 /**
  * Both compositions of a saved bar-soap formula with the ingredient-tracing ledger (spec §4.1), in grams before
- * normalisation. The final composition is a theoretical estimate unless a measured cure loss is given.
+ * normalisation, from the saved weights. The final composition is a theoretical estimate unless a measured cure loss is
+ * given. Only the pilot's supported chemistry runs (decision 1).
  */
 class DossierCompositionBuilder
 {
@@ -1161,6 +1256,15 @@ class DossierCompositionBuilder
     private const LYE_LIQUID_PHASE = 'lye_water';
 
     private const REACTION_MASS_PRECISION = 12;
+
+    /**
+     * Triglyceride lipids: the only materials whose reaction the shared stoichiometry describes.
+     */
+    private const TRIGLYCERIDE_SUBCATEGORIES = [
+        IngredientSubcategory::VegetableOils,
+        IngredientSubcategory::Butters,
+        IngredientSubcategory::AnimalFats,
+    ];
 
     public function __construct(
         private readonly RecipeWorkbenchVersionDataService $versionData,
@@ -1171,8 +1275,8 @@ class DossierCompositionBuilder
 
     /**
      * @return array{
-     *     basis: array{unit: string, oil_weight_g: string, initial_mass_g: string, lye_liquid_g: string, cured_mass_g: string,
-     *                  residual_liquid_g: string, residual_source: string, residual_water_percent: string|null, measured_cure_loss_percent: string|null},
+     *     basis: array{unit: string, oil_weight_g: string, initial_mass_g: string, lye_water_g: string, cured_mass_g: string,
+     *                  residual_water_g: string, residual_source: string, residual_water_percent: string|null, measured_cure_loss_percent: string|null},
      *     initial: list<array{key: string, kind: string, ingredient_id: int|null, name: string, inci_name: string|null, phase: string, grams: string, percent: string}>,
      *     final: list<array{key: string, kind: string, ingredient_id: int|null, name: string, inci_name: string|null, sources: list<string>, grams: string, percent: string}>,
      *     reactions: list<array<string, int|string>>,
@@ -1184,7 +1288,7 @@ class DossierCompositionBuilder
     public function build(RecipeVersion $version, ?string $measuredCureLossPercent = null, ?string $residualWaterPercent = null): array
     {
         $recipe = Recipe::withoutGlobalScopes()->with('productFamily')->findOrFail($version->recipe_id);
-        $this->assertSupported($recipe, $version);
+        $this->assertSupportedFamily($recipe, $version);
         $snapshot = $this->versionData->versionSnapshot($recipe, $version->id);
         $calculation = $snapshot['calculation'] ?? null;
 
@@ -1197,7 +1301,12 @@ class DossierCompositionBuilder
         }
 
         $lye = $calculation['lye'];
-        $this->assertNoExcessAlkali($lye);
+        $lyeReason = $this->unsupportedLyeReason($lye);
+
+        if ($lyeReason !== null) {
+            throw new DossierCalculationException($lyeReason);
+        }
+
         $unit = (string) data_get($snapshot, 'draft.oilUnit', 'g');
         $oilWeight = $this->grams(data_get($snapshot, 'draft.oilWeight', 0), $unit);
         $settings = $this->reactionSettings($lye);
@@ -1207,21 +1316,22 @@ class DossierCompositionBuilder
         $reactions = [];
 
         foreach (Arr::wrap(data_get($snapshot, 'draft.phaseItems', [])) as $phase => $items) {
-            if ($phase === self::LYE_LIQUID_PHASE) {
-                continue;
-            }
-
             foreach (array_values(Arr::wrap($items)) as $index => $item) {
-                $grams = DecimalMath::div(DecimalMath::mul($oilWeight, DecimalMath::of($item['percentage'] ?? 0)), '100');
+                $grams = $this->rowGrams($item, $oilWeight, $unit);
 
                 if (! DecimalMath::isPositive($grams)) {
                     continue;
+                }
+
+                if ($phase === self::LYE_LIQUID_PHASE) {
+                    throw new DossierCalculationException('lye_substitute_unsupported', ['ingredient' => (string) ($item['name'] ?? '')]);
                 }
 
                 $key = "item:{$phase}:{$index}";
                 $initial[] = $this->initialRow($key, 'ingredient', (int) $item['ingredient_id'], (string) $item['name'], $item['inci_name'] ?? null, (string) $phase, $grams);
 
                 if ($phase === self::REACTION_PHASE) {
+                    $this->assertTriglyceride($item);
                     $reaction = $this->react($key, $item, $grams, $settings);
                     $reactions[] = $reaction['summary'];
                     $final = $this->mergeFinal($final, $reaction['final']);
@@ -1238,21 +1348,24 @@ class DossierCompositionBuilder
             }
         }
 
-        [$initial, $final, $contributions] = $this->addAlkali($lye, $unit, $initial, $final, $contributions);
-        $liquid = $this->lyeLiquidRows($snapshot, $this->grams(data_get($lye, 'water.weight', 0), $unit));
-        $initial = [...$initial, ...array_column($liquid['rows'], 'initial')];
+        $initial = $this->withAlkali($lye, $unit, $initial);
+        $water = $this->grams(data_get($lye, 'water.weight', 0), $unit);
+        $waterInci = (string) config('dossiers.final_material_inci.residual_water');
+
+        if (DecimalMath::isPositive($water)) {
+            $initial[] = $this->initialRow('water', 'water', null, 'Eau', $waterInci, 'lye', $water);
+        }
+
         $initialMass = DecimalMath::add(...array_column($initial, 'grams'));
-        [$curedMass, $residual, $residualSource, $residualPercent] = $this->curedMass($snapshot, $initialMass, $liquid['total'], $measuredCureLossPercent, $residualWaterPercent);
+        [$curedMass, $residual, $residualSource, $residualPercent] = $this->curedMass($snapshot, $initialMass, $water, $measuredCureLossPercent, $residualWaterPercent);
         $losses = [];
 
-        foreach ($liquid['rows'] as $row) {
-            $fresh = $row['initial']['grams'];
-            $kept = DecimalMath::mul($residual, DecimalMath::div($fresh, $liquid['total']));
-            $losses[] = ['from' => $row['initial']['key'], 'kind' => 'evaporated', 'grams' => DecimalMath::sub($fresh, $kept)];
+        if (DecimalMath::isPositive($water)) {
+            $losses[] = ['from' => 'water', 'kind' => 'evaporated', 'grams' => DecimalMath::sub($water, $residual)];
 
-            if (DecimalMath::isPositive($kept)) {
-                $final = $this->mergeFinal($final, [[...$row['final'], 'sources' => [$row['initial']['name']], 'grams' => $kept]]);
-                $contributions[] = ['from' => $row['initial']['key'], 'to' => $row['final']['key'], 'grams' => $kept];
+            if (DecimalMath::isPositive($residual)) {
+                $final = $this->mergeFinal($final, [$this->finalRow('residual_water', 'residual_water', null, 'Eau résiduelle', $waterInci, ['Eau'], $residual)]);
+                $contributions[] = ['from' => 'water', 'to' => 'residual_water', 'grams' => $residual];
             }
         }
 
@@ -1267,9 +1380,9 @@ class DossierCompositionBuilder
                 'unit' => $unit,
                 'oil_weight_g' => $oilWeight,
                 'initial_mass_g' => $initialMass,
-                'lye_liquid_g' => $liquid['total'],
+                'lye_water_g' => $water,
                 'cured_mass_g' => $curedMass,
-                'residual_liquid_g' => $residual,
+                'residual_water_g' => $residual,
                 'residual_source' => $residualSource,
                 'residual_water_percent' => $residualPercent,
                 'measured_cure_loss_percent' => $measuredCureLossPercent === null ? null : DecimalMath::of($measuredCureLossPercent),
@@ -1283,7 +1396,23 @@ class DossierCompositionBuilder
         ];
     }
 
-    private function assertSupported(Recipe $recipe, RecipeVersion $version): void
+    /**
+     * The reason the pilot cannot assess these lye settings, or null (decision 1).
+     *
+     * @param  array<string, mixed>  $lye
+     */
+    public function unsupportedLyeReason(array $lye): ?string
+    {
+        return match (true) {
+            DecimalMath::cmp(DecimalMath::of($lye['superfat_percentage'] ?? 0), '0') < 0 => 'negative_superfat',
+            DecimalMath::isPositive(DecimalMath::of(data_get($lye, 'excess.naoh_weight', 0))),
+            DecimalMath::isPositive(DecimalMath::of(data_get($lye, 'excess.koh_weight', 0))) => 'excess_alkali',
+            DecimalMath::cmp(DecimalMath::of(data_get($lye, 'selected.koh_to_weigh', 0)), DecimalMath::of(data_get($lye, 'selected.koh_weight', 0))) > 0 => 'koh_non_active_share_unsupported',
+            default => null,
+        };
+    }
+
+    private function assertSupportedFamily(Recipe $recipe, RecipeVersion $version): void
     {
         if ($version->is_current) {
             throw new DossierCalculationException('working_copy');
@@ -1301,18 +1430,33 @@ class DossierCompositionBuilder
     }
 
     /**
-     * @param  array<string, mixed>  $lye
+     * @param  array<string, mixed>  $item
      */
-    private function assertNoExcessAlkali(array $lye): void
+    private function assertTriglyceride(array $item): void
     {
-        if (DecimalMath::cmp(DecimalMath::of($lye['superfat_percentage'] ?? 0), '0') < 0) {
-            throw new DossierCalculationException('negative_superfat');
+        $ingredient = Ingredient::withoutGlobalScopes()->find($item['ingredient_id'] ?? null);
+
+        if (! $ingredient instanceof Ingredient
+            || $ingredient->category !== IngredientCategory::Lipids
+            || ! in_array($ingredient->subcategory, self::TRIGLYCERIDE_SUBCATEGORIES, true)) {
+            throw new DossierCalculationException('unsupported_reacting_material', ['ingredient' => (string) ($item['name'] ?? '')]);
+        }
+    }
+
+    /**
+     * A row's mass as the workbench preview reads it: the saved weight when positive, otherwise oil weight × percentage.
+     *
+     * @param  array<string, mixed>  $item
+     */
+    private function rowGrams(array $item, string $oilWeight, string $unit): string
+    {
+        $weight = $item['weight'] ?? null;
+
+        if (is_numeric($weight) && (float) $weight > 0) {
+            return $this->grams($weight, $unit);
         }
 
-        if (DecimalMath::isPositive(DecimalMath::of(data_get($lye, 'excess.naoh_weight', 0)))
-            || DecimalMath::isPositive(DecimalMath::of(data_get($lye, 'excess.koh_weight', 0)))) {
-            throw new DossierCalculationException('excess_alkali');
-        }
+        return DecimalMath::div(DecimalMath::mul($oilWeight, DecimalMath::of($item['percentage'] ?? 0)), '100');
     }
 
     /**
@@ -1334,8 +1478,8 @@ class DossierCompositionBuilder
     }
 
     /**
-     * One oil's reaction (decision 3): oil → glycerin (backbone) and soap salt (salt − its alkali), alkali → soap salt,
-     * the rest of the oil stays unsaponified.
+     * One triglyceride's reaction (decision 4): oil → glycerin (backbone) and soap salt (salt − its alkali), alkali →
+     * soap salt, the rest of the oil stays unsaponified.
      *
      * @param  array<string, mixed>  $item
      * @param  array<string, float|int|string>  $settings
@@ -1402,119 +1546,60 @@ class DossierCompositionBuilder
     }
 
     /**
-     * The weighed alkali (the formula's values) as initial rows; KOH's non-active share stays in the bar.
+     * The weighed alkali (the formula's values) as initial rows. KOH below 100 % purity never reaches this point.
      *
      * @param  array<string, mixed>  $lye
      * @param  list<array<string, mixed>>  $initial
-     * @param  array<string, array<string, mixed>>  $final
-     * @param  list<array{from: string, to: string, grams: string}>  $contributions
-     * @return array{0: list<array<string, mixed>>, 1: array<string, array<string, mixed>>, 2: list<array{from: string, to: string, grams: string}>}
+     * @return list<array<string, mixed>>
      */
-    private function addAlkali(array $lye, string $unit, array $initial, array $final, array $contributions): array
+    private function withAlkali(array $lye, string $unit, array $initial): array
     {
         $naoh = $this->grams(data_get($lye, 'selected.naoh_weight', 0), $unit);
-        $kohActive = $this->grams(data_get($lye, 'selected.koh_weight', 0), $unit);
-        $kohWeighed = $this->grams(data_get($lye, 'selected.koh_to_weigh', 0), $unit);
+        $koh = $this->grams(data_get($lye, 'selected.koh_to_weigh', 0), $unit);
 
         if (DecimalMath::isPositive($naoh)) {
             $initial[] = $this->initialRow('naoh', 'alkali', null, 'Hydroxyde de sodium', 'SODIUM HYDROXIDE', 'lye', $naoh);
         }
 
-        if (DecimalMath::isPositive($kohWeighed)) {
-            $initial[] = $this->initialRow('koh', 'alkali', null, 'Hydroxyde de potassium', 'POTASSIUM HYDROXIDE', 'lye', $kohWeighed);
-            $nonActive = DecimalMath::sub($kohWeighed, $kohActive);
-
-            if (DecimalMath::isPositive($nonActive)) {
-                $final = $this->mergeFinal($final, [
-                    $this->finalRow('koh_non_active', 'koh_non_active', null, 'Part non active de l’hydroxyde de potassium', null, ['Hydroxyde de potassium'], $nonActive),
-                ]);
-                $contributions[] = ['from' => 'koh', 'to' => 'koh_non_active', 'grams' => $nonActive];
-            }
+        if (DecimalMath::isPositive($koh)) {
+            $initial[] = $this->initialRow('koh', 'alkali', null, 'Hydroxyde de potassium', 'POTASSIUM HYDROXIDE', 'lye', $koh);
         }
 
-        return [$initial, $final, $contributions];
+        return $initial;
     }
 
     /**
-     * Water plus any lye-water substitutes, each with the final row its residual share goes to.
-     *
-     * @param  array<string, mixed>  $snapshot
-     * @return array{total: string, rows: list<array{initial: array<string, mixed>, final: array<string, mixed>}>}
-     */
-    private function lyeLiquidRows(array $snapshot, string $liquidMass): array
-    {
-        $waterInci = (string) config('dossiers.final_material_inci.residual_water');
-        $rows = [];
-        $substituted = '0';
-
-        foreach (array_values(Arr::wrap(data_get($snapshot, 'draft.phaseItems.'.self::LYE_LIQUID_PHASE, []))) as $index => $item) {
-            $grams = DecimalMath::div(DecimalMath::mul($liquidMass, DecimalMath::of($item['percentage'] ?? 0)), '100');
-
-            if (! DecimalMath::isPositive($grams)) {
-                continue;
-            }
-
-            $substituted = DecimalMath::add($substituted, $grams);
-            $finalKey = 'residual_liquid:ingredient:'.$item['ingredient_id'];
-            $rows[] = [
-                'initial' => $this->initialRow('item:'.self::LYE_LIQUID_PHASE.":{$index}", 'ingredient', (int) $item['ingredient_id'], (string) $item['name'], $item['inci_name'] ?? null, self::LYE_LIQUID_PHASE, $grams),
-                'final' => $this->finalRow($finalKey, 'residual_liquid', (int) $item['ingredient_id'], (string) $item['name'], $item['inci_name'] ?? null, [], '0'),
-            ];
-        }
-
-        $water = DecimalMath::sub($liquidMass, $substituted);
-
-        if (DecimalMath::cmp($water, '0') < 0) {
-            throw new DossierCalculationException('lye_liquid_over_allocated');
-        }
-
-        if (DecimalMath::isPositive($water)) {
-            array_unshift($rows, [
-                'initial' => $this->initialRow('water', 'water', null, 'Eau', $waterInci, 'lye', $water),
-                'final' => $this->finalRow('residual_water', 'residual_water', null, 'Eau résiduelle', $waterInci, [], '0'),
-            ]);
-        }
-
-        return ['total' => $liquidMass, 'rows' => $rows];
-    }
-
-    /**
-     * Cured mass and residual liquid: a measured cure loss replaces the estimated water loss; otherwise every non-liquid
-     * mass is kept and the residual percentage (formula or justified override) sets the cured mass.
+     * Cured mass and residual water: a measured cure loss is taken from the water only; otherwise every non-water mass
+     * is kept and the residual percentage (formula or justified override) sets the cured mass.
      *
      * @param  array<string, mixed>  $snapshot
      * @return array{0: string, 1: string, 2: string, 3: string|null}
      */
-    private function curedMass(array $snapshot, string $initialMass, string $liquidMass, ?string $measuredLossPercent, ?string $residualOverride): array
+    private function curedMass(array $snapshot, string $initialMass, string $water, ?string $measuredLossPercent, ?string $residualOverride): array
     {
-        if (! DecimalMath::isPositive($liquidMass)) {
-            return [$initialMass, '0', 'no_liquid', null];
+        if (! DecimalMath::isPositive($water)) {
+            return [$initialMass, '0', 'no_water', null];
         }
 
         if ($measuredLossPercent !== null) {
             $lost = DecimalMath::div(DecimalMath::mul($initialMass, DecimalMath::of($measuredLossPercent)), '100');
 
-            if (DecimalMath::cmp($lost, '0') < 0 || DecimalMath::cmp($lost, $liquidMass) > 0) {
+            if (DecimalMath::cmp($lost, '0') < 0 || DecimalMath::cmp($lost, $water) > 0) {
                 throw new DossierCalculationException('measured_loss_out_of_range');
             }
 
-            return [DecimalMath::sub($initialMass, $lost), DecimalMath::sub($liquidMass, $lost), 'measured', null];
+            return [DecimalMath::sub($initialMass, $lost), DecimalMath::sub($water, $lost), 'measured', null];
         }
 
         $percent = $residualOverride !== null
             ? DecimalMath::of($residualOverride)
             : DecimalMath::of(SoapSap::curedWaterPercentage(data_get($snapshot, 'draft.curedWaterPercentage')));
-
-        if (DecimalMath::cmp($percent, '0') < 0 || DecimalMath::cmp($percent, '100') >= 0) {
-            throw new DossierCalculationException('residual_water_out_of_range');
-        }
-
-        $retained = DecimalMath::sub($initialMass, $liquidMass);
+        $retained = DecimalMath::sub($initialMass, $water);
         $cured = DecimalMath::div($retained, DecimalMath::sub('1', DecimalMath::div($percent, '100')));
         $residual = DecimalMath::sub($cured, $retained);
 
-        if (DecimalMath::cmp($residual, $liquidMass) > 0) {
-            throw new DossierCalculationException('residual_exceeds_liquid');
+        if (DecimalMath::cmp($residual, $water) > 0) {
+            throw new DossierCalculationException('residual_exceeds_water');
         }
 
         return [$cured, $residual, $residualOverride !== null ? 'override' : 'formula_estimate', $percent];
@@ -1572,17 +1657,19 @@ class DossierCompositionBuilder
 }
 ```
 
+The residual-water bounds (0–30 %) and the measured-loss bounds are enforced earlier, by `DossierAssessmentOptions` (Task 7); the checks left here protect the builder when it is called directly.
+
 - [ ] **Step 5: Run the test**
 
 Run: `php artisan test --compact tests/Feature/Dossiers/Calculation/DossierCompositionBuilderTest.php`
-Expected: PASS (8 tests). If the label cross-check differs in the 4th decimal, compare the label row's own rounding (`SoapCuredOutputBuilder::roundMass`) before changing anything: the engine's grams are the full-precision reference.
+Expected: PASS (17 tests). If the label cross-check differs in the 4th decimal, compare the label row's own rounding (`SoapCuredOutputBuilder::roundMass`) before changing anything: the engine's grams are the full-precision reference.
 
 - [ ] **Step 6: Commit**
 
 ```bash
 vendor/bin/pint --dirty --format agent
 git add app/Exceptions/DossierCalculationException.php app/Services/Dossiers/Calculation/DossierCompositionBuilder.php tests/Support/DossierCalculationFixtures.php tests/Feature/Dossiers/Calculation/DossierCompositionBuilderTest.php
-git commit -m "Build both DIP soap compositions with an ingredient-tracing ledger"
+git commit -m "Build both DIP soap compositions from saved weights with an ingredient-tracing ledger"
 ```
 
 ---
@@ -1876,7 +1963,7 @@ class ConstituentOverlayBuilder
     }
 
     /**
-     * A blend with components and no validated supplier of its own is read through its components (decision 7).
+     * A blend with components and no validated supplier of its own is read through its components (decision 9).
      *
      * @return list<array{0: Ingredient, 1: string}>
      */
@@ -1998,14 +2085,46 @@ it('cannot run without a policy or an exposure preset', function (bool $withPoli
     'no current preset' => [true, 'no_exposure_preset'],
 ]);
 
-it('refuses unknown or unjustified overrides and unknown routes', function (array $arguments): void {
+it('refuses unknown, unjustified or physically impossible inputs', function (array $arguments): void {
     new DossierAssessmentOptions(...$arguments);
 })->with([
     'unknown key' => [['overrides' => ['mos_threshold' => ['value' => '50', 'justification' => 'x']]]],
     'no justification' => [['overrides' => ['retention_factor' => ['value' => '0.1', 'justification' => ' ']]]],
     'not a number' => [['overrides' => ['retention_factor' => ['value' => 'ten', 'justification' => 'x']]]],
+    'negative retention' => [['overrides' => ['retention_factor' => ['value' => '-0.01', 'justification' => 'x']]]],
+    'zero retention' => [['overrides' => ['retention_factor' => ['value' => '0', 'justification' => 'x']]]],
+    'retention above 1' => [['overrides' => ['retention_factor' => ['value' => '1.5', 'justification' => 'x']]]],
+    'zero body weight' => [['overrides' => ['body_weight_kg' => ['value' => '0', 'justification' => 'x']]]],
+    'zero amount per use' => [['overrides' => ['amount_per_use_g' => ['value' => '0', 'justification' => 'x']]]],
+    'zero uses per day' => [['overrides' => ['uses_per_day' => ['value' => '0', 'justification' => 'x']]]],
+    'absorption above 100 %' => [['overrides' => ['default_dermal_absorption_percent' => ['value' => '100.1', 'justification' => 'x']]]],
+    'negative absorption' => [['overrides' => ['default_dermal_absorption_percent' => ['value' => '-1', 'justification' => 'x']]]],
+    'bioavailability above 100 %' => [['overrides' => ['default_oral_bioavailability_percent' => ['value' => '101', 'justification' => 'x']]]],
+    'residual water above 30 %' => [['overrides' => ['residual_water_percent' => ['value' => '31', 'justification' => 'x']]]],
+    'measured loss of 100 %' => [['measuredCureLossPercent' => '100']],
     'unknown route' => [['confirmations' => ['glycerin' => ['route' => 'guess', 'justification' => 'x']]]],
+    'unknown annex answer' => [['confirmations' => ['glycerin' => ['route' => 'mos', 'justification' => 'x', 'annex_conditions' => 'maybe']]]],
 ])->throws(InvalidArgumentException::class);
+
+it('accepts the limits themselves, zero absorption included', function (array $arguments): void {
+    expect(new DossierAssessmentOptions(...$arguments))->toBeInstanceOf(DossierAssessmentOptions::class);
+})->with([
+    'zero absorption' => [['overrides' => ['default_dermal_absorption_percent' => ['value' => '0', 'justification' => 'Measured: not absorbed.']]]],
+    'retention of 1' => [['overrides' => ['retention_factor' => ['value' => '1', 'justification' => 'Leave-on worst case.']]]],
+    'residual water of 30 %' => [['overrides' => ['residual_water_percent' => ['value' => '30', 'justification' => 'Freshly cut bars.']]]],
+    'no measured loss' => [['measuredCureLossPercent' => '0']],
+]);
+
+it('does not run with a stored preset value outside its physical bounds', function (): void {
+    AssessmentPolicy::factory()->create();
+    $preset = ExposurePreset::factory()->create(['retention_factor' => '0']);
+
+    expect(fn () => app(AssessmentParameterResolver::class)->resolve($preset->product_type_id, null, null, new DossierAssessmentOptions))
+        ->toThrow(function (DossierCalculationException $exception): void {
+            expect($exception->reason)->toBe('invalid_parameter')
+                ->and($exception->context)->toBe(['key' => 'retention_factor']);
+        });
+});
 ```
 
 - [ ] **Step 2: Run it to see it fail**
@@ -2049,11 +2168,28 @@ use InvalidArgumentException;
 
 /**
  * Dossier-level inputs to one DIP calculation (spec §5): overrides of scientific assumptions, each with a mandatory
- * justification; the owner's confirmed routes per row key; an optional measured cure loss (% of the initial batch);
- * the evaluation date. Phase 4 stores them on the dossier version.
+ * justification and within physical bounds; the owner's confirmed routes per row key, with the answer to any annex
+ * condition that cannot be checked automatically; an optional measured cure loss (% of the initial batch); the
+ * evaluation date. Phase 4 stores them on the dossier version.
  */
 final readonly class DossierAssessmentOptions
 {
+    /**
+     * Physical bounds (decision 11): [minimum, minimum allowed?, maximum or null, maximum allowed?].
+     */
+    public const BOUNDS = [
+        'amount_per_use_g' => ['0', false, null, false],
+        'uses_per_day' => ['0', false, null, false],
+        'retention_factor' => ['0', false, '1', true],
+        'body_weight_kg' => ['0', false, null, false],
+        'default_dermal_absorption_percent' => ['0', true, '100', true],
+        'default_oral_bioavailability_percent' => ['0', true, '100', true],
+        'residual_water_percent' => ['0', true, '30', true],
+        'measured_cure_loss_percent' => ['0', true, '100', false],
+    ];
+
+    public const ANNEX_CONDITION_ANSWERS = ['met', 'not_met'];
+
     public const OVERRIDABLE = [
         'amount_per_use_g',
         'uses_per_day',
@@ -2066,7 +2202,7 @@ final readonly class DossierAssessmentOptions
 
     /**
      * @param  array<string, array{value: string, justification: string}>  $overrides
-     * @param  array<string, array{route: string, justification: string, endpoints_addressed?: bool, conditions_verified?: bool}>  $confirmations
+     * @param  array<string, array{route: string, justification: string, endpoints_addressed?: bool, annex_conditions?: 'met'|'not_met'}>  $confirmations
      */
     public function __construct(
         public array $overrides = [],
@@ -2083,18 +2219,42 @@ final readonly class DossierAssessmentOptions
                 throw new InvalidArgumentException("The override of [{$key}] needs a justification.");
             }
 
-            DecimalMath::of($override['value'] ?? null);
+            if (! self::withinBounds($key, DecimalMath::of($override['value'] ?? null))) {
+                throw new InvalidArgumentException("The override of [{$key}] is outside its physical bounds.");
+            }
         }
 
         foreach ($confirmations as $rowKey => $confirmation) {
             if (AssessmentRoute::tryFrom((string) ($confirmation['route'] ?? '')) === null) {
                 throw new InvalidArgumentException("The route confirmed for [{$rowKey}] is not an assessment route.");
             }
+
+            if (isset($confirmation['annex_conditions']) && ! in_array($confirmation['annex_conditions'], self::ANNEX_CONDITION_ANSWERS, true)) {
+                throw new InvalidArgumentException("The annex conditions of [{$rowKey}] must be recorded as met or not met.");
+            }
         }
 
-        if ($measuredCureLossPercent !== null) {
-            DecimalMath::of($measuredCureLossPercent);
+        if ($measuredCureLossPercent !== null && ! self::withinBounds('measured_cure_loss_percent', DecimalMath::of($measuredCureLossPercent))) {
+            throw new InvalidArgumentException('The measured cure loss is outside its physical bounds.');
         }
+    }
+
+    public static function withinBounds(string $key, string $value): bool
+    {
+        [$minimum, $minimumAllowed, $maximum, $maximumAllowed] = self::BOUNDS[$key];
+        $low = DecimalMath::cmp($value, $minimum);
+
+        if ($low < 0 || ($low === 0 && ! $minimumAllowed)) {
+            return false;
+        }
+
+        if ($maximum === null) {
+            return true;
+        }
+
+        $high = DecimalMath::cmp($value, $maximum);
+
+        return $high < 0 || ($high === 0 && $maximumAllowed);
     }
 
     public function override(string $key): ?string
@@ -2158,6 +2318,11 @@ class AssessmentParameterResolver
         $value = function (string $key, mixed $default, string $unit, string $source) use ($options, &$used): string {
             $defaultValue = DecimalMath::of($default);
             $override = $options->override($key);
+
+            if (! DossierAssessmentOptions::withinBounds($key, $override ?? $defaultValue)) {
+                throw new DossierCalculationException('invalid_parameter', ['key' => $key]);
+            }
+
             $used[] = [
                 'key' => $key,
                 'value' => $override ?? $defaultValue,
@@ -2179,6 +2344,11 @@ class AssessmentParameterResolver
         $policyDap = $value('default_dermal_absorption_percent', $policy->default_dermal_absorption_percent, '%', $policySource);
         $policyBioavailability = $value('default_oral_bioavailability_percent', $policy->default_oral_bioavailability_percent, '%', $policySource);
         $mosThreshold = DecimalMath::of($policy->mos_threshold);
+
+        if (! DecimalMath::isPositive($mosThreshold)) {
+            throw new DossierCalculationException('invalid_parameter', ['key' => 'mos_threshold']);
+        }
+
         $used[] = ['key' => 'mos_threshold', 'value' => $mosThreshold, 'unit' => '', 'source' => $policySource, 'default' => $mosThreshold, 'justification' => null];
 
         return [
@@ -2199,7 +2369,7 @@ class AssessmentParameterResolver
 - [ ] **Step 4: Run the test**
 
 Run: `php artisan test --compact tests/Feature/Dossiers/Calculation/AssessmentParameterResolverTest.php`
-Expected: PASS (8 tests).
+Expected: PASS (25 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -2332,7 +2502,7 @@ use App\Support\DecimalMath;
 use Carbon\CarbonImmutable;
 
 /**
- * EU annex checks (spec §4.2, decision 10). Binding requirements are automatic: a banned substance present or an
+ * EU annex checks (spec §4.2, decision 13). Binding requirements are automatic: a banned substance present or an
  * exceeded maximum is a breach whatever the other indicators say. Conditions written as text cannot be checked
  * automatically and are flagged for verification.
  */
@@ -2420,7 +2590,7 @@ class LegalEntryChecker
 
     /**
      * Whether the allergen must be declared on the label, from the EU threshold and its operator, against the
-     * finished-product concentration (decision 11).
+     * finished-product concentration (decision 14).
      *
      * @return array{threshold_percent: string, operator: string, must_declare: bool, declaration_label: string|null}|null
      */
@@ -2573,6 +2743,7 @@ it('explains why a margin of safety is unavailable', function (array $profile, s
 })->with([
     'no NOAEL' => [['noael_mg_kg_bw_day' => null, 'noael_route' => null], 'no_noael'],
     'inhalation study' => [['noael_mg_kg_bw_day' => '10', 'noael_route' => 'inhalation'], 'route_not_convertible'],
+    'dermal study' => [['noael_mg_kg_bw_day' => '10', 'noael_route' => 'dermal'], 'dermal_study_absorption_unknown'],
     'zero absorption' => [['noael_mg_kg_bw_day' => '10', 'noael_route' => 'oral', 'dermal_absorption_percent' => '0'], 'no_exposure'],
 ]);
 
@@ -2591,6 +2762,17 @@ it('evaluates QRA2 for allergens only, with the preset factor', function (): voi
         ->and($withoutPreset['qra2'])->toBe(['available' => false, 'reason' => 'no_qra2_preset'])
         ->and(indicatorsFor('material', '1', $profile, $preset)['qra2'])->toBeNull();
 });
+
+it('passes QRA2 exactly at its maximum and fails just above', function (string $concentration, bool $passes): void {
+    // NESIL 3000 with SAF 300, CEL 0.2 and factor 0.5 gives a QRA2 maximum of exactly 2.5 %.
+    $indicators = indicatorsFor('allergen', $concentration, ['nesil_ug_cm2' => '3000'], Qra2Parameter::factory()->create());
+
+    expect(DecimalMath::round($indicators['qra2']['cmax_percent'], 6))->toBe('2.500000')
+        ->and($indicators['qra2']['passes'])->toBe($passes);
+})->with([
+    'at the maximum' => ['2.5', true],
+    'just above' => ['2.5000001', false],
+]);
 ```
 
 - [ ] **Step 3: Run it to see it fail**
@@ -2605,6 +2787,7 @@ Expected: FAIL, class not found.
 
 namespace App\Services\Dossiers\Calculation;
 
+use App\Enums\NoaelRoute;
 use App\Models\Qra2Parameter;
 use App\Models\ToxicologyProfile;
 use App\Support\DecimalMath;
@@ -2675,10 +2858,10 @@ class RowIndicatorEvaluator
         $bioavailability = $profile->oral_bioavailability_percent === null
             ? $parameters['policy_oral_bioavailability']
             : DecimalMath::of($profile->oral_bioavailability_percent);
-        $systemicNoael = $this->exposure->systemicNoael(DecimalMath::of($profile->noael_mg_kg_bw_day), $profile->noael_route, $bioavailability, $dap);
+        $systemicNoael = $this->exposure->systemicNoael(DecimalMath::of($profile->noael_mg_kg_bw_day), $profile->noael_route, $bioavailability);
 
         if ($systemicNoael === null) {
-            return ['available' => false, 'reason' => 'route_not_convertible'];
+            return ['available' => false, 'reason' => $profile->noael_route === NoaelRoute::Dermal ? 'dermal_study_absorption_unknown' : 'route_not_convertible'];
         }
 
         $mos = $this->exposure->marginOfSafety($systemicNoael, $sed);
@@ -2744,7 +2927,7 @@ class RowIndicatorEvaluator
 - [ ] **Step 5: Run the test**
 
 Run: `php artisan test --compact tests/Feature/Dossiers/Calculation/RowIndicatorEvaluatorTest.php`
-Expected: PASS (7 tests).
+Expected: PASS (10 tests).
 
 - [ ] **Step 6: Commit**
 
@@ -2817,6 +3000,8 @@ it('resolves each row state from spec §4.2', function (string $category, bool $
     'hazard endpoints not addressed' => ['material', true, stateIndicators(['hazard_endpoints' => ['sensitisation']]), confirmedRoute(), DossierRowState::AJustifier, 'endpoints_not_addressed'],
     'hazard endpoints addressed' => ['material', true, stateIndicators(['hazard_endpoints' => ['sensitisation']]), confirmedRoute('mos', ['endpoints_addressed' => true]), DossierRowState::Conforme, null],
     'annex conditions not verified' => ['material', true, stateIndicators(['legal' => ['binding_breach' => false, 'needs_verification' => true]]), confirmedRoute(), DossierRowState::AJustifier, 'conditions_not_verified'],
+    'annex conditions recorded as met' => ['material', true, stateIndicators(['legal' => ['binding_breach' => false, 'needs_verification' => true]]), confirmedRoute('mos', ['annex_conditions' => 'met']), DossierRowState::Conforme, null],
+    'an annex condition recorded as not met' => ['material', true, stateIndicators(['legal' => ['binding_breach' => false, 'needs_verification' => true]]), confirmedRoute('mos', ['annex_conditions' => 'not_met']), DossierRowState::NonConforme, 'annex_condition_not_met'],
     'no indicator available' => ['material', true, stateIndicators(['mos' => ['available' => false]]), null, DossierRowState::AJustifier, 'no_route'],
     'no toxicological profile' => ['material', false, stateIndicators(), confirmedRoute(), DossierRowState::AJustifier, 'no_profile'],
 ]);
@@ -2867,7 +3052,7 @@ use App\Enums\AssessmentRoute;
 use App\Enums\DossierRowState;
 
 /**
- * Row states (spec §4.2, decision 9). A row is concluded only through a confirmed, justified route whose indicator
+ * Row states (spec §4.2, decision 12). A row is concluded only through a confirmed, justified route whose indicator
  * passes, with its hazard endpoints addressed and — for a fragrance allergen — QRA2 passing. A binding breach makes the
  * row non-conforming whatever else is true.
  */
@@ -2883,7 +3068,7 @@ class RowStateResolver
 
     /**
      * @param  array<string, mixed>  $indicators
-     * @param  array{route: string, justification: string, endpoints_addressed?: bool, conditions_verified?: bool}|null  $confirmation
+     * @param  array{route: string, justification: string, endpoints_addressed?: bool, annex_conditions?: 'met'|'not_met'}|null  $confirmation
      * @return array{state: DossierRowState, reason: string|null, suggested_route: AssessmentRoute|null, confirmed_route: AssessmentRoute|null}
      */
     public function resolve(string $category, bool $hasProfile, array $indicators, ?array $confirmation): array
@@ -2901,6 +3086,11 @@ class RowStateResolver
 
         if ((bool) data_get($indicators, 'legal.binding_breach', false)) {
             return $result(DossierRowState::NonConforme, 'binding_requirement');
+        }
+
+        // A condition recorded as not met is a breach of a binding requirement, whatever route is chosen.
+        if ((bool) data_get($indicators, 'legal.needs_verification', false) && ($confirmation['annex_conditions'] ?? null) === 'not_met') {
+            return $result(DossierRowState::NonConforme, 'annex_condition_not_met');
         }
 
         if (! $hasProfile) {
@@ -2931,7 +3121,7 @@ class RowStateResolver
             return $result(DossierRowState::AJustifier, 'endpoints_not_addressed');
         }
 
-        if ((bool) data_get($indicators, 'legal.needs_verification', false) && ($confirmation['conditions_verified'] ?? false) !== true) {
+        if ((bool) data_get($indicators, 'legal.needs_verification', false) && ($confirmation['annex_conditions'] ?? null) !== 'met') {
             return $result(DossierRowState::AJustifier, 'conditions_not_verified');
         }
 
@@ -2957,7 +3147,7 @@ class RowStateResolver
 - [ ] **Step 4: Run the test**
 
 Run: `php artisan test --compact tests/Feature/Dossiers/Calculation/RowStateResolverTest.php`
-Expected: PASS (14 tests).
+Expected: PASS (16 tests).
 
 - [ ] **Step 5: Commit**
 
@@ -2968,7 +3158,7 @@ git commit -m "Resolve DIP row states from confirmed routes and indicators"
 ```
 
 ---
-### Task 11: Assessed materials for each row
+### Task 11: Identity and profile of each assessed material
 
 **Files:**
 - Create: `app/Services/Dossiers/Calculation/AssessedMaterialResolver.php`
@@ -3016,6 +3206,14 @@ Add these imports to `tests/Support/DossierCalculationFixtures.php`: `use App\En
 
         return $coverage;
     }
+
+    /**
+     * Marks a substance's profiles as superseded, as a publisher would leave them, without the model's append-only guard.
+     */
+    public static function supersedeProfiles(Substance $substance): void
+    {
+        ToxicologyProfile::query()->where('substance_id', $substance->id)->update(['is_current' => false, 'superseded_at' => now()]);
+    }
 ```
 
 - [ ] **Step 2: Write the failing test**
@@ -3039,79 +3237,105 @@ uses(RefreshDatabase::class);
 /**
  * @return array{key: string, kind: string, ingredient_id: int|null, name: string, inci_name: string|null, percent: string}
  */
-function materialFinalRow(string $key, string $kind, ?Ingredient $ingredient, ?string $inci, string $percent): array
+function identityFinalRow(string $key, string $kind, ?Ingredient $ingredient, ?string $inci, string $percent): array
 {
     return ['key' => $key, 'kind' => $kind, 'ingredient_id' => $ingredient?->id, 'name' => $ingredient?->display_name ?? (string) $inci, 'inci_name' => $inci, 'percent' => $percent];
 }
 
-it('finds a soap salt by its INCI name and evaluates it through its own profile', function (): void {
+it('identifies a soap salt by its INCI name', function (): void {
     $olivate = Fixtures::substance('Sodium olivate', 'Sodium Olivate');
-    Fixtures::cover($olivate, $olivate);
 
-    $targets = app(AssessedMaterialResolver::class)->targetsForFinalRow(materialFinalRow('soap_salt:SODIUM OLIVATE', 'soap_salt', null, 'SODIUM OLIVATE', '75.3'));
+    $contributions = app(AssessedMaterialResolver::class)->finalRowContributions(identityFinalRow('soap_salt:SODIUM OLIVATE', 'soap_salt', null, 'SODIUM OLIVATE', '75.3'));
 
-    expect($targets)->toHaveCount(1)
-        ->and($targets[0]['key'])->toBe('soap_salt:SODIUM OLIVATE')
-        ->and($targets[0]['material'])->toMatchArray(['type' => 'substance', 'id' => $olivate->id, 'unidentified_reason' => null])
-        ->and($targets[0]['coverage']['state'])->toBe('sufficient')
-        ->and($targets[0]['profile']->substance_id)->toBe($olivate->id);
+    expect($contributions)->toHaveCount(1)
+        ->and($contributions[0]['substance']->is($olivate))->toBeTrue()
+        ->and($contributions[0]['ingredient'])->toBeNull()
+        ->and($contributions[0]['unidentified_reason'])->toBeNull();
 });
 
-it('reports a final material that is missing from the catalogue or ambiguous', function (int $matches, string $reason): void {
+it('reports a final material missing from the catalogue or ambiguous', function (int $matches, string $reason): void {
     Substance::factory()->count($matches)->create(['inci_name' => 'SODIUM COCOATE']);
 
-    $targets = app(AssessedMaterialResolver::class)->targetsForFinalRow(materialFinalRow('soap_salt:SODIUM COCOATE', 'soap_salt', null, 'SODIUM COCOATE', '10'));
+    $contributions = app(AssessedMaterialResolver::class)->finalRowContributions(identityFinalRow('soap_salt:SODIUM COCOATE', 'soap_salt', null, 'SODIUM COCOATE', '10'));
 
-    expect($targets[0]['material'])->toMatchArray(['type' => null, 'unidentified_reason' => $reason])
-        ->and($targets[0]['profile'])->toBeNull();
+    expect($contributions[0]['substance'])->toBeNull()
+        ->and($contributions[0]['unidentified_reason'])->toBe($reason);
 })->with([
     'not in the catalogue' => [0, 'not_in_catalogue'],
     'two catalogue rows' => [2, 'ambiguous_inci'],
 ]);
 
-it('evaluates an ingredient through its whole-material references, not its tracked constituents', function (): void {
+it('identifies a carried ingredient by its INCI and keeps the ingredient for its coverage', function (): void {
     $lavender = Fixtures::ingredient('Lavender Oil', 'LAVANDULA ANGUSTIFOLIA OIL', IngredientCategory::AromaticMaterials);
     $oil = Fixtures::substance('Lavandula angustifolia oil', 'LAVANDULA ANGUSTIFOLIA OIL');
-    $limonene = Fixtures::substance('Limonene', 'LIMONENE', attributes: ['allergen_id' => Allergen::factory()->create()->id]);
-    Fixtures::cover($lavender, $oil, $limonene);
 
-    $targets = app(AssessedMaterialResolver::class)->targetsForFinalRow(materialFinalRow("carried:ingredient:{$lavender->id}", 'carried', $lavender, 'LAVANDULA ANGUSTIFOLIA OIL', '2.3'));
+    $contribution = app(AssessedMaterialResolver::class)->finalRowContributions(identityFinalRow("carried:ingredient:{$lavender->id}", 'carried', $lavender, 'LAVANDULA ANGUSTIFOLIA OIL', '2.3'))[0];
 
-    expect($targets)->toHaveCount(1)
-        ->and($targets[0]['key'])->toBe("carried:ingredient:{$lavender->id}|substance:{$oil->id}")
-        ->and($targets[0]['material'])->toMatchArray(['type' => 'ingredient', 'id' => $lavender->id])
-        ->and($targets[0]['substance']->is($oil))->toBeTrue();
+    expect($contribution['substance']->is($oil))->toBeTrue()
+        ->and($contribution['ingredient']->is($lavender))->toBeTrue();
 });
 
-it('evaluates a blend without whole-material references through its components', function (): void {
+it('reads a blend through its components', function (): void {
     $blend = Fixtures::ingredient('Blend', 'PARFUM', IngredientCategory::AromaticMaterials);
-    $component = Fixtures::ingredient('Component', 'CITRUS AURANTIUM DULCIS PEEL OIL', IngredientCategory::AromaticMaterials);
+    $component = Fixtures::ingredient('Orange Oil', 'CITRUS AURANTIUM DULCIS PEEL OIL', IngredientCategory::AromaticMaterials);
     IngredientComponent::factory()->create(['ingredient_id' => $blend->id, 'component_ingredient_id' => $component->id, 'percentage_in_parent' => 40]);
 
-    $targets = app(AssessedMaterialResolver::class)->targetsForFinalRow(materialFinalRow("carried:ingredient:{$blend->id}", 'carried', $blend, 'PARFUM', '2'));
+    $contributions = app(AssessedMaterialResolver::class)->finalRowContributions(identityFinalRow("carried:ingredient:{$blend->id}", 'carried', $blend, 'PARFUM', '2'));
 
-    expect($targets)->toHaveCount(1)
-        ->and($targets[0]['key'])->toBe("carried:ingredient:{$blend->id}|component:{$component->id}")
-        ->and(DecimalMath::round($targets[0]['concentration_percent'], 6))->toBe('0.800000')
-        ->and($targets[0]['material']['id'])->toBe($component->id)
-        ->and($targets[0]['coverage'])->toBeNull();
+    expect($contributions)->toHaveCount(1)
+        ->and($contributions[0]['source_key'])->toBe("carried:ingredient:{$blend->id}|component:{$component->id}")
+        ->and(DecimalMath::round($contributions[0]['concentration_percent'], 6))->toBe('0.800000')
+        ->and($contributions[0]['ingredient']->is($component))->toBeTrue();
+});
+
+it('uses the identity profile first and a single coverage reference as recorded read-across', function (): void {
+    $olivate = Fixtures::substance('Sodium olivate', 'SODIUM OLIVATE');
+    $reference = Fixtures::substance('Olive fatty acid soaps', null);
+    Fixtures::cover($olivate, $reference);
+    $resolver = app(AssessedMaterialResolver::class);
+
+    $own = $resolver->profileFor($olivate, [$olivate]);
+    Fixtures::supersedeProfiles($olivate);
+    $readAcross = $resolver->profileFor($olivate, [$olivate]);
+
+    expect($own['basis'])->toBe('own')
+        ->and($own['profile']->substance_id)->toBe($olivate->id)
+        ->and($readAcross['basis'])->toBe('reference')
+        ->and($readAcross['reference_substance_id'])->toBe($reference->id)
+        ->and($readAcross['profile']->substance_id)->toBe($reference->id);
+});
+
+it('refuses to choose between several references and ignores tracked constituents', function (): void {
+    $lavender = Fixtures::ingredient('Lavender Oil', 'LAVANDULA ANGUSTIFOLIA OIL', IngredientCategory::AromaticMaterials);
+    $first = Fixtures::substance('Lavender oil, profile A', null);
+    $second = Fixtures::substance('Lavender oil, profile B', null);
+    $limonene = Fixtures::substance('Limonene', 'LIMONENE', attributes: ['allergen_id' => Allergen::factory()->create()->id]);
+    Fixtures::cover($lavender, $first, $limonene);
+    $resolver = app(AssessedMaterialResolver::class);
+
+    expect($resolver->profileFor(null, [$lavender])['reference_substance_id'])->toBe($first->id);
+
+    $otherLavender = Fixtures::ingredient('Lavender Oil, second supplier grade', 'LAVANDULA ANGUSTIFOLIA OIL', IngredientCategory::AromaticMaterials);
+    Fixtures::cover($otherLavender, $second);
+    $both = $resolver->profileFor(null, [$lavender, $otherLavender]);
+
+    expect($both['profile'])->toBeNull()
+        ->and($both['reason'])->toBe('ambiguous_reference');
 });
 
 it('flags a review that relied on a superseded profile and finds an allergen through its catalogue link', function (): void {
     $allergen = Allergen::factory()->create();
     $limonene = Fixtures::substance('Limonene', 'LIMONENE', attributes: ['allergen_id' => $allergen->id]);
     Fixtures::cover($limonene, $limonene);
-    ToxicologyProfile::query()->where('substance_id', $limonene->id)->update(['is_current' => false]);
+    Fixtures::supersedeProfiles($limonene);
     ToxicologyProfile::factory()->create(['substance_id' => $limonene->id, 'version' => 2]);
     $resolver = app(AssessedMaterialResolver::class);
 
     expect($resolver->coverageSummary($limonene)['relies_on_superseded_profiles'])->toBeTrue()
         ->and($resolver->substanceForOverlay(['allergen_id' => $allergen->id, 'substance_id' => null])->is($limonene))->toBeTrue()
-        ->and($resolver->currentProfile($limonene)->version)->toBe(2);
+        ->and($resolver->profileFor($limonene, [$limonene])['profile']->version)->toBe(2);
 });
 ```
-
-The superseded-profile test updates `is_current` through the query builder on purpose: the model blocks updates of append-only versions, and the test only needs the stored state a publisher would leave.
 
 - [ ] **Step 3: Run it to see it fail**
 
@@ -3136,7 +3360,9 @@ use App\Support\DecimalMath;
 use Illuminate\Support\Collection;
 
 /**
- * Which assessed material, coverage and toxicological profile each DIP row is evaluated through (decision 5).
+ * Identity and profile of each assessed material (decision 6). The identity is the substance a material *is*: annex
+ * checks and label rules follow it. The profile is the identity's own, or a single recorded read-across reference from
+ * the material's coverage; a reference never replaces the identity.
  */
 class AssessedMaterialResolver
 {
@@ -3145,28 +3371,51 @@ class AssessedMaterialResolver
     public function __construct(private readonly MaterialAssessmentCoverageService $coverageService) {}
 
     /**
+     * The identity contributions of one final composition row; a blend with components gives one per component.
+     *
      * @param  array{key: string, kind: string, ingredient_id: int|null, name: string, inci_name: string|null, percent: string}  $finalRow
-     * @return list<array{key: string, name: string, concentration_percent: string,
-     *                    material: array{type: string|null, id: int|null, name: string, unidentified_reason: string|null},
-     *                    coverage: array<string, mixed>|null, substance: Substance|null, profile: ToxicologyProfile|null}>
+     * @return list<array{source_key: string, final_key: string, kind: string, name: string, concentration_percent: string,
+     *                    ingredient: Ingredient|null, substance: Substance|null, unidentified_reason: string|null}>
      */
-    public function targetsForFinalRow(array $finalRow): array
+    public function finalRowContributions(array $finalRow): array
     {
-        return match ($finalRow['kind']) {
-            'soap_salt', 'glycerin', 'residual_water' => $this->substanceTargets($finalRow['key'], $finalRow['name'], $finalRow['inci_name'], $finalRow['percent']),
-            'unsaponified', 'carried', 'residual_liquid' => $this->ingredientTargets(
-                $finalRow['key'],
-                $finalRow['name'],
-                $finalRow['ingredient_id'] === null ? null : Ingredient::withoutGlobalScopes()->find($finalRow['ingredient_id']),
-                $finalRow['percent'],
-                0,
-            ),
-            default => [$this->unidentified($finalRow['key'], $finalRow['name'], $finalRow['percent'], 'not_in_catalogue')],
+        if (in_array($finalRow['kind'], ['soap_salt', 'glycerin', 'residual_water'], true)) {
+            [$substance, $reason] = $this->substanceByInci($finalRow['inci_name']);
+
+            return [$this->contribution($finalRow['key'], $finalRow, $finalRow['name'], $finalRow['percent'], null, $substance, $reason)];
+        }
+
+        $ingredient = $finalRow['ingredient_id'] === null ? null : Ingredient::withoutGlobalScopes()->find($finalRow['ingredient_id']);
+
+        return $this->ingredientContributions($finalRow['key'], $finalRow, $ingredient, $finalRow['percent'], 0);
+    }
+
+    /**
+     * The one substance whose INCI matches, case-insensitive; none or several is a named reason.
+     *
+     * @return array{0: Substance|null, 1: string|null}
+     */
+    public function substanceByInci(?string $inci): array
+    {
+        if (blank($inci)) {
+            return [null, 'not_in_catalogue'];
+        }
+
+        $matches = Substance::query()
+            ->whereRaw('upper(inci_name) = ?', [mb_strtoupper(trim((string) $inci))])
+            ->orderBy('id')
+            ->limit(2)
+            ->get();
+
+        return match ($matches->count()) {
+            1 => [$matches->first(), null],
+            0 => [null, 'not_in_catalogue'],
+            default => [null, 'ambiguous_inci'],
         };
     }
 
     /**
-     * The assessed material of an overlay row: the allergen's catalogue link, or the impurity or restricted substance.
+     * The identity of an overlay row: the allergen's catalogue link, or the impurity or restricted substance.
      *
      * @param  array{allergen_id: int|null, substance_id: int|null}  $overlayRow
      */
@@ -3177,15 +3426,41 @@ class AssessedMaterialResolver
             : Substance::query()->find($overlayRow['substance_id']);
     }
 
-    public function currentProfile(?Substance $substance): ?ToxicologyProfile
+    /**
+     * The identity's own current profile; otherwise the single whole-material reference of the covered materials, as a
+     * recorded read-across; several distinct references are not chosen between.
+     *
+     * @param  list<Ingredient|Substance>  $coveredMaterials
+     * @return array{profile: ToxicologyProfile|null, basis: string|null, reference_substance_id: int|null, reason: string|null}
+     */
+    public function profileFor(?Substance $identity, array $coveredMaterials): array
     {
-        return $substance === null
-            ? null
-            : ToxicologyProfile::query()->current()->where('substance_id', $substance->id)->orderByDesc('version')->first();
+        $own = $this->currentProfile($identity);
+
+        if ($own instanceof ToxicologyProfile) {
+            return ['profile' => $own, 'basis' => 'own', 'reference_substance_id' => $identity->id, 'reason' => null];
+        }
+
+        $references = collect($coveredMaterials)
+            ->flatMap(fn (Ingredient|Substance $material): Collection => $this->wholeMaterialReferences($material))
+            ->reject(fn (Substance $reference): bool => $identity !== null && $reference->is($identity))
+            ->unique('id')
+            ->values();
+
+        if ($references->count() > 1) {
+            return ['profile' => null, 'basis' => null, 'reference_substance_id' => null, 'reason' => 'ambiguous_reference'];
+        }
+
+        $reference = $references->first();
+        $profile = $this->currentProfile($reference);
+
+        return $profile instanceof ToxicologyProfile
+            ? ['profile' => $profile, 'basis' => 'reference', 'reference_substance_id' => $reference->id, 'reason' => null]
+            : ['profile' => null, 'basis' => null, 'reference_substance_id' => null, 'reason' => 'no_profile'];
     }
 
     /**
-     * @return array{state: string, covers_whole_material: bool, covers_constituents: bool, relies_on_superseded_profiles: bool, coverage_id: int}|null
+     * @return array{coverage_id: int, state: string, covers_whole_material: bool, covers_constituents: bool, relies_on_superseded_profiles: bool}|null
      */
     public function coverageSummary(Ingredient|Substance $material): ?array
     {
@@ -3200,54 +3475,21 @@ class AssessedMaterialResolver
         ] : null;
     }
 
-    /**
-     * @return list<array<string, mixed>>
-     */
-    private function substanceTargets(string $key, string $name, ?string $inci, string $percent): array
+    private function currentProfile(?Substance $substance): ?ToxicologyProfile
     {
-        $matches = blank($inci) ? collect() : Substance::query()
-            ->whereRaw('upper(inci_name) = ?', [mb_strtoupper(trim((string) $inci))])
-            ->orderBy('id')
-            ->limit(2)
-            ->get();
-
-        if ($matches->count() !== 1) {
-            return [$this->unidentified($key, $name, $percent, $matches->isEmpty() ? 'not_in_catalogue' : 'ambiguous_inci')];
-        }
-
-        $substance = $matches->first();
-        $references = $this->wholeMaterialReferences($substance)->reject(fn (Substance $reference): bool => $reference->is($substance));
-        $identity = ['type' => 'substance', 'id' => $substance->id, 'name' => $substance->name, 'unidentified_reason' => null];
-        $coverage = $this->coverageSummary($substance);
-
-        if ($references->isEmpty()) {
-            return [$this->target($key, $name, $percent, $identity, $coverage, $substance)];
-        }
-
-        return $references
-            ->map(fn (Substance $reference): array => $this->target("{$key}|substance:{$reference->id}", "{$name} — {$reference->name}", $percent, $identity, $coverage, $reference))
-            ->values()
-            ->all();
+        return $substance === null
+            ? null
+            : ToxicologyProfile::query()->current()->where('substance_id', $substance->id)->orderByDesc('version')->first();
     }
 
     /**
+     * @param  array<string, mixed>  $finalRow
      * @return list<array<string, mixed>>
      */
-    private function ingredientTargets(string $key, string $name, ?Ingredient $ingredient, string $percent, int $depth): array
+    private function ingredientContributions(string $sourceKey, array $finalRow, ?Ingredient $ingredient, string $percent, int $depth): array
     {
         if (! $ingredient instanceof Ingredient) {
-            return [$this->unidentified($key, $name, $percent, 'not_in_catalogue')];
-        }
-
-        $identity = ['type' => 'ingredient', 'id' => $ingredient->id, 'name' => (string) $ingredient->display_name, 'unidentified_reason' => null];
-        $coverage = $this->coverageSummary($ingredient);
-        $references = $this->wholeMaterialReferences($ingredient);
-
-        if ($references->isNotEmpty()) {
-            return $references
-                ->map(fn (Substance $reference): array => $this->target("{$key}|substance:{$reference->id}", "{$ingredient->display_name} — {$reference->name}", $percent, $identity, $coverage, $reference))
-                ->values()
-                ->all();
+            return [$this->contribution($sourceKey, $finalRow, $finalRow['name'], $percent, null, null, 'not_in_catalogue')];
         }
 
         $components = IngredientComponent::query()
@@ -3260,9 +3502,9 @@ class AssessedMaterialResolver
 
         if ($components->isNotEmpty() && $depth < self::MAX_COMPONENT_DEPTH) {
             return $components
-                ->flatMap(fn (IngredientComponent $component): array => $this->ingredientTargets(
-                    "{$key}|component:{$component->component_ingredient_id}",
-                    (string) $component->componentIngredient->display_name,
+                ->flatMap(fn (IngredientComponent $component): array => $this->ingredientContributions(
+                    "{$sourceKey}|component:{$component->component_ingredient_id}",
+                    $finalRow,
                     $component->componentIngredient,
                     DecimalMath::div(DecimalMath::mul($percent, DecimalMath::of($component->percentage_in_parent)), '100'),
                     $depth + 1,
@@ -3271,12 +3513,14 @@ class AssessedMaterialResolver
                 ->all();
         }
 
-        return [$this->target($key, (string) $ingredient->display_name, $percent, $identity, $coverage, null)];
+        [$substance, $reason] = $this->substanceByInci($ingredient->inci_name);
+
+        return [$this->contribution($sourceKey, $finalRow, (string) $ingredient->display_name, $percent, $ingredient, $substance, $reason)];
     }
 
     /**
      * Supporting substances of the material's coverage that are not tracked constituents: no allergen link and, for an
-     * ingredient, not among its substance entries. Constituents are evaluated in their overlay rows.
+     * ingredient, not among its substance entries. Constituents are assessed in their own rows.
      *
      * @return Collection<int, Substance>
      */
@@ -3300,29 +3544,21 @@ class AssessedMaterialResolver
     }
 
     /**
-     * @param  array{type: string|null, id: int|null, name: string, unidentified_reason: string|null}  $identity
-     * @param  array<string, mixed>|null  $coverage
+     * @param  array<string, mixed>  $finalRow
      * @return array<string, mixed>
      */
-    private function target(string $key, string $name, string $percent, array $identity, ?array $coverage, ?Substance $substance): array
+    private function contribution(string $sourceKey, array $finalRow, string $name, string $percent, ?Ingredient $ingredient, ?Substance $substance, ?string $reason): array
     {
         return [
-            'key' => $key,
+            'source_key' => $sourceKey,
+            'final_key' => $finalRow['key'],
+            'kind' => $finalRow['kind'],
             'name' => $name,
             'concentration_percent' => $percent,
-            'material' => $identity,
-            'coverage' => $coverage,
+            'ingredient' => $ingredient,
             'substance' => $substance,
-            'profile' => $this->currentProfile($substance),
+            'unidentified_reason' => $substance === null ? $reason : null,
         ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function unidentified(string $key, string $name, string $percent, string $reason): array
-    {
-        return $this->target($key, $name, $percent, ['type' => null, 'id' => null, 'name' => $name, 'unidentified_reason' => $reason], null, null);
     }
 }
 ```
@@ -3330,14 +3566,14 @@ class AssessedMaterialResolver
 - [ ] **Step 5: Run the test**
 
 Run: `php artisan test --compact tests/Feature/Dossiers/Calculation/AssessedMaterialResolverTest.php`
-Expected: PASS (6 tests).
+Expected: PASS (8 tests).
 
 - [ ] **Step 6: Commit**
 
 ```bash
 vendor/bin/pint --dirty --format agent
 git add app/Services/Dossiers/Calculation/AssessedMaterialResolver.php tests/Support/DossierCalculationFixtures.php tests/Feature/Dossiers/Calculation/AssessedMaterialResolverTest.php
-git commit -m "Resolve the assessed material, coverage and profile of each DIP row"
+git commit -m "Separate the legal identity of each DIP material from the profile it is assessed with"
 ```
 
 ---
@@ -3358,13 +3594,18 @@ Add these imports to `tests/Support/DossierCalculationFixtures.php`: `use App\En
      * The olive soap with 3 % lavender oil and everything the engine needs to assess it: policy (DAp 100 %, oral
      * bioavailability 50 %, MoS 100, bw 60 kg), the toilet-soap preset for its product type, profiles and sufficient
      * reviews for every initial and final material, and a validated lavender supplier declaring 40 % limonene.
+     * Extra 'fragrance' and 'additives' rows come through $phaseItems.
      *
+     * @param  array<string, list<array{ingredient_id: int, percentage: int|float, weight: int|float, note: null}>>  $phaseItems
      * @return array<string, mixed>
      */
-    public static function assessedLavenderSoap(): array
+    public static function assessedLavenderSoap(array $phaseItems = []): array
     {
         $lavender = self::ingredient('Lavender Oil', 'LAVANDULA ANGUSTIFOLIA OIL', IngredientCategory::AromaticMaterials);
-        $soap = self::oliveSoap(['fragrance' => [self::row($lavender, 3, 30)]]);
+        $soap = self::oliveSoap([
+            'fragrance' => [self::row($lavender, 3, 30), ...($phaseItems['fragrance'] ?? [])],
+            'additives' => $phaseItems['additives'] ?? [],
+        ]);
         AssessmentPolicy::factory()->create();
         ExposurePreset::factory()->create(['product_type_id' => $soap['recipe']->product_type_id]);
 
@@ -3376,15 +3617,14 @@ Add these imports to `tests/Support/DossierCalculationFixtures.php`: `use App\En
         $limoneneAllergen = Allergen::factory()->create(['inci_name' => 'LIMONENE']);
         $limonene = self::substance('Limonene', 'LIMONENE', ['noael_mg_kg_bw_day' => '150', 'nesil_ug_cm2' => '10000', 'sensitisation_note' => 'Skin sensitiser (oxidised).'], ['allergen_id' => $limoneneAllergen->id]);
 
-        foreach ([$olivate, $glycerin, $aqua] as $finalMaterial) {
-            self::cover($finalMaterial, $finalMaterial);
+        $coverages = [];
+
+        foreach (compact('olivate', 'glycerin', 'aqua') as $name => $finalMaterial) {
+            $coverages[$name] = self::cover($finalMaterial, $finalMaterial);
         }
 
-        $coverages = [
-            'olive' => self::cover($soap['olive'], $oliveOil),
-            'lavender' => self::cover($lavender, $lavenderOil, $limonene),
-            'glycerin' => MaterialAssessmentCoverage::query()->where('coverable_type', Substance::class)->where('coverable_id', $glycerin->id)->firstOrFail(),
-        ];
+        $coverages['olive'] = self::cover($soap['olive'], $oliveOil);
+        $coverages['lavender'] = self::cover($lavender, $lavenderOil, $limonene);
 
         $qualification = SupplierQualification::factory()->create(['workspace_id' => $soap['workspace']->id, 'ingredient_id' => $lavender->id]);
         $declaration = DossierEvidenceItem::factory()->create([
@@ -3415,14 +3655,20 @@ Add these imports to `tests/Support/DossierCalculationFixtures.php`: `use App\En
 <?php
 
 use App\Data\DossierAssessmentOptions;
+use App\Enums\IngredientCategory;
+use App\Enums\WorkspaceMemberRole;
 use App\Models\IfraAmendment;
 use App\Models\IfraProductCategory;
+use App\Models\IngredientAllergenEntry;
 use App\Models\Qra2Parameter;
 use App\Models\RecipeVersion;
 use App\Models\RegulatoryLegalEntry;
 use App\Models\RegulatoryRegime;
+use App\Models\Substance;
+use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceDossierGrant;
+use App\Models\WorkspaceMember;
 use App\Services\Dossiers\Calculation\DossierAssessmentEngine;
 use App\Support\DecimalMath;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -3449,18 +3695,32 @@ function assessedRow(array $assessment, string $key): array
     return collect($assessment['rows'])->firstWhere('key', $key) ?? throw new RuntimeException("No row [{$key}].");
 }
 
+/**
+ * @param  array<string, mixed>  $attributes
+ */
+function reviewedEuEntry(Substance $substance, array $attributes): RegulatoryLegalEntry
+{
+    $regime = RegulatoryRegime::query()->firstWhere('code', 'eu') ?? RegulatoryRegime::factory()->create(['code' => 'eu']);
+    $entry = RegulatoryLegalEntry::factory()->reviewed()->create(['regulatory_regime_id' => $regime->id, 'annex' => 'III', ...$attributes]);
+    $entry->substances()->attach($substance->id);
+
+    return $entry;
+}
+
 it('assesses the lavender soap end to end against the hand-calculated values', function (): void {
     $soap = Fixtures::assessedLavenderSoap();
+    $substances = $soap['substances'];
 
     $assessment = assessSoap($soap);
-    $limonene = assessedRow($assessment, 'allergen:'.$soap['limoneneAllergen']->id);
-    $glycerin = assessedRow($assessment, 'glycerin');
+    $limonene = assessedRow($assessment, 'substance:'.$substances['limonene']->id);
+    $glycerin = assessedRow($assessment, 'substance:'.$substances['glycerin']->id);
 
     expect($assessment['status'])->toBe('calculated')
         ->and($assessment['blockers'])->toBe([])
         ->and($assessment['can_submit'])->toBeTrue()
         ->and($assessment['can_approve'])->toBeFalse()
         ->and($assessment['composition']['tracing']['passes'])->toBeTrue()
+        ->and($limonene['category'])->toBe('allergen')
         ->and(DecimalMath::round($limonene['concentration_percent'], 6))->toBe('0.922804')
         ->and(DecimalMath::round($limonene['indicators']['sed_mg_kg_bw_day'], 9))->toBe('0.015380072')
         ->and(DecimalMath::round($limonene['indicators']['mos']['value'], 2))->toBe('4876.44')
@@ -3469,16 +3729,18 @@ it('assesses the lavender soap end to end against the hand-calculated values', f
         ->and($limonene['suggested_route'])->toBe('mos')
         ->and($limonene['needs_justification'])->toBeFalse()
         ->and(DecimalMath::round($glycerin['indicators']['mos']['value'], 2))->toBe('64169.75')
-        ->and(assessedRow($assessment, 'residual_water')['suggested_route'])->toBe('cmax')
-        ->and(assessedRow($assessment, "carried:ingredient:{$soap['lavender']->id}|substance:{$soap['substances']['lavenderOil']->id}")['indicators']['hazard_endpoints'])->toBe(['sensitisation'])
+        ->and($glycerin['profile']['basis'])->toBe('own')
+        ->and(assessedRow($assessment, 'substance:'.$substances['aqua']->id)['suggested_route'])->toBe('cmax')
+        ->and(assessedRow($assessment, 'substance:'.$substances['lavenderOil']->id)['indicators']['hazard_endpoints'])->toBe(['sensitisation'])
         ->and(collect($assessment['warnings'])->pluck('code')->all())->toContain('final_composition_estimated', 'no_qra2_preset', 'suppliers_without_declaration');
 });
 
 it('concludes rows only through confirmed routes, and an allergen only with QRA2', function (): void {
     $soap = Fixtures::assessedLavenderSoap();
-    $limoneneKey = 'allergen:'.$soap['limoneneAllergen']->id;
+    $glycerinKey = 'substance:'.$soap['substances']['glycerin']->id;
+    $limoneneKey = 'substance:'.$soap['substances']['limonene']->id;
     $options = new DossierAssessmentOptions(confirmations: [
-        'glycerin' => ['route' => 'mos', 'justification' => 'Oral NOAEL, SCCS default bioavailability.'],
+        $glycerinKey => ['route' => 'mos', 'justification' => 'Oral NOAEL, SCCS default bioavailability.'],
         $limoneneKey => ['route' => 'mos', 'justification' => 'Systemic NOAEL; sensitisation through QRA2.', 'endpoints_addressed' => true],
     ]);
 
@@ -3491,7 +3753,7 @@ it('concludes rows only through confirmed routes, and an allergen only with QRA2
     $soap['version'] = $soap['version']->fresh();
     $withQra2 = assessSoap($soap, $options);
 
-    expect(assessedRow($withoutQra2, 'glycerin')['state'])->toBe('conforme')
+    expect(assessedRow($withoutQra2, $glycerinKey)['state'])->toBe('conforme')
         ->and(assessedRow($withoutQra2, $limoneneKey)['state'])->toBe('a_justifier')
         ->and(assessedRow($withoutQra2, $limoneneKey)['state_reason'])->toBe('qra2_required')
         ->and(DecimalMath::round(assessedRow($withQra2, $limoneneKey)['indicators']['qra2']['cmax_percent'], 6))->toBe('8.333333')
@@ -3504,11 +3766,59 @@ it('records a justified override in the parameters used', function (): void {
     $assessment = assessSoap($soap, new DossierAssessmentOptions(overrides: [
         'amount_per_use_g' => ['value' => '2', 'justification' => 'Large bar: weighed use of 2 g.'],
     ]));
-    $limonene = assessedRow($assessment, 'allergen:'.$soap['limoneneAllergen']->id);
+    $limonene = assessedRow($assessment, 'substance:'.$soap['substances']['limonene']->id);
 
     expect(DecimalMath::round($limonene['indicators']['sed_mg_kg_bw_day'], 9))->toBe('0.030760144')
         ->and(collect($assessment['parameters'])->firstWhere('key', 'amount_per_use_g')['source'])->toBe('override')
         ->and(collect($assessment['parameters'])->firstWhere('key', 'residual_water_percent')['source'])->toBe('formula_estimate');
+});
+
+it('checks legal limits on the actual substance even when it is assessed through a read-across profile', function (): void {
+    $soap = Fixtures::assessedLavenderSoap();
+    $olivate = $soap['substances']['olivate'];
+    $readAcross = Fixtures::substance('Olive fatty acid soaps', null, ['noael_mg_kg_bw_day' => '5000']);
+    Fixtures::supersedeProfiles($olivate);
+    $soap['coverages']['olivate']->delete();
+    Fixtures::cover($olivate, $readAcross);
+    reviewedEuEntry($olivate, ['max_concentration_percent' => '50']);
+    $key = 'substance:'.$olivate->id;
+
+    $row = assessedRow(assessSoap($soap, new DossierAssessmentOptions(confirmations: [
+        $key => ['route' => 'mos', 'justification' => 'Read-across from olive fatty acid soaps.'],
+    ])), $key);
+
+    expect($row['profile']['basis'])->toBe('reference')
+        ->and($row['profile']['substance_id'])->toBe($readAcross->id)
+        ->and($row['indicators']['mos']['passes'])->toBeTrue()
+        ->and($row['state'])->toBe('non_conforme')
+        ->and($row['state_reason'])->toBe('binding_requirement');
+});
+
+it('sums reaction glycerin and added glycerin before checking a limit', function (): void {
+    $glycerinIngredient = Fixtures::ingredient('Vegetable Glycerin', 'GLYCERIN', IngredientCategory::HumectantsPolyols);
+    $soap = Fixtures::assessedLavenderSoap(['additives' => [Fixtures::row($glycerinIngredient, 2, 20)]]);
+    reviewedEuEntry($soap['substances']['glycerin'], ['max_concentration_percent' => '8']);
+
+    $row = assessedRow(assessSoap($soap), 'substance:'.$soap['substances']['glycerin']->id);
+    $parts = collect($row['contributions'])->map(fn (array $part): string => DecimalMath::round($part['concentration_percent'], 6))->sort()->values()->all();
+
+    expect(DecimalMath::round($row['concentration_percent'], 6))->toBe('8.900034')
+        ->and($parts)->toBe(['1.511880', '7.388153'])
+        ->and($row['state'])->toBe('non_conforme');
+});
+
+it('sums a neat allergen with the same allergen declared in another ingredient, without counting the neat one twice', function (): void {
+    $neatLimonene = Fixtures::ingredient('d-Limonene', 'LIMONENE', IngredientCategory::AromaticMaterials);
+    $soap = Fixtures::assessedLavenderSoap(['fragrance' => [Fixtures::row($neatLimonene, 0.6, 6)]]);
+    IngredientAllergenEntry::factory()->create(['ingredient_id' => $neatLimonene->id, 'allergen_id' => $soap['limoneneAllergen']->id, 'concentration_percent' => 100]);
+    reviewedEuEntry($soap['substances']['limonene'], ['max_concentration_percent' => '1']);
+
+    $row = assessedRow(assessSoap($soap), 'substance:'.$soap['substances']['limonene']->id);
+
+    expect(DecimalMath::round($row['concentration_percent'], 6))->toBe('1.377067')
+        ->and($row['contributions'])->toHaveCount(2)
+        ->and($row['category'])->toBe('allergen')
+        ->and($row['state'])->toBe('non_conforme');
 });
 
 it('blocks submission for an unreviewed or unidentified final material', function (): void {
@@ -3523,19 +3833,22 @@ it('blocks submission for an unreviewed or unidentified final material', functio
         ->toContain('material_not_reviewed:glycerin', 'final_material_unidentified:soap_salt:SODIUM OLIVATE');
 });
 
+it('blocks submission for an initial ingredient whose review is insufficient', function (): void {
+    $soap = Fixtures::assessedLavenderSoap();
+    $soap['coverages']['lavender']->forceFill(['review_state' => 'insufficient', 'insufficient_reason' => 'Grade not equivalent to the profiled oil.'])->save();
+
+    $codes = collect(assessSoap($soap)['blockers'])->map(fn (array $blocker): string => $blocker['code'].':'.($blocker['scope'] ?? ''));
+
+    expect($codes->all())->toContain('material_insufficient:initial');
+});
+
 it('keeps a non-conforming row submittable but not approvable', function (): void {
     $soap = Fixtures::assessedLavenderSoap();
-    $regime = RegulatoryRegime::factory()->create(['code' => 'eu']);
-    $entry = RegulatoryLegalEntry::factory()->reviewed()->create([
-        'regulatory_regime_id' => $regime->id,
-        'annex' => 'III',
-        'max_concentration_percent' => '0.5',
-    ]);
-    $entry->substances()->attach($soap['substances']['limonene']->id);
+    reviewedEuEntry($soap['substances']['limonene'], ['max_concentration_percent' => '0.5']);
 
     $assessment = assessSoap($soap);
 
-    expect(assessedRow($assessment, 'allergen:'.$soap['limoneneAllergen']->id)['state'])->toBe('non_conforme')
+    expect(assessedRow($assessment, 'substance:'.$soap['substances']['limonene']->id)['state'])->toBe('non_conforme')
         ->and($assessment['can_submit'])->toBeTrue()
         ->and($assessment['can_approve'])->toBeFalse();
 });
@@ -3552,12 +3865,16 @@ it('reports a calculation that cannot run instead of failing', function (): void
         ->and($assessment['blockers'][0]['code'])->toBe('calculation_cannot_run');
 });
 
-it('refuses a workspace without the module or a formula from another workspace', function (): void {
+it('refuses editors, revoked workspaces and formulas from another workspace', function (): void {
     $soap = Fixtures::assessedLavenderSoap();
+    $editor = User::factory()->create();
+    WorkspaceMember::factory()->for($soap['workspace'])->for($editor)->create(['role' => WorkspaceMemberRole::Editor]);
     $other = Workspace::factory()->for($soap['owner'], 'owner')->create();
     WorkspaceDossierGrant::factory()->for($other)->create();
+    $engine = app(DossierAssessmentEngine::class);
 
-    expect(fn () => app(DossierAssessmentEngine::class)->assess($soap['owner'], $other, $soap['version']))->toThrow(AuthorizationException::class);
+    expect(fn () => $engine->assess($editor, $soap['workspace'], $soap['version']))->toThrow(AuthorizationException::class)
+        ->and(fn () => $engine->assess($soap['owner'], $other, $soap['version']))->toThrow(AuthorizationException::class);
 
     WorkspaceDossierGrant::query()->where('workspace_id', $soap['workspace']->id)->update(['revoked_at' => now()]);
 
@@ -3587,19 +3904,26 @@ use App\Models\Ingredient;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\Substance;
-use App\Models\ToxicologyProfile;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\WorkspaceAuthorization;
+use App\Support\DecimalMath;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Collection;
 
 /**
- * The live DIP assessment of a saved formula (spec §4): both compositions, overlays, every indicator, suggested routes,
- * row states, and the blockers and warnings of spec §5. Read-only: nothing is stored; phase 4 snapshots the result.
+ * The live DIP assessment of a saved formula (spec §4): both compositions, overlays, one assessed row per substance with
+ * every contribution summed (decision 7), every indicator, suggested routes, row states, and the blockers and warnings
+ * of spec §5. Read-only: nothing is stored; phase 4 snapshots the result.
  */
 class DossierAssessmentEngine
 {
+    /**
+     * Final composition kinds that must be found in the substance catalogue (decision 15).
+     */
+    private const IDENTITY_REQUIRED_KINDS = ['soap_salt', 'glycerin', 'residual_water'];
+
     public function __construct(
         private readonly WorkspaceAuthorization $authorization,
         private readonly DossierCompositionBuilder $compositions,
@@ -3636,11 +3960,16 @@ class DossierAssessmentEngine
         }
 
         $overlays = $this->overlays->build($workspace, $composition['initial'], $composition['basis']['initial_mass_g'], $composition['basis']['cured_mass_g']);
-        $rows = [
-            ...$this->materialRows($composition['final'], $parameters, $options, $on),
-            ...$this->overlayRows($overlays['rows'], $parameters, $options, $on),
+        $contributions = [
+            ...$this->compositionContributions($composition['final']),
+            ...$this->overlayContributions($overlays['rows'], $composition['basis']['cured_mass_g']),
         ];
-        $blockers = $this->blockers($composition, $rows);
+        $rows = collect($contributions)
+            ->groupBy(fn (array $part): string => $this->rowKey($part))
+            ->map(fn (Collection $group, string $key): array => $this->assessedRow($key, $group->values()->all(), $parameters, $options, $on))
+            ->values()
+            ->all();
+        $blockers = $this->blockers($composition, $contributions);
 
         return [
             'status' => 'calculated',
@@ -3655,7 +3984,7 @@ class DossierAssessmentEngine
             ],
             'rows' => $rows,
             'blockers' => $blockers,
-            'warnings' => $this->warnings($composition, $overlays, $parameters, $rows),
+            'warnings' => $this->warnings($composition, $overlays, $parameters, $contributions, $rows),
             'can_submit' => $blockers === [],
             'can_approve' => $blockers === [] && collect($rows)->every(fn (array $row): bool => $row['state'] === DossierRowState::Conforme->value),
         ];
@@ -3671,106 +4000,148 @@ class DossierAssessmentEngine
 
     /**
      * @param  list<array<string, mixed>>  $final
-     * @param  array<string, mixed>  $parameters
      * @return list<array<string, mixed>>
      */
-    private function materialRows(array $final, array $parameters, DossierAssessmentOptions $options, CarbonImmutable $on): array
+    private function compositionContributions(array $final): array
     {
         return collect($final)
-            ->flatMap(fn (array $finalRow): array => collect($this->materials->targetsForFinalRow($finalRow))
-                ->map(fn (array $target): array => $this->evaluatedRow(
-                    'material',
-                    $target,
-                    $parameters,
-                    $options,
-                    $on,
-                    ['final_key' => $finalRow['key'], 'needs_justification' => false],
-                ))
-                ->all())
+            ->flatMap(fn (array $finalRow): array => $this->materials->finalRowContributions($finalRow))
+            ->map(fn (array $part): array => [
+                ...$part,
+                'source' => 'composition',
+                'allergen_id' => $part['substance']?->allergen_id,
+                'needs_justification' => false,
+            ])
             ->values()
             ->all();
     }
 
     /**
+     * One contribution per declaring ingredient, as a % of the cured mass. A declaration of a substance by an ingredient
+     * that *is* that substance is skipped: the neat material is already in the composition (decision 7).
+     *
      * @param  list<array<string, mixed>>  $overlays
-     * @param  array<string, mixed>  $parameters
      * @return list<array<string, mixed>>
      */
-    private function overlayRows(array $overlays, array $parameters, DossierAssessmentOptions $options, CarbonImmutable $on): array
+    private function overlayContributions(array $overlays, string $curedMass): array
     {
-        return collect($overlays)
-            ->map(function (array $overlay) use ($parameters, $options, $on): array {
-                $substance = $this->materials->substanceForOverlay($overlay);
-                $name = $substance?->name ?? (string) Allergen::query()->whereKey($overlay['allergen_id'])->value('inci_name');
-                $target = [
-                    'key' => $overlay['key'],
-                    'name' => $name,
-                    'concentration_percent' => $overlay['final_percent'],
-                    'material' => [
-                        'type' => $substance === null ? null : 'substance',
-                        'id' => $substance?->id,
-                        'name' => $name,
-                        'unidentified_reason' => $substance === null ? 'not_in_catalogue' : null,
-                    ],
-                    'coverage' => null,
-                    'substance' => $substance,
-                    'profile' => $this->materials->currentProfile($substance),
-                ];
-                $row = $this->evaluatedRow($overlay['kind'], $target, $parameters, $options, $on, [
-                    'overlay_key' => $overlay['key'],
-                    'needs_justification' => $overlay['needs_justification'],
-                ]);
+        $contributions = [];
 
-                if ($overlay['kind'] === 'allergen') {
-                    $row['label_declaration'] = $this->legal->allergenDeclaration((int) $overlay['allergen_id'], $overlay['final_percent'], $parameters['is_rinse_off'], $on);
+        foreach ($overlays as $overlay) {
+            $substance = $this->materials->substanceForOverlay($overlay);
+            $name = $substance?->name ?? (string) Allergen::query()->whereKey($overlay['allergen_id'])->value('inci_name');
+
+            foreach ($overlay['contributions'] as $part) {
+                $source = Ingredient::withoutGlobalScopes()->find($part['ingredient_id']);
+                $sourceIdentity = $source instanceof Ingredient ? $this->materials->substanceByInci($source->inci_name)[0] : null;
+
+                if ($substance instanceof Substance && $sourceIdentity?->is($substance)) {
+                    continue;
                 }
 
-                return $row;
-            })
-            ->values()
-            ->all();
+                $contributions[] = [
+                    'source' => $overlay['kind'],
+                    'source_key' => $overlay['key'].'|'.$part['initial_key'],
+                    'final_key' => null,
+                    'kind' => $overlay['kind'],
+                    'name' => $name,
+                    'concentration_percent' => DecimalMath::percentOf($part['grams'], $curedMass),
+                    'ingredient' => $source,
+                    'substance' => $substance,
+                    'unidentified_reason' => $substance === null ? 'not_in_catalogue' : null,
+                    'allergen_id' => $overlay['allergen_id'] ?? $substance?->allergen_id,
+                    'needs_justification' => $part['source'] === 'platform' || $part['suppliers_without_declaration'] !== [],
+                ];
+            }
+        }
+
+        return $contributions;
     }
 
     /**
-     * @param  array{key: string, name: string, concentration_percent: string, material: array<string, mixed>, coverage: array<string, mixed>|null, substance: Substance|null, profile: ToxicologyProfile|null}  $target
+     * Contributions of the same identity share a row; a material without identity keeps its own row.
+     *
+     * @param  array<string, mixed>  $part
+     */
+    private function rowKey(array $part): string
+    {
+        return match (true) {
+            $part['substance'] instanceof Substance => 'substance:'.$part['substance']->id,
+            $part['source'] === 'composition' => 'material:'.$part['source_key'],
+            default => $part['kind'].':'.($part['allergen_id'] ?? $part['source_key']),
+        };
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $group
      * @param  array<string, mixed>  $parameters
-     * @param  array<string, mixed>  $extra
      * @return array<string, mixed>
      */
-    private function evaluatedRow(string $category, array $target, array $parameters, DossierAssessmentOptions $options, CarbonImmutable $on, array $extra): array
+    private function assessedRow(string $key, array $group, array $parameters, DossierAssessmentOptions $options, CarbonImmutable $on): array
     {
-        $legal = $this->legal->check($target['substance'], $target['concentration_percent'], $parameters['is_rinse_off'], $on);
-        $indicators = $this->indicators->evaluate($category, $target['concentration_percent'], $target['profile'], $parameters, $legal);
-        $confirmation = $options->confirmations[$target['key']] ?? null;
-        $state = $this->states->resolve($category, $target['profile'] !== null, $indicators, $confirmation);
+        $identity = $group[0]['substance'];
+        $concentration = DecimalMath::add(...array_column($group, 'concentration_percent'));
+        $allergenId = $identity?->allergen_id ?? collect($group)->pluck('allergen_id')->filter()->first();
+        $sources = collect($group)->map(fn (array $part): string => $part['source'] === 'composition' ? 'material' : $part['source']);
+        $category = $allergenId !== null
+            ? 'allergen'
+            : collect(['material', 'restricted_substance', 'impurity'])->first(fn (string $candidate): bool => $sources->contains($candidate));
+        // Read-across comes only from the row's own composition materials, never from an ingredient that merely contains it.
+        $coveredMaterials = collect($group)
+            ->where('source', 'composition')
+            ->map(fn (array $part): Ingredient|Substance|null => $part['ingredient'] ?? $part['substance'])
+            ->filter()
+            ->unique(fn (Ingredient|Substance $material): string => $material::class.':'.$material->getKey())
+            ->values()
+            ->all();
+        $profile = $this->materials->profileFor($identity, $coveredMaterials);
+        $legal = $identity === null ? LegalEntryChecker::none() : $this->legal->check($identity, $concentration, $parameters['is_rinse_off'], $on);
+        $indicators = $this->indicators->evaluate($category, $concentration, $profile['profile'], $parameters, $legal);
+        $confirmation = $options->confirmations[$key] ?? null;
+        $state = $this->states->resolve($category, $profile['profile'] !== null, $indicators, $confirmation);
 
         return [
-            'key' => $target['key'],
+            'key' => $key,
             'category' => $category,
-            'name' => $target['name'],
-            'concentration_percent' => $target['concentration_percent'],
-            'material' => $target['material'],
-            'coverage' => $target['coverage'],
-            'substance_id' => $target['substance']?->id,
-            'profile' => $target['profile'] === null ? null : ['id' => $target['profile']->id, 'version' => $target['profile']->version],
+            'name' => $identity?->name ?? $group[0]['name'],
+            'identity' => $identity === null ? null : ['substance_id' => $identity->id, 'name' => $identity->name, 'inci_name' => $identity->inci_name],
+            'unidentified_reason' => $identity === null ? $group[0]['unidentified_reason'] : null,
+            'concentration_percent' => $concentration,
+            'contributions' => array_map(fn (array $part): array => [
+                'source' => $part['source'],
+                'source_key' => $part['source_key'],
+                'final_key' => $part['final_key'],
+                'ingredient_id' => $part['ingredient']?->id,
+                'concentration_percent' => $part['concentration_percent'],
+                'needs_justification' => $part['needs_justification'],
+            ], $group),
+            'coverages' => array_values(array_filter(array_map(fn (Ingredient|Substance $material): ?array => $this->materials->coverageSummary($material), $coveredMaterials))),
+            'profile' => $profile['profile'] === null ? null : [
+                'id' => $profile['profile']->id,
+                'version' => $profile['profile']->version,
+                'substance_id' => $profile['profile']->substance_id,
+                'basis' => $profile['basis'],
+            ],
+            'profile_reason' => $profile['reason'],
             'indicators' => $indicators,
+            'label_declaration' => $allergenId === null ? null : $this->legal->allergenDeclaration((int) $allergenId, $concentration, $parameters['is_rinse_off'], $on),
             'suggested_route' => $state['suggested_route']?->value,
             'confirmed_route' => $state['confirmed_route']?->value,
             'confirmation' => $confirmation,
             'state' => $state['state']->value,
             'state_reason' => $state['reason'],
-            ...$extra,
+            'needs_justification' => collect($group)->contains('needs_justification', true),
         ];
     }
 
     /**
-     * Submission blockers of spec §5 that this phase can compute (decision 12).
+     * Submission blockers of spec §5 that this phase can compute (decision 15).
      *
      * @param  array<string, mixed>  $composition
-     * @param  list<array<string, mixed>>  $rows
+     * @param  list<array<string, mixed>>  $contributions
      * @return list<array<string, mixed>>
      */
-    private function blockers(array $composition, array $rows): array
+    private function blockers(array $composition, array $contributions): array
     {
         $blockers = [];
 
@@ -3789,25 +4160,27 @@ class DossierAssessmentEngine
             }
         }
 
-        $materialRows = collect($rows)
-            ->where('category', 'material')
-            ->unique(fn (array $row): string => $row['material']['type'] === null ? 'unidentified:'.$row['final_key'] : $row['material']['type'].':'.$row['material']['id']);
-
-        foreach ($materialRows as $row) {
-            if ($row['material']['type'] === null) {
-                $blockers[] = ['code' => 'final_material_unidentified', 'scope' => 'final', 'key' => $row['final_key'], 'name' => $row['name'], 'reason' => $row['material']['unidentified_reason']];
+        foreach (collect($contributions)->where('source', 'composition') as $part) {
+            if (in_array($part['kind'], self::IDENTITY_REQUIRED_KINDS, true) && $part['substance'] === null) {
+                $blockers[] = ['code' => 'final_material_unidentified', 'scope' => 'final', 'key' => $part['final_key'], 'name' => $part['name'], 'reason' => $part['unidentified_reason']];
 
                 continue;
             }
 
-            $state = $row['coverage']['state'] ?? AssessmentReviewState::NotReviewed->value;
+            $material = $part['ingredient'] ?? $part['substance'];
+            $state = $material === null
+                ? AssessmentReviewState::NotReviewed->value
+                : ($this->materials->coverageSummary($material)['state'] ?? AssessmentReviewState::NotReviewed->value);
 
             if ($state !== AssessmentReviewState::Sufficient->value) {
-                $blockers[] = ['code' => 'material_'.$state, 'scope' => 'final', 'key' => $row['final_key'], 'name' => $row['material']['name']];
+                $blockers[] = ['code' => 'material_'.$state, 'scope' => 'final', 'key' => $part['final_key'], 'name' => $part['name']];
             }
         }
 
-        return $blockers;
+        return collect($blockers)
+            ->unique(fn (array $blocker): string => $blocker['code'].'|'.($blocker['scope'] ?? '').'|'.($blocker['key'] ?? ''))
+            ->values()
+            ->all();
     }
 
     /**
@@ -3816,10 +4189,11 @@ class DossierAssessmentEngine
      * @param  array<string, mixed>  $composition
      * @param  array<string, mixed>  $overlays
      * @param  array<string, mixed>  $parameters
+     * @param  list<array<string, mixed>>  $contributions
      * @param  list<array<string, mixed>>  $rows
      * @return list<array<string, mixed>>
      */
-    private function warnings(array $composition, array $overlays, array $parameters, array $rows): array
+    private function warnings(array $composition, array $overlays, array $parameters, array $contributions, array $rows): array
     {
         $warnings = [];
 
@@ -3837,16 +4211,23 @@ class DossierAssessmentEngine
             $warnings[] = ['code' => 'suppliers_without_declaration', ...$undeclared];
         }
 
-        foreach (collect($rows)->filter(fn (array $row): bool => (bool) data_get($row, 'coverage.relies_on_superseded_profiles'))->unique(fn (array $row): string => $row['material']['type'].':'.$row['material']['id']) as $row) {
-            $warnings[] = ['code' => 'coverage_relies_on_superseded_profiles', 'material' => $row['material']];
+        $superseded = collect($rows)
+            ->flatMap(fn (array $row): array => $row['coverages'])
+            ->filter(fn (array $coverage): bool => $coverage['relies_on_superseded_profiles'])
+            ->unique('coverage_id');
+
+        foreach ($superseded as $coverage) {
+            $warnings[] = ['code' => 'coverage_relies_on_superseded_profiles', 'coverage_id' => $coverage['coverage_id']];
         }
 
         if ($parameters['qra2'] === null && collect($rows)->contains('category', 'allergen')) {
             $warnings[] = ['code' => 'no_qra2_preset'];
         }
 
-        foreach (collect($rows)->where('category', 'allergen')->whereNull('substance_id') as $row) {
-            $warnings[] = ['code' => 'allergen_without_assessed_material', 'key' => $row['key']];
+        foreach ($rows as $row) {
+            if ($row['identity'] === null) {
+                $warnings[] = ['code' => $row['category'] === 'allergen' ? 'allergen_without_assessed_material' : 'no_legal_identity', 'key' => $row['key']];
+            }
         }
 
         $unreviewed = collect($rows)->flatMap(fn (array $row): array => data_get($row, 'indicators.legal.unreviewed_entry_ids', []))->unique()->values()->all();
@@ -3880,22 +4261,22 @@ class DossierAssessmentEngine
 - [ ] **Step 5: Run the test**
 
 Run: `php artisan test --compact tests/Feature/Dossiers/Calculation/DossierAssessmentEngineTest.php`
-Expected: PASS (7 tests).
+Expected: PASS (11 tests).
 
 - [ ] **Step 6: Commit**
 
 ```bash
 vendor/bin/pint --dirty --format agent
 git add app/Services/Dossiers/Calculation/DossierAssessmentEngine.php tests/Support/DossierCalculationFixtures.php tests/Feature/Dossiers/Calculation/DossierAssessmentEngineTest.php
-git commit -m "Assess a saved soap formula end to end for the DIP"
+git commit -m "Assess a saved soap formula end to end for the DIP, one row per substance"
 ```
 
 ---
 
-### Task 13: Verification and documentation
+### Task 13: Verification and spec amendments
 
 **Files:**
-- Modify: `docs/superpowers/specs/2026-10-21-product-information-file-dip-design.md` (status line only)
+- Modify: `docs/superpowers/specs/2026-10-21-product-information-file-dip-design.md`
 
 - [ ] **Step 1: Run every DIP test, then the full suite**
 
@@ -3909,14 +4290,52 @@ Expected: all pass. A failure outside `tests/Feature/Dossiers` means a shared se
 
 - [ ] **Step 2: Check the reference layers are independent**
 
-Confirm, by reading the tests, that every expected number in Tasks 2–12 comes from the "Reference values" table of this plan (hand calculation) and none was copied from a test run. Layer 3 of spec §12 (the assessor-approved pilot) comes after phase 4.
+Confirm, by reading the tests, that every expected number in Tasks 2–12 comes from the "Reference values" tables of this plan (hand calculation, reproduced independently by Codex) and none was copied from a test run. Layer 3 of spec §12 (the assessor-approved pilot) comes after phase 4.
 
-- [ ] **Step 3: Update the spec status line**
+- [ ] **Step 3: Amend the spec where the pilot narrows it**
 
-In the spec, replace the line starting with `**Status:**` with:
+In `docs/superpowers/specs/2026-10-21-product-information-file-dip-design.md`:
+
+1. Replace the line starting with `**Status:**` with:
 
 ```markdown
 **Status:** design agreed with Philippe on 2026-10-21 after a Codex second-opinion review. Phases 1, 2a, 2b and 3 (calculation engine, read-only) are implemented on `codex/dip-pilot`; phase 2c (folder import) and phase 4 (dossiers, signing, archive) remain.
+```
+
+2. At the end of §4.1, add:
+
+```markdown
+- **Pilot limits (phase 3, after Codex's plan review):** quantities come from the saved weights; only triglyceride oils, butters and animal fats react (fatty acids and waxes need another reaction model); lye-water substitutes and KOH below 100 % purity are refused until their water or residue composition is evidenced; only the lye water evaporates. Each refusal is a named "calculation cannot run" reason.
+```
+
+3. In §4.2, replace the line starting with `` - `NOAELsys = `` with:
+
+```markdown
+- `NOAELsys = NOAEL × oral bioavailability` for an oral study. A dermal NOAEL is not converted automatically in the pilot: the absorption of the study itself is not recorded, and reusing the product DAp would cancel out of the MoS (open question 7). An inhalation NOAEL is not converted.
+```
+
+4. In §4.2, after the line starting with `- **Annex checks:**`, add:
+
+```markdown
+- **One row per substance:** contributions of the same substance from every source — a neat ingredient, a constituent declared in another ingredient, reaction glycerin and added glycerin — are summed before any limit or indicator is evaluated. A row's legal identity is the substance itself; a read-across profile from its coverage never replaces that identity. An annex condition that cannot be checked automatically is recorded as met or not met; not met makes the row `non_conforme`.
+```
+
+5. In §5, replace `- any initial **or final** material whose review state is` with:
+
+```markdown
+  - any initial recipe ingredient **or final** material whose review state is
+```
+
+   and add after that list item:
+
+```markdown
+    Initial alkali and lye water are transformed materials: they are assessed through what they become (soap salts, residual water) and have no finished-product row of their own.
+```
+
+6. In §11, add:
+
+```markdown
+7. **Dermal NOAEL conversion:** whether and how a dermal-study NOAEL is converted to a systemic value (it needs the study's own absorption) — to agree with the assessor; the pilot leaves such rows to another route.
 ```
 
 - [ ] **Step 4: Pint, graph, commit**
@@ -3925,14 +4344,32 @@ In the spec, replace the line starting with `**Status:**` with:
 vendor/bin/pint --dirty --format agent
 graphify update .
 git add docs/superpowers/specs/2026-10-21-product-information-file-dip-design.md
-git commit -m "Record DIP phase 3 as implemented in the spec"
+git commit -m "Record DIP phase 3 and its pilot limits in the spec"
 ```
 
 ---
 
 ## Self-review notes (for the reviewer of this plan)
 
-- **Spec §4.1 coverage:** initial composition (Task 5), final composition with mass balance (Task 5), ingredient tracing before normalisation with the column-J regression (Task 4), measured cure loss (Task 5), overlays on both compositions (Task 6). Supplier set per initial row is not repeated in the composition: the overlays carry the evidence items, and phase 4's Part A table reads the validated qualifications directly.
-- **Spec §4.2 coverage:** SED, NOAELsys, MoS (Task 2); all indicators shown (Task 9); binding requirements automatic (Tasks 8, 10); suggested and confirmed routes with the four states (Task 10); QRA2 with the factor and summed allergen contributions (Tasks 3, 6, 9); impurities in ppm and µg (Tasks 2, 6, 9); annex checks with warnings collected (Task 8); hazard endpoints never settled by a large MoS (Tasks 9, 10).
-- **Spec §12 coverage:** layer 1 arithmetic fixtures (Tasks 2, 3, 5, 12); layer 2 boundary and failure cases (Tasks 4, 5, 7, 9, 10); row-state, coverage and gate tests (Tasks 10, 11, 12). Snapshot, out-of-date and signing tests belong to phase 4.
-- **Not in this phase:** storage of confirmations and overrides, Part B text, the checklist, print view — phase 4. Leave-on and liquid products — phase 5.
+- **Spec §4.1 coverage:** initial composition from saved weights and final composition with mass balance (Task 5), ingredient tracing with a bounded tolerance and the column-J regression (Task 4), measured cure loss from water only (Task 5), overlays on both compositions (Task 6). Supplier set, CAS and function per initial row are left to phase 4's Part A table, which reads the validated qualifications directly.
+- **Spec §4.2 coverage:** SED, oral NOAELsys, MoS (Task 2); all indicators shown, QRA2 at and above its limit (Task 9); one row per substance with summed contributions and legal checks on the actual identity (Tasks 11, 12); binding requirements automatic, including a condition recorded as not met (Tasks 8, 10); the four states (Task 10); impurities in ppm and µg (Tasks 2, 6, 9); hazard endpoints never settled by a large MoS (Tasks 9, 10).
+- **Spec §12 coverage:** layer 1 arithmetic fixtures (Tasks 2, 3, 5, 12); layer 2 boundary and failure cases (Tasks 4, 5, 7, 9, 10); row-state, coverage, identity, summing and gate tests (Tasks 10, 11, 12); authorization including Editor denial (Task 12). Snapshot, out-of-date and signing tests belong to phase 4.
+- **Not in this phase:** storage of confirmations and overrides, Part B text, the checklist, print view — phase 4. Leave-on and liquid products, other reaction models, lye substitutes, KOH 90 % — after the pilot.
+
+## Review changes (2026-10-23, Codex plan review)
+
+| Finding | Change |
+| --- | --- |
+| P1 · a supporting profile replaced the material's identity, so annex checks ran on the wrong substance | Identity and profile separated (decision 6, Task 11); annex checks always on the identity; test with a read-across profile and an exceeded limit on the actual substance (Task 12) |
+| P1 · separate material and constituent rows could each pass a maximum their total exceeds | One row per substance summing every contribution, neat materials not counted twice (decision 7, Task 12); tests for reaction + added glycerin and neat + declared limonene |
+| P1 · quantities rebuilt from rounded percentages changed or dropped ingredients | Saved weights first, as the preview does (decision 2, Task 5); weight-mode test with 1.2345 g at 0.0123 % and 0.001 g at 0 % |
+| P1 · negative retention or zero body weight accepted | Physical bounds on every override and stored value (decision 11, Task 7); 16 refusal cases and 4 accepted limits |
+| P1 · non-water lye substitutes evaporated as if water | Lye substitutes refused in the pilot; only water evaporates; measured loss taken from water only (decisions 1, 3, Task 5) |
+| P1 · triglyceride stoichiometry applied to fatty acids and waxes | Reacting materials restricted to vegetable oils, butters and animal fats (decision 1, Task 5) |
+| P2 · KOH 90 % residue left permanently unidentified | KOH below 100 % refused in the pilot (decision 1, Task 5) |
+| P2 · column-J regression passed with a 4 g tolerance | Tolerance capped at 0.01 g; larger values refused; test at the cap and for 4 g (decision 5, Task 4) |
+| P2 · nullable dataset value on a non-nullable parameter | Parameter made nullable (Task 4) |
+| Note · dermal NOAEL reused the product DAp, cancelling out of the MoS | Dermal NOAEL not converted in the pilot; spec open question 7 (decision 10, Tasks 2, 9, 13) |
+| Note · a failed annex condition was not distinct from an unverified one | `annex_conditions: met / not_met`; not met → `non_conforme` (decision 12, Task 10) |
+| Note · spec §5 says any initial material, decision 15 waives alkali and water | Spec §5 amended to name transformed materials (Task 13) |
+| Note · extra tests | QRA2 at and above the limit (Task 9); negative superfat, excess alkali and KOH 90 % (Task 5); dual lye with KOH 100 % (Task 5); insufficient initial coverage and Editor denial (Task 12) |

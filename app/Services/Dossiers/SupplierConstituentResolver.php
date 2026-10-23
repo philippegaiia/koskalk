@@ -8,8 +8,10 @@ use App\Enums\SupplierQualificationStatus;
 use App\Models\DossierEvidenceConstituent;
 use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
+use App\Models\IngredientSubstanceEntry;
 use App\Models\SupplierQualification;
 use App\Models\Workspace;
+use App\Support\DecimalMath;
 use Illuminate\Support\Collection;
 
 /**
@@ -54,6 +56,36 @@ class SupplierConstituentResolver
         $silent = $this->suppliersWithoutDeclaration($workspace, $ingredient, ConstituentKind::Impurity);
 
         return $this->worstCase($workspace, $ingredient, ConstituentKind::Impurity, 'substance_id', $silent)->values();
+    }
+
+    /**
+     * Restricted substances: regulatory conformity certificates first; the platform composition (substance entries
+     * with a stated concentration) only as a flagged fallback.
+     *
+     * @return Collection<int, array{substance_id: int, max_value: string, unit: string, source: string,
+     *                               evidence_item_ids: list<int>, suppliers_without_declaration: list<int>, needs_justification: bool}>
+     */
+    public function restrictedSubstances(Workspace $workspace, Ingredient $ingredient): Collection
+    {
+        $silent = $this->suppliersWithoutDeclaration($workspace, $ingredient, ConstituentKind::RestrictedSubstance);
+        $declared = $this->worstCase($workspace, $ingredient, ConstituentKind::RestrictedSubstance, 'substance_id', $silent);
+
+        $fallback = IngredientSubstanceEntry::query()
+            ->where('ingredient_id', $ingredient->id)
+            ->whereNotNull('concentration_percent')
+            ->whereNotIn('substance_id', $declared->keys()->all())
+            ->get()
+            ->map(fn (IngredientSubstanceEntry $entry): array => [
+                'substance_id' => $entry->substance_id,
+                'max_value' => DecimalMath::of($entry->concentration_percent),
+                'unit' => ConstituentKind::RestrictedSubstance->unit(),
+                'source' => 'platform',
+                'evidence_item_ids' => [],
+                'suppliers_without_declaration' => $silent,
+                'needs_justification' => true,
+            ]);
+
+        return $declared->values()->concat($fallback)->values();
     }
 
     /**

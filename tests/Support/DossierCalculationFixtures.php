@@ -4,8 +4,15 @@ namespace Tests\Support;
 
 use App\Data\DossierExposureParameters;
 use App\Enums\AssessmentReviewState;
+use App\Enums\ConstituentKind;
+use App\Enums\EvidenceType;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
+use App\Models\Allergen;
+use App\Models\AssessmentPolicy;
+use App\Models\DossierEvidenceConstituent;
+use App\Models\DossierEvidenceItem;
+use App\Models\ExposurePreset;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
 use App\Models\MaterialAssessmentCoverage;
@@ -14,6 +21,7 @@ use App\Models\Qra2Parameter;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\Substance;
+use App\Models\SupplierQualification;
 use App\Models\ToxicologyProfile;
 use App\Models\User;
 use App\Models\Workspace;
@@ -191,5 +199,63 @@ final class DossierCalculationFixtures
     public static function supersedeProfiles(Substance $substance): void
     {
         ToxicologyProfile::query()->where('substance_id', $substance->id)->update(['is_current' => false, 'superseded_at' => now()]);
+    }
+
+    /**
+     * The olive soap with 3 % lavender oil and everything the engine needs to assess it: policy (DAp 100 %, oral
+     * bioavailability 50 %, MoS 100, bw 60 kg), the toilet-soap preset for its product type, profiles and sufficient
+     * reviews for every initial and final material, and a validated lavender supplier declaring 40 % limonene.
+     * Extra 'fragrance' and 'additives' rows come through $phaseItems.
+     *
+     * @param  array<string, list<array{ingredient_id: int, percentage: int|float, weight: int|float, note: null}>>  $phaseItems
+     * @return array<string, mixed>
+     */
+    public static function assessedLavenderSoap(array $phaseItems = []): array
+    {
+        $lavender = self::ingredient('Lavender Oil', 'LAVANDULA ANGUSTIFOLIA OIL', IngredientCategory::AromaticMaterials);
+        $soap = self::oliveSoap([
+            'fragrance' => [self::row($lavender, 3, 30), ...($phaseItems['fragrance'] ?? [])],
+            'additives' => $phaseItems['additives'] ?? [],
+        ]);
+        AssessmentPolicy::factory()->create();
+        ExposurePreset::factory()->create(['product_type_id' => $soap['recipe']->product_type_id]);
+
+        $olivate = self::substance('Sodium olivate', 'SODIUM OLIVATE', ['noael_mg_kg_bw_day' => '1000']);
+        $glycerin = self::substance('Glycerin', 'GLYCERIN', ['noael_mg_kg_bw_day' => '1180', 'dermal_absorption_percent' => '7.34']);
+        $aqua = self::substance('Water', 'AQUA', ['noael_mg_kg_bw_day' => null, 'noael_route' => null, 'cmax_percent' => '100']);
+        $oliveOil = self::substance('Olea europaea fruit oil', 'OLEA EUROPAEA FRUIT OIL', ['noael_mg_kg_bw_day' => '2000']);
+        $lavenderOil = self::substance('Lavandula angustifolia oil', 'LAVANDULA ANGUSTIFOLIA OIL', ['noael_mg_kg_bw_day' => '200', 'sensitisation_note' => 'Contains fragrance allergens; see QRA2.']);
+        $limoneneAllergen = Allergen::factory()->create(['inci_name' => 'LIMONENE']);
+        $limonene = self::substance('Limonene', 'LIMONENE', ['noael_mg_kg_bw_day' => '150', 'nesil_ug_cm2' => '10000', 'sensitisation_note' => 'Skin sensitiser (oxidised).'], ['allergen_id' => $limoneneAllergen->id]);
+
+        $coverages = [];
+
+        foreach (compact('olivate', 'glycerin', 'aqua') as $name => $finalMaterial) {
+            $coverages[$name] = self::cover($finalMaterial, $finalMaterial);
+        }
+
+        $coverages['olive'] = self::cover($soap['olive'], $oliveOil);
+        $coverages['lavender'] = self::cover($lavender, $lavenderOil, $limonene);
+
+        $qualification = SupplierQualification::factory()->create(['workspace_id' => $soap['workspace']->id, 'ingredient_id' => $lavender->id]);
+        $declaration = DossierEvidenceItem::factory()->create([
+            'supplier_qualification_id' => $qualification->id,
+            'type' => EvidenceType::AllergenDeclaration,
+            'constituents_complete' => true,
+        ]);
+        DossierEvidenceConstituent::factory()->create([
+            'dossier_evidence_item_id' => $declaration->id,
+            'kind' => ConstituentKind::Allergen,
+            'allergen_id' => $limoneneAllergen->id,
+            'max_value' => '40',
+        ]);
+
+        return [
+            ...$soap,
+            'lavender' => $lavender,
+            'substances' => compact('olivate', 'glycerin', 'aqua', 'oliveOil', 'lavenderOil', 'limonene'),
+            'limoneneAllergen' => $limoneneAllergen,
+            'coverages' => $coverages,
+        ];
     }
 }

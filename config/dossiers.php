@@ -17,4 +17,19 @@ return [
     'evidence_image_quality' => 85,
 
     'evidence_mimes' => ['pdf', 'jpg', 'jpeg', 'png', 'webp'],
+
+    /*
+     * Ingredient tracing (spec §4.1). Formula inputs carry 4-decimal gram values, so differences within this many
+     * grams are representation only. A tolerance never absorbs an unexplained difference.
+     */
+    'mass_balance_tolerance_g' => '0.001',
+    // The verifier refuses any tolerance above this bound: a larger one could hide a displaced ingredient.
+    'mass_balance_tolerance_max_g' => '0.01',
+    'percent_tolerance' => '0.000001',
+
+    // INCI names under which these final soap materials are found in the substance catalogue.
+    'final_material_inci' => [
+        'glycerin' => 'GLYCERIN',
+        'residual_water' => 'AQUA',
+    ],
 ];

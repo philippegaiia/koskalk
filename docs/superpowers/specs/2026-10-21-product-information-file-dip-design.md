@@ -2,7 +2,7 @@
 
 **Goal:** let a workspace produce the French *Dossier d'Information Produit* (DIP, the EU Product Information File of Regulation (EC) No 1223/2009, Art. 10–11 and Annex I) from Koskalk data: Part A computed from the saved formula, an unsigned Part B draft for the safety assessor, the evidence annexes, and a locked record of the version the assessor signed. It replaces the consultant-and-folders workflow (Word/Excel/PDF trees) the owner uses today.
 
-**Status:** design agreed with Philippe on 2026-10-21 after a Codex second-opinion review. Nothing is implemented.
+**Status:** design agreed with Philippe on 2026-10-21 after a Codex second-opinion review. Phases 1, 2a, 2b and 3 (calculation engine, read-only) are implemented on `codex/dip-pilot`; phase 2c (folder import) and phase 4 (dossiers, signing, archive) remain.
 
 **Reference material:** consultant-made, signed DIPs and annexes are stored locally in `pif-references/` (git-ignored through `.git/info/exclude`, never committed). They are confidential and the consultant's text is their copyright: use them to understand structure and to test arithmetic, never copy their wording into the repository. Main examples: `DIP.GA.007 - Savon le tonique` (adult rinse-off bar soap) and `DIP.GA.065 - Baume tilleul` (anhydrous leave-on balm).
 
@@ -132,11 +132,12 @@ All values are computed at full precision; display rounds. Each step records its
 - A measured cure loss replaces the estimated water loss only; it cannot rescale individual non-water materials.
 - Reuse `SoapCalculationService`, `SoapCuredOutputBuilder` and the saponified names from `InciGenerationService`, but do not feed label percentages into exposure: label `percent_of_formula` uses the initial batch denominator.
 - **Overlays:** allergen and impurity concentrations = Σ (worst-case constituent % in the raw material × raw-material % in the composition), computed for both compositions; impurities may add a primary-packaging contribution.
+- **Pilot limits (phase 3, after Codex's plan review):** quantities come from the saved weights; only triglyceride oils, butters and animal fats react (fatty acids and waxes need another reaction model); lye-water substitutes and KOH below 100 % purity are refused until their water or residue composition is evidenced; only the lye water evaporates. Each refusal is a named "calculation cannot run" reason.
 
 ### 4.2 Exposure and safety values
 
 - `SED [mg/kg bw/day] = A [g/day] × 1000 × C/100 × DAp/100 × R ÷ bw`, with `A = amount per use × frequency`.
-- `NOAELsys = NOAEL × bioavailability` (oral) or `× DAp` (dermal NOAEL).
+- `NOAELsys = NOAEL × oral bioavailability` for an oral study. A dermal NOAEL is not converted automatically in the pilot: the absorption of the study itself is not recorded, and reusing the product DAp would cancel out of the MoS (open question 7). An inhalation NOAEL is not converted.
 - `MoS = NOAELsys ÷ SED`.
 - **Indicators, not automatic conclusions.** For every row the engine computes all available indicators — MoS against the threshold, C against Cmax, SED against ADI, SED against TTC, compliance with each applicable annex entry — and shows them all. Passing one indicator never settles the row by itself.
 - **Binding requirements are automatic:** a banned substance present, an exceeded legal maximum, or an unmet annex condition makes the row `non_conforme`, whatever the other indicators say.
@@ -147,6 +148,7 @@ All values are computed at full precision; display rounds. Each step records its
 - **Several oils, one allergen:** contributions of the same allergen from every ingredient are summed for the finished product before comparison. Checking each essential oil separately against its own supplier IFRA certificate is not sufficient on its own; supplier certificates remain supporting evidence.
 - **Impurities:** concentration in ppm, SED in µg/kg bw/day, compared with SEDmax, Cmax or TTC.
 - **Annex checks:** every legal entry linked to a present assessed material, evaluated against the product type, body area and concentration; mandatory warnings collected for Part B 2.B.2.
+- **One row per substance:** contributions of the same substance from every source — a neat ingredient, a constituent declared in another ingredient, reaction glycerin and added glycerin — are summed before any limit or indicator is evaluated. A row's legal identity is the substance itself; a read-across profile from its coverage never replaces that identity. An annex condition that cannot be checked automatically is recorded as met or not met; not met makes the row `non_conforme`.
 - **Fragrance allergens and other sensitisation, irritation or local effects** are never considered resolved by a large systemic MoS; they need their own addressed endpoint. The overall safety conclusion belongs to the qualified assessor.
 
 ## 5. Dossiers and versions
@@ -157,7 +159,8 @@ All values are computed at full precision; display rounds. Each step records its
 - **Draft:** everything is recomputed live from current data; the owner can set dossier-level overrides of scientific assumptions, each with a mandatory justification.
 - **Submission** freezes the version into a snapshot (§6). Submission is blocked only by:
   - no saved formula, or no exposure preset for the product type;
-  - any initial **or final** material whose review state is `not_reviewed` or `insufficient`, or that has no evaluated row at its actual concentration;
+  - any initial recipe ingredient **or final** material whose review state is `not_reviewed` or `insufficient`, or that has no evaluated row at its actual concentration;
+    Initial alkali and lye water are transformed materials: they are assessed through what they become (soap salts, residual water) and have no finished-product row of their own.
   - an ingredient-tracing gap larger than the rounding tolerance (§4.1);
   - a calculation that cannot run.
 
@@ -240,6 +243,7 @@ Each phase gets its own implementation plan.
 4. **Residual water:** default estimate vs measured cure loss — what the owner can measure in practice.
 5. **French authorities:** Codex's review states that since 2024 DGCCRF alone controls cosmetic products and establishments, and Anses handles cosmetovigilance. Not yet verified; affects only Part B wording and the checklist text.
 6. **Assessor visibility** (whole workspace vs assigned dossiers) — decided with the in-app assessor phase.
+7. **Dermal NOAEL conversion:** whether and how a dermal-study NOAEL is converted to a systemic value (it needs the study's own absorption) — to agree with the assessor; the pilot leaves such rows to another route.
 
 ## 12. Testing
 

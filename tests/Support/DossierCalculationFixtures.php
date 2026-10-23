@@ -3,14 +3,18 @@
 namespace Tests\Support;
 
 use App\Data\DossierExposureParameters;
+use App\Enums\AssessmentReviewState;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
+use App\Models\MaterialAssessmentCoverage;
 use App\Models\ProductFamily;
 use App\Models\Qra2Parameter;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
+use App\Models\Substance;
+use App\Models\ToxicologyProfile;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceDossierGrant;
@@ -142,5 +146,50 @@ final class DossierCalculationFixtures
             'qra2' => $qra2,
             'used' => [],
         ];
+    }
+
+    /**
+     * An assessed material with a current toxicological profile.
+     *
+     * @param  array<string, mixed>  $profile
+     * @param  array<string, mixed>  $attributes
+     */
+    public static function substance(string $name, ?string $inci, array $profile = [], array $attributes = []): Substance
+    {
+        $substance = Substance::factory()->create(['name' => $name, 'inci_name' => $inci, ...$attributes]);
+        ToxicologyProfile::factory()->create(['substance_id' => $substance->id, ...$profile]);
+
+        return $substance;
+    }
+
+    /**
+     * A sufficient review of a material, resting on the current profile of each reference.
+     */
+    public static function cover(Ingredient|Substance $material, Substance ...$references): MaterialAssessmentCoverage
+    {
+        $coverage = MaterialAssessmentCoverage::factory()->create([
+            'coverable_type' => $material::class,
+            'coverable_id' => $material->getKey(),
+            'workspace_id' => $material instanceof Ingredient ? $material->workspace_id : null,
+            'review_state' => AssessmentReviewState::Sufficient,
+            'covers_whole_material' => true,
+            'covers_constituents' => true,
+        ]);
+
+        foreach ($references as $reference) {
+            $coverage->supportingSubstances()->attach($reference->id, [
+                'toxicology_profile_id' => ToxicologyProfile::query()->current()->where('substance_id', $reference->id)->value('id'),
+            ]);
+        }
+
+        return $coverage;
+    }
+
+    /**
+     * Marks a substance's profiles as superseded, as a publisher would leave them, without the model's append-only guard.
+     */
+    public static function supersedeProfiles(Substance $substance): void
+    {
+        ToxicologyProfile::query()->where('substance_id', $substance->id)->update(['is_current' => false, 'superseded_at' => now()]);
     }
 }

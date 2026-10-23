@@ -87,3 +87,16 @@ it('decides the label declaration of an allergen from its final concentration', 
     'above the rinse-off threshold' => ['0.0101', true],
     'exactly at a "greater than" threshold' => ['0.01', false],
 ]);
+
+it('applies an entry through the whole of its first and last effective day', function (string $evaluatedAt): void {
+    $substance = Substance::factory()->create();
+    legalEntryFor($substance, ['annex' => 'II', 'effective_from' => '2026-10-23', 'effective_until' => '2026-10-23']);
+
+    $result = app(LegalEntryChecker::class)->check($substance, '1', true, CarbonImmutable::parse($evaluatedAt));
+
+    expect($result['binding_breach'])->toBeTrue();
+})->with([
+    'midnight' => ['2026-10-23 00:00:00'],
+    'noon' => ['2026-10-23 12:00:00'],
+    'last minute' => ['2026-10-23 23:59:00'],
+]);

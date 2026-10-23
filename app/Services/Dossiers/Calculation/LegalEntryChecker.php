@@ -129,9 +129,15 @@ class LegalEntryChecker
         ];
     }
 
+    /**
+     * Effective dates are calendar days: an entry applies through the whole of its first and last day, whatever the
+     * time of the evaluation.
+     */
     private function inForce(RegulatoryLegalEntry $entry, CarbonImmutable $on): bool
     {
-        return ($entry->effective_from === null || $entry->effective_from->lte($on))
-            && ($entry->effective_until === null || $entry->effective_until->gte($on));
+        $day = $on->toDateString();
+
+        return ($entry->effective_from === null || $entry->effective_from->toDateString() <= $day)
+            && ($entry->effective_until === null || $entry->effective_until->toDateString() >= $day);
     }
 }

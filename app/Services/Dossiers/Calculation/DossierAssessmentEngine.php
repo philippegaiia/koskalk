@@ -49,7 +49,7 @@ class DossierAssessmentEngine
     public function assess(User $actor, Workspace $workspace, RecipeVersion $version, DossierAssessmentOptions $options = new DossierAssessmentOptions): array
     {
         $this->assertAccess($actor, $workspace, $version);
-        $on = $options->evaluatedOn ?? CarbonImmutable::today();
+        $on = ($options->evaluatedOn ?? CarbonImmutable::today())->startOfDay();
 
         try {
             $composition = $this->compositions->build($version, $options->measuredCureLossPercent, $options->override('residual_water_percent'));

@@ -199,3 +199,22 @@ function xlsxCellNumberFormat(string $contents, string $reference, int $sheet = 
         unlink($path);
     }
 }
+
+/**
+ * A landscape JPEG (width × height as stored) carrying an EXIF orientation tag.
+ */
+function jpegWithExifOrientation(int $width, int $height, int $orientation): string
+{
+    $image = imagecreatetruecolor($width, $height);
+    ob_start();
+    imagejpeg($image);
+    $jpeg = (string) ob_get_clean();
+
+    // Big-endian TIFF header, one IFD entry: Orientation (0x0112), SHORT, count 1.
+    $tiff = 'MM'.pack('n', 42).pack('N', 8).pack('n', 1)
+        .pack('n', 0x0112).pack('n', 3).pack('N', 1).pack('n', $orientation).pack('n', 0)
+        .pack('N', 0);
+    $app1 = "Exif\0\0".$tiff;
+
+    return substr($jpeg, 0, 2)."\xFF\xE1".pack('n', strlen($app1) + 2).$app1.substr($jpeg, 2);
+}

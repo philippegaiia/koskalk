@@ -18,7 +18,13 @@ use Throwable;
 
 class MediaAssetProcessingService
 {
-    public function __construct(private readonly PdfPreviewRenderer $pdfPreviewRenderer) {}
+    /**
+     * @param  ImageDriverEnum|null  $imageDriver  null lets spatie/image choose (Imagick when installed, else GD)
+     */
+    public function __construct(
+        private readonly PdfPreviewRenderer $pdfPreviewRenderer,
+        private readonly ?ImageDriverEnum $imageDriver = null,
+    ) {}
 
     public function process(MediaAsset $asset, string $processingToken): void
     {
@@ -339,12 +345,11 @@ class MediaAssetProcessingService
             }
 
             $extension = strtolower(pathinfo($asset->original_filename, PATHINFO_EXTENSION));
-            $image = in_array($extension, ['heic', 'heif'], true)
-                ? Image::useImageDriver(ImageDriverEnum::Imagick)->loadFile($sourcePath)
-                : Image::load($sourcePath);
+            $driver = in_array($extension, ['heic', 'heif'], true) ? ImageDriverEnum::Imagick : $this->imageDriver;
+            $image = $driver ? Image::useImageDriver($driver)->loadFile($sourcePath) : Image::load($sourcePath);
 
+            // Both drivers apply the EXIF orientation while loading; applying it again turns photos sideways under GD.
             $image
-                ->orientation()
                 ->fit(Fit::Max, $maxEdge, $maxEdge)
                 ->format('webp')
                 ->quality($isDocumentImage

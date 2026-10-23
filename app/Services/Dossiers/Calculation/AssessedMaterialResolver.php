@@ -147,14 +147,13 @@ class AssessedMaterialResolver
 
         $components = IngredientComponent::query()
             ->where('ingredient_id', $ingredient->id)
-            ->whereNotNull('component_ingredient_id')
             ->with(['componentIngredient' => fn ($query) => $query->withoutGlobalScopes()])
             ->orderBy('sort_order')
-            ->get()
-            ->filter(fn (IngredientComponent $component): bool => $component->componentIngredient instanceof Ingredient);
+            ->get();
 
         if ($components->isNotEmpty() && $depth < self::MAX_COMPONENT_DEPTH) {
-            return $components
+            $resolved = $components->filter(fn (IngredientComponent $component): bool => $component->componentIngredient instanceof Ingredient);
+            $contributions = $resolved
                 ->flatMap(fn (IngredientComponent $component): array => $this->ingredientContributions(
                     "{$sourceKey}|component:{$component->component_ingredient_id}",
                     $finalRow,
@@ -164,11 +163,44 @@ class AssessedMaterialResolver
                 ))
                 ->values()
                 ->all();
+
+            return [...$contributions, ...$this->unresolvedShare($sourceKey, $finalRow, $ingredient, $percent, $resolved)];
         }
 
         [$substance, $reason] = $this->substanceByInci($ingredient->inci_name);
 
         return [$this->contribution($sourceKey, $finalRow, (string) $ingredient->display_name, $percent, $ingredient, $substance, $reason)];
+    }
+
+    /**
+     * The share of a blend that its linked components do not account for (an unlinked component, or components below
+     * 100 %). It is kept as an unidentified contribution so it blocks submission instead of disappearing.
+     *
+     * @param  array<string, mixed>  $finalRow
+     * @param  Collection<int, IngredientComponent>  $resolved
+     * @return list<array<string, mixed>>
+     */
+    private function unresolvedShare(string $sourceKey, array $finalRow, Ingredient $blend, string $percent, Collection $resolved): array
+    {
+        $resolvedShare = DecimalMath::add(...$resolved->map(fn (IngredientComponent $component): string => DecimalMath::of($component->percentage_in_parent))->all());
+        $remainder = DecimalMath::sub('100', $resolvedShare);
+        $tolerance = DecimalMath::of(config('dossiers.percent_tolerance'));
+
+        if (DecimalMath::withinTolerance($remainder, '0', $tolerance)) {
+            return [];
+        }
+
+        $exceeds = DecimalMath::cmp($remainder, '0') < 0;
+
+        return [$this->contribution(
+            "{$sourceKey}|unresolved",
+            $finalRow,
+            "{$blend->display_name} — part non identifiée",
+            $exceeds ? '0' : DecimalMath::div(DecimalMath::mul($percent, $remainder), '100'),
+            null,
+            null,
+            $exceeds ? 'blend_components_exceed_parent' : 'unresolved_blend_component',
+        )];
     }
 
     /**

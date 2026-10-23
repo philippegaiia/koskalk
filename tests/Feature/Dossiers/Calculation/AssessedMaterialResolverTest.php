@@ -61,7 +61,8 @@ it('reads a blend through its components', function (): void {
 
     $contributions = app(AssessedMaterialResolver::class)->finalRowContributions(identityFinalRow("carried:ingredient:{$blend->id}", 'carried', $blend, 'PARFUM', '2'));
 
-    expect($contributions)->toHaveCount(1)
+    // The 60 % the component does not account for stays as an unidentified share (see the next test).
+    expect($contributions)->toHaveCount(2)
         ->and($contributions[0]['source_key'])->toBe("carried:ingredient:{$blend->id}|component:{$component->id}")
         ->and(DecimalMath::round($contributions[0]['concentration_percent'], 6))->toBe('0.800000')
         ->and($contributions[0]['ingredient']->is($component))->toBeTrue();
@@ -114,3 +115,21 @@ it('flags a review that relied on a superseded profile and finds an allergen thr
         ->and($resolver->substanceForOverlay(['allergen_id' => $allergen->id, 'substance_id' => null])->is($limonene))->toBeTrue()
         ->and($resolver->profileFor($limonene, [$limonene])['profile']->version)->toBe(2);
 });
+
+it('keeps the unidentified share of a blend instead of dropping it', function (string $case): void {
+    $blend = Fixtures::ingredient('Blend', 'PARFUM', IngredientCategory::AromaticMaterials);
+    $orange = Fixtures::ingredient('Orange Oil', 'CITRUS AURANTIUM DULCIS PEEL OIL', IngredientCategory::AromaticMaterials);
+    IngredientComponent::factory()->create(['ingredient_id' => $blend->id, 'component_ingredient_id' => $orange->id, 'percentage_in_parent' => 40]);
+
+    if ($case === 'unlinked component') {
+        IngredientComponent::factory()->create(['ingredient_id' => $blend->id, 'component_ingredient_id' => null, 'percentage_in_parent' => 60, 'sort_order' => 2]);
+    }
+
+    $contributions = collect(app(AssessedMaterialResolver::class)->finalRowContributions(identityFinalRow("carried:ingredient:{$blend->id}", 'carried', $blend, 'PARFUM', '2')));
+    $unresolved = $contributions->firstWhere('unidentified_reason', 'unresolved_blend_component');
+
+    expect($contributions)->toHaveCount(2)
+        ->and($unresolved['source_key'])->toBe("carried:ingredient:{$blend->id}|unresolved")
+        ->and(DecimalMath::round($unresolved['concentration_percent'], 6))->toBe('1.200000')
+        ->and($unresolved['substance'])->toBeNull();
+})->with(['unlinked component', 'components below 100 %']);

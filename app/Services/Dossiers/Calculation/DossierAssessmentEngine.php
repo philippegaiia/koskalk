@@ -32,6 +32,11 @@ class DossierAssessmentEngine
      */
     private const IDENTITY_REQUIRED_KINDS = ['soap_salt', 'glycerin', 'residual_water'];
 
+    /**
+     * A blend share its linked components do not account for: it cannot be assessed, so it blocks submission.
+     */
+    private const UNRESOLVED_BLEND_REASONS = ['unresolved_blend_component', 'blend_components_exceed_parent'];
+
     public function __construct(
         private readonly WorkspaceAuthorization $authorization,
         private readonly DossierCompositionBuilder $compositions,
@@ -269,6 +274,12 @@ class DossierAssessmentEngine
         }
 
         foreach (collect($contributions)->where('source', 'composition') as $part) {
+            if (in_array($part['unidentified_reason'], self::UNRESOLVED_BLEND_REASONS, true)) {
+                $blockers[] = ['code' => 'blend_component_unresolved', 'scope' => 'final', 'key' => $part['source_key'], 'name' => $part['name'], 'reason' => $part['unidentified_reason']];
+
+                continue;
+            }
+
             if (in_array($part['kind'], self::IDENTITY_REQUIRED_KINDS, true) && $part['substance'] === null) {
                 $blockers[] = ['code' => 'final_material_unidentified', 'scope' => 'final', 'key' => $part['final_key'], 'name' => $part['name'], 'reason' => $part['unidentified_reason']];
 

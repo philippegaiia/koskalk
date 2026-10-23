@@ -6,6 +6,7 @@ use App\Enums\WorkspaceMemberRole;
 use App\Models\IfraAmendment;
 use App\Models\IfraProductCategory;
 use App\Models\IngredientAllergenEntry;
+use App\Models\IngredientComponent;
 use App\Models\Qra2Parameter;
 use App\Models\RecipeVersion;
 use App\Models\RegulatoryLegalEntry;
@@ -225,4 +226,16 @@ it('refuses editors, revoked workspaces and formulas from another workspace', fu
     WorkspaceDossierGrant::query()->where('workspace_id', $soap['workspace']->id)->update(['revoked_at' => now()]);
 
     expect(fn () => assessSoap($soap))->toThrow(AuthorizationException::class);
+});
+
+it('blocks submission when part of a blend cannot be identified', function (): void {
+    $blend = Fixtures::ingredient('House Blend', 'PARFUM', IngredientCategory::AromaticMaterials);
+    $soap = Fixtures::assessedLavenderSoap(['fragrance' => [Fixtures::row($blend, 1, 10)]]);
+    IngredientComponent::factory()->create(['ingredient_id' => $blend->id, 'component_ingredient_id' => $soap['lavender']->id, 'percentage_in_parent' => 40]);
+    Fixtures::cover($blend);
+
+    $assessment = assessSoap($soap);
+
+    expect($assessment['can_submit'])->toBeFalse()
+        ->and(collect($assessment['blockers'])->pluck('code')->all())->toContain('blend_component_unresolved');
 });

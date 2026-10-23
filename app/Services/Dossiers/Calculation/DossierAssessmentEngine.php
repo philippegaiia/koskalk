@@ -75,7 +75,7 @@ class DossierAssessmentEngine
         $overlays = $this->overlays->build($workspace, $composition['initial'], $composition['basis']['initial_mass_g'], $composition['basis']['cured_mass_g']);
         $contributions = [
             ...$this->compositionContributions($composition['final']),
-            ...$this->overlayContributions($overlays['rows'], $composition['basis']['cured_mass_g']),
+            ...$this->overlayContributions($overlays['rows'], $composition['basis']['cured_mass_g'], $composition['initial']),
         ];
         $rows = collect($contributions)
             ->groupBy(fn (array $part): string => $this->rowKey($part))
@@ -122,6 +122,8 @@ class DossierAssessmentEngine
             ->map(fn (array $part): array => [
                 ...$part,
                 'source' => 'composition',
+                'description' => 'composition',
+                'origin' => $part['origin_ingredient_id'] !== null ? 'ingredient:'.$part['origin_ingredient_id'] : 'final:'.$part['final_key'],
                 'allergen_id' => $part['substance']?->allergen_id,
                 'needs_justification' => false,
             ])
@@ -130,15 +132,17 @@ class DossierAssessmentEngine
     }
 
     /**
-     * One contribution per declaring ingredient, as a % of the cured mass. A declaration of a substance by an ingredient
-     * that *is* that substance is skipped: the neat material is already in the composition (decision 7).
+     * One contribution per declaring ingredient, as a % of the cured mass, attributed to the recipe ingredient it comes
+     * from (its origin), so overlapping descriptions of one ingredient are counted once (decision 7).
      *
      * @param  list<array<string, mixed>>  $overlays
+     * @param  list<array<string, mixed>>  $initial
      * @return list<array<string, mixed>>
      */
-    private function overlayContributions(array $overlays, string $curedMass): array
+    private function overlayContributions(array $overlays, string $curedMass, array $initial): array
     {
         $contributions = [];
+        $initialIngredients = collect($initial)->pluck('ingredient_id', 'key');
 
         foreach ($overlays as $overlay) {
             $substance = $this->materials->substanceForOverlay($overlay);
@@ -146,14 +150,11 @@ class DossierAssessmentEngine
 
             foreach ($overlay['contributions'] as $part) {
                 $source = Ingredient::withoutGlobalScopes()->find($part['ingredient_id']);
-                $sourceIdentity = $source instanceof Ingredient ? $this->materials->substanceByInci($source->inci_name)[0] : null;
-
-                if ($substance instanceof Substance && $sourceIdentity?->is($substance)) {
-                    continue;
-                }
 
                 $contributions[] = [
                     'source' => $overlay['kind'],
+                    'description' => $overlay['kind'],
+                    'origin' => 'ingredient:'.($initialIngredients[$part['initial_key']] ?? $part['ingredient_id']),
                     'source_key' => $overlay['key'].'|'.$part['initial_key'],
                     'final_key' => null,
                     'kind' => $overlay['kind'],
@@ -193,7 +194,7 @@ class DossierAssessmentEngine
     private function assessedRow(string $key, array $group, array $parameters, DossierAssessmentOptions $options, CarbonImmutable $on): array
     {
         $identity = $group[0]['substance'];
-        $concentration = DecimalMath::add(...array_column($group, 'concentration_percent'));
+        [$concentration, $group] = $this->countedConcentration($group);
         $allergenId = $identity?->allergen_id ?? collect($group)->pluck('allergen_id')->filter()->first();
         $sources = collect($group)->map(fn (array $part): string => $part['source'] === 'composition' ? 'material' : $part['source']);
         $category = $allergenId !== null
@@ -225,6 +226,9 @@ class DossierAssessmentEngine
                 'source_key' => $part['source_key'],
                 'final_key' => $part['final_key'],
                 'ingredient_id' => $part['ingredient']?->id,
+                'origin' => $part['origin'],
+                'description' => $part['description'],
+                'counted' => $part['counted'],
                 'concentration_percent' => $part['concentration_percent'],
                 'needs_justification' => $part['needs_justification'],
             ], $group),
@@ -243,7 +247,39 @@ class DossierAssessmentEngine
             'confirmation' => $confirmation,
             'state' => $state['state']->value,
             'state_reason' => $state['reason'],
-            'needs_justification' => collect($group)->contains('needs_justification', true),
+            'needs_justification' => collect($group)->where('counted', true)->contains('needs_justification', true),
+        ];
+    }
+
+    /**
+     * Sums the row across origins. Within one origin, its descriptions — its mass in the composition, each kind of
+     * supplier declaration — describe the same physical amount, so only the largest counts; the composition wins a tie.
+     *
+     * @param  list<array<string, mixed>>  $group
+     * @return array{0: string, 1: list<array<string, mixed>>}
+     */
+    private function countedConcentration(array $group): array
+    {
+        $total = '0';
+        $countedDescriptions = [];
+
+        foreach (collect($group)->groupBy('origin') as $origin => $parts) {
+            $best = $parts
+                ->groupBy('description')
+                ->map(fn (Collection $description, string $name): array => [
+                    'name' => $name,
+                    'value' => DecimalMath::add(...$description->pluck('concentration_percent')->all()),
+                ])
+                ->sort(fn (array $left, array $right): int => DecimalMath::cmp($right['value'], $left['value'])
+                    ?: ($left['name'] === 'composition' ? -1 : ($right['name'] === 'composition' ? 1 : 0)))
+                ->first();
+            $total = DecimalMath::add($total, $best['value']);
+            $countedDescriptions[$origin] = $best['name'];
+        }
+
+        return [
+            $total,
+            array_map(fn (array $part): array => [...$part, 'counted' => $countedDescriptions[$part['origin']] === $part['description']], $group),
         ];
     }
 

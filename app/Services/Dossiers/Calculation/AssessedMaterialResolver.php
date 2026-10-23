@@ -237,6 +237,7 @@ class AssessedMaterialResolver
         return [
             'source_key' => $sourceKey,
             'final_key' => $finalRow['key'],
+            'origin_ingredient_id' => $finalRow['ingredient_id'] ?? null,
             'kind' => $finalRow['kind'],
             'name' => $name,
             'concentration_percent' => $percent,

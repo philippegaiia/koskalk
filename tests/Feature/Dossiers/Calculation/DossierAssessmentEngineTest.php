@@ -1,8 +1,12 @@
 <?php
 
 use App\Data\DossierAssessmentOptions;
+use App\Enums\ConstituentKind;
+use App\Enums\EvidenceType;
 use App\Enums\IngredientCategory;
 use App\Enums\WorkspaceMemberRole;
+use App\Models\DossierEvidenceConstituent;
+use App\Models\DossierEvidenceItem;
 use App\Models\IfraAmendment;
 use App\Models\IfraProductCategory;
 use App\Models\IngredientAllergenEntry;
@@ -12,6 +16,7 @@ use App\Models\RecipeVersion;
 use App\Models\RegulatoryLegalEntry;
 use App\Models\RegulatoryRegime;
 use App\Models\Substance;
+use App\Models\SupplierQualification;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceDossierGrant;
@@ -163,7 +168,8 @@ it('sums a neat allergen with the same allergen declared in another ingredient, 
     $row = assessedRow(assessSoap($soap), 'substance:'.$soap['substances']['limonene']->id);
 
     expect(DecimalMath::round($row['concentration_percent'], 6))->toBe('1.377067')
-        ->and($row['contributions'])->toHaveCount(2)
+        ->and($row['contributions'])->toHaveCount(3)
+        ->and(collect($row['contributions'])->where('counted', true))->toHaveCount(2)
         ->and($row['category'])->toBe('allergen')
         ->and($row['state'])->toBe('non_conforme');
 });
@@ -238,4 +244,52 @@ it('blocks submission when part of a blend cannot be identified', function (): v
 
     expect($assessment['can_submit'])->toBeFalse()
         ->and(collect($assessment['blockers'])->pluck('code')->all())->toContain('blend_component_unresolved');
+});
+
+it('counts an allergen declaration and an RCE value for the same ingredient once', function (): void {
+    $soap = Fixtures::assessedLavenderSoap();
+    $qualification = SupplierQualification::query()->where('ingredient_id', $soap['lavender']->id)->firstOrFail();
+    $certificate = DossierEvidenceItem::factory()->create([
+        'supplier_qualification_id' => $qualification->id,
+        'type' => EvidenceType::RegulatoryConformityCertificate,
+        'constituents_complete' => true,
+    ]);
+    DossierEvidenceConstituent::factory()->create([
+        'dossier_evidence_item_id' => $certificate->id,
+        'kind' => ConstituentKind::RestrictedSubstance,
+        'allergen_id' => null,
+        'substance_id' => $soap['substances']['limonene']->id,
+        'max_value' => '40',
+    ]);
+
+    $row = assessedRow(assessSoap($soap), 'substance:'.$soap['substances']['limonene']->id);
+
+    expect(DecimalMath::round($row['concentration_percent'], 6))->toBe('0.922804')
+        ->and($row['contributions'])->toHaveCount(2)
+        ->and(collect($row['contributions'])->where('counted', true))->toHaveCount(1);
+});
+
+it('counts a blend component and the blend supplier declaration of the same allergen once', function (): void {
+    $neatLimonene = Fixtures::ingredient('d-Limonene', 'LIMONENE', IngredientCategory::AromaticMaterials);
+    $blend = Fixtures::ingredient('Citrus Blend', 'PARFUM', IngredientCategory::AromaticMaterials);
+    $soap = Fixtures::assessedLavenderSoap(['fragrance' => [Fixtures::row($blend, 1, 10)]]);
+    IngredientComponent::factory()->create(['ingredient_id' => $blend->id, 'component_ingredient_id' => $neatLimonene->id, 'percentage_in_parent' => 40]);
+    IngredientComponent::factory()->create(['ingredient_id' => $blend->id, 'component_ingredient_id' => $soap['lavender']->id, 'percentage_in_parent' => 60, 'sort_order' => 2]);
+    $qualification = SupplierQualification::factory()->create(['workspace_id' => $soap['workspace']->id, 'ingredient_id' => $blend->id]);
+    $declaration = DossierEvidenceItem::factory()->create([
+        'supplier_qualification_id' => $qualification->id,
+        'type' => EvidenceType::AllergenDeclaration,
+        'constituents_complete' => true,
+    ]);
+    DossierEvidenceConstituent::factory()->create([
+        'dossier_evidence_item_id' => $declaration->id,
+        'kind' => ConstituentKind::Allergen,
+        'allergen_id' => $soap['limoneneAllergen']->id,
+        'max_value' => '40',
+    ]);
+
+    $row = assessedRow(assessSoap($soap), 'substance:'.$soap['substances']['limonene']->id);
+
+    // 12 g from the lavender oil + 4 g from the blend, over a cured mass of 1311.62 g; 20 g if the blend counted twice.
+    expect(DecimalMath::round($row['concentration_percent'], 6))->toBe('1.219866');
 });

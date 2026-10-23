@@ -8,6 +8,7 @@ use App\Enums\IngredientSubcategory;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
 use App\Models\ProductFamily;
+use App\Models\Qra2Parameter;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
@@ -122,5 +123,24 @@ final class DossierCalculationFixtures
     public static function row(Ingredient $ingredient, int|float $percentage, int|float $weight): array
     {
         return ['ingredient_id' => $ingredient->id, 'percentage' => $percentage, 'weight' => $weight, 'note' => null];
+    }
+
+    /**
+     * Calculation parameters in the shape AssessmentParameterResolver returns, with the pilot exposure, DAp 100 %,
+     * oral bioavailability 50 %, MoS threshold 100, rinse-off.
+     *
+     * @return array<string, mixed>
+     */
+    public static function pilotParameters(?Qra2Parameter $qra2 = null): array
+    {
+        return [
+            'exposure' => self::pilotExposure(),
+            'policy_dap' => '100',
+            'policy_oral_bioavailability' => '50',
+            'mos_threshold' => '100',
+            'is_rinse_off' => true,
+            'qra2' => $qra2,
+            'used' => [],
+        ];
     }
 }

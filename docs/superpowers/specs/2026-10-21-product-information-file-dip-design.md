@@ -107,7 +107,7 @@ Parameters are grouped by kind and versioned; a dossier version stores the value
 
 | Type | Structured summary |
 | --- | --- |
-| Technical sheet (FT), safety data sheet (FDS/MSDS), allergen declaration (ALL), regulatory conformity certificate (RCE — "Certificat Règlement Cosmétique 1223/2009"), IFRA certificate, CoA | Constituent %, allergen %, impurity ppm, microbiological specification, restricted substances present with max %, max use level per product class, peroxide value |
+| Technical sheet (FT), safety data sheet (FDS/MSDS), allergen declaration (ALL), regulatory conformity certificate (RCE — "Certificat Règlement Cosmétique 1223/2009"), IFRA certificate, CoA | Constituent %, allergen %, impurity ppm, microbiological specification, restricted substances present with max %, max use level per product class; for IFRA certificates the amendment covered, grade coverage and the limit per IFRA category (maximum or explicit no restriction, each category once); peroxide value |
 | Stability / compatibility | Duration, conditions, result → minimum durability |
 | PAO | Months |
 | Challenge test | Standard, criteria, result, or "not required" with justification (e.g. ISO 29621 low-risk product) |
@@ -146,6 +146,7 @@ All values are computed at full precision; display rounds. Each step records its
 - In the pilot the owner confirms routes in Koskalk, following the assessor's instructions on the submitted draft, before the final version is submitted for signature. Route selection moves to the assessor with the in-app assessor phase.
 - **QRA2 (fragrance allergens):** `AEL = NESIL ÷ SAF`; `Cmax % = AEL ÷ (CEL × 1000) × 100 × aggregate adjustment factor`, as in IFRA 51st Amendment guidance (Table 6 p. 28; worked example Table 7 p. 29: bar soap 5.833% × 0.50 = 2.9%). The snapshot records the preset version used and any recorded deviation. QRA2 addresses the risk of *inducing* sensitisation; it does not protect people already sensitised, and the output never claims it does. Output also states whether the allergen must be declared on the label.
 - **Several oils, one allergen:** contributions of the same allergen from every ingredient are summed for the finished product before comparison. Checking each essential oil separately against its own supplier IFRA certificate is not sufficient on its own; supplier certificates remain supporting evidence.
+- **IFRA use check (phase 3b):** each fragrance ingredient, as purchased (a blend at its whole dosage), is compared with its IFRA limit for the formula's category (category 9 for the bar-soap pilot, or a justified exception) and amendment. Supplier IFRA certificates conclude only when they record that amendment and are confirmed to cover the qualified grade; every validated supplier must be covered. The ingredient's own IFRA certificate is shown as a fallback but never concludes. An exceeded limit is `non_conforme` with its own reason; missing or unusable information is « À justifier »; both block approval. Restrictions from constituents shared across ingredients are not calculated: the engine lists them as a manual review (`manual_reviews_required`), which phase 4's assessor checklist must record before approval.
 - **Impurities:** concentration in ppm, SED in µg/kg bw/day, compared with SEDmax, Cmax or TTC.
 - **Annex checks:** every legal entry linked to a present assessed material, evaluated against the product type, body area and concentration; mandatory warnings collected for Part B 2.B.2.
 - **One row per substance:** contributions of the same substance from every source — a neat ingredient, a constituent declared in another ingredient, reaction glycerin and added glycerin — are summed before any limit or indicator is evaluated. A row's legal identity is the substance itself; a read-across profile from its coverage never replaces that identity. An annex condition that cannot be checked automatically is recorded as met or not met; not met makes the row `non_conforme`.
@@ -244,6 +245,7 @@ Each phase gets its own implementation plan.
 5. **French authorities:** Codex's review states that since 2024 DGCCRF alone controls cosmetic products and establishments, and Anses handles cosmetovigilance. Not yet verified; affects only Part B wording and the checklist text.
 6. **Assessor visibility** (whole workspace vs assigned dossiers) — decided with the in-app assessor phase.
 7. **Dermal NOAEL conversion:** whether and how a dermal-study NOAEL is converted to a systemic value (it needs the study's own absorption) — to agree with the assessor; the pilot leaves such rows to another route.
+8. **Peroxide value units:** the DIP stores peroxide values in mmol/L, technical sheets and the workbench use meq O₂/kg. They are not interchangeable (conversion needs the density and the method's factor). A separate follow-up stores value, unit, comparison and basis as reported; no value is converted with a fixed factor.
 
 ## 12. Testing
 

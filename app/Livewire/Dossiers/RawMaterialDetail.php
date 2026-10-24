@@ -25,6 +25,8 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Services\WorkspaceAuthorization;
 use Closure;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
@@ -48,8 +50,9 @@ use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 /**
  * One raw material: its qualified suppliers and their retained documents.
  */
-class RawMaterialDetail extends Component implements HasForms
+class RawMaterialDetail extends Component implements HasActions, HasForms
 {
+    use InteractsWithActions;
     use InteractsWithForms;
     use RestrictsFileUploadsToSchemaComponents;
 

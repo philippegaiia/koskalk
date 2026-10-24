@@ -108,4 +108,5 @@
     </section>
 
     <livewire:dossiers.quick-supplier-create :key="'quick-supplier-'.$workspaceId" />
+    <x-filament-actions::modals />
 </div>

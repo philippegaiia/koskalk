@@ -19,6 +19,7 @@ use App\Models\SupplierQualification;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceDossierGrant;
+use Filament\Actions\Testing\TestAction;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -219,3 +220,21 @@ it('records an IFRA certificate with its amendment, grade coverage and limits fr
         ->and($item->facts['covers_supplied_grade'])->toBeTrue()
         ->and($item->useLimits->firstWhere('ifra_product_category_id', $category4->id)->limit_type)->toBe(UseLimitType::NoRestriction);
 });
+
+it('adds a row with the repeater add button, as the browser does', function (EvidenceType $type, string $repeater): void {
+    [$owner, $workspace] = rawMaterialWorkspace();
+    $lavender = ingredientUsedIn($workspace, 'Lavender');
+    $qualification = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $lavender->id]);
+    $item = DossierEvidenceItem::factory()->create(['supplier_qualification_id' => $qualification->id, 'type' => $type]);
+    $this->actingAs($owner);
+
+    $page = Livewire::test(RawMaterialDetail::class, ['ingredient' => $lavender->public_id])
+        ->call('startEditData', $item->id)
+        ->callAction(TestAction::make('add')->schemaComponent($repeater, 'evidenceDataForm'))
+        ->assertHasNoErrors();
+
+    expect($page->get("evidenceDataState.{$repeater}"))->toHaveCount(1);
+})->with([
+    'use limits on an IFRA certificate' => [EvidenceType::IfraCertificate, 'use_limits'],
+    'contents on an allergen declaration' => [EvidenceType::AllergenDeclaration, 'constituents'],
+]);

@@ -87,16 +87,9 @@ export async function persistWorkbench(workbench, method) {
     const submittedSignature = draftSignature(draft);
     const submittedContent = JSON.stringify(workbench.$wire?.data ?? null);
     const submittedCostingSequence = workbench.costingSaveSeq;
-    const baselineBeforeSave = workbench.dirtyBaselineSignature;
 
     try {
         const response = await workbench.$wire[method](draft);
-        // The save's Livewire re-render changes the bench's x-data, so Alpine
-        // re-initializes it from the saved formula and resets the dirty
-        // baseline before the call returns. Server-side changes, such as
-        // liquid soap additions resized to a new final batch, are then the
-        // saved state, not edits made during the save.
-        const reinitializedFromServer = workbench.dirtyBaselineSignature !== baselineBeforeSave;
 
         if (!response?.ok) {
             workbench.saveStatus = 'error';
@@ -108,8 +101,12 @@ export async function persistWorkbench(workbench, method) {
 
         workbench.saveStatus = 'success';
         workbench.saveMessage = response.message ?? 'Formula saved.';
+        workbench.applySavedRecipeState?.(response.recipe);
 
-        const changedDuringSave = (!reinitializedFromServer && draftSignature(serializeDraft(workbench)) !== submittedSignature)
+        // Server-side changes, such as liquid soap additions resized to a new
+        // final batch, arrive in the snapshot; only browser edits made while
+        // the request ran keep the formula unsaved.
+        const changedDuringSave = draftSignature(serializeDraft(workbench)) !== submittedSignature
             || workbench.isApplyingLiquidNeutralizerRecommendation === true
             || JSON.stringify(workbench.$wire?.data ?? null) !== submittedContent
             || workbench.costingSaveSeq !== submittedCostingSequence;

@@ -450,6 +450,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 : 'Formula saved.',
             'redirect' => route('recipes.edit', Recipe::withoutGlobalScopes()->findOrFail($recipeVersion->recipe_id)),
             'snapshot' => $snapshot,
+            'recipe' => app(RecipeWorkbenchViewDataBuilder::class)->recipeData($recipe, $user),
         ];
     }
 
@@ -512,6 +513,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 : 'Formula saved.',
             'redirect' => route('recipes.edit', Recipe::withoutGlobalScopes()->findOrFail($recipeVersion->recipe_id)),
             'snapshot' => $snapshot,
+            'recipe' => app(RecipeWorkbenchViewDataBuilder::class)->recipeData($recipe, $user),
         ];
     }
 
@@ -965,6 +967,7 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
                 'recipe' => $savedSnapshot['draft']['recipe'] ?? null,
                 'versionName' => $savedSnapshot['draft']['formulaName'] ?? null,
                 'versionOptions' => $versionOptions,
+                'workbenchRecipe' => app(RecipeWorkbenchViewDataBuilder::class)->recipeData($recipe->fresh(), $this->currentUser()),
             ],
         ];
     }

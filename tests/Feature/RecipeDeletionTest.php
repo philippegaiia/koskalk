@@ -384,7 +384,10 @@ it('dispatches version-deleted after deleting a published workbench version', fu
                 && ($params['message'] ?? null) === 'Last published version deleted. Recipe has no published versions.'
                 && ($params['versionName'] ?? null) === $expectedVersionName
                 && is_array($params['versionOptions'] ?? null)
-                && $params['versionOptions'] === [];
+                && $params['versionOptions'] === []
+                && ($params['workbenchRecipe']['has_saved_formula'] ?? null) === false
+                && array_key_exists('saved_formula_url', $params['workbenchRecipe'])
+                && $params['workbenchRecipe']['saved_formula_url'] === null;
         });
 
     expect(RecipeVersion::withoutGlobalScopes()->find($publishedVersion->id))->toBeNull();

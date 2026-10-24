@@ -625,6 +625,44 @@ it('establishes editing protection after creation without reopening the workbenc
     expect($continued['editing']['recipe_revision'])->toBe($result['editing']['recipe_revision'] + 1);
 })->with(['save', 'publish']);
 
+it('returns the saved recipe state with each save because the bench does not re-render', function (): void {
+    $user = User::factory()->create();
+    ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $ingredient = makeCarrierOilIngredient();
+    $this->actingAs($user);
+    $service = app(RecipeWorkbenchService::class);
+    $content = app(RecipeContentUpdater::class);
+
+    // Livewire leaves the bench root's attributes alone, so a save never
+    // re-evaluates x-data and re-initializes the Alpine state.
+    $document = new DOMDocument;
+    $document->loadHTML(Livewire::test(RecipeWorkbench::class)->html(), LIBXML_NOERROR | LIBXML_NOWARNING);
+    $root = (new DOMXPath($document))->query('//*[@x-data]')->item(0);
+    expect($root->hasAttribute('wire:ignore.self'))->toBeTrue();
+
+    $workbench = app(RecipeWorkbench::class);
+    $workbench->mount();
+    $saved = $workbench->save(workbenchSoapDraftPayload($ingredient, name: 'Saved state'), $service, $content);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($saved['snapshot']['draft']['recipe']['id']);
+
+    expect($saved['recipe'])->toMatchArray([
+        'id' => $recipe->id,
+        'public_id' => $recipe->public_id,
+        'is_locked' => false,
+        'has_saved_formula' => false,
+        'saved_formula_url' => null,
+    ]);
+
+    $workbench->beginEditing((string) Str::uuid());
+    $published = $workbench->publish(workbenchSoapDraftPayload($ingredient, name: 'Saved state'), $service, $content);
+
+    expect($published['recipe'])->toMatchArray([
+        'id' => $recipe->id,
+        'has_saved_formula' => true,
+        'saved_formula_url' => route('recipes.saved', $recipe),
+    ]);
+});
+
 it('stores instructions entered before the first draft on the new current version', function () {
     $user = User::factory()->create();
     ProductFamily::factory()->create([

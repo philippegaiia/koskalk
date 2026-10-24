@@ -32,4 +32,7 @@ return [
         'glycerin' => 'GLYCERIN',
         'residual_water' => 'AQUA',
     ],
+
+    // The bar-soap pilot is assessed in IFRA category 9; another category needs a justification (owner decision 2026-10-24).
+    'pilot_ifra_category_code' => '9',
 ];

@@ -784,6 +784,7 @@ use App\Models\IfraCertificate;
 use App\Models\IfraCertificateLimit;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
+use App\Models\IngredientComponent;
 use App\Models\SupplierQualification;
 use App\Models\Workspace;
 use App\Support\DecimalMath;

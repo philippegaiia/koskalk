@@ -11,7 +11,8 @@ use InvalidArgumentException;
  * Dossier-level inputs to one DIP calculation (spec §5): overrides of scientific assumptions, each with a mandatory
  * justification and within physical bounds; the owner's confirmed routes per row key, with the answer to any annex
  * condition that cannot be checked automatically; an optional measured cure loss (% of the initial batch); the
- * evaluation date. Phase 4 stores them on the dossier version.
+ * evaluation date; and a justification when the formula's IFRA category is not the pilot's category 9. Phase 4
+ * stores them on the dossier version.
  */
 final readonly class DossierAssessmentOptions
 {
@@ -50,6 +51,7 @@ final readonly class DossierAssessmentOptions
         public array $confirmations = [],
         public ?string $measuredCureLossPercent = null,
         public ?CarbonImmutable $evaluatedOn = null,
+        public ?string $ifraCategoryJustification = null,
     ) {
         foreach ($overrides as $key => $override) {
             if (! in_array($key, self::OVERRIDABLE, true)) {

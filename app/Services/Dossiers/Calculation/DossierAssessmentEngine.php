@@ -8,6 +8,7 @@ use App\Enums\DossierRowState;
 use App\Enums\WorkspaceModule;
 use App\Exceptions\DossierCalculationException;
 use App\Models\Allergen;
+use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
@@ -46,6 +47,7 @@ class DossierAssessmentEngine
         private readonly LegalEntryChecker $legal,
         private readonly RowIndicatorEvaluator $indicators,
         private readonly RowStateResolver $states,
+        private readonly IfraUseChecker $ifraUses,
     ) {}
 
     /**
@@ -67,12 +69,23 @@ class DossierAssessmentEngine
                 'reason' => $exception->reason,
                 'blockers' => [['code' => 'calculation_cannot_run', 'reason' => $exception->reason, 'context' => $exception->context]],
                 'warnings' => [],
+                'ifra_uses' => [],
+                'manual_reviews_required' => [],
                 'can_submit' => false,
                 'can_approve' => false,
             ];
         }
 
         $overlays = $this->overlays->build($workspace, $composition['initial'], $composition['basis']['initial_mass_g'], $composition['basis']['cured_mass_g']);
+        $ifraUses = $this->ifraUses->check(
+            $workspace,
+            $composition['initial'],
+            $composition['basis']['cured_mass_g'],
+            $version->ifra_product_category_id === null ? null : IfraProductCategory::query()->find($version->ifra_product_category_id),
+            $version->ifra_amendment_id,
+            $options->ifraCategoryJustification,
+        );
+        $ifraApplies = collect($ifraUses)->contains(fn (array $use): bool => $use['state'] !== 'not_applicable');
         $contributions = [
             ...$this->compositionContributions($composition['final']),
             ...$this->overlayContributions($overlays['rows'], $composition['basis']['cured_mass_g'], $composition['initial']),
@@ -96,10 +109,16 @@ class DossierAssessmentEngine
                 'label' => $parameters['qra2']->preset_label,
             ],
             'rows' => $rows,
+            'ifra_uses' => $ifraUses,
+            // Reviews the engine cannot do; phase 4's assessor checklist records each before approval (decision 7).
+            'manual_reviews_required' => $ifraApplies ? ['ifra_constituent_review'] : [],
             'blockers' => $blockers,
-            'warnings' => $this->warnings($composition, $overlays, $parameters, $contributions, $rows),
+            'warnings' => $this->warnings($composition, $overlays, $parameters, $contributions, $rows, $ifraApplies),
             'can_submit' => $blockers === [],
-            'can_approve' => $blockers === [] && collect($rows)->every(fn (array $row): bool => $row['state'] === DossierRowState::Conforme->value),
+            // Provisional eligibility: the manual reviews above still have to be recorded in phase 4.
+            'can_approve' => $blockers === []
+                && collect($rows)->every(fn (array $row): bool => $row['state'] === DossierRowState::Conforme->value)
+                && collect($ifraUses)->every(fn (array $use): bool => in_array($use['state'], ['conforme', 'not_applicable'], true)),
         ];
     }
 
@@ -346,9 +365,10 @@ class DossierAssessmentEngine
      * @param  array<string, mixed>  $parameters
      * @param  list<array<string, mixed>>  $contributions
      * @param  list<array<string, mixed>>  $rows
+     * @param  bool  $ifraApplies  whether any ingredient falls under the IFRA check
      * @return list<array<string, mixed>>
      */
-    private function warnings(array $composition, array $overlays, array $parameters, array $contributions, array $rows): array
+    private function warnings(array $composition, array $overlays, array $parameters, array $contributions, array $rows, bool $ifraApplies): array
     {
         $warnings = [];
 
@@ -389,6 +409,12 @@ class DossierAssessmentEngine
 
         if ($unreviewed !== []) {
             $warnings[] = ['code' => 'unreviewed_legal_entries', 'entry_ids' => $unreviewed];
+        }
+
+        if ($ifraApplies) {
+            // The check covers each ingredient as used; restrictions from constituents shared across ingredients are
+            // not checked automatically in the pilot (decision 1).
+            $warnings[] = ['code' => 'ifra_constituent_review_required'];
         }
 
         return $warnings;

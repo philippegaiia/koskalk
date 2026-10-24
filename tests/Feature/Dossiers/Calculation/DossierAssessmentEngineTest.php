@@ -4,9 +4,11 @@ use App\Data\DossierAssessmentOptions;
 use App\Enums\ConstituentKind;
 use App\Enums\EvidenceType;
 use App\Enums\IngredientCategory;
+use App\Enums\UseLimitType;
 use App\Enums\WorkspaceMemberRole;
 use App\Models\DossierEvidenceConstituent;
 use App\Models\DossierEvidenceItem;
+use App\Models\DossierEvidenceUseLimit;
 use App\Models\IfraAmendment;
 use App\Models\IfraProductCategory;
 use App\Models\IngredientAllergenEntry;
@@ -292,4 +294,103 @@ it('counts a blend component and the blend supplier declaration of the same alle
 
     // 12 g from the lavender oil + 4 g from the blend, over a cured mass of 1311.62 g; 20 g if the blend counted twice.
     expect(DecimalMath::round($row['concentration_percent'], 6))->toBe('1.219866');
+});
+
+/**
+ * Puts the soap's saved formula in an IFRA category and amendment 51, and gives the lavender supplier an applicable
+ * IFRA certificate with the given maximum for that category.
+ *
+ * @param  array<string, mixed>  $soap
+ * @return array<string, mixed>
+ */
+function withIfraCertificate(array $soap, string $maximum, string $categoryCode = '9'): array
+{
+    $category = IfraProductCategory::factory()->create(['code' => $categoryCode]);
+    $amendment = IfraAmendment::factory()->create(['code' => '51']);
+    RecipeVersion::withoutGlobalScopes()->whereKey($soap['version']->id)->update(['ifra_product_category_id' => $category->id, 'ifra_amendment_id' => $amendment->id]);
+    $qualification = SupplierQualification::query()->where('ingredient_id', $soap['lavender']->id)->firstOrFail();
+    $item = DossierEvidenceItem::factory()->create([
+        'supplier_qualification_id' => $qualification->id,
+        'type' => EvidenceType::IfraCertificate,
+        'facts' => ['ifra_amendment_id' => $amendment->id, 'covers_supplied_grade' => true],
+    ]);
+    DossierEvidenceUseLimit::factory()->create(['dossier_evidence_item_id' => $item->id, 'ifra_product_category_id' => $category->id, 'limit_type' => UseLimitType::Maximum, 'max_percent' => $maximum]);
+
+    return [...$soap, 'version' => $soap['version']->fresh(), 'ifraCategory' => $category, 'ifraAmendment' => $amendment];
+}
+
+/**
+ * Every row of the lavender soap confirmed through a passing route, with endpoints addressed, and a QRA2 preset for the
+ * formula's category, so only IFRA can still prevent approval.
+ *
+ * @param  array<string, mixed>  $soap
+ */
+function otherwiseApprovable(array $soap): DossierAssessmentOptions
+{
+    Qra2Parameter::factory()->create(['ifra_product_category_id' => $soap['ifraCategory']->id, 'ifra_amendment_id' => $soap['ifraAmendment']->id]);
+    $substances = $soap['substances'];
+    $confirm = fn (string $route, bool $endpoints = false): array => ['route' => $route, 'justification' => 'Confirmed by the assessor.', 'endpoints_addressed' => $endpoints];
+
+    return new DossierAssessmentOptions(confirmations: [
+        'substance:'.$substances['olivate']->id => $confirm('mos'),
+        'substance:'.$substances['glycerin']->id => $confirm('mos'),
+        'substance:'.$substances['aqua']->id => $confirm('cmax'),
+        'substance:'.$substances['oliveOil']->id => $confirm('mos'),
+        'substance:'.$substances['lavenderOil']->id => $confirm('mos', endpoints: true),
+        'substance:'.$substances['limonene']->id => $confirm('mos', endpoints: true),
+    ]);
+}
+
+/**
+ * @param  array<string, mixed>  $assessment
+ * @return array<string, mixed>
+ */
+function ifraUseOf(array $assessment, int $ingredientId): array
+{
+    return collect($assessment['ifra_uses'])->firstWhere('ingredient_id', $ingredientId) ?? throw new RuntimeException("No IFRA use for ingredient [{$ingredientId}].");
+}
+
+it('allows approval when every row and every IFRA use concludes, and lists the manual review still due', function (): void {
+    $soap = withIfraCertificate(Fixtures::assessedLavenderSoap(), '5');
+
+    $assessment = assessSoap($soap, otherwiseApprovable($soap));
+    $lavender = ifraUseOf($assessment, $soap['lavender']->id);
+
+    expect(collect($assessment['rows'])->pluck('state')->unique()->values()->all())->toBe(['conforme'])
+        ->and(DecimalMath::round($lavender['concentration_percent'], 6))->toBe('2.307011')
+        ->and($lavender['state'])->toBe('conforme')
+        ->and(ifraUseOf($assessment, $soap['olive']->id)['state'])->toBe('not_applicable')
+        ->and($assessment['can_approve'])->toBeTrue()
+        ->and($assessment['manual_reviews_required'])->toBe(['ifra_constituent_review']);
+});
+
+it('refuses approval on an exceeded IFRA limit, whatever the toxicology rows say', function (): void {
+    $soap = withIfraCertificate(Fixtures::assessedLavenderSoap(), '2');
+
+    $assessment = assessSoap($soap, otherwiseApprovable($soap));
+
+    expect(collect($assessment['rows'])->pluck('state')->unique()->values()->all())->toBe(['conforme'])
+        ->and(ifraUseOf($assessment, $soap['lavender']->id)['reason'])->toBe('ifra_limit_exceeded')
+        ->and($assessment['can_submit'])->toBeTrue()
+        ->and($assessment['can_approve'])->toBeFalse();
+});
+
+it('refuses approval while a validated supplier has no applicable IFRA certificate', function (): void {
+    $soap = withIfraCertificate(Fixtures::assessedLavenderSoap(), '5');
+    SupplierQualification::factory()->create(['workspace_id' => $soap['workspace']->id, 'ingredient_id' => $soap['lavender']->id]);
+
+    $assessment = assessSoap($soap, otherwiseApprovable($soap));
+
+    expect(ifraUseOf($assessment, $soap['lavender']->id)['reason'])->toBe('ifra_supplier_uncovered')
+        ->and($assessment['can_approve'])->toBeFalse();
+});
+
+it('leaves IFRA unresolved outside category 9 unless the dossier justifies the category', function (): void {
+    $soap = withIfraCertificate(Fixtures::assessedLavenderSoap(), '5', categoryCode: '5A');
+
+    $unjustified = ifraUseOf(assessSoap($soap), $soap['lavender']->id);
+    $justified = ifraUseOf(assessSoap($soap, new DossierAssessmentOptions(ifraCategoryJustification: 'Sold as a body wash bar; category 5A agreed with the assessor.')), $soap['lavender']->id);
+
+    expect($unjustified['reason'])->toBe('ifra_category_unresolved')
+        ->and($justified['state'])->toBe('conforme');
 });

@@ -7,7 +7,9 @@ use App\Actions\Purchasing\PlacePurchaseOrder;
 use App\Actions\Purchasing\PostGoodsReceiptLine;
 use App\Actions\Purchasing\ReceiveDirectGoodsReceipt;
 use App\Actions\Purchasing\ReceivePurchaseOrder;
+use App\Actions\Purchasing\ReverseGoodsReceipt;
 use App\Enums\GoodsReceiptSource;
+use App\Enums\GoodsReceiptStatus;
 use App\Enums\ListingPriceBasis;
 use App\Enums\OwnerType;
 use App\Enums\StockLotStatus;
@@ -714,6 +716,38 @@ it('keeps the supplier listing price independent from immutable receipt and lot 
     expect($line->refresh()->receipt_price_amount)->toBe('12.000000000')
         ->and($line->purchase_format_price)->toBe('60.000000000')
         ->and($line->stockLot->refresh()->historical_unit_cost)->toBe('0.012500000');
+});
+
+it('leaves the supplier listing price untouched when a receipt is posted and then reversed', function (): void {
+    [$owner, $workspace, $supplier, , $listing] = directReceiptContext();
+    $listingPriceSnapshot = $listing->only(['price_basis', 'price_amount', 'price_unit', 'total_price', 'currency']);
+    $listingPriceRecordedAt = $listing->price_recorded_at;
+
+    $receipt = app(ReceiveDirectGoodsReceipt::class)->handle(
+        actor: $owner,
+        workspace: $workspace,
+        supplier: $supplier,
+        idempotencyKey: 'direct-listing-round-trip',
+        lines: [[
+            'listing' => $listing,
+            'packs_received' => 1,
+            'actual_quantity' => '4.8',
+            'actual_unit' => 'kg',
+            'receipt_price_basis' => ListingPriceBasis::PerUnit,
+            'receipt_price_amount' => '12',
+            'receipt_price_unit' => 'kg',
+            'currency' => 'EUR',
+        ]],
+        receivedAt: '2026-08-03',
+    );
+
+    app(ReverseGoodsReceipt::class)->handle($owner, $receipt, 'Entered against the wrong supplier');
+
+    // The receipt price lives on the receipt line only: posting never moved the listing, so reversing has nothing to
+    // restore (decision of 2026-10-24, closing the August review question).
+    expect($receipt->refresh()->status)->toBe(GoodsReceiptStatus::Reversed)
+        ->and($listing->refresh()->only(array_keys($listingPriceSnapshot)))->toBe($listingPriceSnapshot)
+        ->and($listing->price_recorded_at?->equalTo($listingPriceRecordedAt))->toBeTrue();
 });
 
 it('validates direct receipt metadata before any write', function (string $case): void {

@@ -2,13 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Check every fragrance ingredient of a saved bar-soap formula against its IFRA limit for the formula's IFRA category and amendment: supplier IFRA certificates first, with the amendment and grade they cover recorded; the ingredient's own IFRA certificate only as an unconcluded fallback; missing or unusable information kept « À justifier »; an established exceedance blocking approval with its own reason.
+**Goal:** Check every fragrance ingredient of a saved bar-soap formula against its IFRA limit for the formula's IFRA category and amendment: supplier IFRA certificates first, with the amendment and grade they cover recorded; the ingredient's own IFRA certificate only as an unconcluded fallback; missing, duplicated or unusable information kept « À justifier »; an established exceedance blocking approval with its own reason.
 
-**Architecture:** IFRA certificate documents gain two recorded facts (amendment covered, applies to the qualified grade) and a limit type (`maximum` or `no_restriction`) on their use limits. A new `IfraUseChecker` evaluates each recipe ingredient **as purchased** — a blend at its whole dosage, before any decomposition into components — against the formula's IFRA category and amendment, and returns one result per ingredient. `DossierAssessmentEngine` adds these results as `ifra_uses`, separate from the substance rows, and refuses approval unless each is `conforme` or `not_applicable`. Peroxide values move from one mmol/L field to value + unit + comparison + basis, without conversion.
+**Architecture:** IFRA certificate documents gain two recorded facts (amendment covered, applies to the qualified grade) and a limit type (`maximum` or `no_restriction`) on their use limits. A new `IfraUseChecker` evaluates each recipe ingredient **as purchased** — a blend at its whole dosage, before any decomposition into components — against the formula's IFRA category and amendment, and returns one result per ingredient. `DossierAssessmentEngine` adds these results as `ifra_uses`, separate from the substance rows, and refuses approval unless each is `conforme` or `not_applicable`. The peroxide-value redesign is **not** part of this change (decision 8).
 
 **Tech Stack:** Laravel 13, PHP 8.5, Livewire 4 with Filament 5 schemas, Pest 4.
 
-**Origin:** Codex's design review of 2026-10-24 (four P1, three P2 points, all verified against the code and accepted). Owner decision the same day: the bar-soap pilot requires IFRA category 9, or a justified exception.
+**Origin:** Codex's design review of 2026-10-24 (four P1, three P2 points, all verified against the code and accepted), then Codex's review of the first version of this plan the same day (two P1, two P2 points and two scope changes, all accepted; see "Plan review changes" at the end). Owner decision the same day: the bar-soap pilot requires IFRA category 9, or a justified exception.
 
 ---
 
@@ -17,29 +17,28 @@
 - Branch `codex/dip-pilot`. `export LANG=en_US.UTF-8` before running tests.
 - Read `.ai/rules/index.md` and the rule files for the paths you touch: `app.md`, `actions.md`, `migrations.md`, `models.md`, `livewire.md`, `lang.md`, `data.md`, `services.md`, `tests.md`.
 - Pint after PHP changes. Do not migrate the owner's local database until Task 5.
-- Checked on 2026-10-24: no DIP evidence item in the local database has stored facts, so renaming the peroxide fact needs no data migration.
 
 ## Decisions
 
 1. **IFRA applies to the ingredient as used.** The concentration compared is `100 × the ingredient's mass in the formula ÷ cured product mass`, all of it assumed retained (conservative; IFRA limits refer to the finished consumer product). A purchased blend is checked at its whole dosage against its own certificate. Restrictions arising from constituents shared across several ingredients are **not** checked automatically in the pilot; whenever an IFRA-relevant ingredient is present, the engine warns `ifra_constituent_review_required`, so this limited check is never presented as full IFRA conformity.
-2. **Which ingredients are checked:** category `aromatic_materials`, or `requires_aromatic_compliance`, or any IFRA data on the ingredient (a supplier IFRA certificate or an ingredient IFRA certificate). Others are `not_applicable`. `requires_aromatic_compliance = false` never hides IFRA data that exists.
+2. **Which ingredients are checked:** category `aromatic_materials`, or `requires_aromatic_compliance`, or any IFRA data on the ingredient (a supplier IFRA certificate or an ingredient IFRA certificate), **or a linked component (up to three levels deep) that meets one of these conditions**. A blend that contains a fragrance is therefore checked at its whole dosage against its own certificate and, without one, stays `a_justifier`. Others are `not_applicable`. `requires_aromatic_compliance = false` never hides IFRA data that exists.
 3. **Formula category and amendment:** the saved version's `ifra_product_category_id` and `ifra_amendment_id`. The pilot requires category code `9` (`dossiers.pilot_ifra_category_code`); another category needs a justification in the dossier options (`ifraCategoryJustification`). A missing category or amendment, or a non-9 category without justification, makes every checked ingredient `a_justifier` (`ifra_category_unresolved`, `ifra_amendment_unresolved`).
 4. **A supplier certificate applies** when it is a current (not withdrawn) IFRA certificate on a **validated** qualification of the ingredient, records the amendment it covers equal to the formula's amendment (`facts.ifra_amendment_id`), is confirmed to cover the qualified grade (`facts.covers_supplied_grade = true`), and states a limit for the formula's category. Otherwise the qualification is **uncovered**, with the reason: `no_certificate`, `amendment_missing`, `amendment_mismatch`, `grade_not_confirmed`, `no_limit_for_category`. Older-amendment certificates stay as evidence; they never conclude conformity and are never silently accepted.
-5. **Limit values:** a number is compared (`0` means not permitted at any positive use); `no_restriction` is an explicit statement recorded on the use limit; anything else is unresolved. On ingredient-level certificates a blank `max_percentage` means **unknown** (the admin form allows blanks; the editor does not), whatever its note says.
+5. **Limit values:** a number is compared (`0` means not permitted at any positive use); `no_restriction` is an explicit statement recorded on the use limit; anything else is unresolved. On ingredient-level certificates a blank `max_percentage` means **unknown** (the admin form allows blanks; the editor does not), whatever its note says. **A certificate may state each category only once:** saving refuses a repeated category, and a certificate that already holds the formula's category more than once is treated as unresolved (`duplicate_category_limits`), never as its first or most favourable entry.
 6. **State of one ingredient use** (separate from the toxicology row states):
    - a category or amendment problem → `a_justifier`;
    - the strictest applicable supplier limit exceeded → `non_conforme`, reason `ifra_limit_exceeded` (an established exceedance blocks approval even when other suppliers are uncovered);
    - no validated qualification → the ingredient certificate is shown as a fallback but never concludes: `a_justifier` with `ifra_fallback_only`, `ifra_fallback_limit_exceeded` or `ifra_no_evidence`;
    - any validated qualification uncovered → `a_justifier`, `ifra_supplier_uncovered`, listing each uncovered qualification and its reason;
    - otherwise `conforme`.
-7. **Approval:** `can_approve` also requires every IFRA use to be `conforme` or `not_applicable`. Submission is not blocked: the assessor must see the IFRA results. `RowStateResolver` is unchanged, so a passing MoS can never hide an IFRA result.
-8. **Peroxide value:** facts `peroxide_value`, `peroxide_unit` (`meq_o2_kg` or `mmol_l`), `peroxide_comparison` (`lte`, `lt`, `eq`) and `peroxide_basis` (`measured` or `specification`), replacing `peroxide_value_mmol_l`. Stored as given, never converted: mass and volume units need the density and the method's equivalence factor (IFRA peroxide method §5). The canonical unit for later comparisons is meq O₂/kg; converting other values is phase 4 work, with the density on record.
+7. **Approval:** `can_approve` also requires every IFRA use to be `conforme` or `not_applicable`. Submission is not blocked: the assessor must see the IFRA results. `RowStateResolver` is unchanged, so a passing MoS can never hide an IFRA result. `can_approve` is **provisional eligibility**, not a completed review: the engine also returns `manual_reviews_required` (here `ifra_constituent_review` whenever an IFRA use applies), and phase 4's assessor checklist must record each listed review as completed before a version is approved.
+8. **Peroxide value — deferred, documented, not converted.** The DIP stores `peroxide_value_mmol_l`; technical sheets and the workbench use meq O₂/kg. The units are not interchangeable (conversion needs the density and the method's equivalence factor, IFRA peroxide method §5), and none of this affects the dosage check. This change leaves the field as it is; a separate follow-up stores value, unit, comparison and basis as reported. No value is ever converted with a fixed factor.
 
 ## File structure
 
 | Area | Files |
 | --- | --- |
-| Limit type and facts | create `app/Enums/UseLimitType.php`, `app/Enums/PeroxideUnit.php`, `app/Enums/ReportedComparison.php`, `app/Enums/ReportedValueBasis.php`, migration `add_limit_type_to_dossier_evidence_use_limits`; modify `app/Models/DossierEvidenceUseLimit.php`, `app/Enums/EvidenceType.php`, `app/Actions/Dossiers/SaveDossierEvidenceData.php`, `database/factories/DossierEvidenceUseLimitFactory.php`; tests `tests/Feature/Dossiers/DossierEvidenceDataTest.php` |
+| Limit type and facts | create `app/Enums/UseLimitType.php`, migration `add_limit_type_to_dossier_evidence_use_limits`; modify `app/Models/DossierEvidenceUseLimit.php`, `app/Enums/EvidenceType.php`, `app/Actions/Dossiers/SaveDossierEvidenceData.php`, `database/factories/DossierEvidenceUseLimitFactory.php`; tests `tests/Feature/Dossiers/DossierEvidenceDataTest.php` |
 | Document panel | modify `app/Livewire/Dossiers/RawMaterialDetail.php`, `resources/views/livewire/dossiers/raw-material-detail.blade.php`, `lang/en/dossiers.php`, `database/seeders/data/interface-translations.json`; test `tests/Feature/Dossiers/RawMaterialPagesTest.php` |
 | Checker | create `app/Services/Dossiers/Calculation/IfraUseChecker.php`; modify `config/dossiers.php`; test `tests/Feature/Dossiers/Calculation/IfraUseCheckerTest.php` |
 | Engine | modify `app/Data/DossierAssessmentOptions.php`, `app/Services/Dossiers/Calculation/DossierAssessmentEngine.php`; test `tests/Feature/Dossiers/Calculation/DossierAssessmentEngineTest.php` |
@@ -50,21 +49,13 @@
 ### Task 1: Limit type and IFRA certificate facts
 
 **Files:**
-- Create: `app/Enums/UseLimitType.php`, `app/Enums/PeroxideUnit.php`, `app/Enums/ReportedComparison.php`, `app/Enums/ReportedValueBasis.php`, `database/migrations/<timestamp>_add_limit_type_to_dossier_evidence_use_limits.php`
-- Modify: `app/Models/DossierEvidenceUseLimit.php`, `app/Enums/EvidenceType.php`, `app/Actions/Dossiers/SaveDossierEvidenceData.php`
+- Create: `app/Enums/UseLimitType.php`, `database/migrations/<timestamp>_add_limit_type_to_dossier_evidence_use_limits.php`
+- Modify: `app/Models/DossierEvidenceUseLimit.php`, `database/factories/DossierEvidenceUseLimitFactory.php`, `app/Enums/EvidenceType.php`, `app/Actions/Dossiers/SaveDossierEvidenceData.php`, `lang/en/dossiers.php`
 - Test: `tests/Feature/Dossiers/DossierEvidenceDataTest.php`
 
-- [ ] **Step 1: Update the existing test data and add failing tests**
+- [ ] **Step 1: Failing tests**
 
-In `tests/Feature/Dossiers/DossierEvidenceDataTest.php`, replace `'facts' => ['peroxide_value_mmol_l' => '4.2'],` with:
-
-```php
-        'facts' => ['peroxide_value' => '4.2', 'peroxide_unit' => 'mmol_l', 'peroxide_comparison' => 'lte', 'peroxide_basis' => 'specification'],
-```
-
-and in the "unknown fact" dataset row replace `['facts' => ['peroxide_value_mmol_l' => '1']]` with `['facts' => ['peroxide_value' => '1']]`. If an assertion in that file reads `facts['peroxide_value_mmol_l']`, change it to `facts['peroxide_value']`.
-
-Then append (the file's helpers `evidenceDataWorkspace()` and `evidenceOfType()` give the workspace and the document):
+Append to `tests/Feature/Dossiers/DossierEvidenceDataTest.php` (the file's helpers `evidenceDataWorkspace()` and `evidenceOfType()` give the workspace and the document; add the imports `App\Enums\UseLimitType`, `App\Models\IfraAmendment` and `Illuminate\Validation\ValidationException` if missing):
 
 ```php
 it('records the IFRA amendment, grade coverage and a no-restriction limit', function (): void {
@@ -99,24 +90,31 @@ it('keeps a grade-coverage answer of no', function (): void {
     expect($item->refresh()->facts)->toBe(['covers_supplied_grade' => false]);
 });
 
-it('refuses incomplete IFRA and peroxide data', function (array $data, string $errorKey): void {
+it('refuses incomplete, contradictory or repeated IFRA limits', function (string $case, string $errorKey): void {
     [$owner, $workspace] = evidenceDataWorkspace();
     $item = evidenceOfType($workspace, EvidenceType::IfraCertificate);
-    $category = IfraProductCategory::factory()->create();
-    $data = json_decode(str_replace('CATEGORY', (string) $category->id, json_encode($data)), true);
+    $category = IfraProductCategory::factory()->create()->id;
+    $data = match ($case) {
+        'maximum without a value' => ['use_limits' => [['ifra_product_category_id' => $category, 'limit_type' => 'maximum', 'max_percent' => null]]],
+        'no restriction with a value' => ['use_limits' => [['ifra_product_category_id' => $category, 'limit_type' => 'no_restriction', 'max_percent' => '5']]],
+        'unknown limit type' => ['use_limits' => [['ifra_product_category_id' => $category, 'limit_type' => 'guess', 'max_percent' => '5']]],
+        'the same category twice' => ['use_limits' => [
+            ['ifra_product_category_id' => $category, 'limit_type' => 'no_restriction', 'max_percent' => null],
+            ['ifra_product_category_id' => $category, 'limit_type' => 'maximum', 'max_percent' => '1'],
+        ]],
+        'unknown amendment' => ['facts' => ['ifra_amendment_id' => 999999]],
+    };
 
     expect(fn () => app(SaveDossierEvidenceData::class)->handle($owner, $workspace, $item, $data))
         ->toThrow(function (ValidationException $exception) use ($errorKey): void {
             expect($exception->errors())->toHaveKey($errorKey);
         });
 })->with([
-    'maximum without a value' => [['use_limits' => [['ifra_product_category_id' => 'CATEGORY', 'limit_type' => 'maximum', 'max_percent' => null]]], 'use_limits.0.max_percent'],
-    'no restriction with a value' => [['use_limits' => [['ifra_product_category_id' => 'CATEGORY', 'limit_type' => 'no_restriction', 'max_percent' => '5']]], 'use_limits.0.max_percent'],
-    'unknown limit type' => [['use_limits' => [['ifra_product_category_id' => 'CATEGORY', 'limit_type' => 'guess', 'max_percent' => '5']]], 'use_limits.0.limit_type'],
-    'unknown amendment' => [['facts' => ['ifra_amendment_id' => 999999]], 'facts.ifra_amendment_id'],
-    'peroxide value without unit' => [['facts' => ['peroxide_value' => '5', 'peroxide_comparison' => 'lte', 'peroxide_basis' => 'measured']], 'facts.peroxide_unit'],
-    'peroxide value without basis' => [['facts' => ['peroxide_value' => '5', 'peroxide_unit' => 'meq_o2_kg', 'peroxide_comparison' => 'lte']], 'facts.peroxide_basis'],
-    'the former mmol/L field' => [['facts' => ['peroxide_value_mmol_l' => '5']], 'facts'],
+    ['maximum without a value', 'use_limits.0.max_percent'],
+    ['no restriction with a value', 'use_limits.0.max_percent'],
+    ['unknown limit type', 'use_limits.0.limit_type'],
+    ['the same category twice', 'use_limits.1.ifra_product_category_id'],
+    ['unknown amendment', 'facts.ifra_amendment_id'],
 ]);
 
 it('keeps older use limits as maxima', function (): void {
@@ -132,14 +130,14 @@ it('keeps older use limits as maxima', function (): void {
 });
 ```
 
-Add the imports the file lacks: `App\Enums\UseLimitType`, `App\Models\IfraAmendment`, `App\Models\IfraProductCategory`, `Illuminate\Validation\ValidationException`.
+The peroxide field `peroxide_value_mmol_l` is left as it is (decision 8); the existing tests that use it stay unchanged.
 
 - [ ] **Step 2: Run them to see them fail**
 
 Run: `php artisan test --compact tests/Feature/Dossiers/DossierEvidenceDataTest.php`
-Expected: FAIL (`UseLimitType` not found; the renamed peroxide fact is refused).
+Expected: FAIL (`UseLimitType` not found; IFRA facts refused as unknown).
 
-- [ ] **Step 3: Enums**
+- [ ] **Step 3: Enum**
 
 `app/Enums/UseLimitType.php`:
 
@@ -156,59 +154,6 @@ enum UseLimitType: string
 {
     case Maximum = 'maximum';
     case NoRestriction = 'no_restriction';
-}
-```
-
-`app/Enums/PeroxideUnit.php`:
-
-```php
-<?php
-
-namespace App\Enums;
-
-/**
- * Units a peroxide value is reported in. They are not interchangeable: converting needs the density and the method's
- * equivalence factor, so values are stored as reported.
- */
-enum PeroxideUnit: string
-{
-    case MeqO2PerKg = 'meq_o2_kg';
-    case MmolPerLitre = 'mmol_l';
-}
-```
-
-`app/Enums/ReportedComparison.php`:
-
-```php
-<?php
-
-namespace App\Enums;
-
-/**
- * How a reported value relates to the true value: at most, below, or equal.
- */
-enum ReportedComparison: string
-{
-    case AtMost = 'lte';
-    case Below = 'lt';
-    case Equal = 'eq';
-}
-```
-
-`app/Enums/ReportedValueBasis.php`:
-
-```php
-<?php
-
-namespace App\Enums;
-
-/**
- * Whether a reported value is a measured result or a specification limit.
- */
-enum ReportedValueBasis: string
-{
-    case Measured = 'measured';
-    case Specification = 'specification';
 }
 ```
 
@@ -247,64 +192,58 @@ return new class extends Migration
 };
 ```
 
-The table has no triggers or partial indexes (check with `php artisan truss:export --format=llm --focus=dossier_evidence_use_limits --depth=0` before running), so the SQLite rebuild of `->change()` loses nothing.
+Check first that the table has no triggers or partial indexes (`php artisan truss:export --format=llm --focus=dossier_evidence_use_limits --depth=0`), so the SQLite rebuild of `->change()` loses nothing.
 
-- [ ] **Step 5: Model and type facts**
+- [ ] **Step 5: Model, factory and type facts**
 
 In `app/Models/DossierEvidenceUseLimit.php`: add `'limit_type'` to the `Fillable` list, `use App\Enums\UseLimitType;`, cast `'limit_type' => UseLimitType::class`, and update the class comment:
 
 ```php
 /**
  * A use level stated by an IFRA certificate (per IFRA category) or an RCE (per product class): a maximum, or an
- * explicit "no restriction".
+ * explicit "no restriction". Each category or class appears once per document.
  */
 ```
 
 In `database/factories/DossierEvidenceUseLimitFactory.php`, add `'limit_type' => UseLimitType::Maximum,` to the definition (with the import).
 
-In `app/Enums/EvidenceType.php`, replace the `factKeys()` match arms:
+In `app/Enums/EvidenceType.php`, split the shared `factKeys()` arm so only IFRA certificates gain the two facts:
 
 ```php
             self::TechnicalSheet, self::CertificateOfAnalysis => ['microbiology_specification'],
-            self::RegulatoryConformityCertificate => self::PEROXIDE_FACTS,
-            self::IfraCertificate => ['ifra_amendment_id', 'covers_supplied_grade', ...self::PEROXIDE_FACTS],
-```
-
-and add to the enum:
-
-```php
-    /**
-     * A peroxide value is kept as reported: value, unit, comparison and whether it is measured or a specification.
-     */
-    public const PEROXIDE_FACTS = ['peroxide_value', 'peroxide_unit', 'peroxide_comparison', 'peroxide_basis'];
+            self::RegulatoryConformityCertificate => ['peroxide_value_mmol_l'],
+            self::IfraCertificate => ['ifra_amendment_id', 'covers_supplied_grade', 'peroxide_value_mmol_l'],
 ```
 
 - [ ] **Step 6: Validation and storage**
 
 In `app/Actions/Dossiers/SaveDossierEvidenceData.php`:
 
-1. Imports: `App\Enums\PeroxideUnit`, `App\Enums\ReportedComparison`, `App\Enums\ReportedValueBasis`, `App\Enums\UseLimitType`.
+1. Import `App\Enums\UseLimitType`.
 2. In `validate()`, after `$useLimits = array_values($data['use_limits'] ?? []);`, default the limit type of older callers:
 
 ```php
         $useLimits = array_map(fn (array $row): array => ['limit_type' => UseLimitType::Maximum->value, ...$row], $useLimits);
 ```
 
-3. Replace the `'use_limits.*.max_percent'` rule and the `'facts.peroxide_value_mmol_l'` rule with:
+3. Replace the `'use_limits.*.max_percent'`, `'use_limits.*.ifra_product_category_id'` and `'use_limits.*.product_class_label'` rules with:
 
 ```php
             'use_limits.*.limit_type' => ['required', Rule::enum(UseLimitType::class)],
             // A maximum needs its value (zero means not permitted); an explicit "no restriction" has none.
             'use_limits.*.max_percent' => ['exclude_unless:use_limits.*.limit_type,maximum', 'required', 'numeric', 'gte:0', 'lte:100'],
+            // A category or class is stated once: a second entry could contradict the first.
+            'use_limits.*.ifra_product_category_id' => $basis === 'ifra_category'
+                ? ['required', 'integer', 'distinct', 'exists:ifra_product_categories,id']
+                : ['nullable'],
+            'use_limits.*.product_class_label' => $basis === 'product_class'
+                ? ['required', 'string', 'distinct:ignore_case', 'max:255']
+                : ['nullable'],
             'facts.ifra_amendment_id' => ['nullable', 'integer', 'exists:ifra_amendments,id'],
             'facts.covers_supplied_grade' => ['nullable', 'boolean'],
-            'facts.peroxide_value' => ['nullable', 'numeric', 'gte:0'],
-            'facts.peroxide_unit' => ['required_with:facts.peroxide_value', 'nullable', Rule::enum(PeroxideUnit::class)],
-            'facts.peroxide_comparison' => ['required_with:facts.peroxide_value', 'nullable', Rule::enum(ReportedComparison::class)],
-            'facts.peroxide_basis' => ['required_with:facts.peroxide_value', 'nullable', Rule::enum(ReportedValueBasis::class)],
 ```
 
-4. After the `$validator->after(...)` block, add a check that refuses a value on a "no restriction" row (the `exclude_unless` rule drops the value silently otherwise):
+4. After the existing `$validator->after(...)` block, refuse a value on a "no restriction" row (the `exclude_unless` rule would drop it silently):
 
 ```php
         $validator->after(function ($validator) use ($useLimits): void {
@@ -316,7 +255,19 @@ In `app/Actions/Dossiers/SaveDossierEvidenceData.php`:
         });
 ```
 
-5. When creating each use limit in `handle()`, store the type and clear the maximum of a "no restriction" row:
+5. Before returning from `validate()`, normalise the two facts so `false` is kept and form values become typed:
+
+```php
+        if (array_key_exists('covers_supplied_grade', $facts)) {
+            $facts['covers_supplied_grade'] = filter_var($facts['covers_supplied_grade'], FILTER_VALIDATE_BOOL);
+        }
+
+        if (array_key_exists('ifra_amendment_id', $facts)) {
+            $facts['ifra_amendment_id'] = (int) $facts['ifra_amendment_id'];
+        }
+```
+
+6. In `handle()`, store the type and clear the maximum of a "no restriction" row:
 
 ```php
             foreach ($validated['use_limits'] as $row) {
@@ -330,36 +281,24 @@ In `app/Actions/Dossiers/SaveDossierEvidenceData.php`:
             }
 ```
 
-6. Casting the grade answer: in `validate()`, before returning, normalise it to a boolean so `false` is kept (it is "filled") and `'1'`/`'0'` from forms become booleans:
-
-```php
-        if (array_key_exists('covers_supplied_grade', $facts)) {
-            $facts['covers_supplied_grade'] = filter_var($facts['covers_supplied_grade'], FILTER_VALIDATE_BOOL);
-        }
-
-        if (array_key_exists('ifra_amendment_id', $facts)) {
-            $facts['ifra_amendment_id'] = (int) $facts['ifra_amendment_id'];
-        }
-```
-
 Add to `lang/en/dossiers.php` under `'evidence'`:
 
 ```php
         'no_restriction_without_value' => 'A "no restriction" statement has no maximum. Choose "Maximum" to enter a value.',
 ```
 
-and the matching catalogue entry in Task 2.
+Its catalogue entry is added in Task 2.
 
 - [ ] **Step 7: Run the tests**
 
 Run: `php artisan test --compact tests/Feature/Dossiers/DossierEvidenceDataTest.php`
-Expected: PASS. The translation-catalogue tests will fail until Task 2 adds the catalogue entries; run them there.
+Expected: PASS. The translation-catalogue tests fail until Task 2 adds the catalogue entry; run them there.
 
 - [ ] **Step 8: Commit**
 
 ```bash
 vendor/bin/pint --dirty --format agent
-git add app/Enums app/Models/DossierEvidenceUseLimit.php app/Actions/Dossiers/SaveDossierEvidenceData.php database/migrations database/factories/DossierEvidenceUseLimitFactory.php lang/en/dossiers.php tests/Feature/Dossiers/DossierEvidenceDataTest.php
+git add app/Enums/UseLimitType.php app/Enums/EvidenceType.php app/Models/DossierEvidenceUseLimit.php app/Actions/Dossiers/SaveDossierEvidenceData.php database/migrations database/factories/DossierEvidenceUseLimitFactory.php lang/en/dossiers.php tests/Feature/Dossiers/DossierEvidenceDataTest.php
 git commit -m "Record the IFRA amendment, grade coverage and explicit no-restriction limits on DIP certificates"
 ```
 
@@ -389,14 +328,7 @@ it('records an IFRA certificate with its amendment, grade coverage and limits fr
     Livewire::test(RawMaterialDetail::class, ['ingredient' => $lavender->public_id])
         ->call('startEditData', $item->id)
         ->fillForm([
-            'facts' => [
-                'ifra_amendment_id' => $amendment->id,
-                'covers_supplied_grade' => true,
-                'peroxide_value' => '3.1',
-                'peroxide_unit' => 'meq_o2_kg',
-                'peroxide_comparison' => 'eq',
-                'peroxide_basis' => 'measured',
-            ],
+            'facts' => ['ifra_amendment_id' => $amendment->id, 'covers_supplied_grade' => true],
             'use_limits' => [
                 ['ifra_product_category_id' => $category9->id, 'limit_type' => 'maximum', 'max_percent' => '2.5'],
                 ['ifra_product_category_id' => $category4->id, 'limit_type' => 'no_restriction'],
@@ -405,7 +337,9 @@ it('records an IFRA certificate with its amendment, grade coverage and limits fr
         ->call('saveEvidenceData')
         ->assertHasNoFormErrors([], 'evidenceDataForm')
         ->assertSee('9 ≤ 2.5 %')
-        ->assertSee(__('dossiers.evidence_data.no_restriction_short'));
+        ->assertSee('4 '.__('dossiers.evidence_data.no_restriction_short'))
+        ->assertSee(__('dossiers.evidence_data.ifra_amendment').' 51')
+        ->assertSee(__('dossiers.evidence_data.covers_grade_yes'));
 
     $item->refresh();
 
@@ -422,9 +356,9 @@ Expected: FAIL (the form has no amendment, grade or limit-type fields).
 
 - [ ] **Step 3: Form fields**
 
-In `app/Livewire/Dossiers/RawMaterialDetail.php` (imports: `App\Enums\PeroxideUnit`, `App\Enums\ReportedComparison`, `App\Enums\ReportedValueBasis`, `App\Enums\UseLimitType`, `App\Models\IfraAmendment`):
+In `app/Livewire/Dossiers/RawMaterialDetail.php` (imports: `App\Enums\UseLimitType`, `App\Models\IfraAmendment`):
 
-1. Replace the use-limit repeater's schema with:
+1. Replace the use-limit repeater's schema and columns with:
 
 ```php
                     ->schema([
@@ -450,39 +384,18 @@ In `app/Livewire/Dossiers/RawMaterialDetail.php` (imports: `App\Enums\PeroxideUn
                     ->columns(['md' => 3])
 ```
 
-2. Replace the `peroxide_value_mmol_l` field with the IFRA facts and the four peroxide fields:
+2. Before the `peroxide_value_mmol_l` field (which stays unchanged), add the two IFRA facts:
 
 ```php
                 in_array('ifra_amendment_id', $facts, true)
                     ? Select::make('facts.ifra_amendment_id')
                         ->label(__('dossiers.evidence_data.ifra_amendment'))
-                        ->options(fn (): array => IfraAmendment::query()->orderByDesc('code')->pluck('code', 'id')->all())
+                        ->options(fn (): array => $this->amendmentCodes())
                     : null,
                 in_array('covers_supplied_grade', $facts, true)
                     ? Toggle::make('facts.covers_supplied_grade')
                         ->label(__('dossiers.evidence_data.covers_supplied_grade'))
                         ->helperText(__('dossiers.evidence_data.covers_supplied_grade_help'))
-                    : null,
-                in_array('peroxide_value', $facts, true)
-                    ? TextInput::make('facts.peroxide_value')->label(__('dossiers.evidence_data.peroxide_value'))->numeric()->live(onBlur: true)
-                    : null,
-                in_array('peroxide_unit', $facts, true)
-                    ? Select::make('facts.peroxide_unit')
-                        ->label(__('dossiers.evidence_data.peroxide_unit'))
-                        ->options(collect(PeroxideUnit::cases())->mapWithKeys(fn (PeroxideUnit $unit): array => [$unit->value => __('dossiers.evidence_data.peroxide_units.'.$unit->value)])->all())
-                        ->required(fn (Get $get): bool => filled($get('facts.peroxide_value')))
-                    : null,
-                in_array('peroxide_comparison', $facts, true)
-                    ? Select::make('facts.peroxide_comparison')
-                        ->label(__('dossiers.evidence_data.peroxide_comparison'))
-                        ->options(collect(ReportedComparison::cases())->mapWithKeys(fn (ReportedComparison $comparison): array => [$comparison->value => __('dossiers.evidence_data.peroxide_comparisons.'.$comparison->value)])->all())
-                        ->required(fn (Get $get): bool => filled($get('facts.peroxide_value')))
-                    : null,
-                in_array('peroxide_basis', $facts, true)
-                    ? Select::make('facts.peroxide_basis')
-                        ->label(__('dossiers.evidence_data.peroxide_basis'))
-                        ->options(collect(ReportedValueBasis::cases())->mapWithKeys(fn (ReportedValueBasis $basis): array => [$basis->value => __('dossiers.evidence_data.peroxide_bases.'.$basis->value)])->all())
-                        ->required(fn (Get $get): bool => filled($get('facts.peroxide_value')))
                     : null,
 ```
 
@@ -497,30 +410,41 @@ In `app/Livewire/Dossiers/RawMaterialDetail.php` (imports: `App\Enums\PeroxideUn
             ])->all(),
 ```
 
+4. Load the amendment labels once per request, for the form and the view:
+
+```php
+    /**
+     * @return array<int, string> amendment code by id
+     */
+    private function amendmentCodes(): array
+    {
+        return once(fn (): array => IfraAmendment::query()->orderByDesc('code')->pluck('code', 'id')->all());
+    }
+```
+
+and pass them to the view in `render()`:
+
+```php
+            'amendmentCodes' => $this->amendmentCodes(),
+```
+
 - [ ] **Step 4: Display**
 
-In `resources/views/livewire/dossiers/raw-material-detail.blade.php`, replace the use-limit line with:
+In `resources/views/livewire/dossiers/raw-material-detail.blade.php`, replace the use-limit loop with:
 
 ```blade
                                     @foreach ($item->useLimits as $limit)
-                                        · {{ $limit->ifraProductCategory?->code ?? $limit->product_class_label }}
-                                        @if ($limit->limit_type === \App\Enums\UseLimitType::NoRestriction) {{ __('dossiers.evidence_data.no_restriction_short') }}
-                                        @else ≤ {{ rtrim(rtrim($limit->max_percent, '0'), '.') }} % @endif
+                                        · {{ $limit->ifraProductCategory?->code ?? $limit->product_class_label }} {{ $limit->limit_type === \App\Enums\UseLimitType::NoRestriction ? __('dossiers.evidence_data.no_restriction_short') : '≤ '.rtrim(rtrim($limit->max_percent, '0'), '.').' %' }}
                                     @endforeach
-```
-
-and, next to it, show the IFRA amendment and grade answer when present:
-
-```blade
-                                    @if (filled($item->facts['ifra_amendment_id'] ?? null))
-                                        · {{ __('dossiers.evidence_data.ifra_amendment') }} {{ \App\Models\IfraAmendment::query()->whereKey($item->facts['ifra_amendment_id'])->value('code') }}
+                                    @if (isset($amendmentCodes[$item->facts['ifra_amendment_id'] ?? null]))
+                                        · {{ __('dossiers.evidence_data.ifra_amendment') }} {{ $amendmentCodes[$item->facts['ifra_amendment_id']] }}
                                     @endif
                                     @if (array_key_exists('covers_supplied_grade', $item->facts ?? []))
                                         · {{ $item->facts['covers_supplied_grade'] ? __('dossiers.evidence_data.covers_grade_yes') : __('dossiers.evidence_data.covers_grade_no') }}
                                     @endif
 ```
 
-Read the surrounding markup first and keep its structure; if the view loads items without `useLimits.ifraProductCategory`, add that to the eager load in `RawMaterialDetail::render()`.
+The view reads amendment codes from `$amendmentCodes`; it runs no query of its own.
 
 - [ ] **Step 5: Labels and catalogue**
 
@@ -538,25 +462,9 @@ Add to `lang/en/dossiers.php` under `'evidence_data'`:
         'covers_supplied_grade_help' => 'Turn on only when the certificate names this supplier’s product or reference. Without it the certificate does not conclude the IFRA check.',
         'covers_grade_yes' => 'grade confirmed',
         'covers_grade_no' => 'grade not confirmed',
-        'peroxide_unit' => 'Peroxide unit',
-        'peroxide_units' => [
-            'meq_o2_kg' => 'meq O₂/kg',
-            'mmol_l' => 'mmol/L',
-        ],
-        'peroxide_comparison' => 'Reported as',
-        'peroxide_comparisons' => [
-            'lte' => 'at most (≤)',
-            'lt' => 'below (<)',
-            'eq' => 'equal to (=)',
-        ],
-        'peroxide_basis' => 'Peroxide value is',
-        'peroxide_bases' => [
-            'measured' => 'a measured result',
-            'specification' => 'a specification maximum',
-        ],
 ```
 
-Add one entry per new key to `database/seeders/data/interface-translations.json`, group `dossiers`, **in the catalogue's sorted position** (`InterfaceTranslationCatalogue` refuses unsorted entries; insert each one before the first existing entry whose `group.key` sorts after it). Texts:
+Add one entry per new key (and `evidence.no_restriction_without_value` from Task 1) to `database/seeders/data/interface-translations.json`, group `dossiers`, **in the catalogue's sorted position** (`InterfaceTranslationCatalogue` refuses unsorted entries; insert each before the first existing entry whose `group.key` sorts after it):
 
 | key | de | es | fr | it | nl | pt_BR |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -570,18 +478,6 @@ Add one entry per new key to `database/seeders/data/interface-translations.json`
 | `evidence_data.limit_types.maximum` | Maximum | Máximo | Maximum | Massimo | Maximum | Máximo |
 | `evidence_data.limit_types.no_restriction` | Keine Einschränkung | Sin restricción | Sans restriction | Nessuna restrizione | Geen beperking | Sem restrição |
 | `evidence_data.no_restriction_short` | keine Einschränkung | sin restricción | sans restriction | nessuna restrizione | geen beperking | sem restrição |
-| `evidence_data.peroxide_bases.measured` | ein Messergebnis | un resultado medido | un résultat mesuré | un risultato misurato | een meetresultaat | um resultado medido |
-| `evidence_data.peroxide_bases.specification` | ein Spezifikationsmaximum | un máximo de especificación | un maximum de spécification | un massimo di specifica | een specificatiemaximum | um máximo de especificação |
-| `evidence_data.peroxide_basis` | Die Peroxidzahl ist | El índice de peróxido es | L’indice de peroxyde est | Il numero di perossidi è | Het peroxidegetal is | O índice de peróxido é |
-| `evidence_data.peroxide_comparison` | Angegeben als | Indicado como | Indiqué comme | Indicato come | Vermeld als | Indicado como |
-| `evidence_data.peroxide_comparisons.eq` | gleich (=) | igual a (=) | égal à (=) | uguale a (=) | gelijk aan (=) | igual a (=) |
-| `evidence_data.peroxide_comparisons.lt` | unter (<) | inferior a (<) | inférieur à (<) | inferiore a (<) | onder (<) | abaixo de (<) |
-| `evidence_data.peroxide_comparisons.lte` | höchstens (≤) | como máximo (≤) | au plus (≤) | al massimo (≤) | hoogstens (≤) | no máximo (≤) |
-| `evidence_data.peroxide_unit` | Einheit der Peroxidzahl | Unidad del índice de peróxido | Unité de l’indice de peroxyde | Unità del numero di perossidi | Eenheid van het peroxidegetal | Unidade do índice de peróxido |
-| `evidence_data.peroxide_units.meq_o2_kg` | meq O₂/kg | meq O₂/kg | meq O₂/kg | meq O₂/kg | meq O₂/kg | meq O₂/kg |
-| `evidence_data.peroxide_units.mmol_l` | mmol/L | mmol/L | mmol/L | mmol/L | mmol/L | mmol/L |
-
-If the existing `evidence_data.peroxide_value` label still reads "Peroxide value (mmol/L)" anywhere, keep the plain "Peroxide value": the unit is now its own field.
 
 - [ ] **Step 6: Run the tests**
 
@@ -597,7 +493,7 @@ Expected: PASS.
 ```bash
 vendor/bin/pint --dirty --format agent
 git add app/Livewire/Dossiers/RawMaterialDetail.php resources/views/livewire/dossiers/raw-material-detail.blade.php lang/en/dossiers.php database/seeders/data/interface-translations.json tests/Feature/Dossiers/RawMaterialPagesTest.php
-git commit -m "Enter the IFRA amendment, grade coverage, limit type and peroxide details on DIP documents"
+git commit -m "Enter the IFRA amendment, grade coverage and limit type on DIP certificates"
 ```
 
 ---
@@ -625,6 +521,7 @@ use App\Models\IfraCertificate;
 use App\Models\IfraCertificateLimit;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
+use App\Models\IngredientComponent;
 use App\Models\SupplierQualification;
 use App\Models\Workspace;
 use App\Services\Dossiers\Calculation\IfraUseChecker;
@@ -777,6 +674,61 @@ it('requires category 9 or a justification, and a known amendment', function ():
         ->and(lavenderUse($setting)['state'])->toBe('conforme');
 });
 
+it('treats a category stated twice on one certificate as unresolved', function (): void {
+    $setting = ifraSetting();
+    // Saved before duplicates were refused: "no restriction" first, then 1 %.
+    $qualification = supplierIfraCertificate($setting['workspace'], $setting['lavender'], $setting['category'], $setting['amendment'], null, type: UseLimitType::NoRestriction);
+    DossierEvidenceUseLimit::factory()->create([
+        'dossier_evidence_item_id' => DossierEvidenceItem::query()->where('supplier_qualification_id', $qualification->id)->value('id'),
+        'ifra_product_category_id' => $setting['category']->id,
+        'limit_type' => UseLimitType::Maximum,
+        'max_percent' => '1',
+    ]);
+
+    $use = lavenderUse($setting);
+
+    expect($use['state'])->toBe('a_justifier')
+        ->and($use['uncovered'][0]['reason'])->toBe('duplicate_category_limits');
+});
+
+it('checks a blend that contains a fragrance, at its whole dosage, and keeps it to justify without a certificate', function (): void {
+    $setting = ifraSetting();
+    $blend = Fixtures::ingredient('House Base', 'GLYCERIN, PARFUM', IngredientCategory::BasesBlendsPremixes);
+    IngredientComponent::factory()->create(['ingredient_id' => $blend->id, 'component_ingredient_id' => $setting['lavender']->id, 'percentage_in_parent' => 10]);
+
+    $results = app(IfraUseChecker::class)->check($setting['workspace'], [['key' => 'item:additives:0', 'ingredient_id' => $blend->id, 'grams' => '26']], '1300', $setting['category'], $setting['amendment']->id, null);
+
+    expect($results[0]['state'])->toBe('a_justifier')
+        ->and($results[0]['reason'])->toBe('ifra_no_evidence')
+        ->and(DecimalMath::round($results[0]['concentration_percent'], 6))->toBe('2.000000');
+});
+
+it('adds up an ingredient used in several rows before comparing it', function (): void {
+    $setting = ifraSetting();
+    supplierIfraCertificate($setting['workspace'], $setting['lavender'], $setting['category'], $setting['amendment'], '2.2');
+
+    $results = app(IfraUseChecker::class)->check($setting['workspace'], [
+        ['key' => 'item:additives:0', 'ingredient_id' => $setting['lavender']->id, 'grams' => '20'],
+        ['key' => 'item:fragrance:0', 'ingredient_id' => $setting['lavender']->id, 'grams' => '10'],
+    ], '1300', $setting['category'], $setting['amendment']->id, null);
+
+    // 20 g and 10 g are each below 2.2 % of 1300 g (28.6 g); together, 2.307692 %, they are above it.
+    expect($results)->toHaveCount(1)
+        ->and($results[0]['initial_keys'])->toBe(['item:additives:0', 'item:fragrance:0'])
+        ->and($results[0]['state'])->toBe('non_conforme');
+});
+
+it('ignores a withdrawn certificate', function (): void {
+    $setting = ifraSetting();
+    $qualification = supplierIfraCertificate($setting['workspace'], $setting['lavender'], $setting['category'], $setting['amendment'], '5');
+    DossierEvidenceItem::query()->where('supplier_qualification_id', $qualification->id)->update(['retired_at' => now()]);
+
+    $use = lavenderUse($setting);
+
+    expect($use['state'])->toBe('a_justifier')
+        ->and($use['uncovered'][0]['reason'])->toBe('no_certificate');
+});
+
 it('does not check an ingredient with no fragrance role and no IFRA data', function (): void {
     $setting = ifraSetting();
     $olive = Fixtures::ingredient('Olive Oil', 'OLEA EUROPAEA FRUIT OIL', IngredientCategory::Lipids);
@@ -848,7 +800,9 @@ class IfraUseChecker
     /**
      * Uncovered reasons, from the closest to applicable to the furthest.
      */
-    private const UNCOVERED_ORDER = ['no_limit_for_category', 'grade_not_confirmed', 'amendment_mismatch', 'amendment_missing'];
+    private const UNCOVERED_ORDER = ['duplicate_category_limits', 'no_limit_for_category', 'grade_not_confirmed', 'amendment_mismatch', 'amendment_missing'];
+
+    private const MAX_COMPONENT_DEPTH = 3;
 
     /**
      * @param  list<array{key: string, ingredient_id: int|null, grams: string}>  $initial
@@ -900,13 +854,34 @@ class IfraUseChecker
     }
 
     /**
+     * Decision 2: a fragrance role or IFRA data on the ingredient, or on a linked component, so a blend containing a
+     * fragrance is never skipped.
+     *
      * @param  array<string, mixed>|null  $fallback
      */
-    private function isApplicable(Workspace $workspace, Ingredient $ingredient, ?array $fallback): bool
+    private function isApplicable(Workspace $workspace, Ingredient $ingredient, ?array $fallback, int $depth = 0): bool
+    {
+        if ($fallback !== null || $this->hasFragranceRole($workspace, $ingredient)) {
+            return true;
+        }
+
+        if ($depth >= self::MAX_COMPONENT_DEPTH) {
+            return false;
+        }
+
+        return IngredientComponent::query()
+            ->where('ingredient_id', $ingredient->id)
+            ->whereNotNull('component_ingredient_id')
+            ->with(['componentIngredient' => fn ($query) => $query->withoutGlobalScopes()])
+            ->get()
+            ->contains(fn (IngredientComponent $component): bool => $component->componentIngredient instanceof Ingredient
+                && $this->isApplicable($workspace, $component->componentIngredient, null, $depth + 1));
+    }
+
+    private function hasFragranceRole(Workspace $workspace, Ingredient $ingredient): bool
     {
         return $ingredient->category === IngredientCategory::AromaticMaterials
             || (bool) $ingredient->requires_aromatic_compliance
-            || $fallback !== null
             || IfraCertificate::query()->where('ingredient_id', $ingredient->id)->exists()
             || DossierEvidenceItem::query()
                 ->where('workspace_id', $workspace->id)
@@ -966,11 +941,14 @@ class IfraUseChecker
     private function certificateStatus(DossierEvidenceItem $item, int $categoryId, int $amendmentId): array
     {
         $facts = $item->facts ?? [];
-        $limit = $item->useLimits->first(fn (DossierEvidenceUseLimit $row): bool => (int) $row->ifra_product_category_id === $categoryId);
+        $limits = $item->useLimits->filter(fn (DossierEvidenceUseLimit $row): bool => (int) $row->ifra_product_category_id === $categoryId)->values();
+        // A category stated twice is contradictory: neither entry is used (decision 5).
+        $limit = $limits->count() === 1 ? $limits->first() : null;
         $reason = match (true) {
             ! isset($facts['ifra_amendment_id']) => 'amendment_missing',
             (int) $facts['ifra_amendment_id'] !== $amendmentId => 'amendment_mismatch',
             ($facts['covers_supplied_grade'] ?? null) !== true => 'grade_not_confirmed',
+            $limits->count() > 1 => 'duplicate_category_limits',
             ! $limit instanceof DossierEvidenceUseLimit => 'no_limit_for_category',
             default => null,
         };
@@ -1002,7 +980,7 @@ class IfraUseChecker
     /**
      * The ingredient's current IFRA certificate for the category: a blank maximum is unknown, never "no limit".
      *
-     * @return array{certificate_id: int, amendment_matches: bool, max_percent: string|null, restriction_note: string|null}|null
+     * @return array{certificate_id: int, amendment_matches: bool, max_percent: string|null, restriction_note: string|null, duplicate_category_limits: bool}|null
      */
     private function ingredientCertificate(Ingredient $ingredient, int $categoryId, ?int $amendmentId): ?array
     {
@@ -1017,13 +995,16 @@ class IfraUseChecker
             return null;
         }
 
-        $limit = $certificate->limits->first(fn (IfraCertificateLimit $row): bool => (int) $row->ifra_product_category_id === $categoryId);
+        $limits = $certificate->limits->filter(fn (IfraCertificateLimit $row): bool => (int) $row->ifra_product_category_id === $categoryId)->values();
+        $limit = $limits->count() === 1 ? $limits->first() : null;
 
         return [
             'certificate_id' => $certificate->id,
             'amendment_matches' => $amendmentId !== null && (int) $certificate->ifra_amendment_id === $amendmentId,
+            // Blank, repeated or missing: unknown, never "no limit".
             'max_percent' => $limit?->max_percentage === null ? null : DecimalMath::of($limit->max_percentage),
             'restriction_note' => $limit?->restriction_note,
+            'duplicate_category_limits' => $limits->count() > 1,
         ];
     }
 
@@ -1074,7 +1055,7 @@ class IfraUseChecker
 - [ ] **Step 5: Run the test**
 
 Run: `php artisan test --compact tests/Feature/Dossiers/Calculation/IfraUseCheckerTest.php`
-Expected: PASS (16 tests).
+Expected: PASS (20 tests).
 
 - [ ] **Step 6: Commit**
 
@@ -1095,12 +1076,14 @@ git commit -m "Check each DIP fragrance ingredient against its applicable IFRA l
 
 - [ ] **Step 1: Failing tests**
 
+The approval tests start from an assessment that is **otherwise approvable** — every row confirmed and passing, a QRA2 preset for the formula's category — so they prove the IFRA gate itself. Hand check of that fixture (cured mass 1300.384045 g, A = 10 g/day, R = 0.01, bw = 60 kg): MoS sodium olivate 398.24, olive oil 15604.61, lavender oil 2600.77, limonene 4876.44 (QRA2 maximum 8.333333 % vs 0.922804 %), glycerin 64169.75; water 11 % within its Cmax of 100 %.
+
 Append to `tests/Feature/Dossiers/Calculation/DossierAssessmentEngineTest.php` (imports: `App\Enums\UseLimitType`, `App\Models\DossierEvidenceUseLimit`):
 
 ```php
 /**
- * Puts the soap's saved formula in IFRA category 9 and amendment 51, and gives the lavender supplier an applicable
- * IFRA certificate with the given category 9 maximum.
+ * Puts the soap's saved formula in an IFRA category and amendment 51, and gives the lavender supplier an applicable
+ * IFRA certificate with the given maximum for that category.
  *
  * @param  array<string, mixed>  $soap
  * @return array<string, mixed>
@@ -1118,7 +1101,29 @@ function withIfraCertificate(array $soap, string $maximum, string $categoryCode 
     ]);
     DossierEvidenceUseLimit::factory()->create(['dossier_evidence_item_id' => $item->id, 'ifra_product_category_id' => $category->id, 'limit_type' => UseLimitType::Maximum, 'max_percent' => $maximum]);
 
-    return [...$soap, 'version' => $soap['version']->fresh()];
+    return [...$soap, 'version' => $soap['version']->fresh(), 'ifraCategory' => $category, 'ifraAmendment' => $amendment];
+}
+
+/**
+ * Every row of the lavender soap confirmed through a passing route, with endpoints addressed, and a QRA2 preset for the
+ * formula's category, so only IFRA can still prevent approval.
+ *
+ * @param  array<string, mixed>  $soap
+ */
+function otherwiseApprovable(array $soap): DossierAssessmentOptions
+{
+    Qra2Parameter::factory()->create(['ifra_product_category_id' => $soap['ifraCategory']->id, 'ifra_amendment_id' => $soap['ifraAmendment']->id]);
+    $substances = $soap['substances'];
+    $confirm = fn (string $route, bool $endpoints = false): array => ['route' => $route, 'justification' => 'Confirmed by the assessor.', 'endpoints_addressed' => $endpoints];
+
+    return new DossierAssessmentOptions(confirmations: [
+        'substance:'.$substances['olivate']->id => $confirm('mos'),
+        'substance:'.$substances['glycerin']->id => $confirm('mos'),
+        'substance:'.$substances['aqua']->id => $confirm('cmax'),
+        'substance:'.$substances['oliveOil']->id => $confirm('mos'),
+        'substance:'.$substances['lavenderOil']->id => $confirm('mos', endpoints: true),
+        'substance:'.$substances['limonene']->id => $confirm('mos', endpoints: true),
+    ]);
 }
 
 /**
@@ -1130,26 +1135,38 @@ function ifraUseOf(array $assessment, int $ingredientId): array
     return collect($assessment['ifra_uses'])->firstWhere('ingredient_id', $ingredientId) ?? throw new RuntimeException("No IFRA use for ingredient [{$ingredientId}].");
 }
 
-it('reports each fragrance ingredient against its IFRA limit, and only fragrance ingredients', function (): void {
+it('allows approval when every row and every IFRA use concludes, and lists the manual review still due', function (): void {
     $soap = withIfraCertificate(Fixtures::assessedLavenderSoap(), '5');
 
-    $assessment = assessSoap($soap);
+    $assessment = assessSoap($soap, otherwiseApprovable($soap));
     $lavender = ifraUseOf($assessment, $soap['lavender']->id);
 
-    expect(DecimalMath::round($lavender['concentration_percent'], 6))->toBe('2.307011')
+    expect(collect($assessment['rows'])->pluck('state')->unique()->values()->all())->toBe(['conforme'])
+        ->and(DecimalMath::round($lavender['concentration_percent'], 6))->toBe('2.307011')
         ->and($lavender['state'])->toBe('conforme')
         ->and(ifraUseOf($assessment, $soap['olive']->id)['state'])->toBe('not_applicable')
-        ->and(collect($assessment['warnings'])->pluck('code')->all())->toContain('ifra_constituent_review_required');
+        ->and($assessment['can_approve'])->toBeTrue()
+        ->and($assessment['manual_reviews_required'])->toBe(['ifra_constituent_review']);
 });
 
-it('blocks approval on an exceeded IFRA limit, whatever the toxicology rows say', function (): void {
+it('refuses approval on an exceeded IFRA limit, whatever the toxicology rows say', function (): void {
     $soap = withIfraCertificate(Fixtures::assessedLavenderSoap(), '2');
 
-    $assessment = assessSoap($soap);
+    $assessment = assessSoap($soap, otherwiseApprovable($soap));
 
-    expect(ifraUseOf($assessment, $soap['lavender']->id)['state'])->toBe('non_conforme')
+    expect(collect($assessment['rows'])->pluck('state')->unique()->values()->all())->toBe(['conforme'])
         ->and(ifraUseOf($assessment, $soap['lavender']->id)['reason'])->toBe('ifra_limit_exceeded')
         ->and($assessment['can_submit'])->toBeTrue()
+        ->and($assessment['can_approve'])->toBeFalse();
+});
+
+it('refuses approval while a validated supplier has no applicable IFRA certificate', function (): void {
+    $soap = withIfraCertificate(Fixtures::assessedLavenderSoap(), '5');
+    SupplierQualification::factory()->create(['workspace_id' => $soap['workspace']->id, 'ingredient_id' => $soap['lavender']->id]);
+
+    $assessment = assessSoap($soap, otherwiseApprovable($soap));
+
+    expect(ifraUseOf($assessment, $soap['lavender']->id)['reason'])->toBe('ifra_supplier_uncovered')
         ->and($assessment['can_approve'])->toBeFalse();
 });
 
@@ -1164,6 +1181,8 @@ it('leaves IFRA unresolved outside category 9 unless the dossier justifies the c
 });
 ```
 
+If the first test fails on a row that is not `conforme`, print that row's `state_reason` before changing anything: every fixture row must conclude for this test to prove the IFRA gate.
+
 - [ ] **Step 2: Run them to see them fail**
 
 Run: `php artisan test --compact tests/Feature/Dossiers/Calculation/DossierAssessmentEngineTest.php`
@@ -1177,14 +1196,14 @@ In `app/Data/DossierAssessmentOptions.php`, add a constructor parameter after `$
         public ?string $ifraCategoryJustification = null,
 ```
 
-and document it in the class comment ("a justification when the formula's IFRA category is not the pilot's category 9").
+and add to the class comment: "and a justification when the formula's IFRA category is not the pilot's category 9".
 
 - [ ] **Step 4: Engine**
 
 In `app/Services/Dossiers/Calculation/DossierAssessmentEngine.php`:
 
 1. Inject `private readonly IfraUseChecker $ifraUses,` in the constructor and import `App\Models\IfraProductCategory`.
-2. After the overlays are built, compute the uses:
+2. After the overlays are built:
 
 ```php
         $ifraUses = $this->ifraUses->check(
@@ -1195,29 +1214,39 @@ In `app/Services/Dossiers/Calculation/DossierAssessmentEngine.php`:
             $version->ifra_amendment_id,
             $options->ifraCategoryJustification,
         );
+        $ifraApplies = collect($ifraUses)->contains(fn (array $use): bool => $use['state'] !== 'not_applicable');
 ```
 
-3. Add `'ifra_uses' => $ifraUses,` to the returned array after `'rows'`, and replace the `can_approve` line with:
+3. In the returned array, add after `'rows'`:
 
 ```php
+            'ifra_uses' => $ifraUses,
+            // Reviews the engine cannot do; phase 4's assessor checklist records each before approval (decision 7).
+            'manual_reviews_required' => $ifraApplies ? ['ifra_constituent_review'] : [],
+```
+
+and replace the `can_approve` line with:
+
+```php
+            // Provisional eligibility: the manual reviews above still have to be recorded in phase 4.
             'can_approve' => $blockers === []
                 && collect($rows)->every(fn (array $row): bool => $row['state'] === DossierRowState::Conforme->value)
                 && collect($ifraUses)->every(fn (array $use): bool => in_array($use['state'], ['conforme', 'not_applicable'], true)),
 ```
 
-4. Pass `$ifraUses` to `warnings()` and add at its end:
+4. Pass `$ifraApplies` to `warnings()` and add at its end:
 
 ```php
-        if (collect($ifraUses)->contains(fn (array $use): bool => $use['state'] !== 'not_applicable')) {
-            // The check covers each ingredient as used; restrictions from constituents shared across ingredients are not
-            // checked automatically in the pilot (phase 3b decision 1).
+        if ($ifraApplies) {
+            // The check covers each ingredient as used; restrictions from constituents shared across ingredients are
+            // not checked automatically in the pilot (decision 1).
             $warnings[] = ['code' => 'ifra_constituent_review_required'];
         }
 ```
 
-Update the `warnings()` docblock with the new `@param list<array<string, mixed>> $ifraUses`.
+with `@param bool $ifraApplies` in its docblock.
 
-5. Add `'ifra_uses' => [],` to the `cannot_run` return array, so the result shape stays the same.
+5. Add `'ifra_uses' => []` and `'manual_reviews_required' => []` to the `cannot_run` return array, so the result shape stays the same.
 
 - [ ] **Step 5: Run the tests**
 
@@ -1229,7 +1258,7 @@ Expected: PASS.
 ```bash
 vendor/bin/pint --dirty --format agent
 git add app/Data/DossierAssessmentOptions.php app/Services/Dossiers/Calculation/DossierAssessmentEngine.php tests/Feature/Dossiers/Calculation/DossierAssessmentEngineTest.php
-git commit -m "Report DIP IFRA ingredient uses and block approval until each one concludes"
+git commit -m "Report DIP IFRA ingredient uses and refuse approval until each one concludes"
 ```
 
 ---
@@ -1263,10 +1292,16 @@ Expected: one migration ran; `dossier_evidence_use_limits` has `limit_type` and 
 In §4.2, after the line starting with `- **Several oils, one allergen:**`, add:
 
 ```markdown
-- **IFRA use check (phase 3b):** each fragrance ingredient, as purchased (a blend at its whole dosage), is compared with its IFRA limit for the formula's category (category 9 for the bar-soap pilot, or a justified exception) and amendment. Supplier IFRA certificates conclude only when they record that amendment and are confirmed to cover the qualified grade; every validated supplier must be covered. The ingredient's own IFRA certificate is shown as a fallback but never concludes. An exceeded limit is `non_conforme` with its own reason; missing or unusable information is « À justifier »; both block approval. Restrictions from constituents shared across ingredients are flagged for manual review.
+- **IFRA use check (phase 3b):** each fragrance ingredient, as purchased (a blend at its whole dosage), is compared with its IFRA limit for the formula's category (category 9 for the bar-soap pilot, or a justified exception) and amendment. Supplier IFRA certificates conclude only when they record that amendment and are confirmed to cover the qualified grade; every validated supplier must be covered. The ingredient's own IFRA certificate is shown as a fallback but never concludes. An exceeded limit is `non_conforme` with its own reason; missing or unusable information is « À justifier »; both block approval. Restrictions from constituents shared across ingredients are not calculated: the engine lists them as a manual review (`manual_reviews_required`), which phase 4's assessor checklist must record before approval.
 ```
 
-In §3.2, in the structured-summary row of IFRA certificates, add "amendment covered, grade coverage, limit per IFRA category (maximum or explicit no restriction)" and replace "peroxide value" with "peroxide value as reported (value, unit, comparison, measured or specification)".
+In §3.2, in the structured-summary row of IFRA certificates, add "amendment covered, grade coverage, limit per IFRA category (maximum or explicit no restriction, each category once)".
+
+In §11, add:
+
+```markdown
+8. **Peroxide value units:** the DIP stores peroxide values in mmol/L, technical sheets and the workbench use meq O₂/kg. They are not interchangeable (conversion needs the density and the method's factor). A separate follow-up stores value, unit, comparison and basis as reported; no value is converted with a fixed factor.
+```
 
 - [ ] **Step 4: Commit**
 
@@ -1280,11 +1315,22 @@ git commit -m "Record the DIP IFRA ingredient-use check in the spec"
 
 ## Self-review notes
 
-- **Codex point 1 (missing information):** uncovered qualifications are listed with their reason and keep the use `a_justifier`, which blocks approval (Task 3 states, Task 4 gate).
+- **Design review, point 1 (missing information):** uncovered qualifications are listed with their reason and keep the use `a_justifier`, which blocks approval (Task 3 states, Task 4 gate).
 - **Point 2 (amendment and grade):** recorded on the certificate (Task 1), required to conclude (Task 3); older amendments stay as evidence with `amendment_mismatch`; the ingredient certificate never concludes.
-- **Point 3 (blends):** the check runs on recipe ingredients as purchased, before the engine's component expansion; constituent-level combinations get an explicit warning.
+- **Point 3 (blends):** the check runs on recipe ingredients as purchased, before the engine's component expansion; a blend containing a fragrance is checked; constituent-level combinations are a listed manual review.
 - **Point 4 (approval):** IFRA results are separate from `RowStateResolver` and gate `can_approve` directly, with `ifra_limit_exceeded` distinct from annex breaches.
-- **Point 5 (null):** supplier limits are a number or an explicit no-restriction statement (Task 1); an ingredient certificate's blank maximum is unknown (Task 3).
-- **Point 6 (peroxide):** value, unit, comparison and basis stored as reported; no conversion (Tasks 1–2).
+- **Point 5 (null):** supplier limits are a number or an explicit no-restriction statement, each category once (Task 1); an ingredient certificate's blank or repeated maximum is unknown (Task 3).
+- **Point 6 (peroxide):** deferred and documented (decision 8, spec §11).
 - **Point 7 (basis and category):** finished cured mass, all fragrance retained; category 9 or a justified exception; `requires_aromatic_compliance` widens, never narrows, the check.
-- **Not covered:** an IFRA standards database (restrictions by constituent), conversion of peroxide units, IFRA for leave-on products — later work.
+- **Not covered:** an IFRA standards database (restrictions by constituent), the peroxide redesign, IFRA for leave-on products — later work.
+
+## Plan review changes (2026-10-24, Codex review of the first version)
+
+| Finding | Change |
+| --- | --- |
+| P1 · a category stated twice could pass on its first, more favourable entry | Saving refuses a repeated category; an existing duplicate is `duplicate_category_limits`, unresolved (decision 5, Tasks 1, 3) |
+| P1 · a blend containing a fragrance, with no flag or certificate of its own, was not checked | Applicability also looks at linked components; such a blend is checked at its dosage and stays to justify without a certificate (decision 2, Task 3) |
+| P2 · the approval test would pass without the IFRA gate | Approval tests start from an otherwise approvable assessment (all rows confirmed, QRA2 preset), then show pass, exceeded limit and uncovered supplier (Task 4); added tests for a blend, an ingredient used in two rows and a withdrawn certificate (Task 3) |
+| P2 · the constituent review stayed a warning while `can_approve` could be true | `manual_reviews_required` returned with the result; `can_approve` documented as provisional; phase 4's checklist must record the review (decision 7, Task 4, spec) |
+| Scope · the peroxide redesign is a separate concern | Removed from this change; the mismatch is documented (decision 8, spec §11) |
+| Scope · an amendment query inside the Blade loop | Amendment codes loaded once by the component (Task 2) |

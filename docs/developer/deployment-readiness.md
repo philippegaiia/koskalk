@@ -117,3 +117,35 @@ php artisan help:import database/seeders/data/contextual-help.collaboration.en.j
 ```
 
 Bootstrap preserves existing topic content and publications. Review and publish these five topics in Admin → Content → Help Topics; local publication does not publish them in production. Translations remain separately reviewed drafts and are not automatically generated or published. Check Help on Settings → Workspace, Settings → Team, the company picker, and the saved-product workbench. Unpublished topics are intentionally absent from end-user Help.
+
+## Goods receipt snapshot migration: if it stops
+
+`2026_08_02_210744_extend_goods_receipts_for_direct_receipts_and_price_snapshots` gives every goods receipt a supplier and every receipt line a supplier listing and a price snapshot, derived from the purchase order the receipt was posted against. It stops on purpose, with one of these messages, when an existing row cannot be derived:
+
+- `Unable to derive a supplier for every existing goods receipt.`
+- `Unable to derive listing and price snapshots for every existing goods receipt line.`
+
+Only databases holding receipts posted before this migration are concerned: a production database already past it, a backup restored from before 2026-08-02, or a copy of such a backup.
+
+**What a stop leaves behind.** On PostgreSQL the whole migration runs in one transaction: a stop rolls everything back and the migration is not recorded, so the schema is exactly as before. Fix the data, then run `php artisan migrate --force` again. On a database without transactional schema changes (a SQLite copy, for example) the columns added before the check stay; restore that database from its backup instead of repairing it by hand.
+
+**Find the rows before migrating.** On a database that has not yet run the migration, both read-only queries must return no rows:
+
+```sql
+-- Receipts whose supplier cannot be derived from their purchase order.
+SELECT gr.id, gr.purchase_order_id
+FROM goods_receipts gr
+LEFT JOIN purchase_orders po ON po.id = gr.purchase_order_id
+WHERE po.id IS NULL OR po.supplier_id IS NULL;
+
+-- Receipt lines whose listing or price cannot be derived from their purchase order line.
+SELECT grl.id, grl.goods_receipt_id, grl.purchase_order_line_id,
+       pol.supplier_listing_id, pol.pack_price, pol.currency
+FROM goods_receipt_lines grl
+LEFT JOIN purchase_order_lines pol ON pol.id = grl.purchase_order_line_id
+WHERE pol.id IS NULL OR pol.supplier_listing_id IS NULL OR pol.pack_price IS NULL OR pol.currency IS NULL;
+```
+
+**Fix the source, never invent a value.** Each row returned points to a purchase order or purchase order line that lacks its supplier, listing, pack price or currency. Take the missing value from the supplier's invoice or delivery note and record it on that purchase order line (or order), then rerun the queries. The pack price becomes the receipt's historical cost, so an estimate would falsify stock-lot costs and every costing built on them. If no source document gives the value, decide with the owner before migrating. Do not delete receipts or lines directly in SQL: they hold the stock lots and stock movements that the inventory history and costing depend on.
+
+**Order of work.** Back up (`php artisan backup:database`), run the two queries, correct the purchase order data, run them again until both return nothing, then migrate.

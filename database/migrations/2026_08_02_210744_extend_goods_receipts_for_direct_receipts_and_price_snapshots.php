@@ -5,6 +5,11 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
+/**
+ * Backfills a supplier on every goods receipt and a listing and price snapshot on every line from their purchase
+ * order, and stops when a row cannot be derived. Recovery procedure (pre-migration queries, how to fix the source data):
+ * docs/developer/deployment-readiness.md, "Goods receipt snapshot migration: if it stops".
+ */
 return new class extends Migration
 {
     public function up(): void

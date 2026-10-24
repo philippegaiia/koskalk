@@ -11,9 +11,11 @@ use App\Enums\ConstituentKind;
 use App\Enums\EvidenceLevel;
 use App\Enums\EvidenceType;
 use App\Enums\SupplierQualificationStatus;
+use App\Enums\UseLimitType;
 use App\Enums\WorkspaceModule;
 use App\Models\Allergen;
 use App\Models\DossierEvidenceItem;
+use App\Models\IfraAmendment;
 use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\Substance;
@@ -192,10 +194,31 @@ class RawMaterialDetail extends Component implements HasForms
                                 ->options(fn (): array => IfraProductCategory::query()->orderBy('code')->get()->mapWithKeys(fn (IfraProductCategory $category): array => [$category->id => $category->code.' — '.$category->localizedName()])->all())
                                 ->required()
                             : TextInput::make('product_class_label')->label(__('dossiers.evidence_data.product_class'))->required()->maxLength(255),
-                        TextInput::make('max_percent')->label(__('dossiers.evidence_data.max_percent'))->numeric()->suffix('%')->required(),
+                        Select::make('limit_type')
+                            ->label(__('dossiers.evidence_data.limit_type'))
+                            ->options(collect(UseLimitType::cases())->mapWithKeys(fn (UseLimitType $type): array => [$type->value => __('dossiers.evidence_data.limit_types.'.$type->value)])->all())
+                            ->default(UseLimitType::Maximum->value)
+                            ->live()
+                            ->required(),
+                        TextInput::make('max_percent')
+                            ->label(__('dossiers.evidence_data.max_percent'))
+                            ->numeric()
+                            ->suffix('%')
+                            ->visible(fn (Get $get): bool => $get('limit_type') !== UseLimitType::NoRestriction->value)
+                            ->required(fn (Get $get): bool => $get('limit_type') !== UseLimitType::NoRestriction->value),
                     ])
-                    ->columns(['md' => 2])
+                    ->columns(['md' => 3])
                     ->defaultItems(0),
+                in_array('ifra_amendment_id', $facts, true)
+                    ? Select::make('facts.ifra_amendment_id')
+                        ->label(__('dossiers.evidence_data.ifra_amendment'))
+                        ->options(fn (): array => $this->amendmentCodes())
+                    : null,
+                in_array('covers_supplied_grade', $facts, true)
+                    ? Toggle::make('facts.covers_supplied_grade')
+                        ->label(__('dossiers.evidence_data.covers_supplied_grade'))
+                        ->helperText(__('dossiers.evidence_data.covers_supplied_grade_help'))
+                    : null,
                 in_array('peroxide_value_mmol_l', $facts, true)
                     ? TextInput::make('facts.peroxide_value_mmol_l')->label(__('dossiers.evidence_data.peroxide_value'))->numeric()->suffix('mmol/L')
                     : null,
@@ -219,7 +242,12 @@ class RawMaterialDetail extends Component implements HasForms
                 'max_value' => $row->max_value,
                 'note' => $row->note,
             ])->all(),
-            'use_limits' => $item->useLimits->map(fn ($row): array => $row->only(['ifra_product_category_id', 'product_class_label', 'max_percent']))->all(),
+            'use_limits' => $item->useLimits->map(fn ($row): array => [
+                'ifra_product_category_id' => $row->ifra_product_category_id,
+                'product_class_label' => $row->product_class_label,
+                'limit_type' => $row->limit_type->value,
+                'max_percent' => $row->max_percent,
+            ])->all(),
             'facts' => $item->facts ?? [],
             'constituents_complete' => $item->constituents_complete,
         ]);
@@ -327,7 +355,16 @@ class RawMaterialDetail extends Component implements HasForms
                 ->with(['supplier', 'evidenceItems' => fn ($query) => $query->active()->with(['file', 'constituents.allergen', 'constituents.substance', 'useLimits.ifraProductCategory'])->latest()])
                 ->orderBy('status')
                 ->get(),
+            'amendmentCodes' => $this->amendmentCodes(),
         ]);
+    }
+
+    /**
+     * @return array<int, string> amendment code by id
+     */
+    private function amendmentCodes(): array
+    {
+        return once(fn (): array => IfraAmendment::query()->orderByDesc('code')->pluck('code', 'id')->all());
     }
 
     /**

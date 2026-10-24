@@ -1,12 +1,15 @@
 <?php
 
 use App\Enums\EvidenceType;
+use App\Enums\UseLimitType;
 use App\Livewire\Dossiers\QuickSupplierCreate;
 use App\Livewire\Dossiers\RawMaterialDetail;
 use App\Livewire\Dossiers\RawMaterialsIndex;
 use App\Models\Allergen;
 use App\Models\DossierEvidenceConstituent;
 use App\Models\DossierEvidenceItem;
+use App\Models\IfraAmendment;
+use App\Models\IfraProductCategory;
 use App\Models\Ingredient;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
@@ -182,4 +185,37 @@ it('labels the document form submit differently from the button that opens it', 
         ->assertDontSee(__('dossiers.raw_materials.save_document'))
         ->call('startUpload', $qualification->id)
         ->assertSee(__('dossiers.raw_materials.save_document'));
+});
+
+it('records an IFRA certificate with its amendment, grade coverage and limits from the page', function (): void {
+    [$owner, $workspace] = rawMaterialWorkspace();
+    $lavender = ingredientUsedIn($workspace, 'Lavender');
+    $qualification = SupplierQualification::factory()->create(['workspace_id' => $workspace->id, 'ingredient_id' => $lavender->id]);
+    $item = DossierEvidenceItem::factory()->create(['supplier_qualification_id' => $qualification->id, 'type' => EvidenceType::IfraCertificate]);
+    $category9 = IfraProductCategory::factory()->create(['code' => '9']);
+    $category4 = IfraProductCategory::factory()->create(['code' => '4']);
+    $amendment = IfraAmendment::factory()->create(['code' => '51']);
+    $this->actingAs($owner);
+
+    Livewire::test(RawMaterialDetail::class, ['ingredient' => $lavender->public_id])
+        ->call('startEditData', $item->id)
+        ->fillForm([
+            'facts' => ['ifra_amendment_id' => $amendment->id, 'covers_supplied_grade' => true],
+            'use_limits' => [
+                ['ifra_product_category_id' => $category9->id, 'limit_type' => 'maximum', 'max_percent' => '2.5'],
+                ['ifra_product_category_id' => $category4->id, 'limit_type' => 'no_restriction'],
+            ],
+        ], 'evidenceDataForm')
+        ->call('saveEvidenceData')
+        ->assertHasNoFormErrors([], 'evidenceDataForm')
+        ->assertSee('9 ≤ 2.5 %')
+        ->assertSee('4 '.__('dossiers.evidence_data.no_restriction_short'))
+        ->assertSee(__('dossiers.evidence_data.ifra_amendment').' 51')
+        ->assertSee(__('dossiers.evidence_data.covers_grade_yes'));
+
+    $item->refresh();
+
+    expect($item->facts['ifra_amendment_id'])->toBe($amendment->id)
+        ->and($item->facts['covers_supplied_grade'])->toBeTrue()
+        ->and($item->useLimits->firstWhere('ifra_product_category_id', $category4->id)->limit_type)->toBe(UseLimitType::NoRestriction);
 });

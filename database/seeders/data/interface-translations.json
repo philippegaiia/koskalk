@@ -1104,6 +1104,18 @@
     },
     {
       "group": "dossiers",
+      "key": "evidence.no_restriction_without_value",
+      "text": {
+        "de": "Eine Angabe „keine Einschränkung“ hat kein Maximum. Wählen Sie „Maximum“, um einen Wert einzugeben.",
+        "es": "Una indicación «sin restricción» no tiene máximo. Elija «Máximo» para introducir un valor.",
+        "fr": "Une mention « sans restriction » n’a pas de maximum. Choisissez « Maximum » pour saisir une valeur.",
+        "it": "Un’indicazione «nessuna restrizione» non ha un massimo. Scegli «Massimo» per inserire un valore.",
+        "nl": "Een vermelding „geen beperking” heeft geen maximum. Kies „Maximum” om een waarde in te voeren.",
+        "pt_BR": "Uma indicação «sem restrição» não tem máximo. Escolha «Máximo» para inserir um valor."
+      }
+    },
+    {
+      "group": "dossiers",
       "key": "evidence.no_use_limits_for_type",
       "text": {
         "de": "Dieser Dokumenttyp nennt keine Einsatzgrenzen.",
@@ -1260,6 +1272,54 @@
     },
     {
       "group": "dossiers",
+      "key": "evidence_data.covers_grade_no",
+      "text": {
+        "de": "Qualität nicht bestätigt",
+        "es": "calidad no confirmada",
+        "fr": "qualité non confirmée",
+        "it": "qualità non confermata",
+        "nl": "kwaliteit niet bevestigd",
+        "pt_BR": "grau não confirmado"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.covers_grade_yes",
+      "text": {
+        "de": "Qualität bestätigt",
+        "es": "calidad confirmada",
+        "fr": "qualité confirmée",
+        "it": "qualità confermata",
+        "nl": "kwaliteit bevestigd",
+        "pt_BR": "grau confirmado"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.covers_supplied_grade",
+      "text": {
+        "de": "Gilt für die Qualität dieses Lieferanten",
+        "es": "Cubre la calidad de este proveedor",
+        "fr": "Couvre la qualité de ce fournisseur",
+        "it": "Copre la qualità di questo fornitore",
+        "nl": "Geldt voor de kwaliteit van deze leverancier",
+        "pt_BR": "Abrange o grau deste fornecedor"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.covers_supplied_grade_help",
+      "text": {
+        "de": "Nur aktivieren, wenn das Zertifikat das Produkt oder die Referenz dieses Lieferanten nennt. Andernfalls schließt das Zertifikat die IFRA-Prüfung nicht ab.",
+        "es": "Actívelo solo si el certificado nombra el producto o la referencia de este proveedor. Si no, el certificado no concluye la verificación IFRA.",
+        "fr": "À activer seulement si le certificat nomme le produit ou la référence de ce fournisseur. Sinon, le certificat ne conclut pas la vérification IFRA.",
+        "it": "Attivalo solo se il certificato nomina il prodotto o il riferimento di questo fornitore. Altrimenti il certificato non conclude la verifica IFRA.",
+        "nl": "Alleen inschakelen als het certificaat het product of de referentie van deze leverancier noemt. Anders sluit het certificaat de IFRA-controle niet af.",
+        "pt_BR": "Ative apenas se o certificado nomear o produto ou a referência deste fornecedor. Caso contrário, o certificado não conclui a verificação IFRA."
+      }
+    },
+    {
+      "group": "dossiers",
       "key": "evidence_data.edit",
       "text": {
         "de": "Daten",
@@ -1268,6 +1328,18 @@
         "it": "Dati",
         "nl": "Gegevens",
         "pt_BR": "Dados"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.ifra_amendment",
+      "text": {
+        "de": "Abgedeckte IFRA-Änderung",
+        "es": "Enmienda IFRA cubierta",
+        "fr": "Amendement IFRA couvert",
+        "it": "Emendamento IFRA coperto",
+        "nl": "Gedekt IFRA-amendement",
+        "pt_BR": "Emenda IFRA abrangida"
       }
     },
     {
@@ -1332,6 +1404,42 @@
     },
     {
       "group": "dossiers",
+      "key": "evidence_data.limit_type",
+      "text": {
+        "de": "Angegeben als",
+        "es": "Indicado como",
+        "fr": "Indiqué comme",
+        "it": "Indicato come",
+        "nl": "Vermeld als",
+        "pt_BR": "Indicado como"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.limit_types.maximum",
+      "text": {
+        "de": "Maximum",
+        "es": "Máximo",
+        "fr": "Maximum",
+        "it": "Massimo",
+        "nl": "Maximum",
+        "pt_BR": "Máximo"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.limit_types.no_restriction",
+      "text": {
+        "de": "Keine Einschränkung",
+        "es": "Sin restricción",
+        "fr": "Sans restriction",
+        "it": "Nessuna restrizione",
+        "nl": "Geen beperking",
+        "pt_BR": "Sem restrição"
+      }
+    },
+    {
+      "group": "dossiers",
       "key": "evidence_data.max_percent",
       "text": {
         "de": "Maximale Einsatzkonzentration",
@@ -1364,6 +1472,18 @@
         "it": "Specifica microbiologica",
         "nl": "Microbiologische specificatie",
         "pt_BR": "Especificação microbiológica"
+      }
+    },
+    {
+      "group": "dossiers",
+      "key": "evidence_data.no_restriction_short",
+      "text": {
+        "de": "keine Einschränkung",
+        "es": "sin restricción",
+        "fr": "sans restriction",
+        "it": "nessuna restrizione",
+        "nl": "geen beperking",
+        "pt_BR": "sem restrição"
       }
     },
     {

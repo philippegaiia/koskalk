@@ -51,8 +51,14 @@
                                         @elseif ($item->useLimits->isEmpty() && blank($item->facts)) {{ __('dossiers.evidence_data.none') }} @endif
                                     @endforelse
                                     @foreach ($item->useLimits as $limit)
-                                        · {{ $limit->ifraProductCategory?->code ?? $limit->product_class_label }} ≤ {{ rtrim(rtrim($limit->max_percent, '0'), '.') }} %
+                                        · {{ $limit->ifraProductCategory?->code ?? $limit->product_class_label }} {{ $limit->limit_type === \App\Enums\UseLimitType::NoRestriction ? __('dossiers.evidence_data.no_restriction_short') : '≤ '.rtrim(rtrim($limit->max_percent, '0'), '.').' %' }}
                                     @endforeach
+                                    @if (isset($amendmentCodes[$item->facts['ifra_amendment_id'] ?? null]))
+                                        · {{ __('dossiers.evidence_data.ifra_amendment') }} {{ $amendmentCodes[$item->facts['ifra_amendment_id']] }}
+                                    @endif
+                                    @if (array_key_exists('covers_supplied_grade', $item->facts ?? []))
+                                        · {{ $item->facts['covers_supplied_grade'] ? __('dossiers.evidence_data.covers_grade_yes') : __('dossiers.evidence_data.covers_grade_no') }}
+                                    @endif
                                 </p>
                                 @if ($dataItemId === $item->id)
                                     <form wire:submit="saveEvidenceData" class="w-full space-y-3 border-t border-[var(--color-line)] pt-3">

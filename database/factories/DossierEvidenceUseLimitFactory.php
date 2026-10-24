@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\UseLimitType;
 use App\Models\DossierEvidenceItem;
 use App\Models\DossierEvidenceUseLimit;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -21,6 +22,7 @@ class DossierEvidenceUseLimitFactory extends Factory
             'ifra_product_category_id' => null,
             'product_class_label' => 'Autres produits à rincer',
             'max_percent' => '100',
+            'limit_type' => UseLimitType::Maximum,
         ];
     }
 }

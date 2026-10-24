@@ -2,8 +2,10 @@
 
 use App\Actions\Dossiers\SaveDossierEvidenceData;
 use App\Enums\EvidenceType;
+use App\Enums\UseLimitType;
 use App\Models\Allergen;
 use App\Models\DossierEvidenceItem;
+use App\Models\IfraAmendment;
 use App\Models\IfraProductCategory;
 use App\Models\Substance;
 use App\Models\SupplierQualification;
@@ -155,4 +157,75 @@ it('accepts explicit zero values as information distinct from missing data', fun
         ->and(fn () => app(SaveDossierEvidenceData::class)->handle($owner, $workspace, $declaration, [
             'constituents' => [['kind' => 'allergen', 'allergen_id' => $linalool->id, 'max_value' => '-1']],
         ]))->toThrow(ValidationException::class);
+});
+
+it('records the IFRA amendment, grade coverage and a no-restriction limit', function (): void {
+    [$owner, $workspace] = evidenceDataWorkspace();
+    $item = evidenceOfType($workspace, EvidenceType::IfraCertificate);
+    $category9 = IfraProductCategory::factory()->create(['code' => '9']);
+    $category4 = IfraProductCategory::factory()->create(['code' => '4']);
+    $amendment = IfraAmendment::factory()->create();
+
+    app(SaveDossierEvidenceData::class)->handle($owner, $workspace, $item, [
+        'use_limits' => [
+            ['ifra_product_category_id' => $category9->id, 'limit_type' => 'maximum', 'max_percent' => '2.5'],
+            ['ifra_product_category_id' => $category4->id, 'limit_type' => 'no_restriction', 'max_percent' => null],
+        ],
+        'facts' => ['ifra_amendment_id' => $amendment->id, 'covers_supplied_grade' => true],
+    ]);
+    $limits = $item->refresh()->useLimits->keyBy('ifra_product_category_id');
+
+    expect($item->facts)->toBe(['ifra_amendment_id' => $amendment->id, 'covers_supplied_grade' => true])
+        ->and($limits[$category9->id]->limit_type)->toBe(UseLimitType::Maximum)
+        ->and($limits[$category9->id]->max_percent)->toBe('2.500000')
+        ->and($limits[$category4->id]->limit_type)->toBe(UseLimitType::NoRestriction)
+        ->and($limits[$category4->id]->max_percent)->toBeNull();
+});
+
+it('keeps a grade-coverage answer of no', function (): void {
+    [$owner, $workspace] = evidenceDataWorkspace();
+    $item = evidenceOfType($workspace, EvidenceType::IfraCertificate);
+
+    app(SaveDossierEvidenceData::class)->handle($owner, $workspace, $item, ['facts' => ['covers_supplied_grade' => false]]);
+
+    expect($item->refresh()->facts)->toBe(['covers_supplied_grade' => false]);
+});
+
+it('refuses incomplete, contradictory or repeated IFRA limits', function (string $case, string $errorKey): void {
+    [$owner, $workspace] = evidenceDataWorkspace();
+    $item = evidenceOfType($workspace, EvidenceType::IfraCertificate);
+    $category = IfraProductCategory::factory()->create()->id;
+    $data = match ($case) {
+        'maximum without a value' => ['use_limits' => [['ifra_product_category_id' => $category, 'limit_type' => 'maximum', 'max_percent' => null]]],
+        'no restriction with a value' => ['use_limits' => [['ifra_product_category_id' => $category, 'limit_type' => 'no_restriction', 'max_percent' => '5']]],
+        'unknown limit type' => ['use_limits' => [['ifra_product_category_id' => $category, 'limit_type' => 'guess', 'max_percent' => '5']]],
+        'the same category twice' => ['use_limits' => [
+            ['ifra_product_category_id' => $category, 'limit_type' => 'no_restriction', 'max_percent' => null],
+            ['ifra_product_category_id' => $category, 'limit_type' => 'maximum', 'max_percent' => '1'],
+        ]],
+        'unknown amendment' => ['facts' => ['ifra_amendment_id' => 999999]],
+    };
+
+    expect(fn () => app(SaveDossierEvidenceData::class)->handle($owner, $workspace, $item, $data))
+        ->toThrow(function (ValidationException $exception) use ($errorKey): void {
+            expect($exception->errors())->toHaveKey($errorKey);
+        });
+})->with([
+    ['maximum without a value', 'use_limits.0.max_percent'],
+    ['no restriction with a value', 'use_limits.0.max_percent'],
+    ['unknown limit type', 'use_limits.0.limit_type'],
+    ['the same category twice', 'use_limits.1.ifra_product_category_id'],
+    ['unknown amendment', 'facts.ifra_amendment_id'],
+]);
+
+it('keeps older use limits as maxima', function (): void {
+    [$owner, $workspace] = evidenceDataWorkspace();
+    $item = evidenceOfType($workspace, EvidenceType::IfraCertificate);
+    $category = IfraProductCategory::factory()->create();
+
+    app(SaveDossierEvidenceData::class)->handle($owner, $workspace, $item, [
+        'use_limits' => [['ifra_product_category_id' => $category->id, 'max_percent' => '1.2']],
+    ]);
+
+    expect($item->useLimits()->sole()->limit_type)->toBe(UseLimitType::Maximum);
 });

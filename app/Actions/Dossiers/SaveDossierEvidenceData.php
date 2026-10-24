@@ -3,6 +3,7 @@
 namespace App\Actions\Dossiers;
 
 use App\Enums\ConstituentKind;
+use App\Enums\UseLimitType;
 use App\Enums\WorkspaceModule;
 use App\Models\DossierEvidenceItem;
 use App\Models\User;
@@ -60,10 +61,12 @@ class SaveDossierEvidenceData
             }
 
             foreach ($validated['use_limits'] as $row) {
+                $type = UseLimitType::from($row['limit_type']);
                 $current->useLimits()->create([
                     'ifra_product_category_id' => $current->type->useLimitBasis() === 'ifra_category' ? $row['ifra_product_category_id'] : null,
                     'product_class_label' => $current->type->useLimitBasis() === 'product_class' ? trim((string) $row['product_class_label']) : null,
-                    'max_percent' => $row['max_percent'],
+                    'limit_type' => $type,
+                    'max_percent' => $type === UseLimitType::Maximum ? $row['max_percent'] : null,
                 ]);
             }
 
@@ -89,6 +92,7 @@ class SaveDossierEvidenceData
         $basis = $type->useLimitBasis();
         $constituents = array_values($data['constituents'] ?? []);
         $useLimits = array_values($data['use_limits'] ?? []);
+        $useLimits = array_map(fn (array $row): array => ['limit_type' => UseLimitType::Maximum->value, ...$row], $useLimits);
         $facts = array_filter($data['facts'] ?? [], fn (mixed $value): bool => filled($value));
         $constituentsComplete = (bool) ($data['constituents_complete'] ?? false);
 
@@ -123,13 +127,18 @@ class SaveDossierEvidenceData
             'constituents.*.max_value' => ['required', 'numeric', 'gte:0'],
             'constituents.*.note' => ['nullable', 'string', 'max:500'],
             'use_limits' => ['array'],
-            'use_limits.*.max_percent' => ['required', 'numeric', 'gte:0', 'lte:100'],
+            'use_limits.*.limit_type' => ['required', Rule::enum(UseLimitType::class)],
+            // A maximum needs its value (zero means not permitted); an explicit "no restriction" has none.
+            'use_limits.*.max_percent' => ['exclude_unless:use_limits.*.limit_type,maximum', 'required', 'numeric', 'gte:0', 'lte:100'],
+            // A category or class is stated once: a second entry could contradict the first.
             'use_limits.*.ifra_product_category_id' => $basis === 'ifra_category'
-                ? ['required', 'integer', 'exists:ifra_product_categories,id']
+                ? ['required', 'integer', 'distinct', 'exists:ifra_product_categories,id']
                 : ['nullable'],
             'use_limits.*.product_class_label' => $basis === 'product_class'
-                ? ['required', 'string', 'max:255']
+                ? ['required', 'string', 'distinct:ignore_case', 'max:255']
                 : ['nullable'],
+            'facts.ifra_amendment_id' => ['nullable', 'integer', 'exists:ifra_amendments,id'],
+            'facts.covers_supplied_grade' => ['nullable', 'boolean'],
             'facts.peroxide_value_mmol_l' => ['nullable', 'numeric', 'gte:0'],
             'facts.microbiology_specification' => ['nullable', 'string', 'max:2000'],
         ]);
@@ -143,7 +152,22 @@ class SaveDossierEvidenceData
                 }
             }
         });
+        $validator->after(function ($validator) use ($useLimits): void {
+            foreach ($useLimits as $index => $row) {
+                if (($row['limit_type'] ?? null) === UseLimitType::NoRestriction->value && filled($row['max_percent'] ?? null)) {
+                    $validator->errors()->add("use_limits.{$index}.max_percent", __('dossiers.evidence.no_restriction_without_value'));
+                }
+            }
+        });
         $validator->validate();
+
+        if (array_key_exists('covers_supplied_grade', $facts)) {
+            $facts['covers_supplied_grade'] = filter_var($facts['covers_supplied_grade'], FILTER_VALIDATE_BOOL);
+        }
+
+        if (array_key_exists('ifra_amendment_id', $facts)) {
+            $facts['ifra_amendment_id'] = (int) $facts['ifra_amendment_id'];
+        }
 
         return ['constituents' => $constituents, 'use_limits' => $useLimits, 'facts' => $facts, 'constituents_complete' => $constituentsComplete];
     }

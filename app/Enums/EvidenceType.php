@@ -100,7 +100,8 @@ enum EvidenceType: string
     {
         return match ($this) {
             self::TechnicalSheet, self::CertificateOfAnalysis => ['microbiology_specification'],
-            self::RegulatoryConformityCertificate, self::IfraCertificate => ['peroxide_value_mmol_l'],
+            self::RegulatoryConformityCertificate => ['peroxide_value_mmol_l'],
+            self::IfraCertificate => ['ifra_amendment_id', 'covers_supplied_grade', 'peroxide_value_mmol_l'],
             default => [],
         };
     }

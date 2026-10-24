@@ -3672,6 +3672,18 @@
     },
     {
       "group": "formula_documents",
+      "key": "liquid.neutralizer_solution",
+      "text": {
+        "de": "Lösung: :acid :unit Säure + :water :unit Wasser = :total :unit",
+        "es": "Solución: :acid :unit de ácido + :water :unit de agua = :total :unit",
+        "fr": "Solution : :acid :unit d’acide + :water :unit d’eau = :total :unit",
+        "it": "Soluzione: :acid :unit di acido + :water :unit di acqua = :total :unit",
+        "nl": "Oplossing: :acid :unit zuur + :water :unit water = :total :unit",
+        "pt_BR": "Solução: :acid :unit de ácido + :water :unit de água = :total :unit"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "liquid.steps.final_dilution",
       "text": {
         "de": "Endverdünnung",

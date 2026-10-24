@@ -367,6 +367,7 @@ return [
         ],
         'water' => 'water',
         'neutralizer_amounts' => 'Acid: :acid :unit (theoretical :recommended :unit)',
+        'neutralizer_solution' => 'Solution: :acid :unit acid + :water :unit water = :total :unit',
         'anhydrous_soap_weight' => 'Anhydrous soap: :amount :unit',
         'neutralized_anhydrous_soap_weight' => 'Anhydrous soap after neutralization: :amount :unit',
         'weighed_paste' => 'Weighed paste (theoretical :theoretical :unit)',

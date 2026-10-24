@@ -263,7 +263,7 @@ it('prints the liquid soap batch sheet with its process steps sized to the batch
         'Liquid soap process',
         'Paste', 'Anhydrous soap: 2,380.00 g',
         'First dilution', 'Add water to bring the paste to 35.0% anhydrous soap.', '3,358.65', '6,800.00',
-        'Neutralization', 'Add Citric Acid as a 20% solution.', 'Acid: 13.01 g (theoretical 13.01 g)', '65.06',
+        'Neutralization', 'Add Citric Acid as a 20% solution.', 'Acid: 13.01 g (theoretical 13.01 g)', 'Solution: 13.01 g acid + 52.05 g water = 65.06 g', '65.06',
         'Final dilution', '9,520.00', '25.0%',
         'Lavender Oil', '190.40 g · 2.00%',
     ]);

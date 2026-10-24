@@ -8,6 +8,27 @@
     $percent = fn (float $value): string => $numberLocale === null
         ? number_format($value, 1)
         : \App\Support\NumberLocale::formatDecimal($value, 1, $numberLocale);
+    // Neutralizer amounts use the workbench precision: 2 decimals in grams.
+    $neutralizerDecimals = match ($document['unit'] ?? 'g') {
+        'g' => 2,
+        'oz' => 3,
+        default => 4,
+    };
+    $neutralizerMass = fn (float $value): string => $numberLocale === null
+        ? number_format($value, $neutralizerDecimals)
+        : \App\Support\NumberLocale::formatAdaptiveDecimal($value, $neutralizerDecimals, $neutralizerDecimals, $numberLocale);
+    // The water is the rounded solution minus the rounded acid, so the printed amounts add up.
+    $neutralizerSolution = null;
+
+    if (is_array($process) && is_array($process['neutralizer'] ?? null)) {
+        $neutralizerAcid = round((float) $process['neutralizer']['weight'], $neutralizerDecimals);
+        $neutralizerTotal = round((float) $process['neutralizer']['solution_weight'], $neutralizerDecimals);
+        $neutralizerWater = round($neutralizerTotal - $neutralizerAcid, $neutralizerDecimals);
+        $neutralizerSolution = $neutralizerWater > 0
+            ? ['acid' => $neutralizerAcid, 'water' => $neutralizerWater, 'total' => $neutralizerTotal]
+            : null;
+    }
+
     $soapBasisChanged = is_array($process)
         && ($process['final_anhydrous_soap_weight'] ?? null) !== null
         && round($process['final_anhydrous_soap_weight'], 4) !== round((float) $process['anhydrous_soap_weight'], 4);
@@ -39,11 +60,21 @@
                                 @if ($step['key'] === 'neutralization' && is_array($process['neutralizer']))
                                     <p class="numeric mt-0.5 text-xs text-[var(--color-ink-soft)]">
                                         {{ __('formula_documents.liquid.neutralizer_amounts', [
-                                            'acid' => $mass($process['neutralizer']['weight']),
-                                            'recommended' => $mass($process['neutralizer']['recommended_weight']),
+                                            'acid' => $neutralizerMass($process['neutralizer']['weight']),
+                                            'recommended' => $neutralizerMass($process['neutralizer']['recommended_weight']),
                                             'unit' => $document['unit'],
                                         ]) }}
                                     </p>
+                                    @if ($neutralizerSolution !== null)
+                                        <p class="numeric mt-0.5 text-xs text-[var(--color-ink-soft)]">
+                                            {{ __('formula_documents.liquid.neutralizer_solution', [
+                                                'acid' => $neutralizerMass($neutralizerSolution['acid']),
+                                                'water' => $neutralizerMass($neutralizerSolution['water']),
+                                                'total' => $neutralizerMass($neutralizerSolution['total']),
+                                                'unit' => $document['unit'],
+                                            ]) }}
+                                        </p>
+                                    @endif
                                 @endif
                                 @if ($step['key'] === 'paste' && $process['anhydrous_soap_weight'] !== null)
                                     <p class="numeric mt-0.5 text-xs text-[var(--color-ink-soft)]">

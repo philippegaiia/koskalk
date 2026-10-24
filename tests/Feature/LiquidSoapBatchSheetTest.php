@@ -144,7 +144,23 @@ it('prints the liquid soap steps in process order', function () {
     $document = liquidSoapBatchSheetDocument();
 
     $this->blade('<x-formula-document.liquid-process :document="$document" />', ['document' => $document])
-        ->assertSeeInOrder(['Liquid soap process', 'Paste', 'Anhydrous soap: 1,190.00 g', 'First dilution', 'Neutralization', 'Acid: 6.51 g (theoretical 6.51 g)', 'Final dilution', 'Lavender Oil', '95.20 g · 2.00%']);
+        ->assertSeeInOrder(['Liquid soap process', 'Paste', 'Anhydrous soap: 1,190.00 g', 'First dilution', 'Neutralization', 'Acid: 6.51 g (theoretical 6.51 g)', 'Solution: 6.51 g acid + 26.02 g water = 32.53 g', 'Final dilution', 'Lavender Oil', '95.20 g · 2.00%']);
+});
+
+it('prints how the neutralizer solution is made so its amounts add up to what is added', function () {
+    $document = liquidSoapBatchSheetDocument();
+    // Rounded separately, 10.01 g acid and 40.03 g water would add up to 50.04 g, not the 50.03 g added.
+    $document['liquid_process']['neutralizer'] = ['name' => 'Citric Acid', 'weight' => 10.0064, 'solution_weight' => 50.032, 'recommended_weight' => 10.0064];
+
+    $this->blade('<x-formula-document.liquid-process :document="$document" number-locale="fr_FR" />', ['document' => $document])
+        ->assertSee('Solution: 10,01 g acid + 40,02 g water = 50,03 g');
+
+    $document['unit'] = 'kg';
+    $document['liquid_process']['neutralizer'] = ['name' => 'Citric Acid', 'weight' => 0.14228, 'solution_weight' => 0.7114, 'recommended_weight' => 0.14228];
+
+    $this->blade('<x-formula-document.liquid-process :document="$document" />', ['document' => $document])
+        ->assertSee('Acid: 0.1423 kg (theoretical 0.1423 kg)')
+        ->assertSee('Solution: 0.1423 kg acid + 0.5691 kg water = 0.7114 kg');
 });
 
 it('reports the soap a fatty acid neutralizer adds to the anhydrous soap weight', function () {
@@ -163,7 +179,8 @@ it('reports the soap a fatty acid neutralizer adds to the anhydrous soap weight'
     ]);
 
     $this->blade('<x-formula-document.liquid-process :document="$document" />', ['document' => $document])
-        ->assertSeeInOrder(['Paste', 'Anhydrous soap: 1,190.00 g', 'Neutralization', 'Anhydrous soap after neutralization: 1,222.77 g', 'Final dilution']);
+        ->assertSeeInOrder(['Paste', 'Anhydrous soap: 1,190.00 g', 'Neutralization', 'Anhydrous soap after neutralization: 1,222.77 g', 'Final dilution'])
+        ->assertDontSee('Solution:');
 });
 
 it('prints nothing for formulas without a liquid soap process', function () {

@@ -324,6 +324,46 @@ JS);
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
 
+it('stays saved after one save when the page re-renders with the server formula during the request', function () {
+    $process = runLiquidSoapBenchScript(<<<'JS'
+const workbench = bench(liquidFamily);
+workbench.oilWeight = 10;
+workbench.oilUnit = 'kg';
+workbench.phaseItems.neutralization = [{ id: 'acid', ingredient_id: 7, percentage: 12, weight: 1.2 }];
+workbench.phaseItems.fragrance = [{ id: 'lavender', ingredient_id: 8, percentage: 6.1207, weight: 0.61207, final_percentage: 0.9138 }];
+workbench.flushCostingSave = async () => true;
+workbench.queueRevisionMutation = async action => action();
+workbench.activateSavedRecipeEditing = async () => {};
+workbench.refreshDirtyBaseline();
+
+// More acid changes the final batch, so the server resizes the fragrance
+// kept at 0.9138% of it. The save's Livewire re-render re-initializes the
+// bench from that saved formula before the save call returns.
+workbench.setLiquidNeutralizerWeight('1.9');
+workbench.$wire = { data: {}, publish: async () => {
+    workbench.phaseItems.fragrance[0].percentage = 6.443;
+    workbench.refreshDirtyBaseline();
+
+    return { ok: true };
+} };
+await workbench.publish();
+assert.equal(workbench.saveStatus, 'success');
+assert.equal(workbench.hasUnsavedWorkbenchChanges(), false);
+
+// A dose typed while a save without a re-render is running stays unsaved.
+workbench.$wire = { data: {}, publish: async () => {
+    workbench.setLiquidNeutralizerWeight('2.1');
+
+    return { ok: true };
+} };
+await workbench.publish();
+assert.equal(workbench.hasUnsavedWorkbenchChanges(), true);
+clearTimeout(workbench.calculationPreviewTimer);
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});
+
 it('sends the weighed paste with the preview request only', function () {
     $process = runLiquidSoapBenchScript(<<<'JS'
 const { refreshCalculationPreview } = await import('./resources/js/recipe-workbench/bridge.js');

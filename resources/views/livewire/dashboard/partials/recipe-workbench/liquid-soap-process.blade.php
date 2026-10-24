@@ -123,7 +123,7 @@
  <template x-if="liquidNeutralizerRow !== null">
  <label class="block lg:w-48">
  <span id="liquid-neutralizer-amount-label" class="sk-eyebrow" x-text="t('liquid.neutralizer_amount', { unit: oilUnit })"></span>
- <input aria-labelledby="liquid-neutralizer-amount-label" x-effect="syncFormattedInput($el, liquidNeutralizerWeight(), additionWeightDecimals(liquidNeutralizerWeight()))" @input="setLiquidNeutralizerWeight($event.target.value)" @blur="normalizeDecimalBlur($event); $el.value = format(liquidNeutralizerWeight(), additionWeightDecimals(liquidNeutralizerWeight()))" type="text" inputmode="decimal" class="numeric mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)]" />
+ <input aria-labelledby="liquid-neutralizer-amount-label" x-effect="syncFormattedInput($el, liquidNeutralizerWeight(), liquidNeutralizerDecimals(liquidNeutralizerWeight()))" @focus="$el.value = liquidNeutralizerEditingText()" @input="setLiquidNeutralizerWeight($event.target.value)" @blur="$el.value = format(liquidNeutralizerWeight(), liquidNeutralizerDecimals(liquidNeutralizerWeight()))" type="text" inputmode="decimal" class="numeric mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)]" />
  </label>
  </template>
  <template x-if="liquidNeutralizerRow !== null && liquidProcessPreview?.neutralizer">
@@ -135,7 +135,10 @@
  <p class="text-xs text-[var(--color-ink-soft)]">{{ __('workbench.liquid.no_neutralizers') }}</p>
  </template>
  <template x-if="liquidProcessIsReady && liquidProcessPreview.neutralizer">
- <p class="numeric text-sm text-[var(--color-ink-strong)]" x-text="t('liquid.recommended', { amount: format(liquidProcessPreview.neutralizer.recommended_weight, additionWeightDecimals(liquidProcessPreview.neutralizer.recommended_weight)), unit: oilUnit })"></p>
+ <p class="numeric text-sm text-[var(--color-ink-strong)]" x-text="t('liquid.recommended', { amount: format(liquidProcessPreview.neutralizer.recommended_weight, liquidNeutralizerDecimals(liquidProcessPreview.neutralizer.recommended_weight)), unit: oilUnit })"></p>
+ </template>
+ <template x-if="liquidNeutralizerSolution() !== null">
+ <p class="numeric text-sm text-[var(--color-ink-strong)]" x-text="liquidNeutralizerSolutionText()"></p>
  </template>
  <template x-if="liquidProcessIsReady && number(liquidProcessPreview.paste_composition?.free_koh_weight) <= 0">
  <p class="text-sm text-[var(--color-ink-soft)]">{{ __('workbench.liquid.no_free_koh') }}</p>

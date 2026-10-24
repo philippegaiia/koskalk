@@ -23,6 +23,11 @@ assert.equal(massDisplayDecimals(0.02, 'kg', 'addition'), 4);
 assert.equal(massDisplayDecimals(0.5, 'oz', 'addition'), 3);
 assert.equal(massDisplayDecimals(0.05, 'lb', 'addition'), 4);
 
+assert.equal(massDisplayDecimals(142.278, 'g', 'neutralizer'), 2);
+assert.equal(massDisplayDecimals(2400, 'g', 'neutralizer'), 2);
+assert.equal(massDisplayDecimals(0.1423, 'kg', 'neutralizer'), 4);
+assert.equal(massDisplayDecimals(0.5, 'oz', 'neutralizer'), 3);
+
 assert.equal(massDisplayDecimals(100, 'g', 'calculated'), 2);
 assert.equal(massDisplayDecimals(100.01, 'g', 'calculated'), 0);
 assert.equal(massDisplayDecimals(12.778, 'kg', 'calculated'), 3);

@@ -45756,6 +45756,18 @@
     },
     {
       "group": "workbench",
+      "key": "liquid.solution_breakdown",
+      "text": {
+        "de": "Lösung mit :percentage%: :acid :unit Säure + :water :unit Wasser = :total :unit zum Zugeben",
+        "es": "Solución al :percentage%: :acid :unit de ácido + :water :unit de agua = :total :unit para añadir",
+        "fr": "Solution à :percentage % : :acid :unit d’acide + :water :unit d’eau = :total :unit à ajouter",
+        "it": "Soluzione al :percentage%: :acid :unit di acido + :water :unit di acqua = :total :unit da aggiungere",
+        "nl": "Oplossing van :percentage%: :acid :unit zuur + :water :unit water = :total :unit om toe te voegen",
+        "pt_BR": "Solução a :percentage%: :acid :unit de ácido + :water :unit de água = :total :unit para adicionar"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "liquid.solution_strength",
       "text": {
         "de": "Neutralisationslösung",

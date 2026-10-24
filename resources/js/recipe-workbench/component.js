@@ -23,9 +23,9 @@ import {
     draftStateFromDraft as buildDraftStateFromDraft,
     snapshotStateFromSnapshot as buildSnapshotStateFromSnapshot,
 } from './snapshot';
-import { humanizeKey as humanizeText } from './utils';
+import { humanizeKey as humanizeText, roundTo } from './utils';
 import { draftSignature } from './draft-signature';
-import { resolveNumberLocale } from './number-format';
+import { formatDecimalInput, resolveNumberLocale } from './number-format';
 import { MASS_UNITS, convertMass } from './mass';
 import { copyText } from './clipboard';
 import { createFormulaSection } from './sections/formula-section';
@@ -1516,6 +1516,60 @@ function createLiquidSoapSection(payload) {
 
         liquidNeutralizerWeight() {
             return this.liquidNeutralizerRow === null ? 0 : this.rowWeight(this.liquidNeutralizerRow);
+        },
+
+        /** Display decimals for neutralizer amounts: 2 in grams; calculations keep full precision. */
+        liquidNeutralizerDecimals(value) {
+            return this.massDecimals(value, 'neutralizer');
+        },
+
+        /** The full saved dose while its field is edited, so leaving the field never rounds it. */
+        liquidNeutralizerEditingText() {
+            return formatDecimalInput(this.liquidNeutralizerWeight(), this.numberLocale, 6);
+        },
+
+        /**
+         * How to make the neutralizer solution, from the server preview: the acid,
+         * the water and their total, which is the neutralization stage's addition.
+         * The water is the rounded total minus the rounded acid so the amounts shown
+         * add up. Null without water to add (a neat neutralizer such as a fatty acid).
+         */
+        liquidNeutralizerSolution() {
+            const neutralizer = this.liquidProcessIsReady ? this.liquidProcessPreview.neutralizer : null;
+
+            if (!neutralizer) {
+                return null;
+            }
+
+            const total = this.number(this.liquidProcessPreview.stages?.neutralization?.add_weight);
+            const decimals = this.liquidNeutralizerDecimals(total);
+            const roundedTotal = roundTo(total, decimals);
+            const roundedAcid = roundTo(neutralizer.weight, decimals);
+            const water = roundTo(roundedTotal - roundedAcid, decimals);
+
+            if (water <= 0) {
+                return null;
+            }
+
+            return { acid: roundedAcid, water, total: roundedTotal, percentage: this.number(neutralizer.solution_percentage) };
+        },
+
+        liquidNeutralizerSolutionText() {
+            const solution = this.liquidNeutralizerSolution();
+
+            if (solution === null) {
+                return '';
+            }
+
+            const decimals = this.liquidNeutralizerDecimals(solution.total);
+
+            return this.t('liquid.solution_breakdown', {
+                percentage: formatDecimalInput(solution.percentage, this.numberLocale, 2),
+                acid: this.format(solution.acid, decimals),
+                water: this.format(solution.water, decimals),
+                total: this.format(solution.total, decimals),
+                unit: this.oilUnit,
+            });
         },
 
         /** A dose typed by the user; it cancels any pending recommendation. */

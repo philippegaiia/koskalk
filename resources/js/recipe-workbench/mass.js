@@ -60,7 +60,12 @@ export function preferredMassUnit(grams, displaySystem) {
 export function massDisplayDecimals(value, unit = 'g', profile = 'standard') {
     const quantity = Math.abs(Number(value) || 0);
 
-    if (profile === 'addition') {
+    // A liquid soap neutralizer is weighed to the hundredth of a gram.
+    if (profile === 'neutralizer' && unit === 'g') {
+        return 2;
+    }
+
+    if (profile === 'addition' || profile === 'neutralizer') {
         if (unit === 'kg' || unit === 'lb') {
             return 4;
         }

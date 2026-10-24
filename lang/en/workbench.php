@@ -640,6 +640,7 @@ return [
         'neutralizer_amount' => 'Amount (:unit)',
         'use_recommended' => 'Use recommended',
         'recommended' => 'Recommended: :amount :unit',
+        'solution_breakdown' => 'Solution at :percentage%: :acid :unit acid + :water :unit water = :total :unit to add',
         'estimate' => 'Estimated dilution and composition based on nominal material strengths. Actual neutralization demand and clarity may differ.',
         'estimated_free_fatty_acids' => 'Estimated free fatty acids',
         'composition_only' => 'Composition estimate only',

@@ -186,6 +186,72 @@ JS);
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
 
+it('splits the neutralizer solution into acid and water that add up to the neutralization stage', function () {
+    $process = runLiquidSoapBenchScript(<<<'JS'
+const workbench = bench(liquidFamily);
+workbench.oilUnit = 'g';
+const preview = (neutralizer, addWeight) => ({ liquid_process: {
+    status: 'ok',
+    neutralizer,
+    stages: { neutralization: { add_weight: addWeight } },
+} });
+
+workbench.backendCalculation = preview({ weight: '142.2784', solution_percentage: '20.0000', solution_weight: '711.3920' }, '711.3920');
+assert.deepEqual(workbench.liquidNeutralizerSolution(), { acid: 142.28, water: 569.11, total: 711.39, percentage: 20 });
+workbench.translations = { liquid: { solution_breakdown: 'Solution at :percentage%: :acid :unit acid + :water :unit water = :total :unit to add' } };
+assert.equal(workbench.liquidNeutralizerSolutionText(), 'Solution at 20%: 142.28 g acid + 569.11 g water = 711.39 g to add');
+
+// Rounded separately, 10.01 g acid and 40.03 g water would add up to 50.04 g, not the 50.03 g added.
+workbench.backendCalculation = preview({ weight: '10.0064', solution_percentage: '20.0000', solution_weight: '50.0320' }, '50.0320');
+assert.deepEqual(workbench.liquidNeutralizerSolution(), { acid: 10.01, water: 40.02, total: 50.03, percentage: 20 });
+
+workbench.oilUnit = 'kg';
+workbench.backendCalculation = preview({ weight: '0.1423', solution_percentage: '20.0000', solution_weight: '0.7114' }, '0.7114');
+assert.deepEqual(workbench.liquidNeutralizerSolution(), { acid: 0.1423, water: 0.5691, total: 0.7114, percentage: 20 });
+
+// A neat neutralizer such as a fatty acid adds no water.
+workbench.backendCalculation = preview({ weight: '28.9047', solution_percentage: '100.0000', solution_weight: '28.9047' }, '28.9047');
+assert.equal(workbench.liquidNeutralizerSolution(), null);
+
+workbench.backendCalculation = preview(null, '0.0000');
+assert.equal(workbench.liquidNeutralizerSolution(), null);
+assert.equal(workbench.liquidNeutralizerSolutionText(), '');
+
+workbench.backendCalculation = { liquid_process: { status: 'invalid', message: 'nope' } };
+assert.equal(workbench.liquidNeutralizerSolution(), null);
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});
+
+it('shows the neutralizer dose with two gram decimals while editing keeps the full dose', function () {
+    $process = runLiquidSoapBenchScript(<<<'JS'
+const workbench = createRecipeWorkbench({
+    productFamily: liquidFamily,
+    numberLocaleOptions: { en_US: '1,234.56' },
+    ingredients: [
+        { id: 7, name: 'Citric acid', category: 'ph_adjusters_buffers', available_phases: ['additives', 'neutralization'], liquid_soap_neutralizer: 'citric_acid_anhydrous' },
+    ],
+});
+workbench.phaseItems.neutralization = [];
+workbench.oilUnit = 'g';
+workbench.oilWeight = 6000;
+workbench.chooseLiquidNeutralizer('7');
+workbench.setLiquidNeutralizerWeight('142.278');
+
+const weight = workbench.liquidNeutralizerWeight();
+assert.equal(workbench.format(weight, workbench.liquidNeutralizerDecimals(weight)), '142.28');
+assert.equal(workbench.format('142.2784', workbench.liquidNeutralizerDecimals(142.2784)), '142.28');
+assert.equal(workbench.liquidNeutralizerEditingText(), '142.278');
+assert.ok(Math.abs(serializeDraft(workbench).phase_items.neutralization[0].weight - 142.278) < 1e-9);
+
+workbench.oilUnit = 'kg';
+assert.equal(workbench.liquidNeutralizerDecimals(0.1423), 4);
+JS);
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});
+
 it('preserves the more precise saved neutralizer dose through reload and batch resizing', function () {
     $process = runLiquidSoapBenchScript(<<<'JS'
 const workbench = bench(liquidFamily);

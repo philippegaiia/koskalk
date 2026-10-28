@@ -6233,7 +6233,7 @@ it('presents soap qualities as compact tabbed metric cards', function () {
         ->not->toContain('defaultQualityRows()')
         ->not->toContain('advancedQualityRows()')
         ->toContain('-mr-px -mb-px grid sm:grid-cols-2 xl:grid-cols-4')
-        ->toContain('sk-eyebrow block min-h-8')
+        ->toContain('block min-h-8 text-xs font-medium leading-4')
         ->toContain('numeric mt-1.5 text-xl')
         ->toContain('border-r border-b px-4 py-3 text-sm')
         ->toContain('qualityCardStyle(row.key, row.value)')

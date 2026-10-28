@@ -69,7 +69,7 @@
                     <div class="sk-quality-grid overflow-hidden"><div class="-mr-px -mb-px grid sm:grid-cols-2 xl:grid-cols-4">
                         <template x-for="row in liquidQualityRows()" :key="row.key">
                             <div class="border-r border-b border-[var(--color-line)] bg-white px-4 py-3 text-sm">
-                                <span class="sk-eyebrow block text-[var(--color-ink-soft)]" x-text="row.label"></span>
+                                <span class="block text-xs font-medium leading-4 text-[var(--color-ink-soft)]" x-text="row.label"></span>
                                 <div class="mt-2 flex items-baseline justify-between gap-2">
                                     <span class="numeric text-xl font-semibold leading-none text-[var(--color-ink-strong)]" x-text="format(row.value, 1)"></span>
                                     <span class="text-xs font-medium text-[var(--color-ink-soft)]" x-text="row.level"></span>
@@ -87,7 +87,7 @@
                         </template>
                         <template x-for="row in barAndCureQualityRows()" :key="row.key">
                             <div :class="qualityCardStyle(row.key, row.value)" class="border-r border-b px-4 py-3 text-sm">
-                                <span class="sk-eyebrow block min-h-8 text-[var(--color-ink-soft)]" x-text="row.label"></span>
+                                <span class="block min-h-8 text-xs font-medium leading-4 text-[var(--color-ink-soft)]" x-text="row.label"></span>
                                 <div class="numeric mt-1.5 text-xl font-semibold leading-none text-[var(--color-ink-strong)]" x-text="qualityDisplayValue(row)"></div>
                                 <div class="relative mt-3 h-2 overflow-hidden rounded-full border border-[var(--color-line)] bg-transparent shadow-inner">
                                     <template x-if="targetZoneStyle(row.key)">
@@ -107,7 +107,7 @@
                     <div id="panel-lather-feel" x-show="soapQualityPanel === 'lather_feel'" x-cloak role="tabpanel" aria-labelledby="tab-lather-feel" class="sk-quality-grid overflow-hidden"><div class="-mr-px -mb-px grid sm:grid-cols-2 xl:grid-cols-4">
                         <template x-for="row in latherAndFeelQualityRows()" :key="row.key">
                             <div :class="qualityCardStyle(row.key, row.value)" class="border-r border-b px-4 py-3 text-sm">
-                                <span class="sk-eyebrow block min-h-8 text-[var(--color-ink-soft)]" x-text="row.label"></span>
+                                <span class="block min-h-8 text-xs font-medium leading-4 text-[var(--color-ink-soft)]" x-text="row.label"></span>
                                 <div class="numeric mt-1.5 text-xl font-semibold leading-none text-[var(--color-ink-strong)]" x-text="qualityDisplayValue(row)"></div>
                                 <div class="relative mt-3 h-2 overflow-hidden rounded-full border border-[var(--color-line)] bg-transparent shadow-inner">
                                     <template x-if="targetZoneStyle(row.key)">

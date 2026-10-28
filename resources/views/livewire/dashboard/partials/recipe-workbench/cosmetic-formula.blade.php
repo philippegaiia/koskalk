@@ -12,7 +12,7 @@
  </div>
  </div>
 
- <div class="space-y-5 py-5">
+ <div class="space-y-5 pb-5 [&>div:first-of-type]:border-t-0">
  <template x-for="phase in phaseOrder" :key="phase.key">
  <div :id="`cosmetic-phase-${phase.key}`" :data-cosmetic-phase-key="phase.key" class="overflow-hidden border-y border-[var(--color-line)] bg-[var(--color-field)] transition-shadow duration-300">
  <div class="sk-section-header sk-section-header-formula border-b border-[var(--color-line)] px-4 py-3">

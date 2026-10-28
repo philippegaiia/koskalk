@@ -521,7 +521,7 @@ it('exposes practical controls for choosing and reordering cosmetic phases', fun
         ->toContain("t('cosmetic.add_to_phase'")
         ->and($cosmeticFormula)
         ->toContain('Drop ingredients here')
-        ->toContain('class="space-y-5 py-5"')
+        ->toContain('class="space-y-5 pb-5 [&>div:first-of-type]:border-t-0"')
         ->toContain('class="overflow-hidden border-y border-[var(--color-line)] bg-[var(--color-field)] transition-shadow duration-300"')
         ->toContain('gap-3 bg-white px-2.5 text-sm sk-formula-table-row')
         ->toContain('bg-white sk-formula-table-cell')

@@ -17,7 +17,7 @@
 <section class="sk-card px-4 py-3" aria-labelledby="formula-setup-heading">
 	<div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 		<div class="min-w-0">
-			<p id="formula-setup-heading" class="sk-eyebrow">{{ __('workbench.settings.title') }}</p>
+			<h3 id="formula-setup-heading" class="text-base font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.settings.title') }}</h3>
 			<div x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="! isFormulaSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
 				<div class="overflow-hidden">
 					<div class="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-xs" data-formula-settings-primary role="group" aria-label="Primary formulation settings">

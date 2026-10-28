@@ -97,7 +97,7 @@
  @focus="open = true; reposition()"
  @blur="open = false"
  @click.prevent="open = !open; if (open) { reposition(); }"
-	 class="grid size-9 place-items-center rounded-full border border-[var(--color-line)] bg-[var(--color-field)] text-[11px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="{{ __('workbench.cosmetic.show_ingredient_details') }}" aria-haspopup="dialog" :aria-expanded="open.toString()">
+	 class="grid size-9 place-items-center rounded-full text-[var(--color-ink-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)] focus-visible:bg-[var(--color-field-muted)]" aria-label="{{ __('workbench.cosmetic.show_ingredient_details') }}" aria-haspopup="dialog" :aria-expanded="open.toString()">
  <x-action-icon name="info" />
  </button>
  </template>

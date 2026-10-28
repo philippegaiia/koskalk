@@ -2,7 +2,7 @@
 
 <aside class="space-y-4">
  <div class="overflow-visible sk-card sk-zone-rail sk-tone-catalog">
- <div class="sk-section-header sk-section-header-reference border-b border-[var(--color-line)] px-4 py-4">
+ <div class="sk-section-header px-4 pt-4">
  <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.ingredients.title') }}</h3>
  </div>
 
@@ -23,13 +23,13 @@
  />
  </div>
 
- <div class="border-b border-[var(--color-line)] px-5 py-3">
+ <div class="px-5 pt-3 pb-1">
  <p class="text-sm text-[var(--color-ink-soft)]" x-text="filteredIngredients.length === 1 ? t('ingredients.count_singular') : t('ingredients.count_plural', { count: filteredIngredients.length })"></p>
  </div>
 
  <div class="relative z-10 max-h-[18rem] space-y-0.5 overflow-y-auto px-2 py-2 md:max-h-[22rem] lg:max-h-[24rem] xl:max-h-[600px]" role="region" aria-label="{{ __('workbench.accessibility.ingredient_list') }}">
  <template x-for="ingredient in filteredIngredients" :key="ingredient.id">
- <div class="group rounded-lg px-2 py-1.5 transition hover:bg-[var(--color-panel)] focus-within:bg-[var(--color-panel)]">
+ <div class="group rounded-lg px-2 py-2 transition hover:bg-[var(--color-panel)] focus-within:bg-[var(--color-panel)]">
  <div class="flex items-center gap-3">
  <div x-data="{ imageFailed: false }" class="sk-ingredient-image-tile" :class="ingredient.image_url && !imageFailed ? '' : 'is-fallback'">
  <template x-if="ingredient.image_url && !imageFailed">
@@ -40,7 +40,7 @@
  </template>
  </div>
  <div class="min-w-0 flex-1">
- <p class="flex items-center gap-1.5 text-[13px] font-semibold leading-[1.125rem] text-[var(--color-ink-strong)]" :title="ingredient.name">
+ <p class="flex items-center gap-1.5 text-sm font-medium leading-5 text-[var(--color-ink-strong)]" :title="ingredient.name">
  <span class="line-clamp-2" x-text="ingredient.name"></span>
  <span x-show="ingredient.is_user_owned" class="inline-block size-1.5 shrink-0 rounded-full bg-[var(--color-ink-soft)] opacity-60" role="img" aria-label="{{ __('workbench.accessibility.user_owned') }}" title="{{ __('workbench.accessibility.user_owned') }}"></span>
  </p>
@@ -77,7 +77,7 @@
  @focus="open = true; reposition()"
  @blur="open = false"
  @click.prevent="open = !open; if (open) { reposition(); }"
-	 class="grid size-9 place-items-center rounded-full border border-[var(--color-line)] bg-[var(--color-field)] text-[10px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="{{ __('workbench.accessibility.show_ingredient_details') }}" aria-haspopup="dialog" :aria-expanded="open.toString()">
+	 class="grid size-9 place-items-center rounded-full text-[var(--color-ink-soft)] transition hover:bg-[var(--color-field)] hover:text-[var(--color-ink-strong)] focus-visible:bg-[var(--color-field)]" aria-label="{{ __('workbench.accessibility.show_ingredient_details') }}" aria-haspopup="dialog" :aria-expanded="open.toString()">
  <x-action-icon name="info" />
  </button>
  </template>

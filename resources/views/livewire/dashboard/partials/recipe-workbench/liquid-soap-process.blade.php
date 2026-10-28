@@ -58,7 +58,7 @@
  <div class="space-y-4">
  @foreach (['first_dilution', 'final_dilution'] as $dilutionStep)
  <section class="sk-inset space-y-3 p-4" aria-labelledby="liquid-{{ $dilutionStep }}-liquids-heading">
- <p id="liquid-{{ $dilutionStep }}-liquids-heading" class="sk-eyebrow">{{ __('workbench.liquid.dilution_liquids.'.$dilutionStep) }}</p>
+ <h4 id="liquid-{{ $dilutionStep }}-liquids-heading" class="text-sm font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.liquid.dilution_liquids.'.$dilutionStep) }}</h4>
  <div x-show="dilutionLiquidRows('{{ $dilutionStep }}').length < 4">
  <x-search-combobox
  id="liquid-{{ $dilutionStep }}-liquid-search"
@@ -186,7 +186,7 @@
  <template x-if="liquidProcessIsReady && liquidCompositionRows().length > 0">
  <section aria-labelledby="liquid-composition-heading">
  <div class="flex items-baseline justify-between gap-3">
- <p id="liquid-composition-heading" class="sk-eyebrow">{{ __('workbench.liquid.composition') }}</p>
+ <h4 id="liquid-composition-heading" class="text-sm font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.liquid.composition') }}</h4>
  <p class="numeric text-sm font-semibold text-[var(--color-ink-strong)]" x-text="t('liquid.final_batch', { amount: format(liquidProcessPreview.final_weight, calculatedMassDecimals(liquidProcessPreview.final_weight)), unit: oilUnit })"></p>
  </div>
  <div class="mt-3 flex h-3 w-full gap-px overflow-hidden rounded-full bg-[var(--color-field-muted)]" aria-hidden="true">

@@ -1,10 +1,10 @@
-<section class="flex flex-col gap-2 rounded-lg bg-[var(--color-field-muted)] px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="formula-entry-mode-heading">
+<section class="flex flex-col gap-2 px-1 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="formula-entry-mode-heading">
     <div class="min-w-0">
         <p id="formula-entry-mode-heading" class="sk-eyebrow">{{ __('workbench.settings.entry_mode') }}</p>
         <p class="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]" x-text="entryModeHelperText"></p>
     </div>
 
-    {{-- A mode selector on a recessed band: see "Corollary: a mode selector is not an action" in .ai/rules/css.md. --}}
+    {{-- A mode selector, not an action: see "Corollary: a mode selector is not an action" in .ai/rules/css.md. It sits on the page ground as a toolbar for the whole formula column. --}}
     <div role="radiogroup" aria-labelledby="formula-entry-mode-heading" class="inline-flex shrink-0 gap-2">
         <button
             type="button"

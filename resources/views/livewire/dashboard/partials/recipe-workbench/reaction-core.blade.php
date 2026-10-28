@@ -71,7 +71,7 @@
  @focus="open = true; reposition()"
  @blur="open = false"
  @click.prevent="open = !open; if (open) { reposition(); }"
-	 class="grid size-9 place-items-center rounded-full border border-[var(--color-line)] bg-white text-[11px] font-semibold text-[var(--color-ink-soft)] transition-colors duration-150 motion-reduce:transition-none hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="Show ingredient details" aria-haspopup="dialog" :aria-expanded="open.toString()">
+	 class="grid size-9 place-items-center rounded-full text-[var(--color-ink-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)] focus-visible:bg-[var(--color-field-muted)]" aria-label="Show ingredient details" aria-haspopup="dialog" :aria-expanded="open.toString()">
  <x-action-icon name="info" />
  </button>
  </template>
@@ -164,7 +164,7 @@
  </div>
 
  <section class="mt-5" aria-labelledby="lye-water-summary-heading">
- <p id="lye-water-summary-heading" class="sk-eyebrow">{{ __('workbench.saponification.lye_water') }}</p>
+ <h4 id="lye-water-summary-heading" class="text-sm font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.saponification.lye_water') }}</h4>
 
  <div class="mt-3 grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3">
  <template x-for="card in lyeSummaryCards" :key="`${lyeType}-${card.id}`">

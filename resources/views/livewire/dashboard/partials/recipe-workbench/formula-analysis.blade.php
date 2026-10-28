@@ -24,7 +24,7 @@
     >
         <div class="sk-section-header sk-section-header-reference flex flex-col gap-4 border-b border-[var(--color-line)] px-5 py-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <p class="sk-eyebrow">{{ __('workbench.headings.soap_qualities') }} <x-contextual-help.trigger topic="soap.qualities" :topics="$contextualHelp['topics'] ?? []" /></p>
+                <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.headings.soap_qualities') }} <x-contextual-help.trigger topic="soap.qualities" :topics="$contextualHelp['topics'] ?? []" /></h3>
                 <p class="mt-2 max-w-2xl text-xs leading-5 text-[var(--color-ink-soft)]">
                     {{ ($isLiquidSoapWorkbench ?? false) ? __('workbench.qualities.liquid_disclaimer') : __('workbench.qualities.disclaimer') }}
                 </p>
@@ -66,9 +66,9 @@
             <template x-if="hasQualityMetricsData">
                 <div class="space-y-4 px-5 py-5">
                     @if ($isLiquidSoapWorkbench ?? false)
-                    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div class="sk-quality-grid overflow-hidden"><div class="-mr-px -mb-px grid sm:grid-cols-2 xl:grid-cols-4">
                         <template x-for="row in liquidQualityRows()" :key="row.key">
-                            <div class="rounded-lg border border-[var(--color-line)] bg-white px-4 py-3 text-sm">
+                            <div class="border-r border-b border-[var(--color-line)] bg-white px-4 py-3 text-sm">
                                 <span class="sk-eyebrow block text-[var(--color-ink-soft)]" x-text="row.label"></span>
                                 <div class="mt-2 flex items-baseline justify-between gap-2">
                                     <span class="numeric text-xl font-semibold leading-none text-[var(--color-ink-strong)]" x-text="format(row.value, 1)"></span>
@@ -79,14 +79,14 @@
                                 </div>
                             </div>
                         </template>
-                    </div>
+                    </div></div>
                     @else
-                    <div id="panel-bar-cure" x-show="soapQualityPanel === 'bar_cure'" role="tabpanel" aria-labelledby="tab-bar-cure" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div id="panel-bar-cure" x-show="soapQualityPanel === 'bar_cure'" role="tabpanel" aria-labelledby="tab-bar-cure" class="sk-quality-grid overflow-hidden"><div class="-mr-px -mb-px grid sm:grid-cols-2 xl:grid-cols-4">
                         <template x-if="barAndCureQualityRows().length === 0">
                             <p>{{ __('workbench.qualities.bar_unavailable') }}</p>
                         </template>
                         <template x-for="row in barAndCureQualityRows()" :key="row.key">
-                            <div :class="qualityCardStyle(row.key, row.value)" class="rounded-lg border px-4 py-3 text-sm">
+                            <div :class="qualityCardStyle(row.key, row.value)" class="border-r border-b px-4 py-3 text-sm">
                                 <span class="sk-eyebrow block min-h-8 text-[var(--color-ink-soft)]" x-text="row.label"></span>
                                 <div class="numeric mt-1.5 text-xl font-semibold leading-none text-[var(--color-ink-strong)]" x-text="qualityDisplayValue(row)"></div>
                                 <div class="relative mt-3 h-2 overflow-hidden rounded-full border border-[var(--color-line)] bg-transparent shadow-inner">
@@ -102,11 +102,11 @@
                                 </template>
                             </div>
                         </template>
-                    </div>
+                    </div></div>
 
-                    <div id="panel-lather-feel" x-show="soapQualityPanel === 'lather_feel'" x-cloak role="tabpanel" aria-labelledby="tab-lather-feel" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div id="panel-lather-feel" x-show="soapQualityPanel === 'lather_feel'" x-cloak role="tabpanel" aria-labelledby="tab-lather-feel" class="sk-quality-grid overflow-hidden"><div class="-mr-px -mb-px grid sm:grid-cols-2 xl:grid-cols-4">
                         <template x-for="row in latherAndFeelQualityRows()" :key="row.key">
-                            <div :class="qualityCardStyle(row.key, row.value)" class="rounded-lg border px-4 py-3 text-sm">
+                            <div :class="qualityCardStyle(row.key, row.value)" class="border-r border-b px-4 py-3 text-sm">
                                 <span class="sk-eyebrow block min-h-8 text-[var(--color-ink-soft)]" x-text="row.label"></span>
                                 <div class="numeric mt-1.5 text-xl font-semibold leading-none text-[var(--color-ink-strong)]" x-text="qualityDisplayValue(row)"></div>
                                 <div class="relative mt-3 h-2 overflow-hidden rounded-full border border-[var(--color-line)] bg-transparent shadow-inner">
@@ -122,13 +122,13 @@
                                 </template>
                             </div>
                         </template>
-                    </div>
+                    </div></div>
 
                     @endif
 
                     <template x-if="qualityFlags().length > 0">
                         <section aria-label="{{ __('workbench.qualities.review_title') }}" class="border-t border-[var(--color-line)] pt-3">
-                            <p class="sk-eyebrow">{{ __('workbench.qualities.review_title') }}</p>
+                            <h4 class="text-sm font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.qualities.review_title') }}</h4>
                             <div class="mt-1.5 divide-y divide-[var(--color-line)]">
                                 <template x-for="flag in qualityFlags()" :key="flag.label">
                                     <div class="grid gap-0.5 py-2 sm:grid-cols-[10rem_minmax(0,1fr)] sm:gap-3">

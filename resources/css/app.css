@@ -876,7 +876,7 @@
     }
 
     .sk-workbench .sk-zone-rail {
-        background: color-mix(in oklab, var(--color-field-muted) 55%, var(--color-surface) 45%);
+        background: color-mix(in oklab, var(--color-field-muted) 80%, var(--color-panel-strong) 20%);
     }
 
     .sk-workbench .sk-zone-rail > .sk-section-header {

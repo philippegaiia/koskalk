@@ -2,7 +2,7 @@
 
 @php($paths = match ($name) {
     'drag' => $prominent ? '<circle cx="8" cy="6" r="1.5" /><circle cx="8" cy="12" r="1.5" /><circle cx="8" cy="18" r="1.5" /><circle cx="16" cy="6" r="1.5" /><circle cx="16" cy="12" r="1.5" /><circle cx="16" cy="18" r="1.5" />' : '<path d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01" />',
-    'info' => '<path d="M12 10.5v5M12 7.5h.01" />',
+    'info' => '<circle cx="12" cy="5.5" r="2" fill="currentColor" stroke="none" /><path d="M12 10v9.5" stroke-width="3" />',
     'close' => '<path d="m7 7 10 10M17 7 7 17" />',
     'plus' => '<path d="M12 5v14M5 12h14" />',
     'minus' => '<path d="M5 12h14" />',

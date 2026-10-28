@@ -1,7 +1,7 @@
 <div class="sk-card sk-tone-analysis overflow-hidden">
  <div class="sk-section-header sk-section-header-reference border-b border-[var(--color-line)] px-5 py-4">
  <div>
- <p class="sk-eyebrow">{{ __('workbench.headings.fatty_acid_profile') }}</p>
+ <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.headings.fatty_acid_profile') }}</h3>
  </div>
  </div>
  <div class="p-5">

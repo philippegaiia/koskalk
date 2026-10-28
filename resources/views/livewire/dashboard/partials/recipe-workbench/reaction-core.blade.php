@@ -1,4 +1,4 @@
-<section id="soap-phase-saponified_oils" class="overflow-hidden sk-card sk-phase-core sk-tone-chemistry transition-shadow duration-300" aria-labelledby="reaction-core-heading">
+<section id="soap-phase-saponified_oils" class="overflow-hidden sk-card sk-zone-work sk-phase-core sk-tone-chemistry transition-shadow duration-300" aria-labelledby="reaction-core-heading">
  <div class="sk-section-header sk-section-header-formula border-b border-[var(--color-line)] px-5 py-4">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  <h3 id="reaction-core-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.saponification.title') }} <x-contextual-help.trigger topic="soap.reaction_core" :topics="$contextualHelp['topics'] ?? []" /></h3>

@@ -1,7 +1,7 @@
 @php($isCosmeticWorkbench = $isCosmeticWorkbench ?? false)
 
 <aside class="space-y-4">
- <div class="overflow-visible sk-card sk-tone-catalog">
+ <div class="overflow-visible sk-card sk-zone-rail sk-tone-catalog">
  <div class="sk-section-header sk-section-header-reference border-b border-[var(--color-line)] px-4 py-4">
  <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.ingredients.title') }}</h3>
  </div>
@@ -27,9 +27,9 @@
  <p class="text-sm text-[var(--color-ink-soft)]" x-text="filteredIngredients.length === 1 ? t('ingredients.count_singular') : t('ingredients.count_plural', { count: filteredIngredients.length })"></p>
  </div>
 
- <div class="relative z-10 max-h-[18rem] divide-y divide-[var(--color-line)] overflow-y-auto md:max-h-[22rem] lg:max-h-[24rem] xl:max-h-[600px]" role="region" aria-label="{{ __('workbench.accessibility.ingredient_list') }}">
+ <div class="relative z-10 max-h-[18rem] space-y-0.5 overflow-y-auto px-2 py-2 md:max-h-[22rem] lg:max-h-[24rem] xl:max-h-[600px]" role="region" aria-label="{{ __('workbench.accessibility.ingredient_list') }}">
  <template x-for="ingredient in filteredIngredients" :key="ingredient.id">
- <div class="group px-3 py-1.5 transition hover:bg-[var(--color-panel)] focus-within:bg-[var(--color-panel)]">
+ <div class="group rounded-lg px-2 py-1.5 transition hover:bg-[var(--color-panel)] focus-within:bg-[var(--color-panel)]">
  <div class="flex items-center gap-3">
  <div x-data="{ imageFailed: false }" class="sk-ingredient-image-tile" :class="ingredient.image_url && !imageFailed ? '' : 'is-fallback'">
  <template x-if="ingredient.image_url && !imageFailed">

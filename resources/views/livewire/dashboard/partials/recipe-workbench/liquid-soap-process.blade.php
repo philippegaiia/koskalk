@@ -12,7 +12,7 @@
         ->all();
 @endphp
 
-<section id="liquid-soap-process" class="overflow-hidden sk-card sk-phase-craft sk-tone-summary" aria-labelledby="liquid-soap-process-heading">
+<section id="liquid-soap-process" class="overflow-hidden sk-card sk-zone-work sk-phase-craft sk-tone-summary" aria-labelledby="liquid-soap-process-heading">
  <div class="sk-section-header sk-section-header-formula border-b border-[var(--color-line)] px-5 py-4">
  <h3 id="liquid-soap-process-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.liquid.title') }}</h3>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('workbench.liquid.help') }}</p>

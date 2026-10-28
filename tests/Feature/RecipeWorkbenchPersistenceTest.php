@@ -5989,7 +5989,7 @@ it('keeps formula visual states distinct and softly selected', function () {
         ->and($formulaAnalysis)
         ->toContain('rounded-lg border px-4 py-3 text-sm')
         ->and($ingredientBrowser)
-        ->toContain('max-h-[18rem] divide-y divide-[var(--color-line)] overflow-y-auto md:max-h-[22rem] lg:max-h-[24rem] xl:max-h-[600px]')
+        ->toContain('max-h-[18rem] space-y-0.5 overflow-y-auto px-2 py-2 md:max-h-[22rem] lg:max-h-[24rem] xl:max-h-[600px]')
         ->and($fattyAcidProfile)
         ->toContain('flex min-w-0 items-center justify-between gap-3 rounded-lg bg-[var(--color-field)] px-3 py-2 text-xs')
         ->toContain('min-w-0 flex-1 truncate text-[var(--color-ink-strong)]')

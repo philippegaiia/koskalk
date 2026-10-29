@@ -54,6 +54,7 @@
 			<fieldset @if (! $isPublicCalculator && ! $canEditRecipe) disabled @endif :disabled="!canWriteRecipe || (isSaving && !hasSavedRecipe)" :inert="isSaving && !hasSavedRecipe" :class="!canWriteRecipe ? 'opacity-75' : ''" class="mt-4 transition">
 @if ($isCosmeticWorkbench)
 	 <div class="space-y-4">
+@unless ($isGuestCalculator ?? false)
 	 <div data-cosmetic-primary-settings class="grid min-w-0 gap-4 lg:grid-cols-2">
 @unless ($isPublicCalculator)
     @include('livewire.dashboard.partials.recipe-workbench.formula-output-type', ['inlineFormulaOutputType' => true])
@@ -82,6 +83,7 @@
 	 </template>
 	 </div>
 	 </div>
+@endunless
 	 <div class="grid min-w-0 gap-4 lg:grid-cols-2 xl:grid-cols-4">
 	 <div class="sk-inset min-w-0 p-4">
 	 <p id="setting-batch-weight" class="sk-eyebrow">{{ __('workbench.common.total_batch') }}</p>
@@ -93,6 +95,7 @@
 	 </div>
 	 <input aria-labelledby="setting-batch-weight" x-effect="syncOilWeightInput($el)" @input="updateOilWeight($event)" @blur="normalizeOilWeightBlur($event)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] transition" />
 	 </div>
+@unless ($isGuestCalculator ?? false)
 	 <div class="sk-inset sk-tone-info min-w-0 p-4">
 	 <p id="setting-exposure" class="sk-eyebrow">{{ __('workbench.settings.product_use') }}</p>
 	 <div role="radiogroup" aria-label="{{ __('workbench.accessibility.product_use') }}" class="mt-3 flex flex-wrap gap-2">
@@ -129,6 +132,7 @@
 		 </div>
 	 </div>
 	 </div>
+@endunless
 	 </div>
 	 </div>
 @else
@@ -219,6 +223,7 @@
 	 </div>
 	 </div>
 
+@unless ($isGuestCalculator ?? false)
 	 <div @class([
 	 'mt-4 grid min-w-0 gap-4 @3xl/workbench:grid-cols-2',
 	 '@4xl/workbench:grid-cols-3' => ! $isPublicCalculator,
@@ -249,6 +254,7 @@
 	 </div>
 	 </div>
 	 </div>
+@endunless
 
 @unless ($isPublicCalculator)
 	 <div x-show="productionOutputType === 'manufactured_ingredient'" x-cloak class="mt-4 sk-inset sk-tone-info p-4">
@@ -256,6 +262,7 @@
 	 </div>
 @endunless
 
+@unless ($isGuestCalculator ?? false)
 	 <div data-formula-compliance-settings x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="isComplianceSettingsOpen || !canWriteRecipe ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
 	 <div class="overflow-hidden">
 	 <div class="mt-4 space-y-4">
@@ -332,6 +339,7 @@
 	 </div>
 	 </div>
 	 </div>
+@endunless
 	 </div>
 @endif
 </fieldset>

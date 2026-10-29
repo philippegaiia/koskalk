@@ -35,13 +35,19 @@ export async function refreshCalculationPreview(workbench) {
         }
 
         const submittedSignature = draftSignature(serializeDraft(workbench));
-        const response = await workbench.$wire.previewCalculation(draft);
+        const response = workbench.isGuestCalculator
+            ? await workbench.previewGuestCalculation(draft)
+            : await workbench.$wire.previewCalculation(draft);
 
         if (submittedSignature !== draftSignature(serializeDraft(workbench))
             || measuredPasteWeight !== workbench.liquidProcess?.measuredPasteWeight) {
             workbench.calculationPreviewPending = true;
 
             return false;
+        }
+
+        if (workbench.isGuestCalculator) {
+            workbench.applyGuestPreview(response);
         }
 
         if (response?.ok) {
@@ -61,6 +67,7 @@ export async function refreshCalculationPreview(workbench) {
 
         return response?.ok === true;
     } catch (error) {
+        workbench.applyGuestPreview?.({ ok: false });
         workbench.backendCalculation = null;
         workbench.backendLabeling = null;
         workbench.backendRestrictions = null;

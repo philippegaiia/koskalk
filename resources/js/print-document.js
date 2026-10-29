@@ -57,6 +57,15 @@ export function initializePrintDocument(documentRef = globalThis.document, windo
         return;
     }
 
+    documentRef.querySelectorAll('[data-local-calculation-time]').forEach((element) => {
+        const timestamp = new Date(element.getAttribute('data-timestamp'));
+        if (Number.isNaN(timestamp.getTime())) { return; }
+        const formatted = new Intl.DateTimeFormat(documentRef.documentElement?.lang || undefined, {
+            year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short',
+        }).format(timestamp);
+        element.textContent = element.getAttribute('data-template').replace(':date', formatted);
+    });
+
     documentRef.addEventListener('click', (event) => {
         const target = event.target && typeof event.target.closest === 'function' ? event.target : null;
         const returnLink = target?.closest('[data-return-to-workbench]');

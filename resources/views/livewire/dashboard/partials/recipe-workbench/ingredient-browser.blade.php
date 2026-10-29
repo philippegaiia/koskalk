@@ -193,4 +193,29 @@
  </template>
  </div>
 
+ @if ($isGuestCalculator ?? false)
+ <details class="sk-card sk-tone-catalog overflow-hidden" data-guest-custom-ingredient>
+     <summary class="cursor-pointer px-4 py-3 text-sm font-semibold text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">{{ __('calculators.temporary') }}</summary>
+ <form @submit.prevent="addGuestTemporaryIngredient()" class="space-y-3 border-t border-[var(--color-line)] px-4 py-4">
+     <label class="block text-xs font-medium text-[var(--color-ink-soft)]">
+         {{ __('calculators.temporary_name') }}
+         <input x-model="guestTemporaryName" type="text" maxlength="160" class="mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)]">
+     </label>
+     <label class="block text-xs font-medium text-[var(--color-ink-soft)]">
+         {{ __('workbench.cosmetic.phase') }}
+         <select x-model="guestTemporaryPhase" class="mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)]">
+             @if ($isCosmeticWorkbench)
+                 <template x-for="phase in phaseOrder" :key="phase.key"><option :value="phase.key" x-text="phase.name || humanizeKey(phase.key)"></option></template>
+             @else
+                 <option value="additives">{{ __('workbench.common.additives') }}</option>
+                 <option value="fragrance">{{ __('workbench.common.fragrance') }}</option>
+             @endif
+         </select>
+     </label>
+     <button type="submit" :disabled="!guestTemporaryName.trim() || formulaItemLimitReached()" class="sk-btn sk-btn-outline w-full">{{ __('calculators.add_temporary') }}</button>
+     <p class="text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('calculators.temporary_hint') }}</p>
+ </form>
+ </details>
+ @endif
+
 </aside>

@@ -6,6 +6,7 @@ use App\Livewire\Dashboard\RecipeWorkbench;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\User;
+use Dom\HTMLDocument;
 use Filament\Forms\Components\Field;
 use Filament\Forms\Components\RichEditor;
 use Filament\Schemas\Components\Grid;
@@ -1130,25 +1131,20 @@ it('keeps the desktop ingredient rail row-bounded and moves soap fatty acids bel
         ->toBeLessThan(strpos($formulaTabSource, 'post-reaction'));
 });
 
-it('keeps the narrow ingredient disclosure discoverable while sharing one catalog instance', function () {
-    $formulaTabSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-tab.blade.php'));
-    $componentSource = file_get_contents(resource_path('js/recipe-workbench/component.js'));
+it('keeps the narrow ingredient disclosure discoverable while sharing one catalog instance', function (): void {
+    $html = view('livewire.dashboard.partials.recipe-workbench.formula-tab', [
+        'isPublicCalculator' => true,
+    ])->render();
+    $document = HTMLDocument::createFromString($html, LIBXML_NOERROR);
+    $disclosure = $document->querySelector('[data-ingredient-browser-disclosure]');
+    $rail = $document->querySelector('#formula-ingredient-browser');
 
-    expect($formulaTabSource)
-        ->toContain('data-ingredient-browser-disclosure')
-        ->toContain(':aria-expanded="ingredientBrowserOpen.toString()"')
-        ->toContain('<x-action-icon name="plus" x-cloak x-show="! ingredientBrowserOpen" />')
-        ->toContain('<x-action-icon name="minus" x-cloak x-show="ingredientBrowserOpen" />')
-        ->toContain('id="formula-ingredient-browser"')
-        ->toContain('x-ref="ingredientBrowserRail"')
-        ->toContain(":class=\"ingredientBrowserOpen ? 'block' : 'hidden @5xl/workbench:block'\"")
-        ->not->toContain('id="formula-ingredient-browser" x-show="ingredientBrowserOpen"')
-        ->not->toContain('<details');
-
-    expect($componentSource)->toContain('ingredientBrowserOpen: false');
-
-    expect(substr_count($formulaTabSource, "@include('livewire.dashboard.partials.recipe-workbench.ingredient-browser')"))
-        ->toBe(1);
+    expect($disclosure)->not->toBeNull();
+    expect($disclosure->localName)->toBe('button');
+    expect($disclosure->getAttribute('aria-controls'))->toBe($rail->id);
+    expect($disclosure->hasAttribute(':aria-expanded'))->toBeTrue();
+    expect($rail->querySelectorAll('aside')->length)->toBe(1);
+    expect($rail->querySelector('input[type="search"]'))->not->toBeNull();
 });
 
 it('uses accessible currentColor SVG action icons across the soap workbench controls', function (): void {

@@ -172,7 +172,7 @@ class RecipeWorkbenchPreviewService
      * @param  array<string, mixed>  $calculation  Output of previewSoapCalculation().
      * @return array<string, mixed>
      */
-    public function previewLiquidSoapProcess(array $payload, array $calculation): array
+    public function previewLiquidSoapProcess(array $payload, array $calculation, bool $includeTemporaryAdditions = false): array
     {
         $paste = $this->liquidSoapProcessCalculator->pasteComposition($calculation, $payload['oil_unit'] ?? 'g');
         $liquidProcess = is_array($payload['liquid_process'] ?? null) ? $payload['liquid_process'] : [];
@@ -186,11 +186,11 @@ class RecipeWorkbenchPreviewService
 
         $additions = collect(RecipeWorkbenchPhaseBlueprints::ADDITION_PHASES)
             ->flatMap(fn (string $phaseKey): array => collect($payload['phase_items'][$phaseKey] ?? [])
-                ->filter(fn (mixed $row): bool => is_array($row) && is_numeric($row['ingredient_id'] ?? null))
+                ->filter(fn (mixed $row): bool => is_array($row) && (is_numeric($row['ingredient_id'] ?? null) || ($includeTemporaryAdditions && ($row['ingredient_id'] ?? null) === null)))
                 ->map(fn (array $row): array => [
                     'id' => $row['id'] ?? null,
                     'phase_key' => $phaseKey,
-                    'ingredient_id' => (int) $row['ingredient_id'],
+                    'ingredient_id' => isset($row['ingredient_id']) ? (int) $row['ingredient_id'] : null,
                     'weight' => $this->liquidSoapFormulaProcessor->additionWeight($row, $finalBatchWeight, $this->previewRowWeight($row, $payload)),
                     'requested_final_percentage' => is_numeric($row['final_percentage'] ?? null) ? (float) $row['final_percentage'] : null,
                 ])

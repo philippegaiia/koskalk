@@ -34,9 +34,9 @@ class RecipeWorkbenchViewDataBuilder
     /**
      * @return array<string, mixed>
      */
-    public function build(ProductFamily $productFamily, ?Recipe $recipe, ?User $user, ?ProductType $productType = null, ?array $editing = null): array
+    public function build(ProductFamily $productFamily, ?Recipe $recipe, ?User $user, ?ProductType $productType = null, ?array $editing = null, ?array $ingredientCatalog = null): array
     {
-        $ingredients = $this->recipeWorkbenchIngredientCatalogBuilder->build($user, $productFamily);
+        $ingredients = $ingredientCatalog ?? $this->recipeWorkbenchIngredientCatalogBuilder->build($user, $productFamily);
         $savedDraft = $this->recipeWorkbenchService->currentVersionPayloadUsingCatalog($recipe, $ingredients);
         $defaultCurrency = $user?->defaultCurrency() ?? 'EUR';
         $productType ??= $recipe?->productType;

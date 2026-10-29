@@ -10,7 +10,7 @@
         <link href="https://api.fontshare.com/v2/css?f[]=instrument-sans@400,500,600,700&f[]=instrument-serif@400&display=swap" rel="stylesheet">
         @stack('head')
 
-        @vite(['resources/css/public.css', 'resources/js/public.js'])
+        @vite([($usesWorkbenchStyles ?? false) ? 'resources/css/app.css' : 'resources/css/public.css', 'resources/js/public.js'])
     </head>
     <body class="flex min-h-screen flex-col overflow-x-hidden bg-cream font-sans text-ink-strong antialiased @yield('body_class')">
 
@@ -25,6 +25,7 @@
                 </a>
 
                 <div class="hidden items-center gap-7 md:flex">
+                    <a href="{{ route('calculators.index') }}" class="text-sm text-ink-soft no-underline transition hover:text-ink-strong">{{ __('calculators.all_calculators') }}</a>
                     <a href="{{ route('home') }}#workspace" class="text-sm text-ink-soft no-underline transition hover:text-ink-strong">{{ __('public.navigation.product') }}</a>
                     @guest
                         <a href="{{ route('login') }}" class="text-sm text-ink-soft no-underline transition hover:text-ink-strong">{{ __('public.navigation.sign_in') }}</a>
@@ -52,6 +53,7 @@
         <div data-mobile-menu-overlay class="fixed inset-0 top-[58px] z-40 hidden bg-ink-strong/20 md:hidden"></div>
         <div id="mobile-menu" data-mobile-menu class="sk-shell-line-b fixed top-[58px] left-0 right-0 z-40 hidden bg-cream px-5 py-4 md:hidden">
             <div class="flex flex-col gap-1">
+                <a href="{{ route('calculators.index') }}" class="rounded-lg px-4 py-3 text-sm text-ink-soft no-underline transition hover:bg-panel hover:text-ink-strong">{{ __('calculators.all_calculators') }}</a>
                 <a href="{{ route('home') }}#workspace" class="rounded-lg px-4 py-3 text-sm text-ink-soft no-underline transition hover:bg-panel hover:text-ink-strong">{{ __('public.navigation.product') }}</a>
                 @guest
                     <a href="{{ route('login') }}" class="rounded-lg px-4 py-3 text-sm text-ink-soft no-underline transition hover:bg-panel hover:text-ink-strong">{{ __('public.navigation.sign_in') }}</a>
@@ -70,6 +72,7 @@
             <div data-public-footer-inner class="mx-auto flex w-full max-w-app flex-col items-center justify-between gap-4 px-5 text-center lg:flex-row lg:px-10 lg:text-left">
                 <p class="max-w-[28rem] text-sm text-ink-soft">{{ __('public.footer.description') }}</p>
                 <div class="flex flex-wrap justify-center gap-x-5 gap-y-2 min-[390px]:gap-x-7">
+                    <a href="{{ route('calculators.index') }}" class="inline-flex min-h-11 items-center rounded px-1 py-2 text-sm font-medium text-ink-soft no-underline transition hover:text-ink-strong">{{ __('calculators.all_calculators') }}</a>
                     <a href="{{ route('home') }}#workspace" class="inline-flex min-h-11 items-center rounded px-1 py-2 text-sm font-medium text-ink-soft no-underline transition hover:text-ink-strong">{{ __('public.navigation.product') }}</a>
                     @guest
                         <a href="{{ route('login') }}" class="inline-flex min-h-11 items-center rounded px-1 py-2 text-sm font-medium text-ink-soft no-underline transition hover:text-ink-strong">{{ __('public.navigation.sign_in') }}</a>
@@ -79,5 +82,6 @@
                 </div>
             </div>
         </footer>
+        @stack('scripts')
     </body>
 </html>

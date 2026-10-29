@@ -55,6 +55,7 @@
  </label>
  </div>
 
+ @unless ($isPublicCalculator ?? false)
  <div class="space-y-4">
  @foreach (['first_dilution', 'final_dilution'] as $dilutionStep)
  <section class="sk-inset space-y-3 p-4" aria-labelledby="liquid-{{ $dilutionStep }}-liquids-heading">
@@ -108,6 +109,8 @@
  </section>
  @endforeach
  </div>
+
+ @endunless
 
  <div class="sk-inset space-y-3 p-4">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-end">

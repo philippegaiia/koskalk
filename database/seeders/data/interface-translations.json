@@ -899,6 +899,1350 @@
       }
     },
     {
+      "group": "calculators",
+      "key": "add_ingredient",
+      "text": {
+        "de": "Inhaltsstoff hinzufügen",
+        "es": "Añadir ingrediente",
+        "fr": "Ajouter un ingrédient",
+        "it": "Aggiungi ingrediente",
+        "nl": "Ingrediënt toevoegen",
+        "pt_BR": "Adicionar ingrediente"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "add_phase",
+      "text": {
+        "de": "Phase hinzufügen",
+        "es": "Añadir fase",
+        "fr": "Ajouter une phase",
+        "it": "Aggiungi fase",
+        "nl": "Fase toevoegen",
+        "pt_BR": "Adicionar fase"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "add_temporary",
+      "text": {
+        "de": "Eigene Zutat hinzufügen",
+        "es": "Añadir ingrediente personalizado",
+        "fr": "Ajouter un ingrédient hors catalogue",
+        "it": "Aggiungi ingrediente personalizzato",
+        "nl": "Eigen ingrediënt toevoegen",
+        "pt_BR": "Adicionar ingrediente personalizado"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "all_calculators",
+      "text": {
+        "de": "Alle Rechner",
+        "es": "Todas las calculadoras",
+        "fr": "Tous les calculateurs",
+        "it": "Tutti i calcolatori",
+        "nl": "Alle calculators",
+        "pt_BR": "Todas as calculadoras"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "allergens_unchecked",
+      "text": {
+        "de": "Allergendeklarationen nicht geprüft",
+        "es": "Declaraciones de alérgenos sin verificar",
+        "fr": "Déclarations d’allergènes non vérifiées",
+        "it": "Dichiarazioni degli allergeni non verificate",
+        "nl": "Allergeendeclaraties niet gecontroleerd",
+        "pt_BR": "Declarações de alérgenos não verificadas"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "back_to_calculator",
+      "text": {
+        "de": "Zurück zum Rechner",
+        "es": "Volver a la calculadora",
+        "fr": "Retour au calculateur",
+        "it": "Torna al calcolatore",
+        "nl": "Terug naar calculator",
+        "pt_BR": "Voltar à calculadora"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "batch_weight",
+      "text": {
+        "de": "Chargengewicht",
+        "es": "Peso del lote",
+        "fr": "Poids du lot",
+        "it": "Peso del lotto",
+        "nl": "Batchgewicht",
+        "pt_BR": "Peso do lote"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "browser_notice",
+      "text": {
+        "de": "In diesem Browser aufbewahrt. Diese Berechnung wird keinem Konto hinzugefügt.",
+        "es": "Conservado en este navegador. Este cálculo no se añade a una cuenta.",
+        "fr": "Conservé dans ce navigateur. Ce calcul n’est pas ajouté à un compte.",
+        "it": "Conservato in questo browser. Questo calcolo non viene aggiunto a un account.",
+        "nl": "Bewaard in deze browser. Deze berekening wordt niet aan een account toegevoegd.",
+        "pt_BR": "Mantido neste navegador. Este cálculo não é adicionado a uma conta."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "calculate",
+      "text": {
+        "de": "Berechnen",
+        "es": "Calcular",
+        "fr": "Calculer",
+        "it": "Calcola",
+        "nl": "Berekenen",
+        "pt_BR": "Calcular"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "calculated_at",
+      "text": {
+        "de": "Berechnet am :date",
+        "es": "Calculado el :date",
+        "fr": "Calculé le :date",
+        "it": "Calcolato il :date",
+        "nl": "Berekend op :date",
+        "pt_BR": "Calculado em :date"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "calculating",
+      "text": {
+        "de": "Wird berechnet…",
+        "es": "Calculando…",
+        "fr": "Calcul en cours…",
+        "it": "Calcolo in corso…",
+        "nl": "Berekenen…",
+        "pt_BR": "Calculando…"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "cancel",
+      "text": {
+        "de": "Abbrechen",
+        "es": "Cancelar",
+        "fr": "Annuler",
+        "it": "Annulla",
+        "nl": "Annuleren",
+        "pt_BR": "Cancelar"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "choose_ingredient",
+      "text": {
+        "de": "Inhaltsstoff auswählen",
+        "es": "Elige un ingrediente",
+        "fr": "Choisir un ingrédient",
+        "it": "Scegli un ingrediente",
+        "nl": "Kies een ingrediënt",
+        "pt_BR": "Escolha um ingrediente"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "coming_soon",
+      "text": {
+        "de": "Demnächst verfügbar",
+        "es": "Próximamente",
+        "fr": "Bientôt disponible",
+        "it": "Prossimamente",
+        "nl": "Binnenkort beschikbaar",
+        "pt_BR": "Em breve"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "confirm_reset",
+      "text": {
+        "de": "Löschen und neu beginnen",
+        "es": "Borrar y empezar de nuevo",
+        "fr": "Effacer et recommencer",
+        "it": "Cancella e ricomincia",
+        "nl": "Wissen en opnieuw beginnen",
+        "pt_BR": "Apagar e começar de novo"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "cosmetics_description",
+      "text": {
+        "de": "Ordne Inhaltsstoffe nach Phasen und skaliere eine Kosmetikrezeptur nach Prozentanteilen oder Gewicht.",
+        "es": "Organiza los ingredientes en fases y escala una fórmula cosmética por porcentaje o peso.",
+        "fr": "Organisez les ingrédients par phases et ajustez une formule cosmétique en pourcentage ou en poids.",
+        "it": "Organizza gli ingredienti in fasi e ridimensiona una formula cosmetica per percentuale o peso.",
+        "nl": "Verdeel ingrediënten over fasen en schaal een cosmetische formule op percentage of gewicht.",
+        "pt_BR": "Organize os ingredientes em fases e ajuste uma fórmula cosmética por porcentagem ou peso."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "cosmetics_title",
+      "text": {
+        "de": "Kosmetikrechner",
+        "es": "Calculadora de fórmulas cosméticas",
+        "fr": "Calculateur de formules cosmétiques",
+        "it": "Calcolatore di formule cosmetiche",
+        "nl": "Calculator voor cosmetische formules",
+        "pt_BR": "Calculadora de fórmulas cosméticas"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "cured_water",
+      "text": {
+        "de": "Wasser nach der Reifezeit (%)",
+        "es": "Agua tras el curado (%)",
+        "fr": "Eau après la cure (%)",
+        "it": "Acqua dopo la stagionatura (%)",
+        "nl": "Water na rijping (%)",
+        "pt_BR": "Água após a cura (%)"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "dilution_basis",
+      "text": {
+        "de": "Die Verdünnungsziele beziehen sich auf die wasserfreie Seifenmasse (Seifensalze, Glycerin und unverseifte Lipide), nicht auf das Pastengewicht. Sie garantieren keine bestimmte Konzentration waschaktiver Substanzen.",
+        "es": "Los objetivos de dilución se basan en la masa de jabón anhidro (sales de jabón, glicerina y lípidos no saponificados), no en el peso de la pasta. No garantizan la concentración de tensioactivos activos.",
+        "fr": "Les cibles de dilution reposent sur la masse de savon anhydre (sels de savon, glycérine et lipides non saponifiés), et non sur le poids de la pâte. Elles ne garantissent pas la concentration en matière active tensioactive.",
+        "it": "Gli obiettivi di diluizione si basano sulla massa di sapone anidro (sali di sapone, glicerina e lipidi non saponificati), non sul peso della pasta. Non garantiscono la concentrazione di tensioattivi attivi.",
+        "nl": "De verdunningsdoelen zijn gebaseerd op de watervrije zeepmassa (zeepzouten, glycerine en onverzeepte lipiden), niet op het pastagewicht. Ze garanderen geen concentratie aan actieve oppervlakteactieve stoffen.",
+        "pt_BR": "As metas de diluição usam a massa de sabonete anidro (sais de sabão, glicerina e lipídios não saponificados), não o peso da pasta. Elas não garantem a concentração de tensoativos ativos."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "dual",
+      "text": {
+        "de": "NaOH + KOH",
+        "es": "NaOH + KOH",
+        "fr": "NaOH + KOH",
+        "it": "NaOH + KOH",
+        "nl": "NaOH + KOH",
+        "pt_BR": "NaOH + KOH"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "dual_koh",
+      "text": {
+        "de": "KOH-Anteil (%)",
+        "es": "Proporción de KOH (%)",
+        "fr": "Part de KOH (%)",
+        "it": "Quota di KOH (%)",
+        "nl": "KOH-aandeel (%)",
+        "pt_BR": "Proporção de KOH (%)"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "editing_mode",
+      "text": {
+        "de": "Eingabemodus",
+        "es": "Modo de entrada",
+        "fr": "Mode de saisie",
+        "it": "Modalità di inserimento",
+        "nl": "Invoermodus",
+        "pt_BR": "Modo de entrada"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "final_dilution",
+      "text": {
+        "de": "Konzentration der endgültigen Verdünnung (%)",
+        "es": "Concentración de la dilución final (%)",
+        "fr": "Concentration de la dilution finale (%)",
+        "it": "Concentrazione della diluizione finale (%)",
+        "nl": "Concentratie na uiteindelijke verdunning (%)",
+        "pt_BR": "Concentração da diluição final (%)"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "first_dilution",
+      "text": {
+        "de": "Konzentration der ersten Verdünnung (%)",
+        "es": "Concentración de la primera dilución (%)",
+        "fr": "Concentration de la première dilution (%)",
+        "it": "Concentrazione della prima diluizione (%)",
+        "nl": "Concentratie na eerste verdunning (%)",
+        "pt_BR": "Concentração da primeira diluição (%)"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "formula_name",
+      "text": {
+        "de": "Rezepturname",
+        "es": "Nombre de la fórmula",
+        "fr": "Nom de la formule",
+        "it": "Nome della formula",
+        "nl": "Formulenaam",
+        "pt_BR": "Nome da fórmula"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "generated_water",
+      "text": {
+        "de": "Berechnetes Wasser",
+        "es": "Agua calculada",
+        "fr": "Eau calculée",
+        "it": "Acqua calcolata",
+        "nl": "Berekend water",
+        "pt_BR": "Água calculada"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "guest_notice",
+      "text": {
+        "de": "Kostenlos und ohne Konto nutzbar.",
+        "es": "Uso gratuito, sin cuenta.",
+        "fr": "Gratuit, sans compte.",
+        "it": "Gratuito, senza account.",
+        "nl": "Gratis te gebruiken. Geen account nodig.",
+        "pt_BR": "Uso gratuito, sem conta."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "incomplete",
+      "text": {
+        "de": "Vervollständige die Rezeptur vor dem Berechnen oder Drucken.",
+        "es": "Completa la fórmula antes de calcular o imprimir.",
+        "fr": "Complétez la formule avant de calculer ou d’imprimer.",
+        "it": "Completa la formula prima di calcolare o stampare.",
+        "nl": "Vul de formule volledig in voordat je berekent of afdrukt.",
+        "pt_BR": "Complete a fórmula antes de calcular ou imprimir."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "index_description",
+      "text": {
+        "de": "Berechne feste Seifen, Flüssigseifen und Kosmetikrezepturen ohne Konto.",
+        "es": "Calcula fórmulas de jabón sólido, jabón líquido y cosméticos sin crear una cuenta.",
+        "fr": "Calculez vos formules de savon solide, de savon liquide et de cosmétiques sans compte.",
+        "it": "Calcola formule di sapone solido, sapone liquido e cosmetici senza un account.",
+        "nl": "Bereken vaste zeep, vloeibare zeep en cosmetische formules zonder account.",
+        "pt_BR": "Calcule fórmulas de sabonete sólido, sabonete líquido e cosméticos sem criar uma conta."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "index_title",
+      "text": {
+        "de": "Kostenlose Rezepturrechner",
+        "es": "Calculadoras de formulación gratuitas",
+        "fr": "Calculateurs de formulation gratuits",
+        "it": "Calcolatori di formulazione gratuiti",
+        "nl": "Gratis formulecalculators",
+        "pt_BR": "Calculadoras de formulação gratuitas"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "ingredient",
+      "text": {
+        "de": "Inhaltsstoff",
+        "es": "Ingrediente",
+        "fr": "Ingrédient",
+        "it": "Ingrediente",
+        "nl": "Ingrediënt",
+        "pt_BR": "Ingrediente"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "ingredients",
+      "text": {
+        "de": "Inhaltsstoffe",
+        "es": "Ingredientes",
+        "fr": "Ingrédients",
+        "it": "Ingredienti",
+        "nl": "Ingrediënten",
+        "pt_BR": "Ingredientes"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "javascript_required",
+      "text": {
+        "de": "Aktiviere JavaScript, um diesen Rechner zu verwenden.",
+        "es": "Activa JavaScript para usar esta calculadora.",
+        "fr": "Activez JavaScript pour utiliser ce calculateur.",
+        "it": "Attiva JavaScript per usare questo calcolatore.",
+        "nl": "Schakel JavaScript in om deze calculator te gebruiken.",
+        "pt_BR": "Ative o JavaScript para usar esta calculadora."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "koh",
+      "text": {
+        "de": "KOH (Kaliumhydroxid)",
+        "es": "KOH (hidróxido de potasio)",
+        "fr": "KOH (hydroxyde de potassium)",
+        "it": "KOH (idrossido di potassio)",
+        "nl": "KOH (kaliumhydroxide)",
+        "pt_BR": "KOH (hidróxido de potássio)"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "koh_purity",
+      "text": {
+        "de": "KOH-Reinheit (%)",
+        "es": "Pureza del KOH (%)",
+        "fr": "Pureté du KOH (%)",
+        "it": "Purezza del KOH (%)",
+        "nl": "KOH-zuiverheid (%)",
+        "pt_BR": "Pureza do KOH (%)"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "label_draft",
+      "text": {
+        "de": "Entwurf der Inhaltsstoffliste",
+        "es": "Borrador de la lista de ingredientes",
+        "fr": "Ébauche de la liste d’ingrédients",
+        "it": "Bozza dell’elenco degli ingredienti",
+        "nl": "Concept-ingrediëntenlijst",
+        "pt_BR": "Rascunho da lista de ingredientes"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "label_incomplete",
+      "text": {
+        "de": "Unvollständiger Entwurf der Inhaltsstoffliste",
+        "es": "Borrador incompleto de la lista de ingredientes",
+        "fr": "Ébauche incomplète de la liste d’ingrédients",
+        "it": "Bozza incompleta dell’elenco degli ingredienti",
+        "nl": "Onvolledig concept van de ingrediëntenlijst",
+        "pt_BR": "Rascunho incompleto da lista de ingredientes"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "labeling",
+      "text": {
+        "de": "Inhaltsstoffdeklaration",
+        "es": "Declaración de ingredientes",
+        "fr": "Déclaration des ingrédients",
+        "it": "Dichiarazione degli ingredienti",
+        "nl": "Ingrediëntendeclaratie",
+        "pt_BR": "Declaração de ingredientes"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "liquid_description",
+      "text": {
+        "de": "Berechne Flüssigseifenpaste, Alkali, Verdünnung und Neutralisation.",
+        "es": "Calcula la pasta de jabón líquido, el álcali, la dilución y la neutralización.",
+        "fr": "Calculez la pâte de savon liquide, l’alcali, la dilution et la neutralisation.",
+        "it": "Calcola pasta di sapone liquido, alcali, diluizione e neutralizzazione.",
+        "nl": "Bereken vloeibare zeeppasta, alkali, verdunning en neutralisatie.",
+        "pt_BR": "Calcule pasta de sabonete líquido, álcali, diluição e neutralização."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "liquid_title",
+      "text": {
+        "de": "Flüssigseifenrechner",
+        "es": "Calculadora de jabón líquido",
+        "fr": "Calculateur de savon liquide",
+        "it": "Calcolatore di sapone liquido",
+        "nl": "Calculator voor vloeibare zeep",
+        "pt_BR": "Calculadora de sabonete líquido"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "loading",
+      "text": {
+        "de": "Rechner wird geladen…",
+        "es": "Cargando calculadora…",
+        "fr": "Chargement du calculateur…",
+        "it": "Caricamento del calcolatore…",
+        "nl": "Calculator laden…",
+        "pt_BR": "Carregando calculadora…"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "lye_concentration",
+      "text": {
+        "de": "Alkalikonzentration (%)",
+        "es": "Concentración de álcali (%)",
+        "fr": "Concentration en alcali (%)",
+        "it": "Concentrazione di alcali (%)",
+        "nl": "Alkaliconcentratie (%)",
+        "pt_BR": "Concentração de álcali (%)"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "lye_ratio",
+      "text": {
+        "de": "Wasser-Alkali-Verhältnis",
+        "es": "Relación agua/álcali",
+        "fr": "Rapport eau/alcali",
+        "it": "Rapporto acqua/alcali",
+        "nl": "Verhouding water/alkali",
+        "pt_BR": "Proporção água/álcali"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "lye_type",
+      "text": {
+        "de": "Alkalityp",
+        "es": "Tipo de álcali",
+        "fr": "Type d’alcali",
+        "it": "Tipo di alcali",
+        "nl": "Type alkali",
+        "pt_BR": "Tipo de álcali"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "measured_paste",
+      "text": {
+        "de": "Gemessenes Pastengewicht (g)",
+        "es": "Peso medido de la pasta (g)",
+        "fr": "Poids mesuré de la pâte (g)",
+        "it": "Peso misurato della pasta (g)",
+        "nl": "Gemeten pastagewicht (g)",
+        "pt_BR": "Peso medido da pasta (g)"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "missing_fatty_acids",
+      "text": {
+        "de": "Die Seifenanalyse ist nicht verfügbar, da mindestens ein gewähltes Öl kein Fettsäureprofil hat. Die Alkalimengen werden weiterhin anhand seines SAP-Werts im Katalog berechnet.",
+        "es": "El análisis del jabón no está disponible porque al menos un aceite seleccionado no tiene perfil de ácidos grasos. Las cantidades de álcali siguen calculándose con su valor SAP del catálogo.",
+        "fr": "L’analyse du savon est indisponible, car au moins une huile sélectionnée n’a pas de profil d’acides gras. Les quantités d’alcali restent calculées avec sa valeur SAP du catalogue.",
+        "it": "L’analisi del sapone non è disponibile perché almeno un olio selezionato non ha un profilo di acidi grassi. Le quantità di alcali vengono comunque calcolate con il suo valore SAP del catalogo.",
+        "nl": "De zeepanalyse is niet beschikbaar omdat minstens één gekozen olie geen vetzuurprofiel heeft. De alkalihoeveelheden worden nog steeds berekend met de SAP-waarde uit de catalogus.",
+        "pt_BR": "A análise do sabonete está indisponível porque pelo menos um óleo selecionado não tem perfil de ácidos graxos. As quantidades de álcali continuam sendo calculadas com seu valor SAP do catálogo."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "missing_inci_label",
+      "text": {
+        "de": "[INCI fehlt: :name]",
+        "es": "[INCI ausente: :name]",
+        "fr": "[INCI manquant : :name]",
+        "it": "[INCI mancante: :name]",
+        "nl": "[INCI ontbreekt: :name]",
+        "pt_BR": "[INCI ausente: :name]"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "naoh",
+      "text": {
+        "de": "NaOH (Natriumhydroxid)",
+        "es": "NaOH (hidróxido de sodio)",
+        "fr": "NaOH (hydroxyde de sodium)",
+        "it": "NaOH (idrossido di sodio)",
+        "nl": "NaOH (natriumhydroxide)",
+        "pt_BR": "NaOH (hidróxido de sódio)"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "neutralizer_dosage_hint",
+      "text": {
+        "de": "Gib den Neutralisator als Prozent des Ölgewichts oder als Gewicht in der gewählten Einheit ein. Die Lösungseinstellung bestimmt seine Verdünnung.",
+        "es": "Introduce el neutralizante como porcentaje del peso de los aceites o como peso en la unidad seleccionada. El ajuste de la solución determina su dilución.",
+        "fr": "Saisissez le neutralisant en pourcentage du poids des huiles ou en poids dans l’unité choisie. Le réglage de la solution détermine sa dilution.",
+        "it": "Inserisci il neutralizzante come percentuale del peso degli oli o come peso nell’unità scelta. L’impostazione della soluzione ne determina la diluizione.",
+        "nl": "Voer de neutralisator in als percentage van het oliegewicht of als gewicht in de gekozen eenheid. De oplossingsinstelling bepaalt de verdunning.",
+        "pt_BR": "Informe o neutralizante como porcentagem do peso dos óleos ou como peso na unidade selecionada. A configuração da solução determina sua diluição."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "neutralizer_solution",
+      "text": {
+        "de": "Neutralisatorlösung (%)",
+        "es": "Solución neutralizante (%)",
+        "fr": "Solution neutralisante (%)",
+        "it": "Soluzione neutralizzante (%)",
+        "nl": "Neutralisatoroplossing (%)",
+        "pt_BR": "Solução neutralizante (%)"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "no_ingredients",
+      "text": {
+        "de": "Noch keine Inhaltsstoffe hinzugefügt.",
+        "es": "Aún no hay ingredientes.",
+        "fr": "Aucun ingrédient ajouté.",
+        "it": "Nessun ingrediente aggiunto.",
+        "nl": "Er zijn nog geen ingrediënten toegevoegd.",
+        "pt_BR": "Nenhum ingrediente adicionado ainda."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "no_transfer",
+      "text": {
+        "de": "Diese Berechnung bleibt in diesem Browser und wird nicht in ein Konto übertragen.",
+        "es": "Este cálculo permanece en este navegador y no se transferirá a una cuenta.",
+        "fr": "Ce calcul reste dans ce navigateur et ne sera pas transféré vers un compte.",
+        "it": "Questo calcolo rimane in questo browser e non verrà trasferito a un account.",
+        "nl": "Deze berekening blijft in deze browser en wordt niet overgezet naar een account.",
+        "pt_BR": "Este cálculo fica neste navegador e não será transferido para uma conta."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "notes",
+      "text": {
+        "de": "Notizen",
+        "es": "Notas",
+        "fr": "Notes",
+        "it": "Note",
+        "nl": "Notities",
+        "pt_BR": "Observações"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "number_of_rows",
+      "text": {
+        "de": "Es sind höchstens 100 Inhaltsstoffzeilen zulässig.",
+        "es": "Se permiten como máximo 100 filas de ingredientes.",
+        "fr": "Un maximum de 100 lignes d’ingrédients est autorisé.",
+        "it": "Sono consentite al massimo 100 righe di ingredienti.",
+        "nl": "Er zijn maximaal 100 ingrediëntregels toegestaan.",
+        "pt_BR": "São permitidas no máximo 100 linhas de ingredientes."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "oil_unit",
+      "text": {
+        "de": "Einheit des Ölgewichts",
+        "es": "Unidad de peso de los aceites",
+        "fr": "Unité du poids des huiles",
+        "it": "Unità di peso degli oli",
+        "nl": "Eenheid voor oliegewicht",
+        "pt_BR": "Unidade de peso dos óleos"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "oil_weight",
+      "text": {
+        "de": "Ölgewicht",
+        "es": "Peso de los aceites",
+        "fr": "Poids des huiles",
+        "it": "Peso degli oli",
+        "nl": "Oliegewicht",
+        "pt_BR": "Peso dos óleos"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "open_calculator",
+      "text": {
+        "de": "Rechner öffnen",
+        "es": "Abrir calculadora",
+        "fr": "Ouvrir le calculateur",
+        "it": "Apri calcolatore",
+        "nl": "Calculator openen",
+        "pt_BR": "Abrir calculadora"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "percent_of_oils",
+      "text": {
+        "de": "Prozent des Ölgewichts",
+        "es": "Porcentaje de los aceites",
+        "fr": "Pourcentage du poids des huiles",
+        "it": "Percentuale degli oli",
+        "nl": "Percentage van oliën",
+        "pt_BR": "Porcentagem dos óleos"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "percentage",
+      "text": {
+        "de": "Prozentanteil",
+        "es": "Porcentaje",
+        "fr": "Pourcentage",
+        "it": "Percentuale",
+        "nl": "Percentage",
+        "pt_BR": "Porcentagem"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "percentage_mode",
+      "text": {
+        "de": "Prozentwerte",
+        "es": "Porcentajes",
+        "fr": "Pourcentages",
+        "it": "Percentuali",
+        "nl": "Percentages",
+        "pt_BR": "Porcentagens"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "phase_a",
+      "text": {
+        "de": "Phase A",
+        "es": "Fase A",
+        "fr": "Phase A",
+        "it": "Fase A",
+        "nl": "Fase A",
+        "pt_BR": "Fase A"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "phase_additives",
+      "text": {
+        "de": "Zusatzstoffe",
+        "es": "Aditivos",
+        "fr": "Additifs",
+        "it": "Additivi",
+        "nl": "Toevoegingen",
+        "pt_BR": "Aditivos"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "phase_b",
+      "text": {
+        "de": "Phase B",
+        "es": "Fase B",
+        "fr": "Phase B",
+        "it": "Fase B",
+        "nl": "Fase B",
+        "pt_BR": "Fase B"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "phase_c",
+      "text": {
+        "de": "Phase C",
+        "es": "Fase C",
+        "fr": "Phase C",
+        "it": "Fase C",
+        "nl": "Fase C",
+        "pt_BR": "Fase C"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "phase_fragrance",
+      "text": {
+        "de": "Duft",
+        "es": "Fragancia",
+        "fr": "Parfum",
+        "it": "Fragranza",
+        "nl": "Geur",
+        "pt_BR": "Fragrância"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "phase_name",
+      "text": {
+        "de": "Phasenname",
+        "es": "Nombre de la fase",
+        "fr": "Nom de la phase",
+        "it": "Nome della fase",
+        "nl": "Fasenaam",
+        "pt_BR": "Nome da fase"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "phase_neutralization",
+      "text": {
+        "de": "Neutralisation",
+        "es": "Neutralización",
+        "fr": "Neutralisation",
+        "it": "Neutralizzazione",
+        "nl": "Neutralisatie",
+        "pt_BR": "Neutralização"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "phase_oils",
+      "text": {
+        "de": "Öle",
+        "es": "Aceites",
+        "fr": "Huiles",
+        "it": "Oli",
+        "nl": "Oliën",
+        "pt_BR": "Óleos"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "preview_failed",
+      "text": {
+        "de": "Die Berechnung konnte nicht abgeschlossen werden. Versuche es erneut.",
+        "es": "No se ha podido completar el cálculo. Inténtalo de nuevo.",
+        "fr": "Le calcul n’a pas pu aboutir. Veuillez réessayer.",
+        "it": "Non è stato possibile completare il calcolo. Riprova.",
+        "nl": "De berekening kon niet worden voltooid. Probeer het opnieuw.",
+        "pt_BR": "Não foi possível concluir o cálculo. Tente novamente."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "preview_invalid",
+      "text": {
+        "de": "Prüfe die markierten Eingaben vor der Berechnung.",
+        "es": "Revisa los datos resaltados antes de calcular.",
+        "fr": "Vérifiez les saisies signalées avant de calculer.",
+        "it": "Controlla i dati evidenziati prima di calcolare.",
+        "nl": "Controleer de gemarkeerde invoer voordat je berekent.",
+        "pt_BR": "Confira os dados destacados antes de calcular."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "preview_throttled",
+      "text": {
+        "de": "Zu viele Berechnungsanfragen. Deine Eingaben bleiben auf dieser Seite. Die Berechnung wird in Kürze automatisch erneut versucht.",
+        "es": "Demasiadas solicitudes de cálculo. Tus datos siguen en esta página. El cálculo se reintentará automáticamente en breve.",
+        "fr": "Trop de demandes de calcul. Vos saisies restent sur cette page. Le calcul sera relancé automatiquement dans un instant.",
+        "it": "Troppe richieste di calcolo. I dati restano in questa pagina. Il calcolo verrà ritentato automaticamente a breve.",
+        "nl": "Te veel berekeningsverzoeken. Je invoer blijft op deze pagina. De berekening wordt binnenkort automatisch opnieuw geprobeerd.",
+        "pt_BR": "Muitas solicitações de cálculo. Seus dados continuam nesta página. O cálculo será tentado novamente em instantes."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "print_hint",
+      "text": {
+        "de": "Über deinen Browser drucken oder als PDF speichern.",
+        "es": "Imprime o guarda un PDF desde el navegador.",
+        "fr": "Imprimez ou enregistrez un PDF depuis votre navigateur.",
+        "it": "Stampa o salva un PDF dal browser.",
+        "nl": "Druk af of sla een pdf op via je browser.",
+        "pt_BR": "Imprima ou salve um PDF pelo navegador."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "print_sheet",
+      "text": {
+        "de": "Berechnungsblatt drucken",
+        "es": "Imprimir hoja de cálculo",
+        "fr": "Imprimer la fiche de calcul",
+        "it": "Stampa scheda di calcolo",
+        "nl": "Berekeningsblad afdrukken",
+        "pt_BR": "Imprimir ficha de cálculo"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "provenance",
+      "text": {
+        "de": "Verwendet Soapkraft-Katalogdaten, die zum oben angegebenen Berechnungszeitpunkt aktuell sind. Eigene Zutaten enthalten benutzerdefinierte Angaben.",
+        "es": "Usa datos del catálogo Soapkraft vigentes en el momento del cálculo indicado arriba. Los ingredientes personalizados contienen información del usuario.",
+        "fr": "Utilise les données du catalogue Soapkraft en vigueur à la date de calcul indiquée ci-dessus. Les ingrédients hors catalogue contiennent les informations fournies par l’utilisateur.",
+        "it": "Usa i dati del catalogo Soapkraft aggiornati al momento del calcolo indicato sopra. Gli ingredienti personalizzati contengono informazioni fornite dall’utente.",
+        "nl": "Gebruikt Soapkraft-catalogusgegevens die actueel zijn op het hierboven vermelde berekeningsmoment. Eigen ingrediënten bevatten informatie van de gebruiker.",
+        "pt_BR": "Usa os dados do catálogo Soapkraft vigentes no momento do cálculo indicado acima. Os ingredientes personalizados contêm informações fornecidas pelo usuário."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "recovered",
+      "text": {
+        "de": "Deine vorherigen Eingaben wurden aus diesem Browser wiederhergestellt.",
+        "es": "Se han recuperado tus datos anteriores de este navegador.",
+        "fr": "Vos saisies précédentes ont été restaurées depuis ce navigateur.",
+        "it": "I dati precedenti sono stati ripristinati da questo browser.",
+        "nl": "Je vorige invoer is hersteld vanuit deze browser.",
+        "pt_BR": "Seus dados anteriores foram recuperados deste navegador."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "reference_changed",
+      "text": {
+        "de": "Die Ergebnisse wurden mit den aktuellen Katalogdaten neu berechnet.",
+        "es": "Los resultados se han recalculado con los datos actuales del catálogo.",
+        "fr": "Les résultats ont été recalculés avec les données actuelles du catalogue.",
+        "it": "I risultati sono stati ricalcolati con i dati attuali del catalogo.",
+        "nl": "De resultaten zijn opnieuw berekend met de huidige catalogusgegevens.",
+        "pt_BR": "Os resultados foram recalculados com os dados atuais do catálogo."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "reference_retired",
+      "text": {
+        "de": "Ein gespeicherter Inhaltsstoff ist nicht mehr verfügbar. Entferne ihn oder wähle einen aktuellen Kataloginhaltsstoff.",
+        "es": "Un ingrediente guardado ya no está disponible. Elimínalo o elige uno del catálogo actual.",
+        "fr": "Un ingrédient conservé n’est plus disponible. Supprimez-le ou choisissez un ingrédient du catalogue actuel.",
+        "it": "Un ingrediente salvato non è più disponibile. Rimuovilo o scegli un ingrediente dal catalogo attuale.",
+        "nl": "Een opgeslagen ingrediënt is niet meer beschikbaar. Verwijder het of kies een huidig catalogusingrediënt.",
+        "pt_BR": "Um ingrediente salvo não está mais disponível. Remova-o ou escolha um ingrediente do catálogo atual."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "register_action",
+      "text": {
+        "de": "Konto erstellen",
+        "es": "Crear una cuenta",
+        "fr": "Créer un compte",
+        "it": "Crea un account",
+        "nl": "Account aanmaken",
+        "pt_BR": "Criar uma conta"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "register_heading",
+      "text": {
+        "de": "Soapkraft-Konto",
+        "es": "Cuenta de Soapkraft",
+        "fr": "Compte Soapkraft",
+        "it": "Account Soapkraft",
+        "nl": "Soapkraft-account",
+        "pt_BR": "Conta Soapkraft"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "register_prompt",
+      "text": {
+        "de": "Um alle Funktionen von Soapkraft zu nutzen, registrieren Sie sich für ein Konto: Formeln speichern, eigene Inhaltsstoffe und Preise verwalten und mit Kalkulation, Kennzeichnung und Produktion arbeiten.",
+        "es": "Para usar todo lo que ofrece Soapkraft, regístrate para obtener una cuenta: guarda tus fórmulas, mantén tus propios ingredientes y precios, y trabaja con costes, etiquetado y producción.",
+        "fr": "Pour profiter de toutes les fonctionnalités de Soapkraft, créez un compte : enregistrez vos formules, gérez vos propres ingrédients et prix, et travaillez avec les coûts, l’étiquetage et la production.",
+        "it": "Per usare tutto ciò che Soapkraft offre, registrati per un account: salva le tue formule, gestisci i tuoi ingredienti e prezzi e lavora con costi, etichettatura e produzione.",
+        "nl": "Registreer een account om alles van Soapkraft te gebruiken: sla je formules op, beheer je eigen ingrediënten en prijzen, en werk met kostprijs, etikettering en productie.",
+        "pt_BR": "Para usar tudo o que o Soapkraft oferece, crie uma conta: salve suas fórmulas, mantenha seus próprios ingredientes e preços e trabalhe com custos, rotulagem e produção."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "remove",
+      "text": {
+        "de": "Entfernen",
+        "es": "Eliminar",
+        "fr": "Supprimer",
+        "it": "Rimuovi",
+        "nl": "Verwijderen",
+        "pt_BR": "Remover"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "results",
+      "text": {
+        "de": "Ergebnisse",
+        "es": "Resultados",
+        "fr": "Résultats",
+        "it": "Risultati",
+        "nl": "Resultaten",
+        "pt_BR": "Resultados"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "results_empty",
+      "text": {
+        "de": "Deine Berechnung erscheint hier.",
+        "es": "Tu cálculo aparecerá aquí.",
+        "fr": "Votre calcul apparaîtra ici.",
+        "it": "Il calcolo apparirà qui.",
+        "nl": "Je berekening verschijnt hier.",
+        "pt_BR": "Seu cálculo aparecerá aqui."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "row_note",
+      "text": {
+        "de": "Zeilennotiz",
+        "es": "Nota de la fila",
+        "fr": "Note de la ligne",
+        "it": "Nota della riga",
+        "nl": "Notitie bij regel",
+        "pt_BR": "Observação da linha"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "settings",
+      "text": {
+        "de": "Einstellungen",
+        "es": "Ajustes",
+        "fr": "Paramètres",
+        "it": "Impostazioni",
+        "nl": "Instellingen",
+        "pt_BR": "Configurações"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "sign_in",
+      "text": {
+        "de": "Anmelden",
+        "es": "Iniciar sesión",
+        "fr": "Se connecter",
+        "it": "Accedi",
+        "nl": "Inloggen",
+        "pt_BR": "Entrar"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "soap_percentage_basis",
+      "text": {
+        "de": "Die Ölanteile ergeben 100 %. Zusatzstoffe und Duftstoffe werden als Prozent des Ölgewichts angegeben.",
+        "es": "Los aceites suman el 100 %. Los aditivos y las fragancias se expresan como porcentaje del peso de los aceites.",
+        "fr": "Les huiles totalisent 100 %. Les additifs et le parfum sont exprimés en pourcentage du poids des huiles.",
+        "it": "Gli oli totalizzano il 100%. Additivi e fragranze sono espressi in percentuale sul peso degli oli.",
+        "nl": "De oliepercentages tellen op tot 100%. Toevoegingen en geurstoffen zijn percentages van het oliegewicht.",
+        "pt_BR": "Os óleos somam 100%. Aditivos e fragrâncias são expressos como porcentagem do peso dos óleos."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "solid_description",
+      "text": {
+        "de": "Stelle eine Ölmischung zusammen und berechne Alkali, Wasser und Überfettung für feste Seife.",
+        "es": "Crea una mezcla de aceites y calcula el álcali, el agua y el sobreengrasado para jabón sólido.",
+        "fr": "Composez un mélange d’huiles et calculez l’alcali, l’eau et le surgraissage pour un savon solide.",
+        "it": "Componi una miscela di oli e calcola alcali, acqua e sconto soda per il sapone solido.",
+        "nl": "Stel een oliemengsel samen en bereken alkali, water en overvetting voor vaste zeep.",
+        "pt_BR": "Monte uma mistura de óleos e calcule álcali, água e sobreengorduramento para sabonete sólido."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "solid_title",
+      "text": {
+        "de": "Rechner für feste Seife",
+        "es": "Calculadora de jabón sólido",
+        "fr": "Calculateur de savon solide",
+        "it": "Calcolatore di sapone solido",
+        "nl": "Calculator voor vaste zeep",
+        "pt_BR": "Calculadora de sabonete sólido"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "start_new",
+      "text": {
+        "de": "Neu beginnen",
+        "es": "Empezar de nuevo",
+        "fr": "Recommencer",
+        "it": "Ricomincia",
+        "nl": "Opnieuw beginnen",
+        "pt_BR": "Começar de novo"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "start_new_confirm",
+      "text": {
+        "de": "Neue Berechnung starten? Deine aktuellen Eingaben und Ergebnisse werden gelöscht.",
+        "es": "¿Empezar un cálculo nuevo? Se borrarán los datos y resultados actuales.",
+        "fr": "Commencer un nouveau calcul ? Vos saisies et résultats actuels seront effacés.",
+        "it": "Iniziare un nuovo calcolo? I dati e i risultati attuali verranno cancellati.",
+        "nl": "Een nieuwe berekening starten? Je huidige invoer en resultaten worden gewist.",
+        "pt_BR": "Começar um novo cálculo? Os dados e resultados atuais serão apagados."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "storage_conflict",
+      "text": {
+        "de": "Ein anderer Tab hat den Browserentwurf geändert. Deine Eingaben bleiben auf dieser Seite, werden von diesem Tab aber nicht mehr zur Wiederherstellung aktualisiert. Drucke sie vor dem Schließen oder lade neu, um den Entwurf des anderen Tabs zu verwenden.",
+        "es": "Otra pestaña ha cambiado el borrador del navegador. Tus datos siguen en esta página, pero esta pestaña ya no actualiza la recuperación. Imprime antes de cerrar o recarga para usar el borrador de la otra pestaña.",
+        "fr": "Un autre onglet a modifié le brouillon du navigateur. Vos saisies restent sur cette page, mais cet onglet ne met plus à jour la copie de récupération. Imprimez avant de fermer ou rechargez pour utiliser le brouillon de l’autre onglet.",
+        "it": "Un’altra scheda ha modificato la bozza del browser. I dati restano in questa pagina, ma questa scheda non aggiorna più la copia di recupero. Stampa prima di chiudere o ricarica per usare la bozza dell’altra scheda.",
+        "nl": "Een ander tabblad heeft het browserconcept gewijzigd. Je invoer blijft op deze pagina, maar dit tabblad werkt het herstelconcept niet meer bij. Print voordat je sluit of herlaad om het concept van het andere tabblad te gebruiken.",
+        "pt_BR": "Outra aba alterou o rascunho do navegador. Seus dados continuam nesta página, mas esta aba não atualiza mais a cópia de recuperação. Imprima antes de fechar ou recarregue para usar o rascunho da outra aba."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "storage_corrupt",
+      "text": {
+        "de": "Die gespeicherte Berechnung konnte nicht wiederhergestellt werden. Beginne eine neue Berechnung.",
+        "es": "No se ha podido recuperar el cálculo guardado. Empieza un cálculo nuevo.",
+        "fr": "Le calcul conservé n’a pas pu être restauré. Commencez un nouveau calcul.",
+        "it": "Non è stato possibile ripristinare il calcolo salvato. Inizia un nuovo calcolo.",
+        "nl": "De opgeslagen berekening kon niet worden hersteld. Begin een nieuwe berekening.",
+        "pt_BR": "Não foi possível recuperar o cálculo salvo. Comece um novo cálculo."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "storage_failed",
+      "text": {
+        "de": "Deine letzten Änderungen konnten nicht in diesem Browser gespeichert werden. Drucke die Berechnung, bevor du die Seite schließt.",
+        "es": "No se han podido guardar los últimos cambios en este navegador. Imprime el cálculo antes de cerrar la página.",
+        "fr": "Vos dernières modifications n’ont pas pu être conservées dans ce navigateur. Imprimez votre calcul avant de fermer la page.",
+        "it": "Non è stato possibile salvare le ultime modifiche in questo browser. Stampa il calcolo prima di chiudere la pagina.",
+        "nl": "Je laatste wijzigingen konden niet in deze browser worden opgeslagen. Druk je berekening af voordat je de pagina sluit.",
+        "pt_BR": "Não foi possível salvar as últimas alterações neste navegador. Imprima seu cálculo antes de fechar a página."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "superfat",
+      "text": {
+        "de": "Überfettung (%)",
+        "es": "Sobreengrasado (%)",
+        "fr": "Surgraissage (%)",
+        "it": "Sconto soda (%)",
+        "nl": "Overvetting (%)",
+        "pt_BR": "Sobreengorduramento (%)"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "temporary",
+      "text": {
+        "de": "Eigene Zutat",
+        "es": "Ingrediente personalizado",
+        "fr": "Ingrédient hors catalogue",
+        "it": "Ingrediente personalizzato",
+        "nl": "Eigen ingrediënt",
+        "pt_BR": "Ingrediente personalizado"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "temporary_chemistry",
+      "text": {
+        "de": "Eigene Zutaten werden nur nach Menge berücksichtigt. Ihre Chemie und Zusammensetzung sind unbekannt.",
+        "es": "Los ingredientes personalizados se incluyen solo por cantidad. Se desconocen su química y composición.",
+        "fr": "Les ingrédients hors catalogue sont pris en compte uniquement par leur quantité. Leur chimie et leur composition sont inconnues.",
+        "it": "Gli ingredienti personalizzati sono inclusi solo per quantità. La loro chimica e composizione sono sconosciute.",
+        "nl": "Eigen ingrediënten worden alleen op hoeveelheid meegenomen. Hun chemie en samenstelling zijn onbekend.",
+        "pt_BR": "Os ingredientes personalizados são incluídos apenas pela quantidade. Sua química e composição são desconhecidas."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "temporary_hint",
+      "text": {
+        "de": "Verwende eine Zutat außerhalb des Katalogs nur in dieser Berechnung. Es werden keine Chemiedaten angenommen und kein Bibliothekseintrag erstellt.",
+        "es": "Usa un ingrediente fuera del catálogo solo en este cálculo. No se presuponen datos químicos ni se crea una entrada en la biblioteca.",
+        "fr": "Utilisez un ingrédient hors catalogue uniquement dans ce calcul. Aucune donnée chimique n’est supposée et aucune fiche n’est créée dans la bibliothèque d’ingrédients.",
+        "it": "Usa un ingrediente fuori catalogo solo in questo calcolo. Non vengono presunti dati chimici e non viene creata una voce nella libreria.",
+        "nl": "Gebruik een ingrediënt buiten de catalogus alleen in deze berekening. Er worden geen chemische gegevens aangenomen en geen bibliotheekitem aangemaakt.",
+        "pt_BR": "Use um ingrediente fora do catálogo apenas neste cálculo. Nenhum dado químico é presumido e nenhuma entrada é criada na biblioteca."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "temporary_label",
+      "text": {
+        "de": "[Eigene Zutat: :name, INCI nicht angegeben]",
+        "es": "[Ingrediente personalizado: :name, INCI no indicado]",
+        "fr": "[Hors catalogue : :name, INCI non renseigné]",
+        "it": "[Ingrediente personalizzato: :name, INCI non indicato]",
+        "nl": "[Eigen ingrediënt: :name, INCI niet opgegeven]",
+        "pt_BR": "[Ingrediente personalizado: :name, INCI não informado]"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "temporary_name",
+      "text": {
+        "de": "Name der eigenen Zutat",
+        "es": "Nombre del ingrediente personalizado",
+        "fr": "Nom de l’ingrédient hors catalogue",
+        "it": "Nome dell’ingrediente personalizzato",
+        "nl": "Naam van eigen ingrediënt",
+        "pt_BR": "Nome do ingrediente personalizado"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "unavailable_storage",
+      "text": {
+        "de": "Der Browserspeicher ist nicht verfügbar. Drucke deine Berechnung, bevor du diese Seite schließt.",
+        "es": "El almacenamiento del navegador no está disponible. Imprime el cálculo antes de cerrar esta página.",
+        "fr": "Le stockage du navigateur est indisponible. Imprimez votre calcul avant de fermer cette page.",
+        "it": "L’archiviazione del browser non è disponibile. Stampa il calcolo prima di chiudere questa pagina.",
+        "nl": "Browseropslag is niet beschikbaar. Druk je berekening af voordat je deze pagina sluit.",
+        "pt_BR": "O armazenamento do navegador está indisponível. Imprima seu cálculo antes de fechar esta página."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "validation_payload",
+      "text": {
+        "de": "Diese Berechnung ist zu groß oder enthält nicht unterstützte Felder.",
+        "es": "Este cálculo es demasiado grande o contiene campos no admitidos.",
+        "fr": "Ce calcul est trop volumineux ou contient des champs non pris en charge.",
+        "it": "Questo calcolo è troppo grande o contiene campi non supportati.",
+        "nl": "Deze berekening is te groot of bevat niet-ondersteunde velden.",
+        "pt_BR": "Este cálculo é muito grande ou contém campos não aceitos."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "validation_phase",
+      "text": {
+        "de": "Dieser Rechner unterstützt diese Phase nicht.",
+        "es": "Esta calculadora no admite esta fase.",
+        "fr": "Ce calculateur ne prend pas en charge cette phase.",
+        "it": "Questo calcolatore non supporta questa fase.",
+        "nl": "Deze calculator ondersteunt deze fase niet.",
+        "pt_BR": "Esta calculadora não aceita esta fase."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "validation_reference",
+      "text": {
+        "de": "Ein Inhaltsstoff ist nicht mehr verfügbar. Entferne ihn oder wähle einen aktuellen Kataloginhaltsstoff.",
+        "es": "Un ingrediente ya no está disponible. Elimínalo o elige uno del catálogo actual.",
+        "fr": "Un ingrédient n’est plus disponible. Supprimez-le ou choisissez un ingrédient du catalogue actuel.",
+        "it": "Un ingrediente non è più disponibile. Rimuovilo o scegli un ingrediente dal catalogo attuale.",
+        "nl": "Een ingrediënt is niet meer beschikbaar. Verwijder het of kies een huidig catalogusingrediënt.",
+        "pt_BR": "Um ingrediente não está mais disponível. Remova-o ou escolha um ingrediente do catálogo atual."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "validation_role",
+      "text": {
+        "de": "Wähle einen Kataloginhaltsstoff mit den für diese Phase erforderlichen chemischen Eigenschaften.",
+        "es": "Elige un ingrediente del catálogo con las propiedades químicas necesarias para esta fase.",
+        "fr": "Choisissez un ingrédient du catalogue avec les propriétés chimiques requises pour cette phase.",
+        "it": "Scegli un ingrediente dal catalogo con le proprietà chimiche richieste per questa fase.",
+        "nl": "Kies een catalogusingrediënt met de vereiste chemische eigenschappen voor deze fase.",
+        "pt_BR": "Escolha um ingrediente do catálogo com as propriedades químicas necessárias para esta fase."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "validation_total",
+      "text": {
+        "de": "Die Ölmischung oder Kosmetikrezeptur muss insgesamt 100 % ergeben.",
+        "es": "La mezcla de aceites o la fórmula cosmética debe sumar el 100 %.",
+        "fr": "Le mélange d’huiles ou la formule cosmétique doit totaliser 100 %.",
+        "it": "La miscela di oli o la formula cosmetica deve totalizzare il 100%.",
+        "nl": "Het oliemengsel of de cosmetische formule moet samen 100% zijn.",
+        "pt_BR": "A mistura de óleos ou a fórmula cosmética deve somar 100%."
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "water_mode",
+      "text": {
+        "de": "Wasserberechnung",
+        "es": "Cálculo del agua",
+        "fr": "Calcul de l’eau",
+        "it": "Calcolo dell’acqua",
+        "nl": "Waterberekening",
+        "pt_BR": "Cálculo da água"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "water_value",
+      "text": {
+        "de": "Wasserwert",
+        "es": "Valor del agua",
+        "fr": "Valeur pour l’eau",
+        "it": "Valore dell’acqua",
+        "nl": "Waterinstelling",
+        "pt_BR": "Valor da água"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "weight",
+      "text": {
+        "de": "Gewicht",
+        "es": "Peso",
+        "fr": "Poids",
+        "it": "Peso",
+        "nl": "Gewicht",
+        "pt_BR": "Peso"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "weight_mode",
+      "text": {
+        "de": "Gewichte",
+        "es": "Pesos",
+        "fr": "Poids",
+        "it": "Pesi",
+        "nl": "Gewichten",
+        "pt_BR": "Pesos"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "workspace_cta",
+      "text": {
+        "de": "Arbeitsbereich entdecken",
+        "es": "Explorar el espacio de trabajo",
+        "fr": "Découvrir l’espace de travail",
+        "it": "Esplora lo spazio di lavoro",
+        "nl": "Werkruimte verkennen",
+        "pt_BR": "Explorar o espaço de trabalho"
+      }
+    },
+    {
+      "group": "calculators",
+      "key": "workspace_hint",
+      "text": {
+        "de": "Speichere Rezepturen, verwalte Preise und verwende Inhaltsstoffe wieder in einem Arbeitsbereich.",
+        "es": "Utiliza un espacio de trabajo para guardar fórmulas, gestionar precios y reutilizar ingredientes.",
+        "fr": "Un espace de travail permet de conserver vos formules, de gérer les prix et de réutiliser les ingrédients.",
+        "it": "Usa uno spazio di lavoro per salvare formule, gestire prezzi e riutilizzare ingredienti.",
+        "nl": "Gebruik een werkruimte om formules op te slaan, prijzen te beheren en ingrediënten opnieuw te gebruiken.",
+        "pt_BR": "Use um espaço de trabalho para salvar fórmulas, gerenciar preços e reutilizar ingredientes."
+      }
+    },
+    {
       "group": "contextual_help",
       "key": "about",
       "text": {

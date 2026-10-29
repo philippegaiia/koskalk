@@ -1,4 +1,4 @@
-@props(['document'])
+@props(['document', 'numberLocale' => null])
 
 <section {{ $attributes->merge(['class' => 'border-y border-[var(--color-line)] py-4']) }}>
     <h2 class="text-xs font-semibold tracking-[0.08em] text-[var(--color-ink-soft)] uppercase">
@@ -9,7 +9,7 @@
             <div class="flex items-baseline justify-between gap-3 border-b border-[var(--color-line)] pb-2">
                 <dt class="text-xs text-[var(--color-ink-soft)]">{{ $result['label'] }}</dt>
                 <dd class="numeric text-sm font-semibold text-[var(--color-ink-strong)]">
-                    {{ number_format($result['value'], 2) }} {{ $result['unit'] }}
+                    {{ $numberLocale === null ? number_format($result['value'], 2) : \App\Support\NumberLocale::formatDecimal($result['value'], 2, $numberLocale) }} {{ $result['unit'] }}
                 </dd>
             </div>
         @endforeach

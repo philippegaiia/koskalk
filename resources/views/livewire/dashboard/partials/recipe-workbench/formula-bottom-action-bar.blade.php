@@ -65,9 +65,15 @@
 class="sk-btn bg-[var(--color-field-muted)] text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)]">
 <span x-text="isFormulaDiagnosticsOpen ? t('cosmetic.hide_details') : t('cosmetic.show_details')"></span>
 </button>
+@if ($isGuestCalculator ?? false)
+<button type="button" @click="printGuestFormula()" :disabled="!guestCanPrint || guestOutputPending" class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap">
+<x-action-icon name="printer" />{{ __('formula_documents.actions.print_short') }}
+</button>
+@elseif (! $isPublicCalculator)
 <button type="button" @click="publish()" :disabled="isFormulaLocked || !canSaveRecipe || isSaving" :class="isFormulaLocked || !canSaveRecipe || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'sk-btn-primary'" class="sk-btn">
 <span x-text="isFormulaLocked ? t('header.locked') : (isSaving ? t('header.saving') : t('header.save'))"></span>
 </button>
+@endif
  </div>
  </div>
  </section>

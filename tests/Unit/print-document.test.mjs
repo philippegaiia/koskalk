@@ -194,3 +194,18 @@ test('returns to an unsaved workbench with the same product type regardless of q
     assert.equal(prevented, true);
     assert.equal(focused, true);
 });
+
+test('formats guest calculation time in the browser locale and timezone', () => {
+    const element = {
+        textContent: 'Fallback UTC time',
+        getAttribute(name) { return name === 'data-timestamp' ? '2026-10-25T21:05:06+00:00' : 'Calculated on :date'; },
+    };
+    const documentRef = fakeDocument();
+    const originalQuery = documentRef.querySelectorAll;
+    documentRef.documentElement = { lang: 'fr-FR' };
+    documentRef.querySelectorAll = (selector) => selector === '[data-local-calculation-time]' ? [element] : originalQuery(selector);
+    initializePrintDocument(documentRef, {});
+    const expected = new Intl.DateTimeFormat('fr-FR', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', timeZoneName: 'short' }).format(new Date('2026-10-25T21:05:06+00:00'));
+    assert.equal(element.textContent, `Calculated on ${expected}`);
+    assert.equal(element.textContent.includes('T21:05:06'), false);
+});

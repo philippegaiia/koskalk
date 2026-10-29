@@ -60,6 +60,13 @@ class AppServiceProvider extends ServiceProvider
             ->numbers()
             ->symbols());
 
+        RateLimiter::for('calculator-preview', function (Request $request): array {
+            return [
+                Limit::perMinute(120)->by('calculator-session:'.$request->session()->getId()),
+                Limit::perMinute(600)->by('calculator-ip:'.$request->ip()),
+            ];
+        });
+
         RateLimiter::for('beta-invite-accept', function (Request $request): array {
             return [
                 Limit::perMinute(5)->by('beta-invite-ip:'.$request->ip()),

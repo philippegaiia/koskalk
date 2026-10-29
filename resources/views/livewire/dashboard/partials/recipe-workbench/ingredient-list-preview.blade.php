@@ -1,3 +1,15 @@
+@if ($isGuestCalculator ?? false)
+<section class="sk-card p-5" aria-labelledby="guest-ingredient-list-heading">
+    <h2 id="guest-ingredient-list-heading" class="sk-eyebrow" x-text="guestText(guestLabeling.incomplete ? 'label_incomplete' : 'label_draft')"></h2>
+    <p class="mt-3 text-sm leading-6 text-[var(--color-ink-strong)]" x-text="guestLabeling.text || guestText('results_empty')"></p>
+    <p class="mt-3 text-xs text-[var(--color-ink-soft)]">{{ __('calculators.allergens_unchecked') }}</p>
+    <div x-show="guestWarnings.length" x-cloak class="mt-4 rounded-lg border border-[var(--color-line)] px-4 py-3">
+        <ul class="list-inside list-disc space-y-1 text-xs leading-5 text-[var(--color-ink-soft)]">
+            <template x-for="(warning, index) in guestWarnings" :key="index"><li x-text="warning"></li></template>
+        </ul>
+    </div>
+</section>
+@else
 @php($isCosmeticWorkbench = $isCosmeticWorkbench ?? false)
 
 <section class="sk-card p-5" aria-labelledby="ingredient-list-preview-heading">
@@ -266,3 +278,5 @@
  </div>
  </div>
 </section>
+
+@endif

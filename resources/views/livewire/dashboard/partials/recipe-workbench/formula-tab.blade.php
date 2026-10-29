@@ -43,10 +43,18 @@
  <div class="@5xl/workbench:hidden">
  @include('livewire.dashboard.partials.recipe-workbench.fatty-acid-profile')
  </div>
+ <div @if ($isGuestCalculator ?? false) x-show="guestAnalysisAvailable" @endif>
  @include('livewire.dashboard.partials.recipe-workbench.formula-analysis')
+ </div>
  @endif
  </div>
  </section>
+ @if ($isGuestCalculator ?? false)
+ <section class="sk-card p-5">
+     <label for="guest-calculation-notes" class="sk-eyebrow">{{ __('calculators.notes') }}</label>
+     <textarea id="guest-calculation-notes" x-model="guestNotes" rows="3" maxlength="4000" class="mt-3 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)]"></textarea>
+ </section>
+ @endif
  @include('livewire.dashboard.partials.recipe-workbench.formula-confirmation-modal')
  @include('livewire.dashboard.partials.recipe-workbench.formula-bottom-action-bar')
  </fieldset>

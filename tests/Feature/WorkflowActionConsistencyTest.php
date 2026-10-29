@@ -21,18 +21,26 @@ it('uses rectangular mapped actions throughout the recipe workbench', function (
 });
 
 it('provides bottom workflow actions for costing and label output', function (): void {
-    $costing = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/costing-tab.blade.php'));
-    $output = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/output-tab.blade.php'));
+    $costing = view('livewire.dashboard.partials.recipe-workbench.costing-tab')->render();
+    $output = view('livewire.dashboard.partials.recipe-workbench.output-tab', [
+        'isPublicCalculator' => false,
+    ])->render();
 
-    expect($costing)
-        ->toContain('<x-workflow-action-bar max-width="max-w-app" data-costing-save-bar>')
-        ->toContain('@click="persistCosting()"')
-        ->toContain('class="sk-btn sk-btn-primary"')
-        ->and($output)
-        ->toContain('@unless ($isPublicCalculator)')
-        ->toContain('<x-workflow-action-bar max-width="max-w-app" data-output-save-bar>')
-        ->toContain('@click="publish()"')
-        ->toContain('class="sk-btn sk-btn-primary"');
+    expect($costing)->toContain('data-costing-save-bar', '@click="persistCosting()"', 'sk-btn sk-btn-primary');
+    expect($output)->toContain('data-output-save-bar', '@click="publish()"', 'sk-btn sk-btn-primary');
+});
+
+it('shows printing instead of account saving in guest label output', function (): void {
+    $guestOutput = view('livewire.dashboard.partials.recipe-workbench.output-tab', [
+        'isPublicCalculator' => true, 'isGuestCalculator' => true,
+    ])->render();
+    $legacyPublicOutput = view('livewire.dashboard.partials.recipe-workbench.output-tab', [
+        'isPublicCalculator' => true,
+    ])->render();
+
+    expect($guestOutput)->toContain('data-guest-output-action-bar', '@click="printGuestFormula()"')
+        ->not->toContain('data-output-save-bar', '@click="publish()"');
+    expect($legacyPublicOutput)->not->toContain('data-output-save-bar', '@click="publish()"', 'data-guest-output-action-bar');
 });
 
 it('uses rectangular primary actions for inventory and settings', function (): void {

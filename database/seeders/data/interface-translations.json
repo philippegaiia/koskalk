@@ -51000,6 +51000,18 @@
     },
     {
       "group": "workbench",
+      "key": "settings.summary.lye_concentration",
+      "text": {
+        "de": "Konzentration :value %",
+        "es": "Concentración :value %",
+        "fr": "Concentration :value %",
+        "it": "Concentrazione :value%",
+        "nl": "Concentratie :value%",
+        "pt_BR": "Concentração :value%"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "settings.summary.lye_excess",
       "text": {
         "de": "Laugenüberschuss",
@@ -51020,18 +51032,6 @@
         "it": "Riduzione degli alcali",
         "nl": "Loogreductie",
         "pt_BR": "Redução de álcali"
-      }
-    },
-    {
-      "group": "workbench",
-      "key": "settings.summary.lye_concentration",
-      "text": {
-        "de": "Konzentration :value %",
-        "es": "Concentración :value %",
-        "fr": "Concentration :value %",
-        "it": "Concentrazione :value%",
-        "nl": "Concentratie :value%",
-        "pt_BR": "Concentração :value%"
       }
     },
     {

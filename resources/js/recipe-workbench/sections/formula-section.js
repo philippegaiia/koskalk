@@ -245,7 +245,9 @@ export function createFormulaSection() {
                     {
                         id: 'formula-water',
                         label: this.t('settings.lye_liquid'),
-                        value: `${this.lyeLiquidSelectionSummary()} · ${this.waterModeSummaryLabel}`,
+                        value: this.lyeLiquidRows.length === 0
+                            ? this.waterModeSummaryLabel
+                            : `${this.lyeLiquidSelectionSummary()} · ${this.waterModeSummaryLabel}`,
                         tone: 'chemistry',
                     },
                     {

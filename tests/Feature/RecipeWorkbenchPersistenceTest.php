@@ -6304,6 +6304,7 @@ const workbench = {
     const translation = ({
       'settings.water': 'Water',
       'soap.naoh': 'Lye (NaOH)',
+      'settings.lye_liquid_water_only': 'Dilution liquid: Water only',
       'settings.lye_liquid_selected_singular': 'Water + 1 selected liquid',
       'settings.lye_liquid_water_free_plural': ':count selected liquids · no water',
       'settings.lye_liquid_water_free_singular': '1 selected liquid · no water',
@@ -6346,6 +6347,25 @@ workbench.phaseItems.lye_water = [
   { id: 'milk', name: 'Goat Milk', percentage: 40 },
 ];
 assert.equal(workbench.lyeLiquidSelectionSummary(), '2 selected liquids · no water');
+
+const summaryContext = {
+  estimatedFreeFat: null,
+  t: workbench.t,
+  format: (value) => String(value),
+  waterModeSummaryLabel: 'Lye 32%',
+  get lyeLiquidRows() { return workbench.lyeLiquidRows; },
+  lyeLiquidSelectionSummary: () => workbench.lyeLiquidSelectionSummary(),
+};
+const alkaliSummary = () => Object.getOwnPropertyDescriptor(
+  globalThis.createFormulaSection(), 'formulaSetupSummaryCards',
+).get.call(summaryContext).find((card) => card.id === 'formula-water').value;
+
+assert.equal(alkaliSummary(), '2 selected liquids · no water · Lye 32%');
+workbench.phaseItems.lye_water = [{ id: 'lavender', name: 'Lavender Hydrosol', percentage: 70 }];
+assert.equal(alkaliSummary(), 'Water + 1 selected liquid · Lye 32%');
+workbench.phaseItems.lye_water = [];
+assert.equal(alkaliSummary(), 'Lye 32%');
+assert.equal(workbench.lyeLiquidSelectionSummary(), 'Dilution liquid: Water only');
 JS;
 
     $process = Process::fromShellCommandline(

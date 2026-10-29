@@ -5618,11 +5618,11 @@
       "group": "ingredients",
       "key": "categories.actives.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Actives & specialty ingredients.",
-        "es": "Categoría: Classification guidance for Actives & specialty ingredients.",
-        "fr": "Catégorie: Classification guidance for Actives & specialty ingredients.",
-        "it": "Categoria: Classification guidance for Actives & specialty ingredients.",
-        "nl": "Categorie: Classification guidance for Actives & specialty ingredients.",
+        "de": "Inhaltsstoffe, die für einen gezielten Nutzen für Haut, Haar, Schutz oder Sensorik gewählt werden.",
+        "es": "Ingredientes elegidos por un beneficio específico para la piel, el cabello, la protección o la sensorialidad.",
+        "fr": "Ingrédients choisis pour un bénéfice ciblé sur la peau, les cheveux, la protection ou la sensorialité.",
+        "it": "Ingredienti scelti per un beneficio mirato su pelle, capelli, protezione o sensorialità.",
+        "nl": "Ingrediënten gekozen voor een gericht voordeel voor huid, haar, bescherming of huidgevoel.",
         "pt_BR": "Ingredientes selecionados por um benefício direcionado para a pele, o cabelo, a proteção ou a experiência sensorial."
       }
     },
@@ -5630,11 +5630,11 @@
       "group": "ingredients",
       "key": "categories.actives.label",
       "text": {
-        "de": "Kategorie: Actives & specialty ingredients",
-        "es": "Categoría: Actives & specialty ingredients",
-        "fr": "Catégorie: Actives & specialty ingredients",
-        "it": "Categoria: Actives & specialty ingredients",
-        "nl": "Categorie: Actives & specialty ingredients",
+        "de": "Wirkstoffe & Spezialinhaltsstoffe",
+        "es": "Activos e ingredientes especiales",
+        "fr": "Actifs & ingrédients spécifiques",
+        "it": "Attivi e ingredienti speciali",
+        "nl": "Werkstoffen & speciale ingrediënten",
         "pt_BR": "Ativos e ingredientes especiais"
       }
     },
@@ -5654,11 +5654,11 @@
       "group": "ingredients",
       "key": "categories.additive.description",
       "text": {
-        "de": "Kategorie: Legacy additive value retained for migration.",
-        "es": "Categoría: Legacy additive value retained for migration.",
-        "fr": "Catégorie: Legacy additive value retained for migration.",
-        "it": "Categoria: Legacy additive value retained for migration.",
-        "nl": "Categorie: Legacy additive value retained for migration.",
+        "de": "Veralteter Zusatzstoff-Wert, für die Migration beibehalten.",
+        "es": "Valor heredado de aditivo conservado para la migración.",
+        "fr": "Ancienne valeur « additif » conservée pour la migration.",
+        "it": "Valore legacy di additivo mantenuto per la migrazione.",
+        "nl": "Verouderde additiefwaarde, bewaard voor de migratie.",
         "pt_BR": "Valor de aditivo legado mantido para migração."
       }
     },
@@ -5666,11 +5666,11 @@
       "group": "ingredients",
       "key": "categories.additive.label",
       "text": {
-        "de": "Kategorie: Additive",
-        "es": "Categoría: Additive",
-        "fr": "Catégorie: Additive",
-        "it": "Categoria: Additive",
-        "nl": "Categorie: Additive",
+        "de": "Zusatzstoff",
+        "es": "Aditivo",
+        "fr": "Additif",
+        "it": "Additivo",
+        "nl": "Additief",
         "pt_BR": "Aditivo"
       }
     },
@@ -5678,11 +5678,11 @@
       "group": "ingredients",
       "key": "categories.alkali.description",
       "text": {
-        "de": "Kategorie: Legacy alkali value retained for migration.",
-        "es": "Categoría: Legacy alkali value retained for migration.",
-        "fr": "Catégorie: Legacy alkali value retained for migration.",
-        "it": "Categoria: Legacy alkali value retained for migration.",
-        "nl": "Categorie: Legacy alkali value retained for migration.",
+        "de": "Veralteter Alkali-Wert, für die Migration beibehalten.",
+        "es": "Valor heredado de álcali conservado para la migración.",
+        "fr": "Ancienne valeur « alcali » conservée pour la migration.",
+        "it": "Valore legacy di alcali mantenuto per la migrazione.",
+        "nl": "Verouderde alkaliwaarde, bewaard voor de migratie.",
         "pt_BR": "Valor de álcali legado mantido para migração."
       }
     },
@@ -5690,11 +5690,11 @@
       "group": "ingredients",
       "key": "categories.alkali.label",
       "text": {
-        "de": "Kategorie: Alkali",
-        "es": "Categoría: Alkali",
-        "fr": "Catégorie: Alkali",
-        "it": "Categoria: Alkali",
-        "nl": "Categorie: Alkali",
+        "de": "Alkali",
+        "es": "Álcali",
+        "fr": "Alcali",
+        "it": "Alcali",
+        "nl": "Alkali",
         "pt_BR": "Álcali"
       }
     },
@@ -5702,11 +5702,11 @@
       "group": "ingredients",
       "key": "categories.aromatic_materials.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Essential oils & fragrance materials.",
-        "es": "Categoría: Classification guidance for Essential oils & fragrance materials.",
-        "fr": "Catégorie: Classification guidance for Essential oils & fragrance materials.",
-        "it": "Categoria: Classification guidance for Essential oils & fragrance materials.",
-        "nl": "Categorie: Classification guidance for Essential oils & fragrance materials.",
+        "de": "Aromatische Stoffe, die eine duft-, allergen- und IFRA-gerechte Handhabung erfordern.",
+        "es": "Materias aromáticas que requieren un manejo acorde con fragancias, alérgenos e IFRA.",
+        "fr": "Matières aromatiques qui demandent une gestion adaptée au parfum, aux allergènes et à l’IFRA.",
+        "it": "Materie aromatiche che richiedono una gestione attenta a fragranza, allergeni e IFRA.",
+        "nl": "Aromatische stoffen die een geur-, allergeen- en IFRA-bewuste aanpak vereisen.",
         "pt_BR": "Materiais aromáticos que exigem atenção a fragrâncias, alérgenos e IFRA."
       }
     },
@@ -5714,11 +5714,11 @@
       "group": "ingredients",
       "key": "categories.aromatic_materials.label",
       "text": {
-        "de": "Kategorie: Essential oils & fragrance materials",
-        "es": "Categoría: Essential oils & fragrance materials",
-        "fr": "Catégorie: Essential oils & fragrance materials",
-        "it": "Categoria: Essential oils & fragrance materials",
-        "nl": "Categorie: Essential oils & fragrance materials",
+        "de": "Ätherische Öle & Duftstoffe",
+        "es": "Aceites esenciales y materias aromáticas",
+        "fr": "Huiles essentielles & matières aromatiques",
+        "it": "Oli essenziali e materie aromatiche",
+        "nl": "Etherische oliën & geurstoffen",
         "pt_BR": "Óleos essenciais e materiais de fragrância"
       }
     },
@@ -5738,11 +5738,11 @@
       "group": "ingredients",
       "key": "categories.bases_blends_premixes.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Bases, blends & premixes.",
-        "es": "Categoría: Classification guidance for Bases, blends & premixes.",
-        "fr": "Catégorie: Classification guidance for Bases, blends & premixes.",
-        "it": "Categoria: Classification guidance for Bases, blends & premixes.",
-        "nl": "Categorie: Classification guidance for Bases, blends & premixes.",
+        "de": "Handelsübliche Basen und Fertigmischungen, die als funktionelle Ausgangsstoffe geliefert werden.",
+        "es": "Bases comerciales y mezclas preparadas suministradas como materiales de partida funcionales.",
+        "fr": "Bases du commerce et mélanges prêts à l’emploi fournis comme matières premières fonctionnelles.",
+        "it": "Basi commerciali e miscele pronte fornite come materie prime funzionali.",
+        "nl": "Commerciële bases en kant-en-klare mengsels die als functionele grondstof worden geleverd.",
         "pt_BR": "Bases comerciais e misturas preparadas fornecidas como materiais funcionais de partida."
       }
     },
@@ -5750,11 +5750,11 @@
       "group": "ingredients",
       "key": "categories.bases_blends_premixes.label",
       "text": {
-        "de": "Kategorie: Bases, blends & premixes",
-        "es": "Categoría: Bases, blends & premixes",
-        "fr": "Catégorie: Bases, blends & premixes",
-        "it": "Categoria: Bases, blends & premixes",
-        "nl": "Categorie: Bases, blends & premixes",
+        "de": "Basen, Mischungen & Vormischungen",
+        "es": "Bases, mezclas y premezclas",
+        "fr": "Bases, mélanges & prémélanges",
+        "it": "Basi, miscele e premiscele",
+        "nl": "Bases, mengsels & premixen",
         "pt_BR": "Bases, misturas e pré-misturas"
       }
     },
@@ -5774,11 +5774,11 @@
       "group": "ingredients",
       "key": "categories.botanical_extract.description",
       "text": {
-        "de": "Kategorie: Legacy botanical-extract value retained for migration.",
-        "es": "Categoría: Legacy botanical-extract value retained for migration.",
-        "fr": "Catégorie: Legacy botanical-extract value retained for migration.",
-        "it": "Categoria: Legacy botanical-extract value retained for migration.",
-        "nl": "Categorie: Legacy botanical-extract value retained for migration.",
+        "de": "Veralteter Pflanzenextrakt-Wert, für die Migration beibehalten.",
+        "es": "Valor heredado de extracto botánico conservado para la migración.",
+        "fr": "Ancienne valeur « extrait végétal » conservée pour la migration.",
+        "it": "Valore legacy di estratto vegetale mantenuto per la migrazione.",
+        "nl": "Verouderde waarde voor plantenextract, bewaard voor de migratie.",
         "pt_BR": "Valor de extrato botânico legado mantido para migração."
       }
     },
@@ -5786,11 +5786,11 @@
       "group": "ingredients",
       "key": "categories.botanical_extract.label",
       "text": {
-        "de": "Kategorie: Botanical Extract",
-        "es": "Categoría: Botanical Extract",
-        "fr": "Catégorie: Botanical Extract",
-        "it": "Categoria: Botanical Extract",
-        "nl": "Categorie: Botanical Extract",
+        "de": "Pflanzenextrakt",
+        "es": "Extracto botánico",
+        "fr": "Extrait végétal",
+        "it": "Estratto vegetale",
+        "nl": "Plantenextract",
         "pt_BR": "Extrato botânico"
       }
     },
@@ -5798,11 +5798,11 @@
       "group": "ingredients",
       "key": "categories.botanicals_extracts.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Botanicals & extracts.",
-        "es": "Categoría: Classification guidance for Botanicals & extracts.",
-        "fr": "Catégorie: Classification guidance for Botanicals & extracts.",
-        "it": "Categoria: Classification guidance for Botanicals & extracts.",
-        "nl": "Categorie: Classification guidance for Botanicals & extracts.",
+        "de": "Pflanzliche Wässer, Extrakte, Mazerate und Pulver.",
+        "es": "Aguas, extractos, macerados y polvos de origen vegetal.",
+        "fr": "Eaux, extraits, macérats et poudres d’origine végétale.",
+        "it": "Acque, estratti, macerati e polveri di origine vegetale.",
+        "nl": "Plantaardige waters, extracten, maceraten en poeders.",
         "pt_BR": "Águas, extratos, macerados e pós de origem vegetal."
       }
     },
@@ -5810,11 +5810,11 @@
       "group": "ingredients",
       "key": "categories.botanicals_extracts.label",
       "text": {
-        "de": "Kategorie: Botanicals & extracts",
-        "es": "Categoría: Botanicals & extracts",
-        "fr": "Catégorie: Botanicals & extracts",
-        "it": "Categoria: Botanicals & extracts",
-        "nl": "Categorie: Botanicals & extracts",
+        "de": "Pflanzenstoffe & Extrakte",
+        "es": "Botánicos y extractos",
+        "fr": "Végétaux & extraits",
+        "it": "Vegetali ed estratti",
+        "nl": "Plantaardige stoffen & extracten",
         "pt_BR": "Botânicos e extratos"
       }
     },
@@ -5834,11 +5834,11 @@
       "group": "ingredients",
       "key": "categories.carrier_oil.description",
       "text": {
-        "de": "Kategorie: Legacy carrier-oil value retained for migration.",
-        "es": "Categoría: Legacy carrier-oil value retained for migration.",
-        "fr": "Catégorie: Legacy carrier-oil value retained for migration.",
-        "it": "Categoria: Legacy carrier-oil value retained for migration.",
-        "nl": "Categorie: Legacy carrier-oil value retained for migration.",
+        "de": "Veralteter Trägeröl-Wert, für die Migration beibehalten.",
+        "es": "Valor heredado de aceite portador conservado para la migración.",
+        "fr": "Ancienne valeur « huile végétale » conservée pour la migration.",
+        "it": "Valore legacy di olio vettore mantenuto per la migrazione.",
+        "nl": "Verouderde draagoliewaarde, bewaard voor de migratie.",
         "pt_BR": "Valor de óleo carreador legado mantido para migração."
       }
     },
@@ -5846,11 +5846,11 @@
       "group": "ingredients",
       "key": "categories.carrier_oil.label",
       "text": {
-        "de": "Kategorie: Carrier Oil",
-        "es": "Categoría: Carrier Oil",
-        "fr": "Catégorie: Carrier Oil",
-        "it": "Categoria: Carrier Oil",
-        "nl": "Categorie: Carrier Oil",
+        "de": "Trägeröl",
+        "es": "Aceite portador",
+        "fr": "Huile végétale",
+        "it": "Olio vettore",
+        "nl": "Draagolie",
         "pt_BR": "Óleo carreador"
       }
     },
@@ -5858,11 +5858,11 @@
       "group": "ingredients",
       "key": "categories.clay.description",
       "text": {
-        "de": "Kategorie: Legacy clay value retained for migration.",
-        "es": "Categoría: Legacy clay value retained for migration.",
-        "fr": "Catégorie: Legacy clay value retained for migration.",
-        "it": "Categoria: Legacy clay value retained for migration.",
-        "nl": "Categorie: Legacy clay value retained for migration.",
+        "de": "Veralteter Tonerde-Wert, für die Migration beibehalten.",
+        "es": "Valor heredado de arcilla conservado para la migración.",
+        "fr": "Ancienne valeur « argile » conservée pour la migration.",
+        "it": "Valore legacy di argilla mantenuto per la migrazione.",
+        "nl": "Verouderde kleiwaarde, bewaard voor de migratie.",
         "pt_BR": "Valor de argila legado mantido para migração."
       }
     },
@@ -5870,11 +5870,11 @@
       "group": "ingredients",
       "key": "categories.clay.label",
       "text": {
-        "de": "Kategorie: Clay",
-        "es": "Categoría: Clay",
-        "fr": "Catégorie: Clay",
-        "it": "Categoria: Clay",
-        "nl": "Categorie: Clay",
+        "de": "Tonerde",
+        "es": "Arcilla",
+        "fr": "Argile",
+        "it": "Argilla",
+        "nl": "Klei",
         "pt_BR": "Argila"
       }
     },
@@ -5882,11 +5882,11 @@
       "group": "ingredients",
       "key": "categories.co2_extract.description",
       "text": {
-        "de": "Kategorie: Legacy CO2-extract value retained for migration.",
-        "es": "Categoría: Legacy CO2-extract value retained for migration.",
-        "fr": "Catégorie: Legacy CO2-extract value retained for migration.",
-        "it": "Categoria: Legacy CO2-extract value retained for migration.",
-        "nl": "Categorie: Legacy CO2-extract value retained for migration.",
+        "de": "Veralteter CO2-Extrakt-Wert, für die Migration beibehalten.",
+        "es": "Valor heredado de extracto CO2 conservado para la migración.",
+        "fr": "Ancienne valeur « extrait CO2 » conservée pour la migration.",
+        "it": "Valore legacy di estratto CO2 mantenuto per la migrazione.",
+        "nl": "Verouderde waarde voor CO2-extract, bewaard voor de migratie.",
         "pt_BR": "Valor de extrato de CO2 legado mantido para migração."
       }
     },
@@ -5894,11 +5894,11 @@
       "group": "ingredients",
       "key": "categories.co2_extract.label",
       "text": {
-        "de": "Kategorie: CO2 Extract",
-        "es": "Categoría: CO2 Extract",
-        "fr": "Catégorie: CO2 Extract",
-        "it": "Categoria: CO2 Extract",
-        "nl": "Categorie: CO2 Extract",
+        "de": "CO2-Extrakt",
+        "es": "Extracto CO2",
+        "fr": "Extrait CO2",
+        "it": "Estratto CO2",
+        "nl": "CO2-extract",
         "pt_BR": "Extrato de CO2"
       }
     },
@@ -5906,11 +5906,11 @@
       "group": "ingredients",
       "key": "categories.colorant.description",
       "text": {
-        "de": "Kategorie: Legacy colorant value retained for migration.",
-        "es": "Categoría: Legacy colorant value retained for migration.",
-        "fr": "Catégorie: Legacy colorant value retained for migration.",
-        "it": "Categoria: Legacy colorant value retained for migration.",
-        "nl": "Categorie: Legacy colorant value retained for migration.",
+        "de": "Veralteter Farbstoff-Wert, für die Migration beibehalten.",
+        "es": "Valor heredado de colorante conservado para la migración.",
+        "fr": "Ancienne valeur « colorant » conservée pour la migration.",
+        "it": "Valore legacy di colorante mantenuto per la migrazione.",
+        "nl": "Verouderde kleurstofwaarde, bewaard voor de migratie.",
         "pt_BR": "Valor de corante legado mantido para migração."
       }
     },
@@ -5918,11 +5918,11 @@
       "group": "ingredients",
       "key": "categories.colorant.label",
       "text": {
-        "de": "Kategorie: Colorant",
-        "es": "Categoría: Colorant",
-        "fr": "Catégorie: Colorant",
-        "it": "Categoria: Colorant",
-        "nl": "Categorie: Colorant",
+        "de": "Farbstoff",
+        "es": "Colorante",
+        "fr": "Colorant",
+        "it": "Colorante",
+        "nl": "Kleurstof",
         "pt_BR": "Corante"
       }
     },
@@ -5930,11 +5930,11 @@
       "group": "ingredients",
       "key": "categories.colourants.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Colourants.",
-        "es": "Categoría: Classification guidance for Colourants.",
-        "fr": "Catégorie: Classification guidance for Colourants.",
-        "it": "Categoria: Classification guidance for Colourants.",
-        "nl": "Categorie: Classification guidance for Colourants.",
+        "de": "Pigmente, Farbstoffe, Glimmer und andere Stoffe zum Färben eines Produkts.",
+        "es": "Pigmentos, tintes, micas y otros materiales usados para colorear un producto.",
+        "fr": "Pigments, colorants, micas et autres matières utilisées pour colorer un produit.",
+        "it": "Pigmenti, coloranti, miche e altri materiali usati per colorare un prodotto.",
+        "nl": "Pigmenten, kleurstoffen, mica’s en andere stoffen om een product te kleuren.",
         "pt_BR": "Pigmentos, corantes, micas e outros materiais usados para colorir um produto."
       }
     },
@@ -5942,11 +5942,11 @@
       "group": "ingredients",
       "key": "categories.colourants.label",
       "text": {
-        "de": "Kategorie: Colourants",
-        "es": "Categoría: Colourants",
-        "fr": "Catégorie: Colourants",
-        "it": "Categoria: Colourants",
-        "nl": "Categorie: Colourants",
+        "de": "Farbmittel",
+        "es": "Colorantes",
+        "fr": "Colorants",
+        "it": "Coloranti",
+        "nl": "Kleurstoffen",
         "pt_BR": "Corantes e pigmentos"
       }
     },
@@ -5966,11 +5966,11 @@
       "group": "ingredients",
       "key": "categories.emulsifiers.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Emulsifiers, solubilizers & co-emulsifiers.",
-        "es": "Categoría: Classification guidance for Emulsifiers, solubilizers & co-emulsifiers.",
-        "fr": "Catégorie: Classification guidance for Emulsifiers, solubilizers & co-emulsifiers.",
-        "it": "Categoria: Classification guidance for Emulsifiers, solubilizers & co-emulsifiers.",
-        "nl": "Categorie: Classification guidance for Emulsifiers, solubilizers & co-emulsifiers.",
+        "de": "Stoffe, die Öl- und Wasserphasen verbinden, stabilisieren oder löslich machen.",
+        "es": "Materiales que combinan, estabilizan o solubilizan fases oleosas y acuosas.",
+        "fr": "Substances qui associent, stabilisent ou solubilisent les phases huileuse et aqueuse.",
+        "it": "Sostanze che uniscono, stabilizzano o solubilizzano fasi oleose e acquose.",
+        "nl": "Stoffen die olie- en waterfasen combineren, stabiliseren of oplosbaar maken.",
         "pt_BR": "Materiais que combinam, estabilizam ou solubilizam as fases de óleo e água."
       }
     },
@@ -5978,11 +5978,11 @@
       "group": "ingredients",
       "key": "categories.emulsifiers.label",
       "text": {
-        "de": "Kategorie: Emulsifiers, solubilizers & co-emulsifiers",
-        "es": "Categoría: Emulsifiers, solubilizers & co-emulsifiers",
-        "fr": "Catégorie: Emulsifiers, solubilizers & co-emulsifiers",
-        "it": "Categoria: Emulsifiers, solubilizers & co-emulsifiers",
-        "nl": "Categorie: Emulsifiers, solubilizers & co-emulsifiers",
+        "de": "Emulgatoren, Lösungsvermittler & Co-Emulgatoren",
+        "es": "Emulsionantes, solubilizantes y coemulsionantes",
+        "fr": "Émulsifiants, solubilisants & co-émulsifiants",
+        "it": "Emulsionanti, solubilizzanti e co-emulsionanti",
+        "nl": "Emulgatoren, oplosmiddelen & co-emulgatoren",
         "pt_BR": "Emulsionantes, solubilizantes e coemulsionantes"
       }
     },
@@ -6002,11 +6002,11 @@
       "group": "ingredients",
       "key": "categories.essential_oil.description",
       "text": {
-        "de": "Kategorie: Legacy essential-oil value retained for migration.",
-        "es": "Categoría: Legacy essential-oil value retained for migration.",
-        "fr": "Catégorie: Legacy essential-oil value retained for migration.",
-        "it": "Categoria: Legacy essential-oil value retained for migration.",
-        "nl": "Categorie: Legacy essential-oil value retained for migration.",
+        "de": "Veralteter Wert für ätherisches Öl, für die Migration beibehalten.",
+        "es": "Valor heredado de aceite esencial conservado para la migración.",
+        "fr": "Ancienne valeur « huile essentielle » conservée pour la migration.",
+        "it": "Valore legacy di olio essenziale mantenuto per la migrazione.",
+        "nl": "Verouderde waarde voor etherische olie, bewaard voor de migratie.",
         "pt_BR": "Valor de óleo essencial legado mantido para migração."
       }
     },
@@ -6014,11 +6014,11 @@
       "group": "ingredients",
       "key": "categories.essential_oil.label",
       "text": {
-        "de": "Kategorie: Essential Oil",
-        "es": "Categoría: Essential Oil",
-        "fr": "Catégorie: Essential Oil",
-        "it": "Categoria: Essential Oil",
-        "nl": "Categorie: Essential Oil",
+        "de": "Ätherisches Öl",
+        "es": "Aceite esencial",
+        "fr": "Huile essentielle",
+        "it": "Olio essenziale",
+        "nl": "Etherische olie",
         "pt_BR": "Óleo essencial"
       }
     },
@@ -6026,11 +6026,11 @@
       "group": "ingredients",
       "key": "categories.exfoliants_abrasives.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Exfoliants & abrasives.",
-        "es": "Categoría: Classification guidance for Exfoliants & abrasives.",
-        "fr": "Catégorie: Classification guidance for Exfoliants & abrasives.",
-        "it": "Categoria: Classification guidance for Exfoliants & abrasives.",
-        "nl": "Categorie: Classification guidance for Exfoliants & abrasives.",
+        "de": "Partikel oder Säuren zum Peelen, Polieren oder Abtragen.",
+        "es": "Partículas o ácidos usados para exfoliar, pulir o desgastar.",
+        "fr": "Particules ou acides utilisés pour exfolier, polir ou abraser.",
+        "it": "Particelle o acidi usati per esfoliare, levigare o abradere.",
+        "nl": "Deeltjes of zuren om te exfoliëren, polijsten of schuren.",
         "pt_BR": "Materiais particulados ou ácidos usados para esfoliar, polir ou abrasionar."
       }
     },
@@ -6038,11 +6038,11 @@
       "group": "ingredients",
       "key": "categories.exfoliants_abrasives.label",
       "text": {
-        "de": "Kategorie: Exfoliants & abrasives",
-        "es": "Categoría: Exfoliants & abrasives",
-        "fr": "Catégorie: Exfoliants & abrasives",
-        "it": "Categoria: Exfoliants & abrasives",
-        "nl": "Categorie: Exfoliants & abrasives",
+        "de": "Peelingstoffe & Abrasiva",
+        "es": "Exfoliantes y abrasivos",
+        "fr": "Exfoliants & abrasifs",
+        "it": "Esfolianti e abrasivi",
+        "nl": "Exfolianten & schuurmiddelen",
         "pt_BR": "Esfoliantes e abrasivos"
       }
     },
@@ -6062,11 +6062,11 @@
       "group": "ingredients",
       "key": "categories.fatty_derivatives.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Fatty acids, alcohols & esters.",
-        "es": "Categoría: Classification guidance for Fatty acids, alcohols & esters.",
-        "fr": "Catégorie: Classification guidance for Fatty acids, alcohols & esters.",
-        "it": "Categoria: Classification guidance for Fatty acids, alcohols & esters.",
-        "nl": "Categorie: Classification guidance for Fatty acids, alcohols & esters.",
+        "de": "Fettbausteine und kosmetische Ester für Struktur und Pflegegefühl.",
+        "es": "Componentes grasos y ésteres cosméticos usados para estructura y emoliencia.",
+        "fr": "Briques grasses et esters cosmétiques utilisés pour la structure et l’émollience.",
+        "it": "Componenti grassi ed esteri cosmetici usati per struttura ed emollienza.",
+        "nl": "Vetbouwstenen en cosmetische esters voor structuur en verzachting.",
         "pt_BR": "Blocos de construção graxos e ésteres cosméticos usados para estrutura e emoliência."
       }
     },
@@ -6074,11 +6074,11 @@
       "group": "ingredients",
       "key": "categories.fatty_derivatives.label",
       "text": {
-        "de": "Kategorie: Fatty acids, alcohols & esters",
-        "es": "Categoría: Fatty acids, alcohols & esters",
-        "fr": "Catégorie: Fatty acids, alcohols & esters",
-        "it": "Categoria: Fatty acids, alcohols & esters",
-        "nl": "Categorie: Fatty acids, alcohols & esters",
+        "de": "Fettsäuren, Fettalkohole & Ester",
+        "es": "Ácidos grasos, alcoholes y ésteres",
+        "fr": "Acides gras, alcools gras & esters",
+        "it": "Acidi grassi, alcoli ed esteri",
+        "nl": "Vetzuren, vetalcoholen & esters",
         "pt_BR": "Ácidos graxos, álcoois graxos e ésteres"
       }
     },
@@ -6098,11 +6098,11 @@
       "group": "ingredients",
       "key": "categories.fragrance_oil.description",
       "text": {
-        "de": "Kategorie: Legacy fragrance-oil value retained for migration.",
-        "es": "Categoría: Legacy fragrance-oil value retained for migration.",
-        "fr": "Catégorie: Legacy fragrance-oil value retained for migration.",
-        "it": "Categoria: Legacy fragrance-oil value retained for migration.",
-        "nl": "Categorie: Legacy fragrance-oil value retained for migration.",
+        "de": "Veralteter Duftöl-Wert, für die Migration beibehalten.",
+        "es": "Valor heredado de aceite de fragancia conservado para la migración.",
+        "fr": "Ancienne valeur « huile parfumée » conservée pour la migration.",
+        "it": "Valore legacy di olio profumato mantenuto per la migrazione.",
+        "nl": "Verouderde geuroliewaarde, bewaard voor de migratie.",
         "pt_BR": "Valor de óleo de fragrância legado mantido para migração."
       }
     },
@@ -6110,11 +6110,11 @@
       "group": "ingredients",
       "key": "categories.fragrance_oil.label",
       "text": {
-        "de": "Kategorie: Fragrance Oil",
-        "es": "Categoría: Fragrance Oil",
-        "fr": "Catégorie: Fragrance Oil",
-        "it": "Categoria: Fragrance Oil",
-        "nl": "Categorie: Fragrance Oil",
+        "de": "Duftöl",
+        "es": "Aceite de fragancia",
+        "fr": "Huile parfumée",
+        "it": "Olio profumato",
+        "nl": "Geurolie",
         "pt_BR": "Óleo de fragrância"
       }
     },
@@ -6122,11 +6122,11 @@
       "group": "ingredients",
       "key": "categories.functional_polymers.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Polymers, film-formers & conditioners.",
-        "es": "Categoría: Classification guidance for Polymers, film-formers & conditioners.",
-        "fr": "Catégorie: Classification guidance for Polymers, film-formers & conditioners.",
-        "it": "Categoria: Classification guidance for Polymers, film-formers & conditioners.",
-        "nl": "Categorie: Classification guidance for Polymers, film-formers & conditioners.",
+        "de": "Funktionelle Polymere für Pflege, Filmbildung, Halt und Textur.",
+        "es": "Polímeros funcionales para acondicionamiento, formación de película, fijación y textura.",
+        "fr": "Polymères fonctionnels pour le conditionnement, la formation de film, la fixation et la texture.",
+        "it": "Polimeri funzionali per condizionamento, formazione di film, fissaggio e texture.",
+        "nl": "Functionele polymeren voor conditionering, filmvorming, fixatie en textuur.",
         "pt_BR": "Polímeros funcionais para condicionamento, formação de filme, fixação e textura."
       }
     },
@@ -6134,11 +6134,11 @@
       "group": "ingredients",
       "key": "categories.functional_polymers.label",
       "text": {
-        "de": "Kategorie: Polymers, film-formers & conditioners",
-        "es": "Categoría: Polymers, film-formers & conditioners",
-        "fr": "Catégorie: Polymers, film-formers & conditioners",
-        "it": "Categoria: Polymers, film-formers & conditioners",
-        "nl": "Categorie: Polymers, film-formers & conditioners",
+        "de": "Polymere, Filmbildner & Conditioner",
+        "es": "Polímeros, formadores de película y acondicionadores",
+        "fr": "Polymères, filmogènes & conditionneurs",
+        "it": "Polimeri, filmogeni e condizionanti",
+        "nl": "Polymeren, filmvormers & conditioners",
         "pt_BR": "Polímeros, formadores de filme e condicionadores"
       }
     },
@@ -6158,11 +6158,11 @@
       "group": "ingredients",
       "key": "categories.glycol.description",
       "text": {
-        "de": "Kategorie: Legacy glycol value retained for migration.",
-        "es": "Categoría: Legacy glycol value retained for migration.",
-        "fr": "Catégorie: Legacy glycol value retained for migration.",
-        "it": "Categoria: Legacy glycol value retained for migration.",
-        "nl": "Categorie: Legacy glycol value retained for migration.",
+        "de": "Veralteter Glykol-Wert, für die Migration beibehalten.",
+        "es": "Valor heredado de glicol conservado para la migración.",
+        "fr": "Ancienne valeur « glycol » conservée pour la migration.",
+        "it": "Valore legacy di glicole mantenuto per la migrazione.",
+        "nl": "Verouderde glycolwaarde, bewaard voor de migratie.",
         "pt_BR": "Valor de glicol legado mantido para migração."
       }
     },
@@ -6170,11 +6170,11 @@
       "group": "ingredients",
       "key": "categories.glycol.label",
       "text": {
-        "de": "Kategorie: Glycol",
-        "es": "Categoría: Glycol",
-        "fr": "Catégorie: Glycol",
-        "it": "Categoria: Glycol",
-        "nl": "Categorie: Glycol",
+        "de": "Glykol",
+        "es": "Glicol",
+        "fr": "Glycol",
+        "it": "Glicole",
+        "nl": "Glycol",
         "pt_BR": "Glicol"
       }
     },
@@ -6182,11 +6182,11 @@
       "group": "ingredients",
       "key": "categories.humectants_polyols.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Humectants & polyols.",
-        "es": "Categoría: Classification guidance for Humectants & polyols.",
-        "fr": "Catégorie: Classification guidance for Humectants & polyols.",
-        "it": "Categoria: Classification guidance for Humectants & polyols.",
-        "nl": "Categorie: Classification guidance for Humectants & polyols.",
+        "de": "Wasserbindende Inhaltsstoffe, die Feuchtigkeit in der Formel oder auf der Haut halten.",
+        "es": "Ingredientes que fijan el agua y ayudan a retener la humedad en la fórmula o en la piel.",
+        "fr": "Ingrédients qui fixent l’eau et aident à retenir l’humidité dans la formule ou sur la peau.",
+        "it": "Ingredienti che legano l’acqua e aiutano a trattenere l’umidità nella formula o sulla pelle.",
+        "nl": "Waterbindende ingrediënten die vocht in de formule of op de huid helpen vasthouden.",
         "pt_BR": "Ingredientes que ligam água e ajudam a reter a umidade na fórmula ou na pele."
       }
     },
@@ -6194,11 +6194,11 @@
       "group": "ingredients",
       "key": "categories.humectants_polyols.label",
       "text": {
-        "de": "Kategorie: Humectants & polyols",
-        "es": "Categoría: Humectants & polyols",
-        "fr": "Catégorie: Humectants & polyols",
-        "it": "Categoria: Humectants & polyols",
-        "nl": "Categorie: Humectants & polyols",
+        "de": "Feuchthaltemittel & Polyole",
+        "es": "Humectantes y polioles",
+        "fr": "Humectants & polyols",
+        "it": "Umettanti e polioli",
+        "nl": "Humectanten & polyolen",
         "pt_BR": "Umectantes e polióis"
       }
     },
@@ -6218,11 +6218,11 @@
       "group": "ingredients",
       "key": "categories.hydrocarbons.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Hydrocarbons & mineral emollients.",
-        "es": "Categoría: Classification guidance for Hydrocarbons & mineral emollients.",
-        "fr": "Catégorie: Classification guidance for Hydrocarbons & mineral emollients.",
-        "it": "Categoria: Classification guidance for Hydrocarbons & mineral emollients.",
-        "nl": "Categorie: Classification guidance for Hydrocarbons & mineral emollients.",
+        "de": "Emollienzien auf Kohlenwasserstoffbasis wie Mineralöle und Vaseline.",
+        "es": "Emolientes a base de hidrocarburos, como aceites minerales y vaselina.",
+        "fr": "Émollients à base d’hydrocarbures, comme les huiles minérales et la vaseline.",
+        "it": "Emollienti a base di idrocarburi, come oli minerali e vaselina.",
+        "nl": "Verzachters op basis van koolwaterstoffen, zoals minerale oliën en vaseline.",
         "pt_BR": "Emolientes à base de hidrocarbonetos, como óleos minerais e petrolato."
       }
     },
@@ -6230,11 +6230,11 @@
       "group": "ingredients",
       "key": "categories.hydrocarbons.label",
       "text": {
-        "de": "Kategorie: Hydrocarbons & mineral emollients",
-        "es": "Categoría: Hydrocarbons & mineral emollients",
-        "fr": "Catégorie: Hydrocarbons & mineral emollients",
-        "it": "Categoria: Hydrocarbons & mineral emollients",
-        "nl": "Categorie: Hydrocarbons & mineral emollients",
+        "de": "Kohlenwasserstoffe & mineralische Emollienzien",
+        "es": "Hidrocarburos y emolientes minerales",
+        "fr": "Hydrocarbures & émollients minéraux",
+        "it": "Idrocarburi ed emollienti minerali",
+        "nl": "Koolwaterstoffen & minerale verzachters",
         "pt_BR": "Hidrocarbonetos e emolientes minerais"
       }
     },
@@ -6254,11 +6254,11 @@
       "group": "ingredients",
       "key": "categories.lipids.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Oils, butters & fats.",
-        "es": "Categoría: Classification guidance for Oils, butters & fats.",
-        "fr": "Catégorie: Classification guidance for Oils, butters & fats.",
-        "it": "Categoria: Classification guidance for Oils, butters & fats.",
-        "nl": "Categorie: Classification guidance for Oils, butters & fats.",
+        "de": "Flüssige und feste Lipide, die als Emollienzien, Träger oder Seifenöle verwendet werden.",
+        "es": "Lípidos líquidos y sólidos utilizados como emolientes, portadores o aceites para jabón.",
+        "fr": "Lipides liquides et solides utilisés comme émollients, supports ou huiles de saponification.",
+        "it": "Lipidi liquidi e solidi usati come emollienti, veicoli o oli per sapone.",
+        "nl": "Vloeibare en vaste lipiden die worden gebruikt als verzachter, drager of zeepolie.",
         "pt_BR": "Materiais lipídicos líquidos e sólidos usados como emolientes, carreadores ou óleos para sabonete."
       }
     },
@@ -6266,11 +6266,11 @@
       "group": "ingredients",
       "key": "categories.lipids.label",
       "text": {
-        "de": "Kategorie: Oils, butters & fats",
-        "es": "Categoría: Oils, butters & fats",
-        "fr": "Catégorie: Oils, butters & fats",
-        "it": "Categoria: Oils, butters & fats",
-        "nl": "Categorie: Oils, butters & fats",
+        "de": "Öle, Butter & Fette",
+        "es": "Aceites, mantecas y grasas",
+        "fr": "Huiles, beurres & graisses",
+        "it": "Oli, burri e grassi",
+        "nl": "Oliën, boters & vetten",
         "pt_BR": "Óleos, manteigas e gorduras"
       }
     },
@@ -6290,11 +6290,11 @@
       "group": "ingredients",
       "key": "categories.liquid.description",
       "text": {
-        "de": "Kategorie: Legacy liquid value retained for migration.",
-        "es": "Categoría: Legacy liquid value retained for migration.",
-        "fr": "Catégorie: Legacy liquid value retained for migration.",
-        "it": "Categoria: Legacy liquid value retained for migration.",
-        "nl": "Categorie: Legacy liquid value retained for migration.",
+        "de": "Veralteter Flüssigkeits-Wert, für die Migration beibehalten.",
+        "es": "Valor heredado de líquido conservado para la migración.",
+        "fr": "Ancienne valeur « liquide » conservée pour la migration.",
+        "it": "Valore legacy di liquido mantenuto per la migrazione.",
+        "nl": "Verouderde vloeistofwaarde, bewaard voor de migratie.",
         "pt_BR": "Valor de líquido legado mantido para migração."
       }
     },
@@ -6302,11 +6302,11 @@
       "group": "ingredients",
       "key": "categories.liquid.label",
       "text": {
-        "de": "Kategorie: Liquid",
-        "es": "Categoría: Liquid",
-        "fr": "Catégorie: Liquid",
-        "it": "Categoria: Liquid",
-        "nl": "Categorie: Liquid",
+        "de": "Flüssigkeit",
+        "es": "Líquido",
+        "fr": "Liquide",
+        "it": "Liquido",
+        "nl": "Vloeistof",
         "pt_BR": "Líquido"
       }
     },
@@ -6314,11 +6314,11 @@
       "group": "ingredients",
       "key": "categories.minerals_salts_powders.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Minerals, salts & powders.",
-        "es": "Categoría: Classification guidance for Minerals, salts & powders.",
-        "fr": "Catégorie: Classification guidance for Minerals, salts & powders.",
-        "it": "Categoria: Classification guidance for Minerals, salts & powders.",
-        "nl": "Categorie: Classification guidance for Minerals, salts & powders.",
+        "de": "Mineralien, Salze, Stärken, Tonerden und Pulver für Funktion oder Hautgefühl.",
+        "es": "Minerales, sales, almidones, arcillas y polvos usados por su función o su tacto.",
+        "fr": "Minéraux, sels, amidons, argiles et poudres utilisés pour leur fonction ou leur toucher.",
+        "it": "Minerali, sali, amidi, argille e polveri usati per funzione o sensorialità.",
+        "nl": "Mineralen, zouten, zetmelen, kleisoorten en poeders voor functie of huidgevoel.",
         "pt_BR": "Materiais minerais, sais, amidos, argilas e pós usados por sua função ou sensorial."
       }
     },
@@ -6326,11 +6326,11 @@
       "group": "ingredients",
       "key": "categories.minerals_salts_powders.label",
       "text": {
-        "de": "Kategorie: Minerals, salts & powders",
-        "es": "Categoría: Minerals, salts & powders",
-        "fr": "Catégorie: Minerals, salts & powders",
-        "it": "Categoria: Minerals, salts & powders",
-        "nl": "Categorie: Minerals, salts & powders",
+        "de": "Mineralien, Salze & Pulver",
+        "es": "Minerales, sales y polvos",
+        "fr": "Minéraux, sels & poudres",
+        "it": "Minerali, sali e polveri",
+        "nl": "Mineralen, zouten & poeders",
         "pt_BR": "Minerais, sais e pós"
       }
     },
@@ -6350,11 +6350,11 @@
       "group": "ingredients",
       "key": "categories.other.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Other / needs classification.",
-        "es": "Categoría: Classification guidance for Other / needs classification.",
-        "fr": "Catégorie: Classification guidance for Other / needs classification.",
-        "it": "Categoria: Classification guidance for Other / needs classification.",
-        "nl": "Categorie: Classification guidance for Other / needs classification.",
+        "de": "Eine sichere Sammelkategorie für Inhaltsstoffe, die auf Prüfung oder eine genauere Familie warten.",
+        "es": "Una categoría provisional segura para un ingrediente pendiente de revisión o de una familia más específica.",
+        "fr": "Une catégorie d’attente sûre pour un ingrédient en cours de revue ou en attente d’une famille plus précise.",
+        "it": "Una categoria di attesa sicura per un ingrediente in revisione o in attesa di una famiglia più specifica.",
+        "nl": "Een veilige tijdelijke categorie voor een ingrediënt dat op beoordeling of een specifiekere familie wacht.",
         "pt_BR": "Categoria segura para um ingrediente que aguarda revisão ou uma família mais específica."
       }
     },
@@ -6362,11 +6362,11 @@
       "group": "ingredients",
       "key": "categories.other.label",
       "text": {
-        "de": "Kategorie: Other / needs classification",
-        "es": "Categoría: Other / needs classification",
-        "fr": "Catégorie: Other / needs classification",
-        "it": "Categoria: Other / needs classification",
-        "nl": "Categorie: Other / needs classification",
+        "de": "Sonstiges / Einordnung offen",
+        "es": "Otros / pendiente de clasificar",
+        "fr": "Autres / à classer",
+        "it": "Altro / da classificare",
+        "nl": "Overig / nog te classificeren",
         "pt_BR": "Outro / precisa de classificação"
       }
     },
@@ -6386,11 +6386,11 @@
       "group": "ingredients",
       "key": "categories.ph_adjusters_buffers.description",
       "text": {
-        "de": "Kategorie: Classification guidance for pH adjusters & buffers.",
-        "es": "Categoría: Classification guidance for pH adjusters & buffers.",
-        "fr": "Catégorie: Classification guidance for pH adjusters & buffers.",
-        "it": "Categoria: Classification guidance for pH adjusters & buffers.",
-        "nl": "Categorie: Classification guidance for pH adjusters & buffers.",
+        "de": "Säuren, Basen und Puffersysteme zur Steuerung des Produkt-pH-Werts.",
+        "es": "Ácidos, bases y sistemas tampón usados para controlar el pH del producto.",
+        "fr": "Acides, bases et systèmes tampons utilisés pour contrôler le pH du produit.",
+        "it": "Acidi, basi e sistemi tampone usati per controllare il pH del prodotto.",
+        "nl": "Zuren, basen en buffersystemen om de pH van het product te regelen.",
         "pt_BR": "Ácidos, bases e sistemas tampão usados para controlar o pH do produto."
       }
     },
@@ -6398,11 +6398,11 @@
       "group": "ingredients",
       "key": "categories.ph_adjusters_buffers.label",
       "text": {
-        "de": "Kategorie: pH adjusters & buffers",
-        "es": "Categoría: pH adjusters & buffers",
-        "fr": "Catégorie: pH adjusters & buffers",
-        "it": "Categoria: pH adjusters & buffers",
-        "nl": "Categorie: pH adjusters & buffers",
+        "de": "pH-Regulatoren & Puffer",
+        "es": "Reguladores de pH y tampones",
+        "fr": "Régulateurs de pH & tampons",
+        "it": "Regolatori di pH e tamponi",
+        "nl": "pH-regelaars & buffers",
         "pt_BR": "Ajustadores de pH e tampões"
       }
     },
@@ -6422,11 +6422,11 @@
       "group": "ingredients",
       "key": "categories.preservation_stability.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Preservation & stability.",
-        "es": "Categoría: Classification guidance for Preservation & stability.",
-        "fr": "Catégorie: Classification guidance for Preservation & stability.",
-        "it": "Categoria: Classification guidance for Preservation & stability.",
-        "nl": "Categorie: Classification guidance for Preservation & stability.",
+        "de": "Konservierungsmittel und unterstützende Inhaltsstoffe, die Produktqualität und Stabilität schützen.",
+        "es": "Conservantes e ingredientes de apoyo que protegen la calidad y la estabilidad del producto.",
+        "fr": "Conservateurs et ingrédients d’appoint qui protègent la qualité et la stabilité du produit.",
+        "it": "Conservanti e ingredienti di supporto che proteggono qualità e stabilità del prodotto.",
+        "nl": "Conserveermiddelen en ondersteunende ingrediënten die productkwaliteit en stabiliteit beschermen.",
         "pt_BR": "Conservantes e ingredientes de suporte que protegem a qualidade e a estabilidade do produto."
       }
     },
@@ -6434,11 +6434,11 @@
       "group": "ingredients",
       "key": "categories.preservation_stability.label",
       "text": {
-        "de": "Kategorie: Preservation & stability",
-        "es": "Categoría: Preservation & stability",
-        "fr": "Catégorie: Preservation & stability",
-        "it": "Categoria: Preservation & stability",
-        "nl": "Categorie: Preservation & stability",
+        "de": "Konservierung & Stabilität",
+        "es": "Conservación y estabilidad",
+        "fr": "Conservation & stabilité",
+        "it": "Conservazione e stabilità",
+        "nl": "Conservering & stabiliteit",
         "pt_BR": "Conservação e estabilidade"
       }
     },
@@ -6458,11 +6458,11 @@
       "group": "ingredients",
       "key": "categories.preservative.description",
       "text": {
-        "de": "Kategorie: Legacy preservative value retained for migration.",
-        "es": "Categoría: Legacy preservative value retained for migration.",
-        "fr": "Catégorie: Legacy preservative value retained for migration.",
-        "it": "Categoria: Legacy preservative value retained for migration.",
-        "nl": "Categorie: Legacy preservative value retained for migration.",
+        "de": "Veralteter Konservierungsmittel-Wert, für die Migration beibehalten.",
+        "es": "Valor heredado de conservante conservado para la migración.",
+        "fr": "Ancienne valeur « conservateur » conservée pour la migration.",
+        "it": "Valore legacy di conservante mantenuto per la migrazione.",
+        "nl": "Verouderde waarde voor conserveermiddel, bewaard voor de migratie.",
         "pt_BR": "Valor de conservante legado mantido para migração."
       }
     },
@@ -6470,11 +6470,11 @@
       "group": "ingredients",
       "key": "categories.preservative.label",
       "text": {
-        "de": "Kategorie: Preservative",
-        "es": "Categoría: Preservative",
-        "fr": "Catégorie: Preservative",
-        "it": "Categoria: Preservative",
-        "nl": "Categorie: Preservative",
+        "de": "Konservierungsmittel",
+        "es": "Conservante",
+        "fr": "Conservateur",
+        "it": "Conservante",
+        "nl": "Conserveermiddel",
         "pt_BR": "Conservante"
       }
     },
@@ -6482,11 +6482,11 @@
       "group": "ingredients",
       "key": "categories.rheology_modifiers.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Thickeners & rheology modifiers.",
-        "es": "Categoría: Classification guidance for Thickeners & rheology modifiers.",
-        "fr": "Catégorie: Classification guidance for Thickeners & rheology modifiers.",
-        "it": "Categoria: Classification guidance for Thickeners & rheology modifiers.",
-        "nl": "Categorie: Classification guidance for Thickeners & rheology modifiers.",
+        "de": "Stoffe, die Viskosität, Fließverhalten, Suspension und Textur steuern.",
+        "es": "Materiales que controlan la viscosidad, el flujo, la suspensión y la textura.",
+        "fr": "Substances qui contrôlent la viscosité, l’écoulement, la suspension et la texture.",
+        "it": "Sostanze che controllano viscosità, scorrimento, sospensione e texture.",
+        "nl": "Stoffen die viscositeit, vloei, suspensie en textuur regelen.",
         "pt_BR": "Materiais que controlam viscosidade, fluxo, suspensão e textura."
       }
     },
@@ -6494,11 +6494,11 @@
       "group": "ingredients",
       "key": "categories.rheology_modifiers.label",
       "text": {
-        "de": "Kategorie: Thickeners & rheology modifiers",
-        "es": "Categoría: Thickeners & rheology modifiers",
-        "fr": "Catégorie: Thickeners & rheology modifiers",
-        "it": "Categoria: Thickeners & rheology modifiers",
-        "nl": "Categorie: Thickeners & rheology modifiers",
+        "de": "Verdickungsmittel & Rheologiemodifizierer",
+        "es": "Espesantes y modificadores reológicos",
+        "fr": "Épaississants & modificateurs de rhéologie",
+        "it": "Addensanti e modificatori reologici",
+        "nl": "Verdikkingsmiddelen & reologiemodificatoren",
         "pt_BR": "Espessantes e modificadores de reologia"
       }
     },
@@ -6518,11 +6518,11 @@
       "group": "ingredients",
       "key": "categories.silicones.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Silicones.",
-        "es": "Categoría: Classification guidance for Silicones.",
-        "fr": "Catégorie: Classification guidance for Silicones.",
-        "it": "Categoria: Classification guidance for Silicones.",
-        "nl": "Categorie: Classification guidance for Silicones.",
+        "de": "Silikonmaterialien für Gleitfähigkeit, Pflege, Schutz oder Textur.",
+        "es": "Materiales de silicona usados para deslizamiento, acondicionamiento, protección o textura.",
+        "fr": "Silicones utilisés pour la glisse, le conditionnement, la protection ou la texture.",
+        "it": "Materiali siliconici usati per scorrevolezza, condizionamento, protezione o texture.",
+        "nl": "Siliconematerialen voor glijdend gevoel, conditionering, bescherming of textuur.",
         "pt_BR": "Materiais de silicone usados para deslizamento, condicionamento, proteção ou textura."
       }
     },
@@ -6530,11 +6530,11 @@
       "group": "ingredients",
       "key": "categories.silicones.label",
       "text": {
-        "de": "Kategorie: Silicones",
-        "es": "Categoría: Silicones",
-        "fr": "Catégorie: Silicones",
-        "it": "Categoria: Silicones",
-        "nl": "Categorie: Silicones",
+        "de": "Silikone",
+        "es": "Siliconas",
+        "fr": "Silicones",
+        "it": "Siliconi",
+        "nl": "Siliconen",
         "pt_BR": "Silicones"
       }
     },
@@ -6554,11 +6554,11 @@
       "group": "ingredients",
       "key": "categories.soapmaking_alkalis.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Soapmaking alkalis.",
-        "es": "Categoría: Classification guidance for Soapmaking alkalis.",
-        "fr": "Catégorie: Classification guidance for Soapmaking alkalis.",
-        "it": "Categoria: Classification guidance for Soapmaking alkalis.",
-        "nl": "Categorie: Classification guidance for Soapmaking alkalis.",
+        "de": "Alkalische Reagenzien, getrennt geführt für Laugenberechnungen und die Verseifung.",
+        "es": "Reactivos alcalinos separados para los cálculos de lejía y la saponificación.",
+        "fr": "Réactifs alcalins isolés pour les calculs de soude et la saponification.",
+        "it": "Reagenti alcalini tenuti separati per i calcoli della soda e la saponificazione.",
+        "nl": "Alkalische reagentia, apart gehouden voor loogberekeningen en verzeping.",
         "pt_BR": "Reagentes alcalinos isolados para cálculos de soda cáustica e saponificação de sabonetes."
       }
     },
@@ -6566,11 +6566,11 @@
       "group": "ingredients",
       "key": "categories.soapmaking_alkalis.label",
       "text": {
-        "de": "Kategorie: Soapmaking alkalis",
-        "es": "Categoría: Soapmaking alkalis",
-        "fr": "Catégorie: Soapmaking alkalis",
-        "it": "Categoria: Soapmaking alkalis",
-        "nl": "Categorie: Soapmaking alkalis",
+        "de": "Alkalien für die Seifenherstellung",
+        "es": "Álcalis para jabonería",
+        "fr": "Alcalis de saponification",
+        "it": "Alcali per saponificazione",
+        "nl": "Alkaliën voor zeepmaken",
         "pt_BR": "Álcalis para fabricação de sabonete"
       }
     },
@@ -6590,11 +6590,11 @@
       "group": "ingredients",
       "key": "categories.surfactants.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Surfactants & cleansing agents.",
-        "es": "Categoría: Classification guidance for Surfactants & cleansing agents.",
-        "fr": "Catégorie: Classification guidance for Surfactants & cleansing agents.",
-        "it": "Categoria: Classification guidance for Surfactants & cleansing agents.",
-        "nl": "Categorie: Classification guidance for Surfactants & cleansing agents.",
+        "de": "Oberflächenaktive Stoffe zum Reinigen, Schäumen, Benetzen oder Dispergieren.",
+        "es": "Materiales tensioactivos usados para limpiar, espumar, humectar o dispersar.",
+        "fr": "Substances tensioactives utilisées pour laver, mousser, mouiller ou disperser.",
+        "it": "Sostanze tensioattive usate per detergere, schiumare, bagnare o disperdere.",
+        "nl": "Oppervlakteactieve stoffen voor reinigen, schuimen, bevochtigen of dispergeren.",
         "pt_BR": "Materiais tensoativos usados para limpeza, formação de espuma, umectação ou dispersão."
       }
     },
@@ -6602,11 +6602,11 @@
       "group": "ingredients",
       "key": "categories.surfactants.label",
       "text": {
-        "de": "Kategorie: Surfactants & cleansing agents",
-        "es": "Categoría: Surfactants & cleansing agents",
-        "fr": "Catégorie: Surfactants & cleansing agents",
-        "it": "Categoria: Surfactants & cleansing agents",
-        "nl": "Categorie: Surfactants & cleansing agents",
+        "de": "Tenside & Reinigungsmittel",
+        "es": "Tensioactivos y agentes limpiadores",
+        "fr": "Tensioactifs & agents lavants",
+        "it": "Tensioattivi e agenti detergenti",
+        "nl": "Tensiden & reinigingsmiddelen",
         "pt_BR": "Tensoativos e agentes de limpeza"
       }
     },
@@ -6626,11 +6626,11 @@
       "group": "ingredients",
       "key": "categories.water_solvents_carriers.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Water, solvents & carriers.",
-        "es": "Categoría: Classification guidance for Water, solvents & carriers.",
-        "fr": "Catégorie: Classification guidance for Water, solvents & carriers.",
-        "it": "Categoria: Classification guidance for Water, solvents & carriers.",
-        "nl": "Categorie: Classification guidance for Water, solvents & carriers.",
+        "de": "Wasser und flüssige Träger zum Lösen, Verdünnen oder Transportieren anderer Inhaltsstoffe.",
+        "es": "Agua y portadores líquidos usados para disolver, diluir o vehicular otros ingredientes.",
+        "fr": "Eau et supports liquides utilisés pour dissoudre, diluer ou véhiculer d’autres ingrédients.",
+        "it": "Acqua e veicoli liquidi usati per sciogliere, diluire o veicolare altri ingredienti.",
+        "nl": "Water en vloeibare dragers om andere ingrediënten op te lossen, te verdunnen of te transporteren.",
         "pt_BR": "Água e carreadores líquidos usados para dissolver, diluir ou transportar outros ingredientes."
       }
     },
@@ -6638,11 +6638,11 @@
       "group": "ingredients",
       "key": "categories.water_solvents_carriers.label",
       "text": {
-        "de": "Kategorie: Water, solvents & carriers",
-        "es": "Categoría: Water, solvents & carriers",
-        "fr": "Catégorie: Water, solvents & carriers",
-        "it": "Categoria: Water, solvents & carriers",
-        "nl": "Categorie: Water, solvents & carriers",
+        "de": "Wasser, Lösungsmittel & Träger",
+        "es": "Agua, disolventes y portadores",
+        "fr": "Eau, solvants & supports",
+        "it": "Acqua, solventi e veicoli",
+        "nl": "Water, oplosmiddelen & dragers",
         "pt_BR": "Água, solventes e carreadores"
       }
     },
@@ -6662,11 +6662,11 @@
       "group": "ingredients",
       "key": "categories.waxes.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Waxes.",
-        "es": "Categoría: Classification guidance for Waxes.",
-        "fr": "Catégorie: Classification guidance for Waxes.",
-        "it": "Categoria: Classification guidance for Waxes.",
-        "nl": "Categorie: Classification guidance for Waxes.",
+        "de": "Wachse, die eine Formel strukturieren, schützen oder ihr Hautgefühl verändern.",
+        "es": "Ceras que estructuran, protegen o modifican el tacto de una fórmula.",
+        "fr": "Cires qui structurent, protègent ou modifient le toucher d’une formule.",
+        "it": "Cere che strutturano, proteggono o modificano la sensorialità di una formula.",
+        "nl": "Wassen die een formule structureren, beschermen of het huidgevoel veranderen.",
         "pt_BR": "Ceras que estruturam, protegem ou modificam o sensorial da fórmula."
       }
     },
@@ -6674,11 +6674,11 @@
       "group": "ingredients",
       "key": "categories.waxes.label",
       "text": {
-        "de": "Kategorie: Waxes",
-        "es": "Categoría: Waxes",
-        "fr": "Catégorie: Waxes",
-        "it": "Categoria: Waxes",
-        "nl": "Categorie: Waxes",
+        "de": "Wachse",
+        "es": "Ceras",
+        "fr": "Cires",
+        "it": "Cere",
+        "nl": "Wassen",
         "pt_BR": "Ceras"
       }
     },
@@ -15530,11 +15530,11 @@
       "group": "ingredients",
       "key": "subcategories.absolutes_resinoids.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Absolutes & resinoids.",
-        "es": "Categoría: Classification guidance for Absolutes & resinoids.",
-        "fr": "Catégorie: Classification guidance for Absolutes & resinoids.",
-        "it": "Categoria: Classification guidance for Absolutes & resinoids.",
-        "nl": "Categorie: Classification guidance for Absolutes & resinoids.",
+        "de": "Konzentrierte aromatische Extrakte wie Absolues und Resinoide.",
+        "es": "Extractos aromáticos concentrados, como absolutos y resinoides.",
+        "fr": "Extraits aromatiques concentrés, comme les absolues et les résinoïdes.",
+        "it": "Estratti aromatici concentrati, come assolute e resinoidi.",
+        "nl": "Geconcentreerde aromatische extracten zoals absolues en resinoïden.",
         "pt_BR": "Extratos aromáticos concentrados, como absolutos e resinoides."
       }
     },
@@ -15542,11 +15542,11 @@
       "group": "ingredients",
       "key": "subcategories.absolutes_resinoids.label",
       "text": {
-        "de": "Kategorie: Absolutes & resinoids",
-        "es": "Categoría: Absolutes & resinoids",
-        "fr": "Catégorie: Absolutes & resinoids",
-        "it": "Categoria: Absolutes & resinoids",
-        "nl": "Categorie: Absolutes & resinoids",
+        "de": "Absolues & Resinoide",
+        "es": "Absolutos y resinoides",
+        "fr": "Absolues & résinoïdes",
+        "it": "Assolute e resinoidi",
+        "nl": "Absolues & resinoïden",
         "pt_BR": "Absolutos e resinoides"
       }
     },
@@ -15554,11 +15554,11 @@
       "group": "ingredients",
       "key": "subcategories.acids.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Acids.",
-        "es": "Categoría: Classification guidance for Acids.",
-        "fr": "Catégorie: Classification guidance for Acids.",
-        "it": "Categoria: Classification guidance for Acids.",
-        "nl": "Categorie: Classification guidance for Acids.",
+        "de": "Saure Stoffe zur pH-Einstellung oder für eine spezielle Funktion.",
+        "es": "Materiales ácidos usados para ajustar el pH o aportar una función especial.",
+        "fr": "Matières acides utilisées pour ajuster le pH ou remplir une fonction spécifique.",
+        "it": "Materiali acidi usati per regolare il pH o svolgere una funzione specifica.",
+        "nl": "Zure stoffen om de pH in te stellen of een specifieke functie te vervullen.",
         "pt_BR": "Materiais ácidos usados para ajustar o pH ou fornecer uma função especializada."
       }
     },
@@ -15566,11 +15566,11 @@
       "group": "ingredients",
       "key": "subcategories.acids.label",
       "text": {
-        "de": "Kategorie: Acids",
-        "es": "Categoría: Acids",
-        "fr": "Catégorie: Acids",
-        "it": "Categoria: Acids",
-        "nl": "Categorie: Acids",
+        "de": "Säuren",
+        "es": "Ácidos",
+        "fr": "Acides",
+        "it": "Acidi",
+        "nl": "Zuren",
         "pt_BR": "Ácidos"
       }
     },
@@ -15578,11 +15578,11 @@
       "group": "ingredients",
       "key": "subcategories.alcohols.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Alcohols.",
-        "es": "Categoría: Classification guidance for Alcohols.",
-        "fr": "Catégorie: Classification guidance for Alcohols.",
-        "it": "Categoria: Classification guidance for Alcohols.",
-        "nl": "Categorie: Classification guidance for Alcohols.",
+        "de": "Einfache oder spezielle Alkohole als Lösungsmittel und Träger.",
+        "es": "Alcoholes simples o especiales usados como disolventes y portadores.",
+        "fr": "Alcools simples ou spécifiques utilisés comme solvants et supports.",
+        "it": "Alcoli semplici o speciali usati come solventi e veicoli.",
+        "nl": "Eenvoudige of speciale alcoholen als oplosmiddel en drager.",
         "pt_BR": "Solventes e carreadores de álcool simples ou especializados."
       }
     },
@@ -15590,11 +15590,11 @@
       "group": "ingredients",
       "key": "subcategories.alcohols.label",
       "text": {
-        "de": "Kategorie: Alcohols",
-        "es": "Categoría: Alcohols",
-        "fr": "Catégorie: Alcohols",
-        "it": "Categoria: Alcohols",
-        "nl": "Categorie: Alcohols",
+        "de": "Alkohole",
+        "es": "Alcoholes",
+        "fr": "Alcools",
+        "it": "Alcoli",
+        "nl": "Alcoholen",
         "pt_BR": "Álcoois"
       }
     },
@@ -15602,11 +15602,11 @@
       "group": "ingredients",
       "key": "subcategories.amphoteric.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Amphoteric surfactants.",
-        "es": "Categoría: Classification guidance for Amphoteric surfactants.",
-        "fr": "Catégorie: Classification guidance for Amphoteric surfactants.",
-        "it": "Categoria: Classification guidance for Amphoteric surfactants.",
-        "nl": "Categorie: Classification guidance for Amphoteric surfactants.",
+        "de": "Tenside, deren Ladung vom pH-Wert abhängt.",
+        "es": "Tensioactivos cuya carga depende del pH.",
+        "fr": "Tensioactifs dont la charge dépend du pH.",
+        "it": "Tensioattivi la cui carica dipende dal pH.",
+        "nl": "Tensiden waarvan de lading afhangt van de pH.",
         "pt_BR": "Tensoativos cujo comportamento de carga depende do pH."
       }
     },
@@ -15614,11 +15614,11 @@
       "group": "ingredients",
       "key": "subcategories.amphoteric.label",
       "text": {
-        "de": "Kategorie: Amphoteric surfactants",
-        "es": "Categoría: Amphoteric surfactants",
-        "fr": "Catégorie: Amphoteric surfactants",
-        "it": "Categoria: Amphoteric surfactants",
-        "nl": "Categorie: Amphoteric surfactants",
+        "de": "Amphotere Tenside",
+        "es": "Tensioactivos anfóteros",
+        "fr": "Tensioactifs amphotères",
+        "it": "Tensioattivi anfoteri",
+        "nl": "Amfotere tensiden",
         "pt_BR": "Tensoativos anfotéricos"
       }
     },
@@ -15626,11 +15626,11 @@
       "group": "ingredients",
       "key": "subcategories.animal_fats.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Animal fats.",
-        "es": "Categoría: Classification guidance for Animal fats.",
-        "fr": "Catégorie: Classification guidance for Animal fats.",
-        "it": "Categoria: Classification guidance for Animal fats.",
-        "nl": "Categorie: Classification guidance for Animal fats.",
+        "de": "Fette tierischen Ursprungs wie Talg, Schmalz oder Lanolin.",
+        "es": "Grasas de origen animal, como sebo, manteca de cerdo o lanolina.",
+        "fr": "Graisses d’origine animale, comme le suif, le saindoux ou la lanoline.",
+        "it": "Grassi di origine animale, come sego, strutto o lanolina.",
+        "nl": "Vetten van dierlijke oorsprong, zoals talg, reuzel of lanoline.",
         "pt_BR": "Gorduras de origem animal, como sebo, banha ou lanolina."
       }
     },
@@ -15638,11 +15638,11 @@
       "group": "ingredients",
       "key": "subcategories.animal_fats.label",
       "text": {
-        "de": "Kategorie: Animal fats",
-        "es": "Categoría: Animal fats",
-        "fr": "Catégorie: Animal fats",
-        "it": "Categoria: Animal fats",
-        "nl": "Categorie: Animal fats",
+        "de": "Tierische Fette",
+        "es": "Grasas animales",
+        "fr": "Graisses animales",
+        "it": "Grassi animali",
+        "nl": "Dierlijke vetten",
         "pt_BR": "Gorduras animais"
       }
     },
@@ -15650,11 +15650,11 @@
       "group": "ingredients",
       "key": "subcategories.animal_waxes.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Animal waxes.",
-        "es": "Categoría: Classification guidance for Animal waxes.",
-        "fr": "Catégorie: Classification guidance for Animal waxes.",
-        "it": "Categoria: Classification guidance for Animal waxes.",
-        "nl": "Categorie: Classification guidance for Animal waxes.",
+        "de": "Wachse tierischen Ursprungs wie Bienenwachs oder Lanolinwachs.",
+        "es": "Ceras de origen animal, como la cera de abejas o la cera de lanolina.",
+        "fr": "Cires d’origine animale, comme la cire d’abeille ou la cire de lanoline.",
+        "it": "Cere di origine animale, come cera d’api o cera di lanolina.",
+        "nl": "Wassen van dierlijke oorsprong, zoals bijenwas of lanolinewas.",
         "pt_BR": "Ceras de origem animal, como cera de abelha ou cera de lanolina."
       }
     },
@@ -15662,11 +15662,11 @@
       "group": "ingredients",
       "key": "subcategories.animal_waxes.label",
       "text": {
-        "de": "Kategorie: Animal waxes",
-        "es": "Categoría: Animal waxes",
-        "fr": "Catégorie: Animal waxes",
-        "it": "Categoria: Animal waxes",
-        "nl": "Categorie: Animal waxes",
+        "de": "Tierische Wachse",
+        "es": "Ceras animales",
+        "fr": "Cires animales",
+        "it": "Cere animali",
+        "nl": "Dierlijke wassen",
         "pt_BR": "Ceras animais"
       }
     },
@@ -15674,11 +15674,11 @@
       "group": "ingredients",
       "key": "subcategories.anionic.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Anionic surfactants.",
-        "es": "Categoría: Classification guidance for Anionic surfactants.",
-        "fr": "Catégorie: Classification guidance for Anionic surfactants.",
-        "it": "Categoria: Classification guidance for Anionic surfactants.",
-        "nl": "Categorie: Classification guidance for Anionic surfactants.",
+        "de": "Negativ geladene Tenside, häufig zum Reinigen und Schäumen verwendet.",
+        "es": "Tensioactivos con carga negativa, habituales para limpiar y espumar.",
+        "fr": "Tensioactifs chargés négativement, couramment utilisés pour laver et mousser.",
+        "it": "Tensioattivi con carica negativa, usati comunemente per detergere e schiumare.",
+        "nl": "Negatief geladen tensiden, vaak gebruikt om te reinigen en te schuimen.",
         "pt_BR": "Tensoativos com carga negativa, geralmente usados para limpeza e formação de espuma."
       }
     },
@@ -15686,11 +15686,11 @@
       "group": "ingredients",
       "key": "subcategories.anionic.label",
       "text": {
-        "de": "Kategorie: Anionic surfactants",
-        "es": "Categoría: Anionic surfactants",
-        "fr": "Catégorie: Anionic surfactants",
-        "it": "Categoria: Anionic surfactants",
-        "nl": "Categorie: Anionic surfactants",
+        "de": "Anionische Tenside",
+        "es": "Tensioactivos aniónicos",
+        "fr": "Tensioactifs anioniques",
+        "it": "Tensioattivi anionici",
+        "nl": "Anionische tensiden",
         "pt_BR": "Tensoativos aniônicos"
       }
     },
@@ -15698,11 +15698,11 @@
       "group": "ingredients",
       "key": "subcategories.antioxidants.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Antioxidants.",
-        "es": "Categoría: Classification guidance for Antioxidants.",
-        "fr": "Catégorie: Classification guidance for Antioxidants.",
-        "it": "Categoria: Classification guidance for Antioxidants.",
-        "nl": "Categorie: Classification guidance for Antioxidants.",
+        "de": "Inhaltsstoffe, die die Oxidation von Formeln oder empfindlichen Bestandteilen verlangsamen.",
+        "es": "Ingredientes que ralentizan la oxidación de las fórmulas o de componentes sensibles.",
+        "fr": "Ingrédients qui ralentissent l’oxydation des formules ou des composants sensibles.",
+        "it": "Ingredienti che rallentano l’ossidazione delle formule o dei componenti sensibili.",
+        "nl": "Ingrediënten die de oxidatie van formules of gevoelige bestanddelen vertragen.",
         "pt_BR": "Ingredientes que retardam a oxidação das fórmulas ou de componentes sensíveis."
       }
     },
@@ -15710,11 +15710,11 @@
       "group": "ingredients",
       "key": "subcategories.antioxidants.label",
       "text": {
-        "de": "Kategorie: Antioxidants",
-        "es": "Categoría: Antioxidants",
-        "fr": "Catégorie: Antioxidants",
-        "it": "Categoria: Antioxidants",
-        "nl": "Categorie: Antioxidants",
+        "de": "Antioxidantien",
+        "es": "Antioxidantes",
+        "fr": "Antioxydants",
+        "it": "Antiossidanti",
+        "nl": "Antioxidanten",
         "pt_BR": "Antioxidantes"
       }
     },
@@ -15722,11 +15722,11 @@
       "group": "ingredients",
       "key": "subcategories.aqueous_glycerinated_extracts.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Aqueous & glycerinated extracts.",
-        "es": "Categoría: Classification guidance for Aqueous & glycerinated extracts.",
-        "fr": "Catégorie: Classification guidance for Aqueous & glycerinated extracts.",
-        "it": "Categoria: Classification guidance for Aqueous & glycerinated extracts.",
-        "nl": "Categorie: Classification guidance for Aqueous & glycerinated extracts.",
+        "de": "Pflanzenextrakte in Wasser, Glycerin oder Wasser-Glycerin-Mischungen.",
+        "es": "Extractos vegetales en agua, glicerina o mezclas de agua y glicerina.",
+        "fr": "Extraits végétaux dans l’eau, la glycérine ou un mélange eau-glycérine.",
+        "it": "Estratti vegetali in acqua, glicerina o miscele di acqua e glicerina.",
+        "nl": "Plantenextracten in water, glycerine of water-glycerinemengsels.",
         "pt_BR": "Extratos vegetais transportados em água, glicerina ou misturas de água e glicerina."
       }
     },
@@ -15734,11 +15734,11 @@
       "group": "ingredients",
       "key": "subcategories.aqueous_glycerinated_extracts.label",
       "text": {
-        "de": "Kategorie: Aqueous & glycerinated extracts",
-        "es": "Categoría: Aqueous & glycerinated extracts",
-        "fr": "Catégorie: Aqueous & glycerinated extracts",
-        "it": "Categoria: Aqueous & glycerinated extracts",
-        "nl": "Categorie: Aqueous & glycerinated extracts",
+        "de": "Wässrige & glycerinhaltige Extrakte",
+        "es": "Extractos acuosos y glicerinados",
+        "fr": "Extraits aqueux & glycérinés",
+        "it": "Estratti acquosi e glicerinati",
+        "nl": "Waterige & glycerine-extracten",
         "pt_BR": "Extratos aquosos e glicerinados"
       }
     },
@@ -15746,11 +15746,11 @@
       "group": "ingredients",
       "key": "subcategories.aroma_compounds.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Aroma compounds.",
-        "es": "Categoría: Classification guidance for Aroma compounds.",
-        "fr": "Catégorie: Classification guidance for Aroma compounds.",
-        "it": "Categoria: Classification guidance for Aroma compounds.",
-        "nl": "Categorie: Classification guidance for Aroma compounds.",
+        "de": "Einzelne aromatische Moleküle für die Duftkomposition.",
+        "es": "Moléculas aromáticas individuales usadas en la composición de fragancias.",
+        "fr": "Molécules aromatiques isolées utilisées dans la composition des parfums.",
+        "it": "Singole molecole aromatiche usate nella composizione dei profumi.",
+        "nl": "Afzonderlijke aromatische moleculen voor geurcomposities.",
         "pt_BR": "Moléculas aromáticas individuais usadas na composição de fragrâncias."
       }
     },
@@ -15758,11 +15758,11 @@
       "group": "ingredients",
       "key": "subcategories.aroma_compounds.label",
       "text": {
-        "de": "Kategorie: Aroma compounds",
-        "es": "Categoría: Aroma compounds",
-        "fr": "Catégorie: Aroma compounds",
-        "it": "Categoria: Aroma compounds",
-        "nl": "Categorie: Aroma compounds",
+        "de": "Aromastoffe",
+        "es": "Compuestos aromáticos",
+        "fr": "Molécules aromatiques",
+        "it": "Composti aromatici",
+        "nl": "Aromaverbindingen",
         "pt_BR": "Compostos aromáticos"
       }
     },
@@ -15770,11 +15770,11 @@
       "group": "ingredients",
       "key": "subcategories.bases.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Bases.",
-        "es": "Categoría: Classification guidance for Bases.",
-        "fr": "Catégorie: Classification guidance for Bases.",
-        "it": "Categoria: Classification guidance for Bases.",
-        "nl": "Categorie: Classification guidance for Bases.",
+        "de": "Basische Stoffe zur pH-Einstellung außerhalb der Seifenherstellung.",
+        "es": "Materiales básicos usados para ajustar el pH fuera del proceso de jabonería.",
+        "fr": "Matières basiques utilisées pour ajuster le pH en dehors de la saponification.",
+        "it": "Materiali basici usati per regolare il pH al di fuori della saponificazione.",
+        "nl": "Basische stoffen om de pH in te stellen buiten het zeepmaakproces.",
         "pt_BR": "Materiais básicos usados para ajustar o pH fora do fluxo de fabricação de sabonetes."
       }
     },
@@ -15782,11 +15782,11 @@
       "group": "ingredients",
       "key": "subcategories.bases.label",
       "text": {
-        "de": "Kategorie: Bases",
-        "es": "Categoría: Bases",
-        "fr": "Catégorie: Bases",
-        "it": "Categoria: Bases",
-        "nl": "Categorie: Bases",
+        "de": "Basen",
+        "es": "Bases",
+        "fr": "Bases",
+        "it": "Basi",
+        "nl": "Basen",
         "pt_BR": "Bases"
       }
     },
@@ -15794,11 +15794,11 @@
       "group": "ingredients",
       "key": "subcategories.botanical_colourants.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Botanical colourants.",
-        "es": "Categoría: Classification guidance for Botanical colourants.",
-        "fr": "Catégorie: Classification guidance for Botanical colourants.",
-        "it": "Categoria: Classification guidance for Botanical colourants.",
-        "nl": "Categorie: Classification guidance for Botanical colourants.",
+        "de": "Farbgebende Stoffe aus Pflanzen oder anderen natürlichen Quellen.",
+        "es": "Materiales colorantes obtenidos de plantas u otras fuentes naturales.",
+        "fr": "Matières colorantes issues de plantes ou d’autres sources naturelles.",
+        "it": "Materiali coloranti ottenuti da piante o altre fonti naturali.",
+        "nl": "Kleurende stoffen uit planten of andere natuurlijke bronnen.",
         "pt_BR": "Materiais colorantes obtidos de plantas ou de outras fontes naturais."
       }
     },
@@ -15806,11 +15806,11 @@
       "group": "ingredients",
       "key": "subcategories.botanical_colourants.label",
       "text": {
-        "de": "Kategorie: Botanical colourants",
-        "es": "Categoría: Botanical colourants",
-        "fr": "Catégorie: Botanical colourants",
-        "it": "Categoria: Botanical colourants",
-        "nl": "Categorie: Botanical colourants",
+        "de": "Pflanzliche Farbmittel",
+        "es": "Colorantes botánicos",
+        "fr": "Colorants végétaux",
+        "it": "Coloranti vegetali",
+        "nl": "Plantaardige kleurstoffen",
         "pt_BR": "Corantes botânicos"
       }
     },
@@ -15818,11 +15818,11 @@
       "group": "ingredients",
       "key": "subcategories.buffer_systems.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Buffer systems.",
-        "es": "Categoría: Classification guidance for Buffer systems.",
-        "fr": "Catégorie: Classification guidance for Buffer systems.",
-        "it": "Categoria: Classification guidance for Buffer systems.",
-        "nl": "Categorie: Classification guidance for Buffer systems.",
+        "de": "Säure-Base-Paare, die pH-Änderungen entgegenwirken.",
+        "es": "Pares ácido-base usados para resistir los cambios de pH.",
+        "fr": "Couples acide-base utilisés pour résister aux variations de pH.",
+        "it": "Coppie acido-base usate per contrastare le variazioni di pH.",
+        "nl": "Zuur-baseparen die pH-veranderingen tegengaan.",
         "pt_BR": "Pares ácido-base usados para resistir a mudanças de pH."
       }
     },
@@ -15830,11 +15830,11 @@
       "group": "ingredients",
       "key": "subcategories.buffer_systems.label",
       "text": {
-        "de": "Kategorie: Buffer systems",
-        "es": "Categoría: Buffer systems",
-        "fr": "Catégorie: Buffer systems",
-        "it": "Categoria: Buffer systems",
-        "nl": "Categorie: Buffer systems",
+        "de": "Puffersysteme",
+        "es": "Sistemas tampón",
+        "fr": "Systèmes tampons",
+        "it": "Sistemi tampone",
+        "nl": "Buffersystemen",
         "pt_BR": "Sistemas tampão"
       }
     },
@@ -15842,11 +15842,11 @@
       "group": "ingredients",
       "key": "subcategories.butters.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Butters.",
-        "es": "Categoría: Classification guidance for Butters.",
-        "fr": "Catégorie: Classification guidance for Butters.",
-        "it": "Categoria: Classification guidance for Butters.",
-        "nl": "Categorie: Classification guidance for Butters.",
+        "de": "Halbfeste Fette pflanzlichen oder tierischen Ursprungs wie Shea- oder Kakaobutter.",
+        "es": "Grasas semisólidas de origen vegetal o animal, como la manteca de karité o de cacao.",
+        "fr": "Graisses semi-solides d’origine végétale ou animale, comme le beurre de karité ou de cacao.",
+        "it": "Grassi semisolidi di origine vegetale o animale, come burro di karité o di cacao.",
+        "nl": "Halfvaste vetten van plantaardige of dierlijke oorsprong, zoals shea- of cacaoboter.",
         "pt_BR": "Gorduras semissólidas de origem vegetal ou animal, como manteiga de karité ou de cacau."
       }
     },
@@ -15854,11 +15854,11 @@
       "group": "ingredients",
       "key": "subcategories.butters.label",
       "text": {
-        "de": "Kategorie: Butters",
-        "es": "Categoría: Butters",
-        "fr": "Catégorie: Butters",
-        "it": "Categoria: Butters",
-        "nl": "Categorie: Butters",
+        "de": "Butter",
+        "es": "Mantecas",
+        "fr": "Beurres",
+        "it": "Burri",
+        "nl": "Boters",
         "pt_BR": "Manteigas"
       }
     },
@@ -15866,11 +15866,11 @@
       "group": "ingredients",
       "key": "subcategories.cationic.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Cationic surfactants.",
-        "es": "Categoría: Classification guidance for Cationic surfactants.",
-        "fr": "Catégorie: Classification guidance for Cationic surfactants.",
-        "it": "Categoria: Classification guidance for Cationic surfactants.",
-        "nl": "Categorie: Classification guidance for Cationic surfactants.",
+        "de": "Positiv geladene Tenside, oft für Pflege- oder antimikrobielle Effekte verwendet.",
+        "es": "Tensioactivos con carga positiva, a menudo usados por su efecto acondicionador o antimicrobiano.",
+        "fr": "Tensioactifs chargés positivement, souvent utilisés pour un effet conditionneur ou antimicrobien.",
+        "it": "Tensioattivi con carica positiva, spesso usati per effetto condizionante o antimicrobico.",
+        "nl": "Positief geladen tensiden, vaak gebruikt voor conditionerende of antimicrobiële effecten.",
         "pt_BR": "Tensoativos com carga positiva, frequentemente usados para condicionamento ou efeitos antimicrobianos."
       }
     },
@@ -15878,11 +15878,11 @@
       "group": "ingredients",
       "key": "subcategories.cationic.label",
       "text": {
-        "de": "Kategorie: Cationic surfactants",
-        "es": "Categoría: Cationic surfactants",
-        "fr": "Catégorie: Cationic surfactants",
-        "it": "Categoria: Cationic surfactants",
-        "nl": "Categorie: Cationic surfactants",
+        "de": "Kationische Tenside",
+        "es": "Tensioactivos catiónicos",
+        "fr": "Tensioactifs cationiques",
+        "it": "Tensioattivi cationici",
+        "nl": "Kationische tensiden",
         "pt_BR": "Tensoativos catiônicos"
       }
     },
@@ -15890,11 +15890,11 @@
       "group": "ingredients",
       "key": "subcategories.cellulose_derivatives.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Cellulose derivatives.",
-        "es": "Categoría: Classification guidance for Cellulose derivatives.",
-        "fr": "Catégorie: Classification guidance for Cellulose derivatives.",
-        "it": "Categoria: Classification guidance for Cellulose derivatives.",
-        "nl": "Categorie: Classification guidance for Cellulose derivatives.",
+        "de": "Rheologiemodifizierer und Filmbildner auf Cellulosebasis.",
+        "es": "Modificadores reológicos y formadores de película a base de celulosa.",
+        "fr": "Modificateurs de rhéologie et filmogènes à base de cellulose.",
+        "it": "Modificatori reologici e filmogeni a base di cellulosa.",
+        "nl": "Reologiemodificatoren en filmvormers op basis van cellulose.",
         "pt_BR": "Modificadores de reologia e formadores de filme à base de celulose."
       }
     },
@@ -15902,11 +15902,11 @@
       "group": "ingredients",
       "key": "subcategories.cellulose_derivatives.label",
       "text": {
-        "de": "Kategorie: Cellulose derivatives",
-        "es": "Categoría: Cellulose derivatives",
-        "fr": "Catégorie: Cellulose derivatives",
-        "it": "Categoria: Cellulose derivatives",
-        "nl": "Categorie: Cellulose derivatives",
+        "de": "Cellulosederivate",
+        "es": "Derivados de celulosa",
+        "fr": "Dérivés de cellulose",
+        "it": "Derivati della cellulosa",
+        "nl": "Cellulosederivaten",
         "pt_BR": "Derivados de celulose"
       }
     },
@@ -15914,11 +15914,11 @@
       "group": "ingredients",
       "key": "subcategories.chelators.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Chelators.",
-        "es": "Categoría: Classification guidance for Chelators.",
-        "fr": "Catégorie: Classification guidance for Chelators.",
-        "it": "Categoria: Classification guidance for Chelators.",
-        "nl": "Categorie: Classification guidance for Chelators.",
+        "de": "Inhaltsstoffe, die Spurenmetalle binden und die Stabilität verbessern.",
+        "es": "Ingredientes que fijan los metales traza y mejoran la estabilidad.",
+        "fr": "Ingrédients qui captent les métaux à l’état de traces et améliorent la stabilité.",
+        "it": "Ingredienti che legano i metalli in traccia e migliorano la stabilità.",
+        "nl": "Ingrediënten die sporenmetalen binden en de stabiliteit verbeteren.",
         "pt_BR": "Ingredientes que ligam metais-traço e melhoram a estabilidade."
       }
     },
@@ -15926,11 +15926,11 @@
       "group": "ingredients",
       "key": "subcategories.chelators.label",
       "text": {
-        "de": "Kategorie: Chelators",
-        "es": "Categoría: Chelators",
-        "fr": "Catégorie: Chelators",
-        "it": "Categoria: Chelators",
-        "nl": "Categorie: Chelators",
+        "de": "Chelatbildner",
+        "es": "Quelantes",
+        "fr": "Chélatants",
+        "it": "Chelanti",
+        "nl": "Chelatoren",
         "pt_BR": "Quelantes"
       }
     },
@@ -15938,11 +15938,11 @@
       "group": "ingredients",
       "key": "subcategories.clays.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Clays.",
-        "es": "Categoría: Classification guidance for Clays.",
-        "fr": "Catégorie: Classification guidance for Clays.",
-        "it": "Categoria: Classification guidance for Clays.",
-        "nl": "Categorie: Classification guidance for Clays.",
+        "de": "Natürliche Tonerden für Farbe, Absorption, Textur oder Reinigung.",
+        "es": "Arcillas naturales usadas por su color, absorción, textura o poder limpiador.",
+        "fr": "Argiles naturelles utilisées pour la couleur, l’absorption, la texture ou le nettoyage.",
+        "it": "Argille naturali usate per colore, assorbimento, texture o detersione.",
+        "nl": "Natuurlijke kleisoorten voor kleur, absorptie, textuur of reiniging.",
         "pt_BR": "Argilas naturais usadas para cor, absorção, textura ou limpeza."
       }
     },
@@ -15950,11 +15950,11 @@
       "group": "ingredients",
       "key": "subcategories.clays.label",
       "text": {
-        "de": "Kategorie: Clays",
-        "es": "Categoría: Clays",
-        "fr": "Catégorie: Clays",
-        "it": "Categoria: Clays",
-        "nl": "Categorie: Clays",
+        "de": "Tonerden",
+        "es": "Arcillas",
+        "fr": "Argiles",
+        "it": "Argille",
+        "nl": "Kleisoorten",
         "pt_BR": "Argilas"
       }
     },
@@ -15962,11 +15962,11 @@
       "group": "ingredients",
       "key": "subcategories.co2_extracts.description",
       "text": {
-        "de": "Kategorie: Classification guidance for CO2 extracts.",
-        "es": "Categoría: Classification guidance for CO2 extracts.",
-        "fr": "Catégorie: Classification guidance for CO2 extracts.",
-        "it": "Categoria: Classification guidance for CO2 extracts.",
-        "nl": "Categorie: Classification guidance for CO2 extracts.",
+        "de": "Pflanzenextrakte, die mit überkritischem Kohlendioxid gewonnen werden.",
+        "es": "Extractos botánicos obtenidos con dióxido de carbono supercrítico.",
+        "fr": "Extraits végétaux obtenus au dioxyde de carbone supercritique.",
+        "it": "Estratti vegetali ottenuti con anidride carbonica supercritica.",
+        "nl": "Plantenextracten verkregen met superkritisch koolstofdioxide.",
         "pt_BR": "Extratos botânicos obtidos com dióxido de carbono supercrítico."
       }
     },
@@ -15974,11 +15974,11 @@
       "group": "ingredients",
       "key": "subcategories.co2_extracts.label",
       "text": {
-        "de": "Kategorie: CO2 extracts",
-        "es": "Categoría: CO2 extracts",
-        "fr": "Catégorie: CO2 extracts",
-        "it": "Categoria: CO2 extracts",
-        "nl": "Categorie: CO2 extracts",
+        "de": "CO2-Extrakte",
+        "es": "Extractos CO2",
+        "fr": "Extraits CO2",
+        "it": "Estratti CO2",
+        "nl": "CO2-extracten",
         "pt_BR": "Extratos de CO2"
       }
     },
@@ -15986,11 +15986,11 @@
       "group": "ingredients",
       "key": "subcategories.co_emulsifiers.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Co-emulsifiers.",
-        "es": "Categoría: Classification guidance for Co-emulsifiers.",
-        "fr": "Catégorie: Classification guidance for Co-emulsifiers.",
-        "it": "Categoria: Classification guidance for Co-emulsifiers.",
-        "nl": "Categorie: Classification guidance for Co-emulsifiers.",
+        "de": "Unterstützende Emulgatoren, die Struktur und Robustheit der Emulsion verbessern.",
+        "es": "Emulsionantes de apoyo que mejoran la estructura y la robustez de la emulsión.",
+        "fr": "Émulsifiants d’appoint qui améliorent la structure et la robustesse de l’émulsion.",
+        "it": "Emulsionanti di supporto che migliorano struttura e robustezza dell’emulsione.",
+        "nl": "Ondersteunende emulgatoren die de structuur en robuustheid van de emulsie verbeteren.",
         "pt_BR": "Emulsionantes de suporte que melhoram a estrutura e a robustez da emulsão."
       }
     },
@@ -15998,11 +15998,11 @@
       "group": "ingredients",
       "key": "subcategories.co_emulsifiers.label",
       "text": {
-        "de": "Kategorie: Co-emulsifiers",
-        "es": "Categoría: Co-emulsifiers",
-        "fr": "Catégorie: Co-emulsifiers",
-        "it": "Categoria: Co-emulsifiers",
-        "nl": "Categorie: Co-emulsifiers",
+        "de": "Co-Emulgatoren",
+        "es": "Coemulsionantes",
+        "fr": "Co-émulsifiants",
+        "it": "Co-emulsionanti",
+        "nl": "Co-emulgatoren",
         "pt_BR": "Coemulsionantes"
       }
     },
@@ -16010,11 +16010,11 @@
       "group": "ingredients",
       "key": "subcategories.conditioning_polymers.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Conditioning polymers.",
-        "es": "Categoría: Classification guidance for Conditioning polymers.",
-        "fr": "Catégorie: Classification guidance for Conditioning polymers.",
-        "it": "Categoria: Classification guidance for Conditioning polymers.",
-        "nl": "Categorie: Classification guidance for Conditioning polymers.",
+        "de": "Polymere, die Haar, Haut oder andere Oberflächen pflegen.",
+        "es": "Polímeros que acondicionan el cabello, la piel u otras superficies.",
+        "fr": "Polymères qui conditionnent les cheveux, la peau ou d’autres surfaces.",
+        "it": "Polimeri che condizionano capelli, pelle o altre superfici.",
+        "nl": "Polymeren die haar, huid of andere oppervlakken conditioneren.",
         "pt_BR": "Polímeros que condicionam cabelos, pele ou outras superfícies."
       }
     },
@@ -16022,11 +16022,11 @@
       "group": "ingredients",
       "key": "subcategories.conditioning_polymers.label",
       "text": {
-        "de": "Kategorie: Conditioning polymers",
-        "es": "Categoría: Conditioning polymers",
-        "fr": "Catégorie: Conditioning polymers",
-        "it": "Categoria: Conditioning polymers",
-        "nl": "Categorie: Conditioning polymers",
+        "de": "Pflegepolymere",
+        "es": "Polímeros acondicionadores",
+        "fr": "Polymères conditionneurs",
+        "it": "Polimeri condizionanti",
+        "nl": "Conditionerende polymeren",
         "pt_BR": "Polímeros condicionadores"
       }
     },
@@ -16034,11 +16034,11 @@
       "group": "ingredients",
       "key": "subcategories.cosmetic_esters.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Cosmetic esters.",
-        "es": "Categoría: Classification guidance for Cosmetic esters.",
-        "fr": "Catégorie: Classification guidance for Cosmetic esters.",
-        "it": "Categoria: Classification guidance for Cosmetic esters.",
-        "nl": "Categorie: Classification guidance for Cosmetic esters.",
+        "de": "Emolliente oder funktionelle Ester zur Feinabstimmung von Spreitung, Hautgefühl und Stabilität.",
+        "es": "Ésteres emolientes o funcionales usados para ajustar la extensibilidad, el tacto y la estabilidad.",
+        "fr": "Esters émollients ou fonctionnels utilisés pour ajuster l’étalement, le toucher et la stabilité.",
+        "it": "Esteri emollienti o funzionali usati per regolare spalmabilità, sensorialità e stabilità.",
+        "nl": "Verzachtende of functionele esters om spreiding, huidgevoel en stabiliteit af te stemmen.",
         "pt_BR": "Ésteres emolientes ou funcionais usados para ajustar espalhabilidade, sensorial e estabilidade."
       }
     },
@@ -16046,11 +16046,11 @@
       "group": "ingredients",
       "key": "subcategories.cosmetic_esters.label",
       "text": {
-        "de": "Kategorie: Cosmetic esters",
-        "es": "Categoría: Cosmetic esters",
-        "fr": "Catégorie: Cosmetic esters",
-        "it": "Categoria: Cosmetic esters",
-        "nl": "Categorie: Cosmetic esters",
+        "de": "Kosmetische Ester",
+        "es": "Ésteres cosméticos",
+        "fr": "Esters cosmétiques",
+        "it": "Esteri cosmetici",
+        "nl": "Cosmetische esters",
         "pt_BR": "Ésteres cosméticos"
       }
     },
@@ -16058,11 +16058,11 @@
       "group": "ingredients",
       "key": "subcategories.dry_extracts.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Dry extracts.",
-        "es": "Categoría: Classification guidance for Dry extracts.",
-        "fr": "Catégorie: Classification guidance for Dry extracts.",
-        "it": "Categoria: Classification guidance for Dry extracts.",
-        "nl": "Categorie: Classification guidance for Dry extracts.",
+        "de": "Konzentrierte Pflanzenextrakte, geliefert als trockene Feststoffe oder Pulver.",
+        "es": "Extractos botánicos concentrados suministrados como sólidos secos o polvos.",
+        "fr": "Extraits végétaux concentrés fournis sous forme solide sèche ou de poudre.",
+        "it": "Estratti vegetali concentrati forniti come solidi secchi o polveri.",
+        "nl": "Geconcentreerde plantenextracten, geleverd als droge vaste stof of poeder.",
         "pt_BR": "Extratos botânicos concentrados fornecidos como sólidos secos ou pós."
       }
     },
@@ -16070,11 +16070,11 @@
       "group": "ingredients",
       "key": "subcategories.dry_extracts.label",
       "text": {
-        "de": "Kategorie: Dry extracts",
-        "es": "Categoría: Dry extracts",
-        "fr": "Catégorie: Dry extracts",
-        "it": "Categoria: Dry extracts",
-        "nl": "Categorie: Dry extracts",
+        "de": "Trockenextrakte",
+        "es": "Extractos secos",
+        "fr": "Extraits secs",
+        "it": "Estratti secchi",
+        "nl": "Droge extracten",
         "pt_BR": "Extratos secos"
       }
     },
@@ -16082,11 +16082,11 @@
       "group": "ingredients",
       "key": "subcategories.dyes_lakes.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Dyes & lakes.",
-        "es": "Categoría: Classification guidance for Dyes & lakes.",
-        "fr": "Catégorie: Classification guidance for Dyes & lakes.",
-        "it": "Categoria: Classification guidance for Dyes & lakes.",
-        "nl": "Categorie: Classification guidance for Dyes & lakes.",
+        "de": "Lösliche Farbstoffe und ihre unlöslichen Farblackformen.",
+        "es": "Tintes solubles y sus formas insolubles en laca.",
+        "fr": "Colorants solubles et leurs formes laques insolubles.",
+        "it": "Coloranti solubili e le loro forme insolubili in lacca.",
+        "nl": "Oplosbare kleurstoffen en hun onoplosbare lakvormen.",
         "pt_BR": "Corantes solúveis e suas formas insolúveis do tipo lake."
       }
     },
@@ -16094,11 +16094,11 @@
       "group": "ingredients",
       "key": "subcategories.dyes_lakes.label",
       "text": {
-        "de": "Kategorie: Dyes & lakes",
-        "es": "Categoría: Dyes & lakes",
-        "fr": "Catégorie: Dyes & lakes",
-        "it": "Categoria: Dyes & lakes",
-        "nl": "Categorie: Dyes & lakes",
+        "de": "Farbstoffe & Farblacke",
+        "es": "Tintes y lacas",
+        "fr": "Colorants & laques",
+        "it": "Coloranti e lacche",
+        "nl": "Kleurstoffen & lakken",
         "pt_BR": "Corantes e lakes"
       }
     },
@@ -16106,11 +16106,11 @@
       "group": "ingredients",
       "key": "subcategories.essential_oils.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Essential oils.",
-        "es": "Categoría: Classification guidance for Essential oils.",
-        "fr": "Catégorie: Classification guidance for Essential oils.",
-        "it": "Categoria: Classification guidance for Essential oils.",
-        "nl": "Categorie: Classification guidance for Essential oils.",
+        "de": "Flüchtige aromatische Öle, die eine allergen- und IFRA-gerechte Handhabung erfordern.",
+        "es": "Aceites aromáticos volátiles que requieren un manejo acorde con alérgenos e IFRA.",
+        "fr": "Huiles aromatiques volatiles qui demandent une gestion adaptée aux allergènes et à l’IFRA.",
+        "it": "Oli aromatici volatili che richiedono una gestione attenta ad allergeni e IFRA.",
+        "nl": "Vluchtige aromatische oliën die een allergeen- en IFRA-bewuste aanpak vereisen.",
         "pt_BR": "Óleos aromáticos voláteis que exigem atenção a alérgenos e IFRA."
       }
     },
@@ -16118,11 +16118,11 @@
       "group": "ingredients",
       "key": "subcategories.essential_oils.label",
       "text": {
-        "de": "Kategorie: Essential oils",
-        "es": "Categoría: Essential oils",
-        "fr": "Catégorie: Essential oils",
-        "it": "Categoria: Essential oils",
-        "nl": "Categorie: Essential oils",
+        "de": "Ätherische Öle",
+        "es": "Aceites esenciales",
+        "fr": "Huiles essentielles",
+        "it": "Oli essenziali",
+        "nl": "Etherische oliën",
         "pt_BR": "Óleos essenciais"
       }
     },
@@ -16130,11 +16130,11 @@
       "group": "ingredients",
       "key": "subcategories.exfoliating_acids.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Exfoliating acids.",
-        "es": "Categoría: Classification guidance for Exfoliating acids.",
-        "fr": "Catégorie: Classification guidance for Exfoliating acids.",
-        "it": "Categoria: Classification guidance for Exfoliating acids.",
-        "nl": "Categorie: Classification guidance for Exfoliating acids.",
+        "de": "Säuren für ein kontrolliertes Peeling oder die Hauterneuerung.",
+        "es": "Ácidos usados para una exfoliación controlada o la renovación de la piel.",
+        "fr": "Acides utilisés pour une exfoliation contrôlée ou le renouvellement de la peau.",
+        "it": "Acidi usati per un’esfoliazione controllata o il rinnovamento della pelle.",
+        "nl": "Zuren voor gecontroleerde exfoliatie of huidvernieuwing.",
         "pt_BR": "Ácidos usados para esfoliação controlada ou renovação da pele."
       }
     },
@@ -16142,11 +16142,11 @@
       "group": "ingredients",
       "key": "subcategories.exfoliating_acids.label",
       "text": {
-        "de": "Kategorie: Exfoliating acids",
-        "es": "Categoría: Exfoliating acids",
-        "fr": "Catégorie: Exfoliating acids",
-        "it": "Categoria: Exfoliating acids",
-        "nl": "Categorie: Exfoliating acids",
+        "de": "Peelingsäuren",
+        "es": "Ácidos exfoliantes",
+        "fr": "Acides exfoliants",
+        "it": "Acidi esfolianti",
+        "nl": "Exfoliërende zuren",
         "pt_BR": "Ácidos esfoliantes"
       }
     },
@@ -16154,11 +16154,11 @@
       "group": "ingredients",
       "key": "subcategories.fatty_acids.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Fatty acids.",
-        "es": "Categoría: Classification guidance for Fatty acids.",
-        "fr": "Catégorie: Classification guidance for Fatty acids.",
-        "it": "Categoria: Classification guidance for Fatty acids.",
-        "nl": "Categorie: Classification guidance for Fatty acids.",
+        "de": "Langkettige Fettsäuren wie Stearinsäure.",
+        "es": "Ácidos grasos de cadena larga, como el ácido esteárico.",
+        "fr": "Acides gras à longue chaîne, comme l’acide stéarique.",
+        "it": "Acidi grassi a catena lunga, come l’acido stearico.",
+        "nl": "Langeketenvetzuren zoals stearinezuur.",
         "pt_BR": "Ácidos graxos de cadeia longa, como o ácido esteárico."
       }
     },
@@ -16166,11 +16166,11 @@
       "group": "ingredients",
       "key": "subcategories.fatty_acids.label",
       "text": {
-        "de": "Kategorie: Fatty acids",
-        "es": "Categoría: Fatty acids",
-        "fr": "Catégorie: Fatty acids",
-        "it": "Categoria: Fatty acids",
-        "nl": "Categorie: Fatty acids",
+        "de": "Fettsäuren",
+        "es": "Ácidos grasos",
+        "fr": "Acides gras",
+        "it": "Acidi grassi",
+        "nl": "Vetzuren",
         "pt_BR": "Ácidos graxos"
       }
     },
@@ -16178,11 +16178,11 @@
       "group": "ingredients",
       "key": "subcategories.fatty_alcohols.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Fatty alcohols.",
-        "es": "Categoría: Classification guidance for Fatty alcohols.",
-        "fr": "Catégorie: Classification guidance for Fatty alcohols.",
-        "it": "Categoria: Classification guidance for Fatty alcohols.",
-        "nl": "Categorie: Classification guidance for Fatty alcohols.",
+        "de": "Langkettige Alkohole wie Cetyl- oder Cetearylalkohol.",
+        "es": "Alcoholes de cadena larga, como el alcohol cetílico o cetearílico.",
+        "fr": "Alcools à longue chaîne, comme l’alcool cétylique ou cétéarylique.",
+        "it": "Alcoli a catena lunga, come l’alcol cetilico o cetearilico.",
+        "nl": "Langeketenalcoholen zoals cetyl- of cetearylalcohol.",
         "pt_BR": "Álcoois de cadeia longa, como álcool cetílico ou ceteárico."
       }
     },
@@ -16190,11 +16190,11 @@
       "group": "ingredients",
       "key": "subcategories.fatty_alcohols.label",
       "text": {
-        "de": "Kategorie: Fatty alcohols",
-        "es": "Categoría: Fatty alcohols",
-        "fr": "Catégorie: Fatty alcohols",
-        "it": "Categoria: Fatty alcohols",
-        "nl": "Categorie: Fatty alcohols",
+        "de": "Fettalkohole",
+        "es": "Alcoholes grasos",
+        "fr": "Alcools gras",
+        "it": "Alcoli grassi",
+        "nl": "Vetalcoholen",
         "pt_BR": "Álcoois graxos"
       }
     },
@@ -16202,11 +16202,11 @@
       "group": "ingredients",
       "key": "subcategories.film_forming_polymers.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Film-forming polymers.",
-        "es": "Categoría: Classification guidance for Film-forming polymers.",
-        "fr": "Catégorie: Classification guidance for Film-forming polymers.",
-        "it": "Categoria: Classification guidance for Film-forming polymers.",
-        "nl": "Categorie: Classification guidance for Film-forming polymers.",
+        "de": "Polymere, die einen durchgehenden Schutz- oder Stylingfilm hinterlassen.",
+        "es": "Polímeros que dejan una película continua protectora o de peinado.",
+        "fr": "Polymères qui laissent un film continu protecteur ou coiffant.",
+        "it": "Polimeri che lasciano un film continuo protettivo o per lo styling.",
+        "nl": "Polymeren die een doorlopende beschermende of stylingfilm achterlaten.",
         "pt_BR": "Polímeros que deixam uma película protetora ou modeladora contínua."
       }
     },
@@ -16214,11 +16214,11 @@
       "group": "ingredients",
       "key": "subcategories.film_forming_polymers.label",
       "text": {
-        "de": "Kategorie: Film-forming polymers",
-        "es": "Categoría: Film-forming polymers",
-        "fr": "Catégorie: Film-forming polymers",
-        "it": "Categoria: Film-forming polymers",
-        "nl": "Categorie: Film-forming polymers",
+        "de": "Filmbildende Polymere",
+        "es": "Polímeros formadores de película",
+        "fr": "Polymères filmogènes",
+        "it": "Polimeri filmogeni",
+        "nl": "Filmvormende polymeren",
         "pt_BR": "Polímeros formadores de filme"
       }
     },
@@ -16226,11 +16226,11 @@
       "group": "ingredients",
       "key": "subcategories.fractionated_modified_lipids.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Fractionated / modified lipids.",
-        "es": "Categoría: Classification guidance for Fractionated / modified lipids.",
-        "fr": "Catégorie: Classification guidance for Fractionated / modified lipids.",
-        "it": "Categoria: Classification guidance for Fractionated / modified lipids.",
-        "nl": "Categorie: Classification guidance for Fractionated / modified lipids.",
+        "de": "Fraktionierte, gehärtete, umgeesterte oder anderweitig modifizierte Lipide.",
+        "es": "Lípidos fraccionados, hidrogenados, interesterificados o modificados de otro modo.",
+        "fr": "Lipides fractionnés, hydrogénés, interestérifiés ou modifiés d’une autre manière.",
+        "it": "Lipidi frazionati, idrogenati, interesterificati o altrimenti modificati.",
+        "nl": "Gefractioneerde, geharde, omgeësterde of anderszins gemodificeerde lipiden.",
         "pt_BR": "Lipídios fracionados, hidrogenados, interesterificados ou modificados de outra forma."
       }
     },
@@ -16238,11 +16238,11 @@
       "group": "ingredients",
       "key": "subcategories.fractionated_modified_lipids.label",
       "text": {
-        "de": "Kategorie: Fractionated / modified lipids",
-        "es": "Categoría: Fractionated / modified lipids",
-        "fr": "Catégorie: Fractionated / modified lipids",
-        "it": "Categoria: Fractionated / modified lipids",
-        "nl": "Categorie: Fractionated / modified lipids",
+        "de": "Fraktionierte / modifizierte Lipide",
+        "es": "Lípidos fraccionados / modificados",
+        "fr": "Lipides fractionnés / modifiés",
+        "it": "Lipidi frazionati / modificati",
+        "nl": "Gefractioneerde / gemodificeerde lipiden",
         "pt_BR": "Lipídios fracionados ou modificados"
       }
     },
@@ -16250,11 +16250,11 @@
       "group": "ingredients",
       "key": "subcategories.fragrance_blends.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Fragrance blends.",
-        "es": "Categoría: Classification guidance for Fragrance blends.",
-        "fr": "Catégorie: Classification guidance for Fragrance blends.",
-        "it": "Categoria: Classification guidance for Fragrance blends.",
-        "nl": "Categorie: Classification guidance for Fragrance blends.",
+        "de": "Fertige Duftkompositionen, die als Mischungen geliefert werden.",
+        "es": "Composiciones de fragancia preparadas suministradas como mezclas.",
+        "fr": "Compositions parfumées prêtes à l’emploi, fournies sous forme de mélange.",
+        "it": "Composizioni profumate pronte fornite come miscele.",
+        "nl": "Kant-en-klare geurcomposities, geleverd als mengsel.",
         "pt_BR": "Composições de fragrância preparadas e fornecidas como misturas."
       }
     },
@@ -16262,11 +16262,11 @@
       "group": "ingredients",
       "key": "subcategories.fragrance_blends.label",
       "text": {
-        "de": "Kategorie: Fragrance blends",
-        "es": "Categoría: Fragrance blends",
-        "fr": "Catégorie: Fragrance blends",
-        "it": "Categoria: Fragrance blends",
-        "nl": "Categorie: Fragrance blends",
+        "de": "Duftmischungen",
+        "es": "Mezclas de fragancia",
+        "fr": "Compositions parfumées",
+        "it": "Miscele di fragranze",
+        "nl": "Geurmengsels",
         "pt_BR": "Misturas de fragrâncias"
       }
     },
@@ -16274,11 +16274,11 @@
       "group": "ingredients",
       "key": "subcategories.functional_blends.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Functional blends.",
-        "es": "Categoría: Classification guidance for Functional blends.",
-        "fr": "Catégorie: Classification guidance for Functional blends.",
-        "it": "Categoria: Classification guidance for Functional blends.",
-        "nl": "Categorie: Classification guidance for Functional blends.",
+        "de": "Mischungen, die für eine definierte technische oder sensorische Funktion verkauft werden.",
+        "es": "Mezclas vendidas para aportar una función técnica o sensorial definida.",
+        "fr": "Mélanges vendus pour remplir une fonction technique ou sensorielle définie.",
+        "it": "Miscele vendute per svolgere una funzione tecnica o sensoriale definita.",
+        "nl": "Mengsels die worden verkocht voor een bepaalde technische of sensorische functie.",
         "pt_BR": "Misturas vendidas para fornecer uma função técnica ou sensorial definida."
       }
     },
@@ -16286,11 +16286,11 @@
       "group": "ingredients",
       "key": "subcategories.functional_blends.label",
       "text": {
-        "de": "Kategorie: Functional blends",
-        "es": "Categoría: Functional blends",
-        "fr": "Catégorie: Functional blends",
-        "it": "Categoria: Functional blends",
-        "nl": "Categorie: Functional blends",
+        "de": "Funktionelle Mischungen",
+        "es": "Mezclas funcionales",
+        "fr": "Mélanges fonctionnels",
+        "it": "Miscele funzionali",
+        "nl": "Functionele mengsels",
         "pt_BR": "Misturas funcionais"
       }
     },
@@ -16298,11 +16298,11 @@
       "group": "ingredients",
       "key": "subcategories.functional_mineral_powders.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Functional mineral powders.",
-        "es": "Categoría: Classification guidance for Functional mineral powders.",
-        "fr": "Catégorie: Classification guidance for Functional mineral powders.",
-        "it": "Categoria: Classification guidance for Functional mineral powders.",
-        "nl": "Categorie: Classification guidance for Functional mineral powders.",
+        "de": "Mineralpulver für sensorische, optische oder technische Leistung.",
+        "es": "Polvos minerales usados por su rendimiento sensorial, óptico o técnico.",
+        "fr": "Poudres minérales utilisées pour leurs performances sensorielles, optiques ou techniques.",
+        "it": "Polveri minerali usate per prestazioni sensoriali, ottiche o tecniche.",
+        "nl": "Minerale poeders voor sensorische, optische of technische prestaties.",
         "pt_BR": "Pós minerais usados para desempenho sensorial, óptico ou técnico."
       }
     },
@@ -16310,11 +16310,11 @@
       "group": "ingredients",
       "key": "subcategories.functional_mineral_powders.label",
       "text": {
-        "de": "Kategorie: Functional mineral powders",
-        "es": "Categoría: Functional mineral powders",
-        "fr": "Catégorie: Functional mineral powders",
-        "it": "Categoria: Functional mineral powders",
-        "nl": "Categorie: Functional mineral powders",
+        "de": "Funktionelle Mineralpulver",
+        "es": "Polvos minerales funcionales",
+        "fr": "Poudres minérales fonctionnelles",
+        "it": "Polveri minerali funzionali",
+        "nl": "Functionele minerale poeders",
         "pt_BR": "Pós minerais funcionais"
       }
     },
@@ -16322,11 +16322,11 @@
       "group": "ingredients",
       "key": "subcategories.glycerin_glycols.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Glycerin & glycols.",
-        "es": "Categoría: Classification guidance for Glycerin & glycols.",
-        "fr": "Catégorie: Classification guidance for Glycerin & glycols.",
-        "it": "Categoria: Classification guidance for Glycerin & glycols.",
-        "nl": "Categorie: Classification guidance for Glycerin & glycols.",
+        "de": "Gängige Polyol-Feuchthaltemittel wie Glycerin und Glykole.",
+        "es": "Humectantes poliol habituales, como la glicerina y los glicoles.",
+        "fr": "Humectants polyols courants, dont la glycérine et les glycols.",
+        "it": "Umettanti poliolici comuni, tra cui glicerina e glicoli.",
+        "nl": "Gangbare polyol-humectanten zoals glycerine en glycolen.",
         "pt_BR": "Umectantes polióis comuns, incluindo glicerina e glicóis."
       }
     },
@@ -16334,11 +16334,11 @@
       "group": "ingredients",
       "key": "subcategories.glycerin_glycols.label",
       "text": {
-        "de": "Kategorie: Glycerin & glycols",
-        "es": "Categoría: Glycerin & glycols",
-        "fr": "Catégorie: Glycerin & glycols",
-        "it": "Categoria: Glycerin & glycols",
-        "nl": "Categorie: Glycerin & glycols",
+        "de": "Glycerin & Glykole",
+        "es": "Glicerina y glicoles",
+        "fr": "Glycérine & glycols",
+        "it": "Glicerina e glicoli",
+        "nl": "Glycerine & glycolen",
         "pt_BR": "Glicerina e glicóis"
       }
     },
@@ -16346,11 +16346,11 @@
       "group": "ingredients",
       "key": "subcategories.gums.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Gums.",
-        "es": "Categoría: Classification guidance for Gums.",
-        "fr": "Catégorie: Classification guidance for Gums.",
-        "it": "Categoria: Classification guidance for Gums.",
-        "nl": "Categorie: Classification guidance for Gums.",
+        "de": "Natürliche Hydrokolloid-Gummen zum Verdicken oder Stabilisieren.",
+        "es": "Gomas hidrocoloides naturales usadas para espesar o estabilizar.",
+        "fr": "Gommes hydrocolloïdes naturelles utilisées pour épaissir ou stabiliser.",
+        "it": "Gomme idrocolloidi naturali usate per addensare o stabilizzare.",
+        "nl": "Natuurlijke hydrocolloïde gommen om te verdikken of te stabiliseren.",
         "pt_BR": "Gomas hidrocoloides naturais usadas para espessar ou estabilizar."
       }
     },
@@ -16358,11 +16358,11 @@
       "group": "ingredients",
       "key": "subcategories.gums.label",
       "text": {
-        "de": "Kategorie: Gums",
-        "es": "Categoría: Gums",
-        "fr": "Catégorie: Gums",
-        "it": "Categoria: Gums",
-        "nl": "Categorie: Gums",
+        "de": "Gummen",
+        "es": "Gomas",
+        "fr": "Gommes",
+        "it": "Gomme",
+        "nl": "Gommen",
         "pt_BR": "Gomas"
       }
     },
@@ -16370,11 +16370,11 @@
       "group": "ingredients",
       "key": "subcategories.hair_fixatives_resins.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Hair fixatives & resins.",
-        "es": "Categoría: Classification guidance for Hair fixatives & resins.",
-        "fr": "Catégorie: Classification guidance for Hair fixatives & resins.",
-        "it": "Categoria: Classification guidance for Hair fixatives & resins.",
-        "nl": "Categorie: Classification guidance for Hair fixatives & resins.",
+        "de": "Harze und Polymere, die dem Halt oder Styling der Haare dienen.",
+        "es": "Resinas y polímeros usados para fijar o peinar el cabello.",
+        "fr": "Résines et polymères utilisés pour fixer ou coiffer les cheveux.",
+        "it": "Resine e polimeri usati per fissare o modellare i capelli.",
+        "nl": "Harsen en polymeren om haar te fixeren of te stylen.",
         "pt_BR": "Resinas e polímeros usados para fixar ou modelar os cabelos."
       }
     },
@@ -16382,11 +16382,11 @@
       "group": "ingredients",
       "key": "subcategories.hair_fixatives_resins.label",
       "text": {
-        "de": "Kategorie: Hair fixatives & resins",
-        "es": "Categoría: Hair fixatives & resins",
-        "fr": "Catégorie: Hair fixatives & resins",
-        "it": "Categoria: Hair fixatives & resins",
-        "nl": "Categorie: Hair fixatives & resins",
+        "de": "Haarfestiger & Harze",
+        "es": "Fijadores capilares y resinas",
+        "fr": "Fixateurs capillaires & résines",
+        "it": "Fissativi per capelli e resine",
+        "nl": "Haarfixatieven & harsen",
         "pt_BR": "Fixadores e resinas capilares"
       }
     },
@@ -16394,11 +16394,11 @@
       "group": "ingredients",
       "key": "subcategories.hydrocarbon_emollients.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Hydrocarbon emollients.",
-        "es": "Categoría: Classification guidance for Hydrocarbon emollients.",
-        "fr": "Catégorie: Classification guidance for Hydrocarbon emollients.",
-        "it": "Categoria: Classification guidance for Hydrocarbon emollients.",
-        "nl": "Categorie: Classification guidance for Hydrocarbon emollients.",
+        "de": "Weitere kosmetische Kohlenwasserstoff-Emollienzien, auch leichte und verzweigte Qualitäten.",
+        "es": "Otros emolientes hidrocarbonados cosméticos, incluidos los grados ligeros y ramificados.",
+        "fr": "Autres émollients hydrocarbonés cosmétiques, y compris les qualités légères et ramifiées.",
+        "it": "Altri emollienti idrocarburici cosmetici, compresi i gradi leggeri e ramificati.",
+        "nl": "Andere cosmetische koolwaterstofverzachters, waaronder lichte en vertakte kwaliteiten.",
         "pt_BR": "Outros emolientes cosméticos de hidrocarbonetos, incluindo graus leves e ramificados."
       }
     },
@@ -16406,11 +16406,11 @@
       "group": "ingredients",
       "key": "subcategories.hydrocarbon_emollients.label",
       "text": {
-        "de": "Kategorie: Hydrocarbon emollients",
-        "es": "Categoría: Hydrocarbon emollients",
-        "fr": "Catégorie: Hydrocarbon emollients",
-        "it": "Categoria: Hydrocarbon emollients",
-        "nl": "Categorie: Hydrocarbon emollients",
+        "de": "Kohlenwasserstoff-Emollienzien",
+        "es": "Emolientes hidrocarbonados",
+        "fr": "Émollients hydrocarbonés",
+        "it": "Emollienti idrocarburici",
+        "nl": "Koolwaterstofverzachters",
         "pt_BR": "Emolientes de hidrocarbonetos"
       }
     },
@@ -16418,11 +16418,11 @@
       "group": "ingredients",
       "key": "subcategories.hydrosols.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Hydrosols.",
-        "es": "Categoría: Classification guidance for Hydrosols.",
-        "fr": "Catégorie: Classification guidance for Hydrosols.",
-        "it": "Categoria: Classification guidance for Hydrosols.",
-        "nl": "Categorie: Classification guidance for Hydrosols.",
+        "de": "Aromatische Pflanzenwässer, die bei der Destillation ätherischer Öle entstehen.",
+        "es": "Aguas vegetales aromáticas obtenidas durante la destilación de aceites esenciales.",
+        "fr": "Eaux végétales aromatiques obtenues lors de la distillation des huiles essentielles.",
+        "it": "Acque vegetali aromatiche ottenute durante la distillazione degli oli essenziali.",
+        "nl": "Aromatische plantenwaters die ontstaan bij de destillatie van etherische oliën.",
         "pt_BR": "Águas aromáticas de plantas produzidas durante a destilação de óleos essenciais."
       }
     },
@@ -16430,11 +16430,11 @@
       "group": "ingredients",
       "key": "subcategories.hydrosols.label",
       "text": {
-        "de": "Kategorie: Hydrosols",
-        "es": "Categoría: Hydrosols",
-        "fr": "Catégorie: Hydrosols",
-        "it": "Categoria: Hydrosols",
-        "nl": "Categorie: Hydrosols",
+        "de": "Hydrolate",
+        "es": "Hidrolatos",
+        "fr": "Hydrolats",
+        "it": "Idrolati",
+        "nl": "Hydrolaten",
         "pt_BR": "Hidrolatos"
       }
     },
@@ -16442,11 +16442,11 @@
       "group": "ingredients",
       "key": "subcategories.liquid_waxes.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Liquid waxes.",
-        "es": "Categoría: Classification guidance for Liquid waxes.",
-        "fr": "Catégorie: Classification guidance for Liquid waxes.",
-        "it": "Categoria: Classification guidance for Liquid waxes.",
-        "nl": "Categorie: Classification guidance for Liquid waxes.",
+        "de": "Flüssige Wachsester wie Jojobaöl.",
+        "es": "Ésteres de cera líquidos, como el aceite de jojoba.",
+        "fr": "Esters de cire liquides, comme l’huile de jojoba.",
+        "it": "Esteri di cera liquidi, come l’olio di jojoba.",
+        "nl": "Vloeibare wasesters zoals jojobaolie.",
         "pt_BR": "Ésteres de cera líquidos, como o óleo de jojoba."
       }
     },
@@ -16454,11 +16454,11 @@
       "group": "ingredients",
       "key": "subcategories.liquid_waxes.label",
       "text": {
-        "de": "Kategorie: Liquid waxes",
-        "es": "Categoría: Liquid waxes",
-        "fr": "Catégorie: Liquid waxes",
-        "it": "Categoria: Liquid waxes",
-        "nl": "Categorie: Liquid waxes",
+        "de": "Flüssige Wachse",
+        "es": "Ceras líquidas",
+        "fr": "Cires liquides",
+        "it": "Cere liquide",
+        "nl": "Vloeibare wassen",
         "pt_BR": "Ceras líquidas"
       }
     },
@@ -16466,11 +16466,11 @@
       "group": "ingredients",
       "key": "subcategories.melt_and_pour_soap_bases.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Melt-and-pour soap bases.",
-        "es": "Categoría: Classification guidance for Melt-and-pour soap bases.",
-        "fr": "Catégorie: Classification guidance for Melt-and-pour soap bases.",
-        "it": "Categoria: Classification guidance for Melt-and-pour soap bases.",
-        "nl": "Categorie: Classification guidance for Melt-and-pour soap bases.",
+        "de": "Fertige Seifenbasen für die Verarbeitung durch Schmelzen und Gießen.",
+        "es": "Bases de jabón preparadas para el proceso de fundir y verter.",
+        "fr": "Bases de savon prêtes à l’emploi, destinées à être fondues puis coulées.",
+        "it": "Basi di sapone pronte per la lavorazione fondi e versa.",
+        "nl": "Kant-en-klare zeepbases om te smelten en te gieten.",
         "pt_BR": "Bases de sabonete preparadas para processamento pelo método derreter e verter."
       }
     },
@@ -16478,11 +16478,11 @@
       "group": "ingredients",
       "key": "subcategories.melt_and_pour_soap_bases.label",
       "text": {
-        "de": "Kategorie: Melt-and-pour soap bases",
-        "es": "Categoría: Melt-and-pour soap bases",
-        "fr": "Catégorie: Melt-and-pour soap bases",
-        "it": "Categoria: Melt-and-pour soap bases",
-        "nl": "Categorie: Melt-and-pour soap bases",
+        "de": "Gießseifenbasen",
+        "es": "Bases de jabón de glicerina (fundir y verter)",
+        "fr": "Bases de savon à fondre",
+        "it": "Basi per sapone fondi e versa",
+        "nl": "Smelt-en-giet zeepbases",
         "pt_BR": "Bases de sabonete derreter e verter"
       }
     },
@@ -16490,11 +16490,11 @@
       "group": "ingredients",
       "key": "subcategories.micas.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Micas.",
-        "es": "Categoría: Classification guidance for Micas.",
-        "fr": "Catégorie: Classification guidance for Micas.",
-        "it": "Categoria: Classification guidance for Micas.",
-        "nl": "Categorie: Classification guidance for Micas.",
+        "de": "Effekt- und Farbpigmente auf Glimmerbasis.",
+        "es": "Pigmentos de efecto y color a base de mica.",
+        "fr": "Pigments à effet et de couleur à base de mica.",
+        "it": "Pigmenti a effetto e colorati a base di mica.",
+        "nl": "Effect- en kleurpigmenten op basis van mica.",
         "pt_BR": "Pigmentos de efeito e cor à base de mica."
       }
     },
@@ -16502,11 +16502,11 @@
       "group": "ingredients",
       "key": "subcategories.micas.label",
       "text": {
-        "de": "Kategorie: Micas",
-        "es": "Categoría: Micas",
-        "fr": "Catégorie: Micas",
-        "it": "Categoria: Micas",
-        "nl": "Categorie: Micas",
+        "de": "Glimmer",
+        "es": "Micas",
+        "fr": "Micas",
+        "it": "Miche",
+        "nl": "Mica’s",
         "pt_BR": "Micas"
       }
     },
@@ -16514,11 +16514,11 @@
       "group": "ingredients",
       "key": "subcategories.mineral_abrasives.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Mineral abrasives.",
-        "es": "Categoría: Classification guidance for Mineral abrasives.",
-        "fr": "Catégorie: Classification guidance for Mineral abrasives.",
-        "it": "Categoria: Classification guidance for Mineral abrasives.",
-        "nl": "Categorie: Classification guidance for Mineral abrasives.",
+        "de": "Mineralische Partikel, ausgewählt für abrasive oder polierende Wirkung.",
+        "es": "Partículas minerales seleccionadas por su acción abrasiva o pulidora.",
+        "fr": "Particules minérales choisies pour leur action abrasive ou polissante.",
+        "it": "Particelle minerali scelte per l’azione abrasiva o levigante.",
+        "nl": "Minerale deeltjes gekozen voor hun schurende of polijstende werking.",
         "pt_BR": "Partículas minerais selecionadas para ação abrasiva ou de polimento."
       }
     },
@@ -16526,11 +16526,11 @@
       "group": "ingredients",
       "key": "subcategories.mineral_abrasives.label",
       "text": {
-        "de": "Kategorie: Mineral abrasives",
-        "es": "Categoría: Mineral abrasives",
-        "fr": "Catégorie: Mineral abrasives",
-        "it": "Categoria: Mineral abrasives",
-        "nl": "Categorie: Mineral abrasives",
+        "de": "Mineralische Abrasiva",
+        "es": "Abrasivos minerales",
+        "fr": "Abrasifs minéraux",
+        "it": "Abrasivi minerali",
+        "nl": "Minerale schuurmiddelen",
         "pt_BR": "Abrasivos minerais"
       }
     },
@@ -16538,11 +16538,11 @@
       "group": "ingredients",
       "key": "subcategories.mineral_oils.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Mineral oils.",
-        "es": "Categoría: Classification guidance for Mineral oils.",
-        "fr": "Catégorie: Classification guidance for Mineral oils.",
-        "it": "Categoria: Classification guidance for Mineral oils.",
-        "nl": "Categorie: Classification guidance for Mineral oils.",
+        "de": "Gereinigte flüssige Kohlenwasserstoff-Emollienzien mineralischen Ursprungs.",
+        "es": "Emolientes de hidrocarburos líquidos purificados de origen mineral.",
+        "fr": "Émollients hydrocarbonés liquides purifiés, d’origine minérale.",
+        "it": "Emollienti idrocarburici liquidi purificati di origine minerale.",
+        "nl": "Gezuiverde vloeibare koolwaterstofverzachters van minerale oorsprong.",
         "pt_BR": "Emolientes de hidrocarbonetos líquidos purificados de fontes minerais."
       }
     },
@@ -16550,11 +16550,11 @@
       "group": "ingredients",
       "key": "subcategories.mineral_oils.label",
       "text": {
-        "de": "Kategorie: Mineral oils",
-        "es": "Categoría: Mineral oils",
-        "fr": "Catégorie: Mineral oils",
-        "it": "Categoria: Mineral oils",
-        "nl": "Categorie: Mineral oils",
+        "de": "Mineralöle",
+        "es": "Aceites minerales",
+        "fr": "Huiles minérales",
+        "it": "Oli minerali",
+        "nl": "Minerale oliën",
         "pt_BR": "Óleos minerais"
       }
     },
@@ -16562,11 +16562,11 @@
       "group": "ingredients",
       "key": "subcategories.mineral_pigments.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Mineral pigments.",
-        "es": "Categoría: Classification guidance for Mineral pigments.",
-        "fr": "Catégorie: Classification guidance for Mineral pigments.",
-        "it": "Categoria: Classification guidance for Mineral pigments.",
-        "nl": "Categorie: Classification guidance for Mineral pigments.",
+        "de": "Mineralische Farbmittel wie Eisenoxide und Ultramarine.",
+        "es": "Colorantes minerales, como óxidos de hierro y ultramares.",
+        "fr": "Colorants minéraux, comme les oxydes de fer et les outremers.",
+        "it": "Coloranti minerali, come ossidi di ferro e oltremare.",
+        "nl": "Minerale kleurstoffen zoals ijzeroxiden en ultramarijn.",
         "pt_BR": "Corantes minerais, como óxidos de ferro e ultramarinos."
       }
     },
@@ -16574,11 +16574,11 @@
       "group": "ingredients",
       "key": "subcategories.mineral_pigments.label",
       "text": {
-        "de": "Kategorie: Mineral pigments",
-        "es": "Categoría: Mineral pigments",
-        "fr": "Catégorie: Mineral pigments",
-        "it": "Categoria: Mineral pigments",
-        "nl": "Categorie: Mineral pigments",
+        "de": "Mineralpigmente",
+        "es": "Pigmentos minerales",
+        "fr": "Pigments minéraux",
+        "it": "Pigmenti minerali",
+        "nl": "Minerale pigmenten",
         "pt_BR": "Pigmentos minerais"
       }
     },
@@ -16586,11 +16586,11 @@
       "group": "ingredients",
       "key": "subcategories.mineral_thickeners.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Mineral thickeners.",
-        "es": "Categoría: Classification guidance for Mineral thickeners.",
-        "fr": "Catégorie: Classification guidance for Mineral thickeners.",
-        "it": "Categoria: Classification guidance for Mineral thickeners.",
-        "nl": "Categorie: Classification guidance for Mineral thickeners.",
+        "de": "Mineralische Stoffe, die Viskosität aufbauen oder Partikel in Schwebe halten.",
+        "es": "Materiales minerales que aportan viscosidad o mantienen partículas en suspensión.",
+        "fr": "Matières minérales qui construisent la viscosité ou maintiennent des particules en suspension.",
+        "it": "Materiali minerali che aumentano la viscosità o mantengono in sospensione le particelle.",
+        "nl": "Minerale stoffen die viscositeit opbouwen of deeltjes in suspensie houden.",
         "pt_BR": "Materiais minerais que aumentam a viscosidade ou mantêm partículas suspensas."
       }
     },
@@ -16598,11 +16598,11 @@
       "group": "ingredients",
       "key": "subcategories.mineral_thickeners.label",
       "text": {
-        "de": "Kategorie: Mineral thickeners",
-        "es": "Categoría: Mineral thickeners",
-        "fr": "Catégorie: Mineral thickeners",
-        "it": "Categoria: Mineral thickeners",
-        "nl": "Categorie: Mineral thickeners",
+        "de": "Mineralische Verdicker",
+        "es": "Espesantes minerales",
+        "fr": "Épaississants minéraux",
+        "it": "Addensanti minerali",
+        "nl": "Minerale verdikkingsmiddelen",
         "pt_BR": "Espessantes minerais"
       }
     },
@@ -16610,11 +16610,11 @@
       "group": "ingredients",
       "key": "subcategories.mineral_waxes.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Mineral waxes.",
-        "es": "Categoría: Classification guidance for Mineral waxes.",
-        "fr": "Catégorie: Classification guidance for Mineral waxes.",
-        "it": "Categoria: Classification guidance for Mineral waxes.",
-        "nl": "Categorie: Classification guidance for Mineral waxes.",
+        "de": "Wachse mineralischen Ursprungs wie Ozokerit oder Paraffin.",
+        "es": "Ceras de origen mineral, como la ozoquerita o la parafina.",
+        "fr": "Cires d’origine minérale, comme l’ozokérite ou la paraffine.",
+        "it": "Cere di origine minerale, come ozocerite o paraffina.",
+        "nl": "Wassen van minerale oorsprong, zoals ozokeriet of paraffine.",
         "pt_BR": "Ceras de origem mineral, como ozocerita ou parafina."
       }
     },
@@ -16622,11 +16622,11 @@
       "group": "ingredients",
       "key": "subcategories.mineral_waxes.label",
       "text": {
-        "de": "Kategorie: Mineral waxes",
-        "es": "Categoría: Mineral waxes",
-        "fr": "Catégorie: Mineral waxes",
-        "it": "Categoria: Mineral waxes",
-        "nl": "Categorie: Mineral waxes",
+        "de": "Mineralische Wachse",
+        "es": "Ceras minerales",
+        "fr": "Cires minérales",
+        "it": "Cere minerali",
+        "nl": "Minerale wassen",
         "pt_BR": "Ceras minerais"
       }
     },
@@ -16634,11 +16634,11 @@
       "group": "ingredients",
       "key": "subcategories.natural_particles.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Natural particles.",
-        "es": "Categoría: Classification guidance for Natural particles.",
-        "fr": "Catégorie: Classification guidance for Natural particles.",
-        "it": "Categoria: Classification guidance for Natural particles.",
-        "nl": "Categorie: Classification guidance for Natural particles.",
+        "de": "Natürliche Partikel zum mechanischen Peelen oder Polieren.",
+        "es": "Partículas naturales usadas para exfoliación física o pulido.",
+        "fr": "Particules naturelles utilisées pour l’exfoliation mécanique ou le polissage.",
+        "it": "Particelle naturali usate per esfoliazione fisica o levigatura.",
+        "nl": "Natuurlijke deeltjes voor mechanische exfoliatie of polijsten.",
         "pt_BR": "Partículas naturais usadas para esfoliação física ou polimento."
       }
     },
@@ -16646,11 +16646,11 @@
       "group": "ingredients",
       "key": "subcategories.natural_particles.label",
       "text": {
-        "de": "Kategorie: Natural particles",
-        "es": "Categoría: Natural particles",
-        "fr": "Catégorie: Natural particles",
-        "it": "Categoria: Natural particles",
-        "nl": "Categorie: Natural particles",
+        "de": "Natürliche Partikel",
+        "es": "Partículas naturales",
+        "fr": "Particules naturelles",
+        "it": "Particelle naturali",
+        "nl": "Natuurlijke deeltjes",
         "pt_BR": "Partículas naturais"
       }
     },
@@ -16658,11 +16658,11 @@
       "group": "ingredients",
       "key": "subcategories.nonionic.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Nonionic surfactants.",
-        "es": "Categoría: Classification guidance for Nonionic surfactants.",
-        "fr": "Catégorie: Classification guidance for Nonionic surfactants.",
-        "it": "Categoria: Classification guidance for Nonionic surfactants.",
-        "nl": "Categorie: Classification guidance for Nonionic surfactants.",
+        "de": "Ungeladene Tenside zum Reinigen, Benetzen oder Emulgieren.",
+        "es": "Tensioactivos sin carga usados para limpiar, humectar o emulsionar.",
+        "fr": "Tensioactifs non chargés utilisés pour laver, mouiller ou émulsionner.",
+        "it": "Tensioattivi privi di carica usati per detergere, bagnare o emulsionare.",
+        "nl": "Ongeladen tensiden om te reinigen, te bevochtigen of te emulgeren.",
         "pt_BR": "Tensoativos sem carga usados para limpeza, umectação ou emulsificação."
       }
     },
@@ -16670,11 +16670,11 @@
       "group": "ingredients",
       "key": "subcategories.nonionic.label",
       "text": {
-        "de": "Kategorie: Nonionic surfactants",
-        "es": "Categoría: Nonionic surfactants",
-        "fr": "Catégorie: Nonionic surfactants",
-        "it": "Categoria: Nonionic surfactants",
-        "nl": "Categorie: Nonionic surfactants",
+        "de": "Nichtionische Tenside",
+        "es": "Tensioactivos no iónicos",
+        "fr": "Tensioactifs non ioniques",
+        "it": "Tensioattivi non ionici",
+        "nl": "Niet-ionische tensiden",
         "pt_BR": "Tensoativos não iônicos"
       }
     },
@@ -16682,11 +16682,11 @@
       "group": "ingredients",
       "key": "subcategories.nonvolatile_silicones.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Non-volatile silicones.",
-        "es": "Categoría: Classification guidance for Non-volatile silicones.",
-        "fr": "Catégorie: Classification guidance for Non-volatile silicones.",
-        "it": "Categoria: Classification guidance for Non-volatile silicones.",
-        "nl": "Categorie: Classification guidance for Non-volatile silicones.",
+        "de": "Beständige Silikonöle oder -gums für Gleitfähigkeit, Glanz oder Schutz.",
+        "es": "Fluidos o gomas de silicona persistentes que aportan deslizamiento, brillo o protección.",
+        "fr": "Fluides ou gommes de silicone persistants qui apportent glisse, brillance ou protection.",
+        "it": "Fluidi o gomme siliconiche persistenti che danno scorrevolezza, brillantezza o protezione.",
+        "nl": "Blijvende siliconenvloeistoffen of -gommen voor glijdend gevoel, glans of bescherming.",
         "pt_BR": "Fluidos ou gomas de silicone persistentes que proporcionam deslizamento, brilho ou proteção."
       }
     },
@@ -16694,11 +16694,11 @@
       "group": "ingredients",
       "key": "subcategories.nonvolatile_silicones.label",
       "text": {
-        "de": "Kategorie: Non-volatile silicones",
-        "es": "Categoría: Non-volatile silicones",
-        "fr": "Catégorie: Non-volatile silicones",
-        "it": "Categoria: Non-volatile silicones",
-        "nl": "Categorie: Non-volatile silicones",
+        "de": "Nichtflüchtige Silikone",
+        "es": "Siliconas no volátiles",
+        "fr": "Silicones non volatiles",
+        "it": "Siliconi non volatili",
+        "nl": "Niet-vluchtige siliconen",
         "pt_BR": "Silicones não voláteis"
       }
     },
@@ -16706,11 +16706,11 @@
       "group": "ingredients",
       "key": "subcategories.oil_in_water.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Oil-in-water emulsifiers.",
-        "es": "Categoría: Classification guidance for Oil-in-water emulsifiers.",
-        "fr": "Catégorie: Classification guidance for Oil-in-water emulsifiers.",
-        "it": "Categoria: Classification guidance for Oil-in-water emulsifiers.",
-        "nl": "Categorie: Classification guidance for Oil-in-water emulsifiers.",
+        "de": "Emulgatoren, die vor allem für in Wasser dispergierte Öltröpfchen bestimmt sind.",
+        "es": "Emulsionantes pensados principalmente para gotas de aceite dispersas en agua.",
+        "fr": "Émulsifiants destinés principalement à disperser des gouttelettes d’huile dans l’eau.",
+        "it": "Emulsionanti pensati soprattutto per goccioline d’olio disperse in acqua.",
+        "nl": "Emulgatoren die vooral bedoeld zijn voor oliedruppels verspreid in water.",
         "pt_BR": "Emulsionantes destinados principalmente a gotículas de óleo dispersas em água."
       }
     },
@@ -16718,11 +16718,11 @@
       "group": "ingredients",
       "key": "subcategories.oil_in_water.label",
       "text": {
-        "de": "Kategorie: Oil-in-water emulsifiers",
-        "es": "Categoría: Oil-in-water emulsifiers",
-        "fr": "Catégorie: Oil-in-water emulsifiers",
-        "it": "Categoria: Oil-in-water emulsifiers",
-        "nl": "Categorie: Oil-in-water emulsifiers",
+        "de": "Öl-in-Wasser-Emulgatoren",
+        "es": "Emulsionantes aceite en agua",
+        "fr": "Émulsifiants huile dans eau",
+        "it": "Emulsionanti olio in acqua",
+        "nl": "Olie-in-wateremulgatoren",
         "pt_BR": "Emulsionantes óleo em água"
       }
     },
@@ -16730,11 +16730,11 @@
       "group": "ingredients",
       "key": "subcategories.oil_macerates.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Oil macerates.",
-        "es": "Categoría: Classification guidance for Oil macerates.",
-        "fr": "Catégorie: Classification guidance for Oil macerates.",
-        "it": "Categoria: Classification guidance for Oil macerates.",
-        "nl": "Categorie: Classification guidance for Oil macerates.",
+        "de": "Pflanzenmaterial, das in ein Trägeröl extrahiert wurde.",
+        "es": "Material botánico extraído en un aceite portador.",
+        "fr": "Matière végétale extraite dans une huile végétale.",
+        "it": "Materiale vegetale estratto in un olio vettore.",
+        "nl": "Plantaardig materiaal geëxtraheerd in een draagolie.",
         "pt_BR": "Material botânico extraído em um óleo carreador."
       }
     },
@@ -16742,11 +16742,11 @@
       "group": "ingredients",
       "key": "subcategories.oil_macerates.label",
       "text": {
-        "de": "Kategorie: Oil macerates",
-        "es": "Categoría: Oil macerates",
-        "fr": "Catégorie: Oil macerates",
-        "it": "Categoria: Oil macerates",
-        "nl": "Categorie: Oil macerates",
+        "de": "Ölmazerate",
+        "es": "Macerados oleosos",
+        "fr": "Macérats huileux",
+        "it": "Macerati oleosi",
+        "nl": "Oliemaceraten",
         "pt_BR": "Macerados oleosos"
       }
     },
@@ -16754,11 +16754,11 @@
       "group": "ingredients",
       "key": "subcategories.organic_solvents.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Organic solvents.",
-        "es": "Categoría: Classification guidance for Organic solvents.",
-        "fr": "Catégorie: Classification guidance for Organic solvents.",
-        "it": "Categoria: Classification guidance for Organic solvents.",
-        "nl": "Categorie: Classification guidance for Organic solvents.",
+        "de": "Nichtwässrige Lösungsmittel zum Lösen oder Tragen von Formelbestandteilen.",
+        "es": "Disolventes no acuosos usados para disolver o vehicular materiales de la fórmula.",
+        "fr": "Solvants non aqueux utilisés pour dissoudre ou véhiculer les matières de la formule.",
+        "it": "Solventi non acquosi usati per sciogliere o veicolare i materiali della formula.",
+        "nl": "Niet-waterige oplosmiddelen om formulegrondstoffen op te lossen of te dragen.",
         "pt_BR": "Solventes não aquosos usados para dissolver ou transportar materiais da fórmula."
       }
     },
@@ -16766,11 +16766,11 @@
       "group": "ingredients",
       "key": "subcategories.organic_solvents.label",
       "text": {
-        "de": "Kategorie: Organic solvents",
-        "es": "Categoría: Organic solvents",
-        "fr": "Catégorie: Organic solvents",
-        "it": "Categoria: Organic solvents",
-        "nl": "Categorie: Organic solvents",
+        "de": "Organische Lösungsmittel",
+        "es": "Disolventes orgánicos",
+        "fr": "Solvants organiques",
+        "it": "Solventi organici",
+        "nl": "Organische oplosmiddelen",
         "pt_BR": "Solventes orgânicos"
       }
     },
@@ -16778,11 +16778,11 @@
       "group": "ingredients",
       "key": "subcategories.other_actives.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Other actives.",
-        "es": "Categoría: Classification guidance for Other actives.",
-        "fr": "Catégorie: Classification guidance for Other actives.",
-        "it": "Categoria: Classification guidance for Other actives.",
-        "nl": "Categorie: Classification guidance for Other actives.",
+        "de": "Gezielte Wirk- oder Spezialstoffe, die oben nicht erfasst sind.",
+        "es": "Activos o materiales especiales específicos no incluidos arriba.",
+        "fr": "Actifs ou matières spécifiques ciblés non couverts ci-dessus.",
+        "it": "Attivi o materiali speciali mirati non compresi sopra.",
+        "nl": "Gerichte werkstoffen of speciale stoffen die hierboven niet vallen.",
         "pt_BR": "Materiais ativos ou especiais direcionados que não se enquadram acima."
       }
     },
@@ -16790,11 +16790,11 @@
       "group": "ingredients",
       "key": "subcategories.other_actives.label",
       "text": {
-        "de": "Kategorie: Other actives",
-        "es": "Categoría: Other actives",
-        "fr": "Catégorie: Other actives",
-        "it": "Categoria: Other actives",
-        "nl": "Categorie: Other actives",
+        "de": "Weitere Wirkstoffe",
+        "es": "Otros activos",
+        "fr": "Autres actifs",
+        "it": "Altri attivi",
+        "nl": "Overige werkstoffen",
         "pt_BR": "Outros ativos"
       }
     },
@@ -16802,11 +16802,11 @@
       "group": "ingredients",
       "key": "subcategories.other_carriers.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Other carriers.",
-        "es": "Categoría: Classification guidance for Other carriers.",
-        "fr": "Catégorie: Classification guidance for Other carriers.",
-        "it": "Categoria: Classification guidance for Other carriers.",
-        "nl": "Categorie: Classification guidance for Other carriers.",
+        "de": "Flüssige Träger, die zu keiner spezifischeren Lösungsmittelfamilie passen.",
+        "es": "Portadores líquidos que no encajan en una familia de disolventes más específica.",
+        "fr": "Supports liquides qui n’entrent dans aucune famille de solvants plus précise.",
+        "it": "Veicoli liquidi che non rientrano in una famiglia di solventi più specifica.",
+        "nl": "Vloeibare dragers die niet in een specifiekere oplosmiddelfamilie passen.",
         "pt_BR": "Carreadores líquidos que não se encaixam em uma família de solventes mais específica."
       }
     },
@@ -16814,11 +16814,11 @@
       "group": "ingredients",
       "key": "subcategories.other_carriers.label",
       "text": {
-        "de": "Kategorie: Other carriers",
-        "es": "Categoría: Other carriers",
-        "fr": "Catégorie: Other carriers",
-        "it": "Categoria: Other carriers",
-        "nl": "Categorie: Other carriers",
+        "de": "Weitere Träger",
+        "es": "Otros portadores",
+        "fr": "Autres supports",
+        "it": "Altri veicoli",
+        "nl": "Overige dragers",
         "pt_BR": "Outros carreadores"
       }
     },
@@ -16826,11 +16826,11 @@
       "group": "ingredients",
       "key": "subcategories.other_functional_polymers.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Other functional polymers.",
-        "es": "Categoría: Classification guidance for Other functional polymers.",
-        "fr": "Catégorie: Classification guidance for Other functional polymers.",
-        "it": "Categoria: Classification guidance for Other functional polymers.",
-        "nl": "Categorie: Classification guidance for Other functional polymers.",
+        "de": "Funktionelle Polymere ohne spezifischere Pflege- oder Filmfunktion.",
+        "es": "Polímeros funcionales sin una función acondicionadora o filmógena más específica.",
+        "fr": "Polymères fonctionnels sans rôle conditionneur ou filmogène plus précis.",
+        "it": "Polimeri funzionali senza un ruolo condizionante o filmogeno più specifico.",
+        "nl": "Functionele polymeren zonder specifiekere conditionerende of filmvormende rol.",
         "pt_BR": "Polímeros funcionais sem uma função mais específica de condicionamento ou formação de filme."
       }
     },
@@ -16838,11 +16838,11 @@
       "group": "ingredients",
       "key": "subcategories.other_functional_polymers.label",
       "text": {
-        "de": "Kategorie: Other functional polymers",
-        "es": "Categoría: Other functional polymers",
-        "fr": "Catégorie: Other functional polymers",
-        "it": "Categoria: Other functional polymers",
-        "nl": "Categorie: Other functional polymers",
+        "de": "Weitere funktionelle Polymere",
+        "es": "Otros polímeros funcionales",
+        "fr": "Autres polymères fonctionnels",
+        "it": "Altri polimeri funzionali",
+        "nl": "Overige functionele polymeren",
         "pt_BR": "Outros polímeros funcionais"
       }
     },
@@ -16850,11 +16850,11 @@
       "group": "ingredients",
       "key": "subcategories.other_humectants.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Other humectants.",
-        "es": "Categoría: Classification guidance for Other humectants.",
-        "fr": "Catégorie: Classification guidance for Other humectants.",
-        "it": "Categoria: Classification guidance for Other humectants.",
-        "nl": "Categorie: Classification guidance for Other humectants.",
+        "de": "Andere Stoffe, deren Hauptaufgabe das Binden oder Halten von Wasser ist.",
+        "es": "Otros materiales cuya función principal es fijar o retener agua.",
+        "fr": "Autres substances dont le rôle principal est de fixer ou retenir l’eau.",
+        "it": "Altre sostanze il cui ruolo principale è legare o trattenere l’acqua.",
+        "nl": "Andere stoffen waarvan de hoofdrol is water te binden of vast te houden.",
         "pt_BR": "Outros materiais cuja função principal é ligar ou reter água."
       }
     },
@@ -16862,11 +16862,11 @@
       "group": "ingredients",
       "key": "subcategories.other_humectants.label",
       "text": {
-        "de": "Kategorie: Other humectants",
-        "es": "Categoría: Other humectants",
-        "fr": "Catégorie: Other humectants",
-        "it": "Categoria: Other humectants",
-        "nl": "Categorie: Other humectants",
+        "de": "Weitere Feuchthaltemittel",
+        "es": "Otros humectantes",
+        "fr": "Autres humectants",
+        "it": "Altri umettanti",
+        "nl": "Overige humectanten",
         "pt_BR": "Outros umectantes"
       }
     },
@@ -16874,11 +16874,11 @@
       "group": "ingredients",
       "key": "subcategories.other_soap_alkalis.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Other soapmaking alkalis.",
-        "es": "Categoría: Classification guidance for Other soapmaking alkalis.",
-        "fr": "Catégorie: Classification guidance for Other soapmaking alkalis.",
-        "it": "Categoria: Classification guidance for Other soapmaking alkalis.",
-        "nl": "Categorie: Classification guidance for Other soapmaking alkalis.",
+        "de": "Andere alkalische Reagenzien für die Seifenchemie.",
+        "es": "Otros reactivos alcalinos usados en la química del jabón.",
+        "fr": "Autres réactifs alcalins utilisés en chimie du savon.",
+        "it": "Altri reagenti alcalini usati nella chimica del sapone.",
+        "nl": "Andere alkalische reagentia voor zeepchemie.",
         "pt_BR": "Outros reagentes alcalinos usados na química de sabonetes."
       }
     },
@@ -16886,11 +16886,11 @@
       "group": "ingredients",
       "key": "subcategories.other_soap_alkalis.label",
       "text": {
-        "de": "Kategorie: Other soapmaking alkalis",
-        "es": "Categoría: Other soapmaking alkalis",
-        "fr": "Catégorie: Other soapmaking alkalis",
-        "it": "Categoria: Other soapmaking alkalis",
-        "nl": "Categorie: Other soapmaking alkalis",
+        "de": "Weitere Alkalien für die Seifenherstellung",
+        "es": "Otros álcalis para jabonería",
+        "fr": "Autres alcalis de saponification",
+        "it": "Altri alcali per saponificazione",
+        "nl": "Overige alkaliën voor zeepmaken",
         "pt_BR": "Outros álcalis para sabonetes"
       }
     },
@@ -16898,11 +16898,11 @@
       "group": "ingredients",
       "key": "subcategories.petrolatum_occlusives.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Petrolatum & occlusives.",
-        "es": "Categoría: Classification guidance for Petrolatum & occlusives.",
-        "fr": "Catégorie: Classification guidance for Petrolatum & occlusives.",
-        "it": "Categoria: Classification guidance for Petrolatum & occlusives.",
-        "nl": "Categorie: Classification guidance for Petrolatum & occlusives.",
+        "de": "Okklusive Kohlenwasserstoffe wie Vaseline.",
+        "es": "Hidrocarburos oclusivos, como la vaselina.",
+        "fr": "Hydrocarbures occlusifs, comme la vaseline.",
+        "it": "Idrocarburi occlusivi, come la vaselina.",
+        "nl": "Occlusieve koolwaterstoffen zoals vaseline.",
         "pt_BR": "Materiais hidrocarbonetos oclusivos, como o petrolato."
       }
     },
@@ -16910,11 +16910,11 @@
       "group": "ingredients",
       "key": "subcategories.petrolatum_occlusives.label",
       "text": {
-        "de": "Kategorie: Petrolatum & occlusives",
-        "es": "Categoría: Petrolatum & occlusives",
-        "fr": "Catégorie: Petrolatum & occlusives",
-        "it": "Categoria: Petrolatum & occlusives",
-        "nl": "Categorie: Petrolatum & occlusives",
+        "de": "Vaseline & Okklusiva",
+        "es": "Vaselina y oclusivos",
+        "fr": "Vaseline & occlusifs",
+        "it": "Vaselina e occlusivi",
+        "nl": "Vaseline & occlusieven",
         "pt_BR": "Petrolato e oclusivos"
       }
     },
@@ -16922,11 +16922,11 @@
       "group": "ingredients",
       "key": "subcategories.plant_powders.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Plant powders.",
-        "es": "Categoría: Classification guidance for Plant powders.",
-        "fr": "Catégorie: Classification guidance for Plant powders.",
-        "it": "Categoria: Classification guidance for Plant powders.",
-        "nl": "Categorie: Classification guidance for Plant powders.",
+        "de": "Ganze oder gemahlene Pflanzenpulver, die direkt in Formeln eingesetzt werden.",
+        "es": "Polvos botánicos enteros o molidos usados directamente en las fórmulas.",
+        "fr": "Poudres végétales entières ou broyées, utilisées directement dans les formules.",
+        "it": "Polveri vegetali intere o macinate usate direttamente nelle formule.",
+        "nl": "Hele of gemalen plantenpoeders die direct in formules worden gebruikt.",
         "pt_BR": "Pós botânicos inteiros ou moídos usados diretamente nas fórmulas."
       }
     },
@@ -16934,11 +16934,11 @@
       "group": "ingredients",
       "key": "subcategories.plant_powders.label",
       "text": {
-        "de": "Kategorie: Plant powders",
-        "es": "Categoría: Plant powders",
-        "fr": "Catégorie: Plant powders",
-        "it": "Categoria: Plant powders",
-        "nl": "Categorie: Plant powders",
+        "de": "Pflanzenpulver",
+        "es": "Polvos vegetales",
+        "fr": "Poudres végétales",
+        "it": "Polveri vegetali",
+        "nl": "Plantenpoeders",
         "pt_BR": "Pós vegetais"
       }
     },
@@ -16946,11 +16946,11 @@
       "group": "ingredients",
       "key": "subcategories.plant_waxes.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Plant waxes.",
-        "es": "Categoría: Classification guidance for Plant waxes.",
-        "fr": "Catégorie: Classification guidance for Plant waxes.",
-        "it": "Categoria: Classification guidance for Plant waxes.",
-        "nl": "Categorie: Classification guidance for Plant waxes.",
+        "de": "Aus Pflanzen gewonnene Wachse, darunter Carnauba- und Candelillawachs.",
+        "es": "Ceras obtenidas de plantas, como la carnauba y la candelilla.",
+        "fr": "Cires issues de plantes, dont la carnauba et la candelilla.",
+        "it": "Cere ottenute da piante, tra cui carnauba e candelilla.",
+        "nl": "Wassen uit planten, waaronder carnauba- en candelillawas.",
         "pt_BR": "Ceras obtidas de plantas, incluindo carnaúba e candelila."
       }
     },
@@ -16958,11 +16958,11 @@
       "group": "ingredients",
       "key": "subcategories.plant_waxes.label",
       "text": {
-        "de": "Kategorie: Plant waxes",
-        "es": "Categoría: Plant waxes",
-        "fr": "Catégorie: Plant waxes",
-        "it": "Categoria: Plant waxes",
-        "nl": "Categorie: Plant waxes",
+        "de": "Pflanzenwachse",
+        "es": "Ceras vegetales",
+        "fr": "Cires végétales",
+        "it": "Cere vegetali",
+        "nl": "Plantaardige wassen",
         "pt_BR": "Ceras vegetais"
       }
     },
@@ -16970,11 +16970,11 @@
       "group": "ingredients",
       "key": "subcategories.potassium_hydroxide.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Potassium hydroxide.",
-        "es": "Categoría: Classification guidance for Potassium hydroxide.",
-        "fr": "Catégorie: Classification guidance for Potassium hydroxide.",
-        "it": "Categoria: Classification guidance for Potassium hydroxide.",
-        "nl": "Categorie: Classification guidance for Potassium hydroxide.",
+        "de": "KOH als Alkali für die Seifenherstellung und Verseifungsreagenz.",
+        "es": "KOH usado como álcali para jabonería y reactivo de saponificación.",
+        "fr": "KOH utilisé comme alcali de saponification et réactif de saponification.",
+        "it": "KOH usato come alcali per sapone e reagente di saponificazione.",
+        "nl": "KOH gebruikt als alkali voor zeepmaken en verzepingsreagens.",
         "pt_BR": "KOH usado como álcali para sabonetes e reagente de saponificação."
       }
     },
@@ -16982,11 +16982,11 @@
       "group": "ingredients",
       "key": "subcategories.potassium_hydroxide.label",
       "text": {
-        "de": "Kategorie: Potassium hydroxide",
-        "es": "Categoría: Potassium hydroxide",
-        "fr": "Catégorie: Potassium hydroxide",
-        "it": "Categoria: Potassium hydroxide",
-        "nl": "Categorie: Potassium hydroxide",
+        "de": "Kaliumhydroxid",
+        "es": "Hidróxido de potasio",
+        "fr": "Hydroxyde de potassium",
+        "it": "Idrossido di potassio",
+        "nl": "Kaliumhydroxide",
         "pt_BR": "Hidróxido de potássio"
       }
     },
@@ -17018,11 +17018,11 @@
       "group": "ingredients",
       "key": "subcategories.proprietary_premixes.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Proprietary premixes.",
-        "es": "Categoría: Classification guidance for Proprietary premixes.",
-        "fr": "Catégorie: Classification guidance for Proprietary premixes.",
-        "it": "Categoria: Classification guidance for Proprietary premixes.",
-        "nl": "Categorie: Classification guidance for Proprietary premixes.",
+        "de": "Lieferantenspezifische Vormischungen, deren genaue Zusammensetzung vertraulich sein kann.",
+        "es": "Premezclas específicas del proveedor cuya composición detallada puede ser confidencial.",
+        "fr": "Prémélanges propres à un fournisseur, dont la composition détaillée peut être confidentielle.",
+        "it": "Premiscele specifiche del fornitore la cui composizione dettagliata può essere riservata.",
+        "nl": "Leverancierspecifieke premixen waarvan de precieze samenstelling vertrouwelijk kan zijn.",
         "pt_BR": "Pré-misturas específicas do fornecedor cuja composição detalhada pode ser confidencial."
       }
     },
@@ -17030,11 +17030,11 @@
       "group": "ingredients",
       "key": "subcategories.proprietary_premixes.label",
       "text": {
-        "de": "Kategorie: Proprietary premixes",
-        "es": "Categoría: Proprietary premixes",
-        "fr": "Catégorie: Proprietary premixes",
-        "it": "Categoria: Proprietary premixes",
-        "nl": "Categorie: Proprietary premixes",
+        "de": "Proprietäre Vormischungen",
+        "es": "Premezclas patentadas",
+        "fr": "Prémélanges propriétaires",
+        "it": "Premiscele proprietarie",
+        "nl": "Merkgebonden premixen",
         "pt_BR": "Pré-misturas proprietárias"
       }
     },
@@ -17042,11 +17042,11 @@
       "group": "ingredients",
       "key": "subcategories.proteins_peptides_amino_acids.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Proteins, peptides & amino acids.",
-        "es": "Categoría: Classification guidance for Proteins, peptides & amino acids.",
-        "fr": "Catégorie: Classification guidance for Proteins, peptides & amino acids.",
-        "it": "Categoria: Classification guidance for Proteins, peptides & amino acids.",
-        "nl": "Categorie: Classification guidance for Proteins, peptides & amino acids.",
+        "de": "Protein- und Aminosäurestoffe, die als Spezialwirkstoffe oder Conditioner dienen.",
+        "es": "Materiales derivados de proteínas y aminoácidos usados como activos especiales o acondicionadores.",
+        "fr": "Matières dérivées de protéines et d’acides aminés, utilisées comme actifs spécifiques ou conditionneurs.",
+        "it": "Materiali derivati da proteine e amminoacidi usati come attivi speciali o condizionanti.",
+        "nl": "Stoffen op basis van eiwitten en aminozuren, gebruikt als speciale werkstof of conditioner.",
         "pt_BR": "Materiais derivados de proteínas e aminoácidos usados como ativos especiais ou condicionadores."
       }
     },
@@ -17054,11 +17054,11 @@
       "group": "ingredients",
       "key": "subcategories.proteins_peptides_amino_acids.label",
       "text": {
-        "de": "Kategorie: Proteins, peptides & amino acids",
-        "es": "Categoría: Proteins, peptides & amino acids",
-        "fr": "Catégorie: Proteins, peptides & amino acids",
-        "it": "Categoria: Proteins, peptides & amino acids",
-        "nl": "Categorie: Proteins, peptides & amino acids",
+        "de": "Proteine, Peptide & Aminosäuren",
+        "es": "Proteínas, péptidos y aminoácidos",
+        "fr": "Protéines, peptides & acides aminés",
+        "it": "Proteine, peptidi e amminoacidi",
+        "nl": "Eiwitten, peptiden & aminozuren",
         "pt_BR": "Proteínas, peptídeos e aminoácidos"
       }
     },
@@ -17066,11 +17066,11 @@
       "group": "ingredients",
       "key": "subcategories.ready_made_bases.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Ready-made bases.",
-        "es": "Categoría: Classification guidance for Ready-made bases.",
-        "fr": "Catégorie: Classification guidance for Ready-made bases.",
-        "it": "Categoria: Classification guidance for Ready-made bases.",
-        "nl": "Categorie: Classification guidance for Ready-made bases.",
+        "de": "Handelsübliche Basen zur direkten Formulierung oder Fertigstellung.",
+        "es": "Bases comerciales suministradas para formular o terminar directamente.",
+        "fr": "Bases du commerce fournies pour une formulation ou une finition directe.",
+        "it": "Basi commerciali fornite per la formulazione o la finitura diretta.",
+        "nl": "Commerciële bases voor directe formulering of afwerking.",
         "pt_BR": "Bases comerciais fornecidas para formulação ou acabamento direto."
       }
     },
@@ -17078,11 +17078,11 @@
       "group": "ingredients",
       "key": "subcategories.ready_made_bases.label",
       "text": {
-        "de": "Kategorie: Ready-made bases",
-        "es": "Categoría: Ready-made bases",
-        "fr": "Catégorie: Ready-made bases",
-        "it": "Categoria: Ready-made bases",
-        "nl": "Categorie: Ready-made bases",
+        "de": "Fertige Basen",
+        "es": "Bases listas para usar",
+        "fr": "Bases prêtes à l’emploi",
+        "it": "Basi pronte",
+        "nl": "Kant-en-klare bases",
         "pt_BR": "Bases prontas"
       }
     },
@@ -17090,11 +17090,11 @@
       "group": "ingredients",
       "key": "subcategories.salts.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Salts.",
-        "es": "Categoría: Classification guidance for Salts.",
-        "fr": "Catégorie: Classification guidance for Salts.",
-        "it": "Categoria: Classification guidance for Salts.",
-        "nl": "Categorie: Classification guidance for Salts.",
+        "de": "Anorganische oder organische Salze für Funktion, Pufferung oder Textur.",
+        "es": "Sales inorgánicas u orgánicas usadas por su función, efecto tampón o textura.",
+        "fr": "Sels inorganiques ou organiques utilisés pour leur fonction, leur effet tampon ou la texture.",
+        "it": "Sali inorganici od organici usati per funzione, effetto tampone o texture.",
+        "nl": "Anorganische of organische zouten voor functie, buffering of textuur.",
         "pt_BR": "Sais inorgânicos ou orgânicos usados para função, tamponamento ou textura."
       }
     },
@@ -17102,11 +17102,11 @@
       "group": "ingredients",
       "key": "subcategories.salts.label",
       "text": {
-        "de": "Kategorie: Salts",
-        "es": "Categoría: Salts",
-        "fr": "Catégorie: Salts",
-        "it": "Categoria: Salts",
-        "nl": "Categorie: Salts",
+        "de": "Salze",
+        "es": "Sales",
+        "fr": "Sels",
+        "it": "Sali",
+        "nl": "Zouten",
         "pt_BR": "Sais"
       }
     },
@@ -17114,11 +17114,11 @@
       "group": "ingredients",
       "key": "subcategories.silicone_elastomers.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Silicone elastomers.",
-        "es": "Categoría: Classification guidance for Silicone elastomers.",
-        "fr": "Catégorie: Classification guidance for Silicone elastomers.",
-        "it": "Categoria: Classification guidance for Silicone elastomers.",
-        "nl": "Categorie: Classification guidance for Silicone elastomers.",
+        "de": "Vernetzte Silikonmaterialien für Textur, Mattierung oder sensorische Effekte.",
+        "es": "Siliconas reticuladas usadas para textura, efecto matificante o efectos sensoriales.",
+        "fr": "Silicones réticulés utilisés pour la texture, l’effet matifiant ou les effets sensoriels.",
+        "it": "Siliconi reticolati usati per texture, effetto opacizzante o effetti sensoriali.",
+        "nl": "Vernette siliconematerialen voor textuur, matterend effect of sensorische effecten.",
         "pt_BR": "Materiais de silicone reticulados usados para textura, efeito mate ou sensorial."
       }
     },
@@ -17126,11 +17126,11 @@
       "group": "ingredients",
       "key": "subcategories.silicone_elastomers.label",
       "text": {
-        "de": "Kategorie: Silicone elastomers",
-        "es": "Categoría: Silicone elastomers",
-        "fr": "Catégorie: Silicone elastomers",
-        "it": "Categoria: Silicone elastomers",
-        "nl": "Categorie: Silicone elastomers",
+        "de": "Silikonelastomere",
+        "es": "Elastómeros de silicona",
+        "fr": "Élastomères de silicone",
+        "it": "Elastomeri siliconici",
+        "nl": "Siliconenelastomeren",
         "pt_BR": "Elastômeros de silicone"
       }
     },
@@ -17138,11 +17138,11 @@
       "group": "ingredients",
       "key": "subcategories.sodium_hydroxide.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Sodium hydroxide.",
-        "es": "Categoría: Classification guidance for Sodium hydroxide.",
-        "fr": "Catégorie: Classification guidance for Sodium hydroxide.",
-        "it": "Categoria: Classification guidance for Sodium hydroxide.",
-        "nl": "Categorie: Classification guidance for Sodium hydroxide.",
+        "de": "NaOH als Alkali für die Seifenherstellung und Verseifungsreagenz.",
+        "es": "NaOH usado como álcali para jabonería y reactivo de saponificación.",
+        "fr": "NaOH utilisé comme alcali de saponification et réactif de saponification.",
+        "it": "NaOH usato come alcali per sapone e reagente di saponificazione.",
+        "nl": "NaOH gebruikt als alkali voor zeepmaken en verzepingsreagens.",
         "pt_BR": "NaOH usado como álcali para sabonetes e reagente de saponificação."
       }
     },
@@ -17150,11 +17150,11 @@
       "group": "ingredients",
       "key": "subcategories.sodium_hydroxide.label",
       "text": {
-        "de": "Kategorie: Sodium hydroxide",
-        "es": "Categoría: Sodium hydroxide",
-        "fr": "Catégorie: Sodium hydroxide",
-        "it": "Categoria: Sodium hydroxide",
-        "nl": "Categorie: Sodium hydroxide",
+        "de": "Natriumhydroxid",
+        "es": "Hidróxido de sodio",
+        "fr": "Hydroxyde de sodium",
+        "it": "Idrossido di sodio",
+        "nl": "Natriumhydroxide",
         "pt_BR": "Hidróxido de sódio"
       }
     },
@@ -17162,11 +17162,11 @@
       "group": "ingredients",
       "key": "subcategories.solubilizers.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Solubilizers.",
-        "es": "Categoría: Classification guidance for Solubilizers.",
-        "fr": "Catégorie: Classification guidance for Solubilizers.",
-        "it": "Categoria: Classification guidance for Solubilizers.",
-        "nl": "Categorie: Classification guidance for Solubilizers.",
+        "de": "Stoffe, die kleine Mengen Öl oder Duft in Wasser verteilen helfen.",
+        "es": "Materiales que ayudan a dispersar pequeñas cantidades de aceite o fragancia en agua.",
+        "fr": "Substances qui aident à disperser de petites quantités d’huile ou de parfum dans l’eau.",
+        "it": "Sostanze che aiutano a disperdere piccole quantità di olio o profumo in acqua.",
+        "nl": "Stoffen die kleine hoeveelheden olie of geur in water helpen verdelen.",
         "pt_BR": "Materiais que ajudam a dispersar pequenas quantidades de óleo ou fragrância em água."
       }
     },
@@ -17174,11 +17174,11 @@
       "group": "ingredients",
       "key": "subcategories.solubilizers.label",
       "text": {
-        "de": "Kategorie: Solubilizers",
-        "es": "Categoría: Solubilizers",
-        "fr": "Catégorie: Solubilizers",
-        "it": "Categoria: Solubilizers",
-        "nl": "Categorie: Solubilizers",
+        "de": "Lösungsvermittler",
+        "es": "Solubilizantes",
+        "fr": "Solubilisants",
+        "it": "Solubilizzanti",
+        "nl": "Solubilisatoren",
         "pt_BR": "Solubilizantes"
       }
     },
@@ -17186,11 +17186,11 @@
       "group": "ingredients",
       "key": "subcategories.starches_absorbent_powders.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Starches & absorbent powders.",
-        "es": "Categoría: Classification guidance for Starches & absorbent powders.",
-        "fr": "Catégorie: Classification guidance for Starches & absorbent powders.",
-        "it": "Categoria: Classification guidance for Starches & absorbent powders.",
-        "nl": "Categorie: Classification guidance for Starches & absorbent powders.",
+        "de": "Pulver für Absorption, Gleitfähigkeit, Mattierung oder Textur.",
+        "es": "Polvos usados para absorción, deslizamiento, efecto matificante o textura.",
+        "fr": "Poudres utilisées pour l’absorption, la glisse, l’effet matifiant ou la texture.",
+        "it": "Polveri usate per assorbimento, scorrevolezza, effetto opacizzante o texture.",
+        "nl": "Poeders voor absorptie, glijdend gevoel, matterend effect of textuur.",
         "pt_BR": "Pós usados para absorção, deslizamento, efeito mate ou textura."
       }
     },
@@ -17198,11 +17198,11 @@
       "group": "ingredients",
       "key": "subcategories.starches_absorbent_powders.label",
       "text": {
-        "de": "Kategorie: Starches & absorbent powders",
-        "es": "Categoría: Starches & absorbent powders",
-        "fr": "Catégorie: Starches & absorbent powders",
-        "it": "Categoria: Starches & absorbent powders",
-        "nl": "Categorie: Starches & absorbent powders",
+        "de": "Stärken & absorbierende Pulver",
+        "es": "Almidones y polvos absorbentes",
+        "fr": "Amidons & poudres absorbantes",
+        "it": "Amidi e polveri assorbenti",
+        "nl": "Zetmelen & absorberende poeders",
         "pt_BR": "Amidos e pós absorventes"
       }
     },
@@ -17210,11 +17210,11 @@
       "group": "ingredients",
       "key": "subcategories.sugar_alcohols.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Sugar alcohols.",
-        "es": "Categoría: Classification guidance for Sugar alcohols.",
-        "fr": "Catégorie: Classification guidance for Sugar alcohols.",
-        "it": "Categoria: Classification guidance for Sugar alcohols.",
-        "nl": "Categorie: Classification guidance for Sugar alcohols.",
+        "de": "Aus Zucker gewonnene Polyole, vor allem zur Feuchthaltung und für die Textur.",
+        "es": "Polioles derivados de azúcares, usados sobre todo como humectantes y por su textura.",
+        "fr": "Polyols dérivés de sucres, utilisés surtout comme humectants et pour la texture.",
+        "it": "Polioli derivati da zuccheri, usati soprattutto come umettanti e per la texture.",
+        "nl": "Polyolen afgeleid van suikers, vooral gebruikt als humectant en voor textuur.",
         "pt_BR": "Polióis derivados de açúcares, usados principalmente para umectação e textura."
       }
     },
@@ -17222,11 +17222,11 @@
       "group": "ingredients",
       "key": "subcategories.sugar_alcohols.label",
       "text": {
-        "de": "Kategorie: Sugar alcohols",
-        "es": "Categoría: Sugar alcohols",
-        "fr": "Catégorie: Sugar alcohols",
-        "it": "Categoria: Sugar alcohols",
-        "nl": "Categorie: Sugar alcohols",
+        "de": "Zuckeralkohole",
+        "es": "Polialcoholes de azúcar",
+        "fr": "Polyols de sucre",
+        "it": "Polialcoli da zuccheri",
+        "nl": "Suikeralcoholen",
         "pt_BR": "Álcoois de açúcar"
       }
     },
@@ -17234,11 +17234,11 @@
       "group": "ingredients",
       "key": "subcategories.synthetic_particles.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Synthetic particles.",
-        "es": "Categoría: Classification guidance for Synthetic particles.",
-        "fr": "Catégorie: Classification guidance for Synthetic particles.",
-        "it": "Categoria: Classification guidance for Synthetic particles.",
-        "nl": "Categorie: Classification guidance for Synthetic particles.",
+        "de": "Hergestellte Partikel für kontrolliertes Peeling oder Textur.",
+        "es": "Partículas fabricadas usadas para una exfoliación controlada o textura.",
+        "fr": "Particules fabriquées utilisées pour une exfoliation contrôlée ou la texture.",
+        "it": "Particelle prodotte usate per un’esfoliazione controllata o per la texture.",
+        "nl": "Vervaardigde deeltjes voor gecontroleerde exfoliatie of textuur.",
         "pt_BR": "Partículas fabricadas usadas para esfoliação ou textura controladas."
       }
     },
@@ -17246,11 +17246,11 @@
       "group": "ingredients",
       "key": "subcategories.synthetic_particles.label",
       "text": {
-        "de": "Kategorie: Synthetic particles",
-        "es": "Categoría: Synthetic particles",
-        "fr": "Catégorie: Synthetic particles",
-        "it": "Categoria: Synthetic particles",
-        "nl": "Categorie: Synthetic particles",
+        "de": "Synthetische Partikel",
+        "es": "Partículas sintéticas",
+        "fr": "Particules synthétiques",
+        "it": "Particelle sintetiche",
+        "nl": "Synthetische deeltjes",
         "pt_BR": "Partículas sintéticas"
       }
     },
@@ -17258,11 +17258,11 @@
       "group": "ingredients",
       "key": "subcategories.synthetic_rheology_modifiers.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Synthetic rheology modifiers.",
-        "es": "Categoría: Classification guidance for Synthetic rheology modifiers.",
-        "fr": "Catégorie: Classification guidance for Synthetic rheology modifiers.",
-        "it": "Categoria: Classification guidance for Synthetic rheology modifiers.",
-        "nl": "Categorie: Classification guidance for Synthetic rheology modifiers.",
+        "de": "Synthetische Polymere zur Feinabstimmung von Viskosität und Fließverhalten.",
+        "es": "Polímeros sintéticos usados para ajustar la viscosidad y el flujo.",
+        "fr": "Polymères synthétiques utilisés pour ajuster la viscosité et l’écoulement.",
+        "it": "Polimeri sintetici usati per regolare viscosità e scorrimento.",
+        "nl": "Synthetische polymeren om viscositeit en vloei af te stemmen.",
         "pt_BR": "Polímeros sintéticos usados para ajustar viscosidade e fluxo."
       }
     },
@@ -17270,11 +17270,11 @@
       "group": "ingredients",
       "key": "subcategories.synthetic_rheology_modifiers.label",
       "text": {
-        "de": "Kategorie: Synthetic rheology modifiers",
-        "es": "Categoría: Synthetic rheology modifiers",
-        "fr": "Catégorie: Synthetic rheology modifiers",
-        "it": "Categoria: Synthetic rheology modifiers",
-        "nl": "Categorie: Synthetic rheology modifiers",
+        "de": "Synthetische Rheologiemodifizierer",
+        "es": "Modificadores reológicos sintéticos",
+        "fr": "Modificateurs de rhéologie synthétiques",
+        "it": "Modificatori reologici sintetici",
+        "nl": "Synthetische reologiemodificatoren",
         "pt_BR": "Modificadores de reologia sintéticos"
       }
     },
@@ -17282,11 +17282,11 @@
       "group": "ingredients",
       "key": "subcategories.synthetic_waxes.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Synthetic waxes.",
-        "es": "Categoría: Classification guidance for Synthetic waxes.",
-        "fr": "Catégorie: Classification guidance for Synthetic waxes.",
-        "it": "Categoria: Classification guidance for Synthetic waxes.",
-        "nl": "Categorie: Classification guidance for Synthetic waxes.",
+        "de": "Wachse, die für ein definiertes Leistungsprofil hergestellt oder modifiziert wurden.",
+        "es": "Ceras fabricadas o modificadas para un perfil de rendimiento definido.",
+        "fr": "Cires fabriquées ou modifiées pour un profil de performance défini.",
+        "it": "Cere prodotte o modificate per un profilo prestazionale definito.",
+        "nl": "Wassen die zijn gemaakt of aangepast voor een bepaald prestatieprofiel.",
         "pt_BR": "Ceras fabricadas ou modificadas para um perfil de desempenho definido."
       }
     },
@@ -17294,11 +17294,11 @@
       "group": "ingredients",
       "key": "subcategories.synthetic_waxes.label",
       "text": {
-        "de": "Kategorie: Synthetic waxes",
-        "es": "Categoría: Synthetic waxes",
-        "fr": "Catégorie: Synthetic waxes",
-        "it": "Categoria: Synthetic waxes",
-        "nl": "Categorie: Synthetic waxes",
+        "de": "Synthetische Wachse",
+        "es": "Ceras sintéticas",
+        "fr": "Cires synthétiques",
+        "it": "Cere sintetiche",
+        "nl": "Synthetische wassen",
         "pt_BR": "Ceras sintéticas"
       }
     },
@@ -17306,11 +17306,11 @@
       "group": "ingredients",
       "key": "subcategories.uv_filters.description",
       "text": {
-        "de": "Kategorie: Classification guidance for UV filters.",
-        "es": "Categoría: Classification guidance for UV filters.",
-        "fr": "Catégorie: Classification guidance for UV filters.",
-        "it": "Categoria: Classification guidance for UV filters.",
-        "nl": "Categorie: Classification guidance for UV filters.",
+        "de": "Inhaltsstoffe, die ultraviolette Strahlung absorbieren oder filtern sollen.",
+        "es": "Ingredientes destinados a absorber o filtrar la radiación ultravioleta.",
+        "fr": "Ingrédients destinés à absorber ou filtrer le rayonnement ultraviolet.",
+        "it": "Ingredienti destinati ad assorbire o filtrare le radiazioni ultraviolette.",
+        "nl": "Ingrediënten die bedoeld zijn om ultraviolette straling te absorberen of te filteren.",
         "pt_BR": "Ingredientes destinados a absorver ou filtrar radiação ultravioleta."
       }
     },
@@ -17318,11 +17318,11 @@
       "group": "ingredients",
       "key": "subcategories.uv_filters.label",
       "text": {
-        "de": "Kategorie: UV filters",
-        "es": "Categoría: UV filters",
-        "fr": "Catégorie: UV filters",
-        "it": "Categoria: UV filters",
-        "nl": "Categorie: UV filters",
+        "de": "UV-Filter",
+        "es": "Filtros UV",
+        "fr": "Filtres UV",
+        "it": "Filtri UV",
+        "nl": "UV-filters",
         "pt_BR": "Filtros UV"
       }
     },
@@ -17330,11 +17330,11 @@
       "group": "ingredients",
       "key": "subcategories.vegetable_oils.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Vegetable oils.",
-        "es": "Categoría: Classification guidance for Vegetable oils.",
-        "fr": "Catégorie: Classification guidance for Vegetable oils.",
-        "it": "Categoria: Classification guidance for Vegetable oils.",
-        "nl": "Categorie: Classification guidance for Vegetable oils.",
+        "de": "Flüssige Öle pflanzlichen Ursprungs wie Oliven-, Kokos- oder Sonnenblumenöl.",
+        "es": "Aceites líquidos de origen vegetal, como el de oliva, coco o girasol.",
+        "fr": "Huiles liquides d’origine végétale, comme l’huile d’olive, de coco ou de tournesol.",
+        "it": "Oli liquidi di origine vegetale, come olio d’oliva, di cocco o di girasole.",
+        "nl": "Vloeibare plantaardige oliën zoals olijf-, kokos- of zonnebloemolie.",
         "pt_BR": "Óleos líquidos de origem vegetal, como azeite, óleo de coco ou de girassol."
       }
     },
@@ -17342,11 +17342,11 @@
       "group": "ingredients",
       "key": "subcategories.vegetable_oils.label",
       "text": {
-        "de": "Kategorie: Vegetable oils",
-        "es": "Categoría: Vegetable oils",
-        "fr": "Catégorie: Vegetable oils",
-        "it": "Categoria: Vegetable oils",
-        "nl": "Categorie: Vegetable oils",
+        "de": "Pflanzenöle",
+        "es": "Aceites vegetales",
+        "fr": "Huiles végétales",
+        "it": "Oli vegetali",
+        "nl": "Plantaardige oliën",
         "pt_BR": "Óleos vegetais"
       }
     },
@@ -17354,11 +17354,11 @@
       "group": "ingredients",
       "key": "subcategories.vitamins.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Vitamins.",
-        "es": "Categoría: Classification guidance for Vitamins.",
-        "fr": "Catégorie: Classification guidance for Vitamins.",
-        "it": "Categoria: Classification guidance for Vitamins.",
-        "nl": "Categorie: Classification guidance for Vitamins.",
+        "de": "Vitamin-Inhaltsstoffe und ihre kosmetischen Derivate.",
+        "es": "Ingredientes vitamínicos y sus derivados cosméticos.",
+        "fr": "Ingrédients vitaminiques et leurs dérivés cosmétiques.",
+        "it": "Ingredienti vitaminici e i loro derivati cosmetici.",
+        "nl": "Vitamine-ingrediënten en hun cosmetische derivaten.",
         "pt_BR": "Ingredientes vitamínicos e seus derivados cosméticos."
       }
     },
@@ -17366,11 +17366,11 @@
       "group": "ingredients",
       "key": "subcategories.vitamins.label",
       "text": {
-        "de": "Kategorie: Vitamins",
-        "es": "Categoría: Vitamins",
-        "fr": "Catégorie: Vitamins",
-        "it": "Categoria: Vitamins",
-        "nl": "Categorie: Vitamins",
+        "de": "Vitamine",
+        "es": "Vitaminas",
+        "fr": "Vitamines",
+        "it": "Vitamine",
+        "nl": "Vitaminen",
         "pt_BR": "Vitaminas"
       }
     },
@@ -17378,11 +17378,11 @@
       "group": "ingredients",
       "key": "subcategories.volatile_silicones.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Volatile silicones.",
-        "es": "Categoría: Classification guidance for Volatile silicones.",
-        "fr": "Catégorie: Classification guidance for Volatile silicones.",
-        "it": "Categoria: Classification guidance for Volatile silicones.",
-        "nl": "Categorie: Classification guidance for Volatile silicones.",
+        "de": "Silikone, die nach dem Auftragen verdunsten und vorübergehende Gleitfähigkeit geben.",
+        "es": "Siliconas que se evaporan tras la aplicación y aportan un deslizamiento pasajero.",
+        "fr": "Silicones qui s’évaporent après application et apportent une glisse passagère.",
+        "it": "Siliconi che evaporano dopo l’applicazione e danno una scorrevolezza temporanea.",
+        "nl": "Siliconen die na het aanbrengen verdampen en tijdelijk glijdend gevoel geven.",
         "pt_BR": "Silicones projetados para evaporar após a aplicação e proporcionar deslizamento temporário."
       }
     },
@@ -17390,11 +17390,11 @@
       "group": "ingredients",
       "key": "subcategories.volatile_silicones.label",
       "text": {
-        "de": "Kategorie: Volatile silicones",
-        "es": "Categoría: Volatile silicones",
-        "fr": "Catégorie: Volatile silicones",
-        "it": "Categoria: Volatile silicones",
-        "nl": "Categorie: Volatile silicones",
+        "de": "Flüchtige Silikone",
+        "es": "Siliconas volátiles",
+        "fr": "Silicones volatiles",
+        "it": "Siliconi volatili",
+        "nl": "Vluchtige siliconen",
         "pt_BR": "Silicones voláteis"
       }
     },
@@ -17402,11 +17402,11 @@
       "group": "ingredients",
       "key": "subcategories.water.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Water.",
-        "es": "Categoría: Classification guidance for Water.",
-        "fr": "Catégorie: Classification guidance for Water.",
-        "it": "Categoria: Classification guidance for Water.",
-        "nl": "Categorie: Classification guidance for Water.",
+        "de": "Wasserqualitäten, die als Hauptlösungsmittel oder Träger dienen.",
+        "es": "Calidades de agua usadas como disolvente o portador principal.",
+        "fr": "Qualités d’eau utilisées comme solvant ou support principal.",
+        "it": "Gradi d’acqua usati come solvente o veicolo principale.",
+        "nl": "Waterkwaliteiten die als hoofdoplosmiddel of drager dienen.",
         "pt_BR": "Tipos de água usados como solvente ou carreador principal."
       }
     },
@@ -17414,11 +17414,11 @@
       "group": "ingredients",
       "key": "subcategories.water.label",
       "text": {
-        "de": "Kategorie: Water",
-        "es": "Categoría: Water",
-        "fr": "Catégorie: Water",
-        "it": "Categoria: Water",
-        "nl": "Categorie: Water",
+        "de": "Wasser",
+        "es": "Agua",
+        "fr": "Eau",
+        "it": "Acqua",
+        "nl": "Water",
         "pt_BR": "Água"
       }
     },
@@ -17426,11 +17426,11 @@
       "group": "ingredients",
       "key": "subcategories.water_in_oil.description",
       "text": {
-        "de": "Kategorie: Classification guidance for Water-in-oil emulsifiers.",
-        "es": "Categoría: Classification guidance for Water-in-oil emulsifiers.",
-        "fr": "Catégorie: Classification guidance for Water-in-oil emulsifiers.",
-        "it": "Categoria: Classification guidance for Water-in-oil emulsifiers.",
-        "nl": "Categorie: Classification guidance for Water-in-oil emulsifiers.",
+        "de": "Emulgatoren, die vor allem für in Öl dispergierte Wassertröpfchen bestimmt sind.",
+        "es": "Emulsionantes pensados principalmente para gotas de agua dispersas en aceite.",
+        "fr": "Émulsifiants destinés principalement à disperser des gouttelettes d’eau dans l’huile.",
+        "it": "Emulsionanti pensati soprattutto per goccioline d’acqua disperse in olio.",
+        "nl": "Emulgatoren die vooral bedoeld zijn voor waterdruppels verspreid in olie.",
         "pt_BR": "Emulsionantes destinados principalmente a gotículas de água dispersas em óleo."
       }
     },
@@ -17438,11 +17438,11 @@
       "group": "ingredients",
       "key": "subcategories.water_in_oil.label",
       "text": {
-        "de": "Kategorie: Water-in-oil emulsifiers",
-        "es": "Categoría: Water-in-oil emulsifiers",
-        "fr": "Catégorie: Water-in-oil emulsifiers",
-        "it": "Categoria: Water-in-oil emulsifiers",
-        "nl": "Categorie: Water-in-oil emulsifiers",
+        "de": "Wasser-in-Öl-Emulgatoren",
+        "es": "Emulsionantes agua en aceite",
+        "fr": "Émulsifiants eau dans huile",
+        "it": "Emulsionanti acqua in olio",
+        "nl": "Water-in-olie-emulgatoren",
         "pt_BR": "Emulsionantes água em óleo"
       }
     },
@@ -47696,6 +47696,54 @@
         "it": "Piano di confezionamento",
         "nl": "Verpakkingsplan",
         "pt_BR": "Plano de embalagens"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "page.heading",
+      "text": {
+        "de": "Rezeptwerkbank",
+        "es": "Banco de formulación",
+        "fr": "Atelier de formulation",
+        "it": "Banco di formulazione",
+        "nl": "Formulewerkbank",
+        "pt_BR": "Bancada de formulação"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "page.new_cosmetic_title",
+      "text": {
+        "de": "Neue Kosmetikformel",
+        "es": "Nueva fórmula cosmética",
+        "fr": "Nouvelle formule cosmétique",
+        "it": "Nuova formula cosmetica",
+        "nl": "Nieuwe cosmeticaformule",
+        "pt_BR": "Nova fórmula cosmética"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "page.new_liquid_soap_title",
+      "text": {
+        "de": "Neue Flüssigseifenformel",
+        "es": "Nueva fórmula de jabón líquido",
+        "fr": "Nouvelle formule de savon liquide",
+        "it": "Nuova formula di sapone liquido",
+        "nl": "Nieuwe vloeibare-zeepformule",
+        "pt_BR": "Nova fórmula de sabão líquido"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "page.new_soap_title",
+      "text": {
+        "de": "Neue Seifenformel",
+        "es": "Nueva fórmula de jabón",
+        "fr": "Nouvelle formule de savon",
+        "it": "Nuova formula di sapone",
+        "nl": "Nieuwe zeepformule",
+        "pt_BR": "Nova fórmula de sabão"
       }
     },
     {

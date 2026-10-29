@@ -1,6 +1,12 @@
 <?php
 
 return [
+    'page' => [
+        'heading' => 'Recipe workbench',
+        'new_soap_title' => 'New Soap Formula',
+        'new_liquid_soap_title' => 'New Liquid Soap Formula',
+        'new_cosmetic_title' => 'New Cosmetic Formula',
+    ],
     'editing' => [
         'acquiring' => 'Checking whether this formula is available for editing…',
         'blocked' => ':name is editing this formula in another tab or session.',

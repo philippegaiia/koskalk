@@ -49608,6 +49608,30 @@
     },
     {
       "group": "workbench",
+      "key": "settings.summary.lye_excess",
+      "text": {
+        "de": "Laugenüberschuss",
+        "es": "Exceso de álcali",
+        "fr": "Excès d’alcali",
+        "it": "Eccesso di alcali",
+        "nl": "Loogoverschot",
+        "pt_BR": "Excesso de álcali"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "settings.summary.lye_reduction",
+      "text": {
+        "de": "Laugenreduktion",
+        "es": "Reducción de álcali",
+        "fr": "Réduction d’alcali",
+        "it": "Riduzione degli alcali",
+        "nl": "Loogreductie",
+        "pt_BR": "Redução de álcali"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "settings.summary.lye_concentration",
       "text": {
         "de": "Konzentration :value %",

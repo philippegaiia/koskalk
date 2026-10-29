@@ -252,22 +252,11 @@ export function createFormulaSection() {
                     },
                     {
                         id: 'formula-superfat',
-                        label: this.t('settings.lye_reduction'),
-                        value: `${this.format(this.superfat, 1)}%`,
+                        label: this.t(this.superfat < 0 ? 'settings.summary.lye_excess' : 'settings.summary.lye_reduction'),
+                        value: `${this.format(Math.abs(this.superfat), 1)}%`,
                         tone: { excess_lye: 'danger', low_margin: 'warning' }[this.superfatStatus] ?? 'chemistry',
                     },
                 );
-
-                if (this.freeFatSummary) {
-                    cards.push(
-                        {
-                            id: 'formula-nominal-superfat',
-                            label: this.t('settings.nominal_superfat'),
-                            value: `${this.formatPercentageTotal(this.nominalSuperfat)}%`,
-                            tone: 'chemistry',
-                        },
-                    );
-                }
 
                 if (this.estimatedFreeFat !== null) {
                     cards.push({

@@ -158,6 +158,8 @@ return [
             'base' => 'Base',
             'entry' => 'Entry',
             'lye' => 'Lye',
+            'lye_reduction' => 'Lye reduction',
+            'lye_excess' => 'Lye excess',
             'dual' => 'Dual :naoh / :koh',
             'water_ratio' => 'Ratio :value:1',
             'lye_concentration' => 'Lye :value%',

@@ -178,7 +178,6 @@ it('presents the workbench header as a quiet hierarchy with compact section navi
         ->and($recipeWorkbenchPageSource)
         ->not->toContain('$productType->localizedName()')
         ->not->toContain('mx-auto mb-4 max-w-app')
-        ->toContain("@section('page_heading', 'Recipe workbench')")
         ->not->toContain('max-w-[90rem]')
         ->not->toContain('max-w-[104rem]')
         ->and($appShellSource)

@@ -1,4 +1,4 @@
-<section class="overflow-hidden sk-card">
+<section class="overflow-hidden sk-card sk-zone-work">
  <div class="sk-section-header sk-section-header-formula border-b border-[var(--color-line)] px-5 py-4">
  <div class="mt-1 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  <div>
@@ -12,26 +12,27 @@
  </div>
  </div>
 
- <div class="space-y-5 bg-[var(--color-surface)] py-5">
+ <div class="space-y-5 pb-5 [&>div:first-of-type]:border-t-0">
  <template x-for="phase in phaseOrder" :key="phase.key">
- <div :id="`cosmetic-phase-${phase.key}`" :data-cosmetic-phase-key="phase.key" class="overflow-hidden border-y border-[var(--color-line)] bg-[var(--color-panel)] transition-shadow duration-300">
+ <div :id="`cosmetic-phase-${phase.key}`" :data-cosmetic-phase-key="phase.key" class="overflow-hidden border-y border-[var(--color-line)] bg-[var(--color-field)] transition-shadow duration-300">
  <div class="sk-section-header sk-section-header-formula border-b border-[var(--color-line)] px-4 py-3">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
- <div class="min-w-0 flex-1">
- <input x-model="phase.name" type="text" aria-label="{{ __('workbench.cosmetic.phase_name') }}" placeholder="{{ __('workbench.cosmetic.phase_name') }}" class="w-full max-w-md rounded-lg border border-[var(--color-field-outline)] bg-[var(--color-field)] px-3 py-2 text-base font-semibold text-[var(--color-ink-strong)] transition" />
- </div>
- <div class="flex flex-wrap items-center gap-2">
- <button type="button" @click="moveCosmeticPhase(phase.key, 'up')" :disabled="cosmeticPhaseIsFirst(phase.key)" :class="cosmeticPhaseIsFirst(phase.key) ? 'cursor-not-allowed border-[var(--color-line)] text-[var(--color-ink-soft)] opacity-45' : 'border-[var(--color-line)] text-[var(--color-ink-strong)] hover:bg-[var(--color-field-muted)]'" class="grid size-10 place-items-center rounded-lg border bg-[var(--color-panel)] text-base font-medium transition" title="{{ __('workbench.cosmetic.move_up') }}">
+ <label class="group flex min-w-0 max-w-md items-center gap-1.5 text-[var(--color-ink-soft)]">
+ <input x-model="phase.name" type="text" aria-label="{{ __('workbench.cosmetic.phase_name') }}" placeholder="{{ __('workbench.cosmetic.phase_name') }}" class="-mx-2 min-w-[8ch] max-w-full field-sizing-content cursor-text rounded-lg border border-transparent bg-transparent px-2 py-1.5 text-lg font-semibold text-[var(--color-ink-strong)] transition group-hover:border-[var(--color-field-outline)] group-hover:bg-[var(--color-field)] focus:border-[var(--color-field-outline)] focus:bg-[var(--color-field)]" />
+ <x-action-icon name="pencil" class="shrink-0 opacity-60 transition group-hover:opacity-100 group-focus-within:opacity-0" />
+ </label>
+ <div class="flex flex-wrap items-center gap-1">
+ <span class="numeric mr-2 rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="t('cosmetic.percent_of_formula', { percentage: format(cosmeticPhasePercentageTotal(phase.key), 2) })"></span>
+ <button type="button" @click="moveCosmeticPhase(phase.key, 'up')" :disabled="cosmeticPhaseIsFirst(phase.key)" :class="cosmeticPhaseIsFirst(phase.key) ? 'cursor-not-allowed opacity-35' : 'hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)]'" class="grid size-10 place-items-center rounded-lg text-base font-medium text-[var(--color-ink-soft)] transition" title="{{ __('workbench.cosmetic.move_up') }}">
  <span aria-hidden="true">↑</span>
  <span class="sr-only">{{ __('workbench.cosmetic.move_up') }}</span>
  </button>
- <button type="button" @click="moveCosmeticPhase(phase.key, 'down')" :disabled="cosmeticPhaseIsLast(phase.key)" :class="cosmeticPhaseIsLast(phase.key) ? 'cursor-not-allowed border-[var(--color-line)] text-[var(--color-ink-soft)] opacity-45' : 'border-[var(--color-line)] text-[var(--color-ink-strong)] hover:bg-[var(--color-field-muted)]'" class="grid size-10 place-items-center rounded-lg border bg-[var(--color-panel)] text-base font-medium transition" title="{{ __('workbench.cosmetic.move_down') }}">
+ <button type="button" @click="moveCosmeticPhase(phase.key, 'down')" :disabled="cosmeticPhaseIsLast(phase.key)" :class="cosmeticPhaseIsLast(phase.key) ? 'cursor-not-allowed opacity-35' : 'hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)]'" class="grid size-10 place-items-center rounded-lg text-base font-medium text-[var(--color-ink-soft)] transition" title="{{ __('workbench.cosmetic.move_down') }}">
  <span aria-hidden="true">↓</span>
  <span class="sr-only">{{ __('workbench.cosmetic.move_down') }}</span>
  </button>
- <span class="numeric rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]" x-text="t('cosmetic.percent_of_formula', { percentage: format(cosmeticPhasePercentageTotal(phase.key), 2) })"></span>
- <button type="button" x-show="phaseOrder.length > 1" @click="requestCosmeticPhaseRemoval(phase.key, $event.currentTarget)" class="min-h-11 rounded-full border border-[var(--color-danger-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger-strong)] transition hover:bg-[var(--color-danger-soft)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-danger-strong)]">
- {{ __('workbench.cosmetic.remove_phase') }}
+ <button type="button" x-show="phaseOrder.length > 1" @click="requestCosmeticPhaseRemoval(phase.key, $event.currentTarget)" aria-label="{{ __('workbench.cosmetic.remove_phase') }}" title="{{ __('workbench.cosmetic.remove_phase') }}" class="grid size-10 place-items-center rounded-lg text-[var(--color-ink-soft)] transition hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-danger-strong)]">
+ <x-action-icon name="trash" />
  </button>
  </div>
  </div>
@@ -45,7 +46,7 @@
  <div class="bg-[var(--color-field-muted)] px-4 py-2.5 sk-formula-table-y"></div>
  </div>
 
- <div class="divide-y divide-[var(--color-line)] bg-[var(--color-panel)]">
+ <div class="divide-y divide-[var(--color-line)] bg-[var(--color-field)]">
  <template x-for="row in phaseItems[phase.key] ?? []" :key="row.id">
  <div @dragover="allowPhaseDrop(phase.key, $event, row.id)"
  @drop="dropDraggedRow(phase.key, $event, row.id)"
@@ -96,7 +97,7 @@
  @focus="open = true; reposition()"
  @blur="open = false"
  @click.prevent="open = !open; if (open) { reposition(); }"
-	 class="grid size-9 place-items-center rounded-full border border-[var(--color-line)] bg-[var(--color-field)] text-[11px] font-semibold text-[var(--color-ink-soft)] transition hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="{{ __('workbench.cosmetic.show_ingredient_details') }}" aria-haspopup="dialog" :aria-expanded="open.toString()">
+	 class="grid size-9 place-items-center rounded-full text-[var(--color-ink-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)] focus-visible:bg-[var(--color-field-muted)]" aria-label="{{ __('workbench.cosmetic.show_ingredient_details') }}" aria-haspopup="dialog" :aria-expanded="open.toString()">
  <x-action-icon name="info" />
  </button>
  </template>

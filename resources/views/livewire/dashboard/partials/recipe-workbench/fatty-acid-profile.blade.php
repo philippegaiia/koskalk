@@ -1,7 +1,7 @@
 <div class="sk-card sk-tone-analysis overflow-hidden">
  <div class="sk-section-header sk-section-header-reference border-b border-[var(--color-line)] px-5 py-4">
  <div>
- <p class="sk-eyebrow">{{ __('workbench.headings.fatty_acid_profile') }}</p>
+ <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.headings.fatty_acid_profile') }}</h3>
  </div>
  </div>
  <div class="p-5">
@@ -44,8 +44,8 @@
  </template>
 
  <div class="rounded-lg border border-[var(--color-line)] bg-[var(--color-field)]">
- <button type="button" @click="isFattyAcidDetailsOpen = ! isFattyAcidDetailsOpen" :aria-expanded="isFattyAcidDetailsOpen.toString()" aria-controls="fatty-acid-details-panel" class="flex w-full cursor-pointer items-center justify-between gap-3 px-4 py-3 text-left">
- <span class="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-strong)]">{{ __('workbench.fatty_acids.details') }}</span>
+ <button type="button" @click="isFattyAcidDetailsOpen = ! isFattyAcidDetailsOpen" :aria-expanded="isFattyAcidDetailsOpen.toString()" aria-controls="fatty-acid-details-panel" class="flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-4 py-3 text-left transition hover:bg-[var(--color-field-muted)]">
+ <span class="flex items-center gap-1.5 text-sm font-medium text-[var(--color-ink-strong)]"><x-action-icon name="chevron-right" class="text-[var(--color-ink-soft)] transition-transform motion-reduce:transition-none" ::class="isFattyAcidDetailsOpen ? 'rotate-90' : ''" />{{ __('workbench.fatty_acids.details') }}</span>
  <span class="numeric shrink-0 text-xs text-[var(--color-ink-soft)]" x-text="`${fattyAcidProfileRows.length} acids`"></span>
  </button>
  <div id="fatty-acid-details-panel" x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="isFattyAcidDetailsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">

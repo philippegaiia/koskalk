@@ -12,7 +12,7 @@
         ->all();
 @endphp
 
-<section id="liquid-soap-process" class="overflow-hidden sk-card sk-phase-craft sk-tone-summary" aria-labelledby="liquid-soap-process-heading">
+<section id="liquid-soap-process" class="overflow-hidden sk-card sk-zone-work sk-phase-craft sk-tone-summary" aria-labelledby="liquid-soap-process-heading">
  <div class="sk-section-header sk-section-header-formula border-b border-[var(--color-line)] px-5 py-4">
  <h3 id="liquid-soap-process-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.liquid.title') }}</h3>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('workbench.liquid.help') }}</p>
@@ -55,10 +55,11 @@
  </label>
  </div>
 
+ @unless ($isPublicCalculator ?? false)
  <div class="space-y-4">
  @foreach (['first_dilution', 'final_dilution'] as $dilutionStep)
  <section class="sk-inset space-y-3 p-4" aria-labelledby="liquid-{{ $dilutionStep }}-liquids-heading">
- <p id="liquid-{{ $dilutionStep }}-liquids-heading" class="sk-eyebrow">{{ __('workbench.liquid.dilution_liquids.'.$dilutionStep) }}</p>
+ <h4 id="liquid-{{ $dilutionStep }}-liquids-heading" class="text-sm font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.liquid.dilution_liquids.'.$dilutionStep) }}</h4>
  <div x-show="dilutionLiquidRows('{{ $dilutionStep }}').length < 4">
  <x-search-combobox
  id="liquid-{{ $dilutionStep }}-liquid-search"
@@ -108,6 +109,8 @@
  </section>
  @endforeach
  </div>
+
+ @endunless
 
  <div class="sk-inset space-y-3 p-4">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-end">
@@ -186,7 +189,7 @@
  <template x-if="liquidProcessIsReady && liquidCompositionRows().length > 0">
  <section aria-labelledby="liquid-composition-heading">
  <div class="flex items-baseline justify-between gap-3">
- <p id="liquid-composition-heading" class="sk-eyebrow">{{ __('workbench.liquid.composition') }}</p>
+ <h4 id="liquid-composition-heading" class="text-sm font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.liquid.composition') }}</h4>
  <p class="numeric text-sm font-semibold text-[var(--color-ink-strong)]" x-text="t('liquid.final_batch', { amount: format(liquidProcessPreview.final_weight, calculatedMassDecimals(liquidProcessPreview.final_weight)), unit: oilUnit })"></p>
  </div>
  <div class="mt-3 flex h-3 w-full gap-px overflow-hidden rounded-full bg-[var(--color-field-muted)]" aria-hidden="true">

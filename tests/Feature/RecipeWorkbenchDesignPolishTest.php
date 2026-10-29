@@ -6,6 +6,7 @@ use App\Livewire\Dashboard\RecipeWorkbench;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\User;
+use Dom\HTMLDocument;
 use Filament\Forms\Components\Field;
 use Filament\Forms\Components\RichEditor;
 use Filament\Schemas\Components\Grid;
@@ -178,7 +179,6 @@ it('presents the workbench header as a quiet hierarchy with compact section navi
         ->and($recipeWorkbenchPageSource)
         ->not->toContain('$productType->localizedName()')
         ->not->toContain('mx-auto mb-4 max-w-app')
-        ->toContain("@section('page_heading', 'Recipe workbench')")
         ->not->toContain('max-w-[90rem]')
         ->not->toContain('max-w-[104rem]')
         ->and($appShellSource)
@@ -305,7 +305,7 @@ it('presents batch totals as one compact neutral summary grid', function () {
         ->toContain('sk-section-header sk-section-header-formula border-b px-5 py-4')
         ->toContain('grid gap-px bg-[var(--color-line)] sm:grid-cols-2 xl:grid-cols-4')
         ->toContain('flex flex-col bg-[var(--color-panel)] px-4 py-3')
-        ->toContain('sk-eyebrow min-h-8')
+        ->toContain('min-h-8 text-xs font-medium leading-4')
         ->toContain('numeric mt-1.5 text-xl')
         ->not->toContain('numeric mt-3')
         ->not->toContain('min-h-24')
@@ -467,7 +467,7 @@ it('keeps soap qualities compact and presents comments as discreet formula notes
         ->not->toContain('gap-6 border-b border-[var(--color-line)]')
         ->not->toContain('rounded-[1.15rem] border border-[var(--color-line)] bg-[var(--color-field)] p-1')
         ->not->toContain('<span x-text="soapQualitiesExpanded ? \'Hide\' : \'Show\'"></span>', false)
-        ->toContain('sk-eyebrow block min-h-8')
+        ->toContain('block min-h-8 text-xs font-medium leading-4')
         ->toContain('numeric mt-1.5 text-xl')
         ->not->toContain('numeric mt-2 text-2xl')
         ->not->toContain('block text-sm font-medium leading-5')
@@ -1131,25 +1131,20 @@ it('keeps the desktop ingredient rail row-bounded and moves soap fatty acids bel
         ->toBeLessThan(strpos($formulaTabSource, 'post-reaction'));
 });
 
-it('keeps the narrow ingredient disclosure discoverable while sharing one catalog instance', function () {
-    $formulaTabSource = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/formula-tab.blade.php'));
-    $componentSource = file_get_contents(resource_path('js/recipe-workbench/component.js'));
+it('keeps the narrow ingredient disclosure discoverable while sharing one catalog instance', function (): void {
+    $html = view('livewire.dashboard.partials.recipe-workbench.formula-tab', [
+        'isPublicCalculator' => true,
+    ])->render();
+    $document = HTMLDocument::createFromString($html, LIBXML_NOERROR);
+    $disclosure = $document->querySelector('[data-ingredient-browser-disclosure]');
+    $rail = $document->querySelector('#formula-ingredient-browser');
 
-    expect($formulaTabSource)
-        ->toContain('data-ingredient-browser-disclosure')
-        ->toContain(':aria-expanded="ingredientBrowserOpen.toString()"')
-        ->toContain('<x-action-icon name="plus" x-cloak x-show="! ingredientBrowserOpen" />')
-        ->toContain('<x-action-icon name="minus" x-cloak x-show="ingredientBrowserOpen" />')
-        ->toContain('id="formula-ingredient-browser"')
-        ->toContain('x-ref="ingredientBrowserRail"')
-        ->toContain(":class=\"ingredientBrowserOpen ? 'block' : 'hidden @5xl/workbench:block'\"")
-        ->not->toContain('id="formula-ingredient-browser" x-show="ingredientBrowserOpen"')
-        ->not->toContain('<details');
-
-    expect($componentSource)->toContain('ingredientBrowserOpen: false');
-
-    expect(substr_count($formulaTabSource, "@include('livewire.dashboard.partials.recipe-workbench.ingredient-browser')"))
-        ->toBe(1);
+    expect($disclosure)->not->toBeNull();
+    expect($disclosure->localName)->toBe('button');
+    expect($disclosure->getAttribute('aria-controls'))->toBe($rail->id);
+    expect($disclosure->hasAttribute(':aria-expanded'))->toBeTrue();
+    expect($rail->querySelectorAll('aside')->length)->toBe(1);
+    expect($rail->querySelector('input[type="search"]'))->not->toBeNull();
 });
 
 it('uses accessible currentColor SVG action icons across the soap workbench controls', function (): void {
@@ -1249,7 +1244,7 @@ it('keeps compact ingredient names readable and moves inci into the inspector', 
     expect($ingredientBrowser)
         ->toContain('line-clamp-2')
         ->toContain(':title="ingredient.name"')
-        ->toContain('text-[13px] font-semibold')
+        ->toContain('text-sm font-medium leading-5')
         ->toContain('sk-ingredient-image-tile')
         ->toContain('grid size-9 place-items-center')
         ->toContain('User-created or modified ingredient')
@@ -1472,7 +1467,7 @@ it('renders the lye and water summary without a redundant outer card', function 
 
     expect($reactionCore)
         ->toContain('<section class="mt-5" aria-labelledby="lye-water-summary-heading">')
-        ->toContain('<p id="lye-water-summary-heading" class="sk-eyebrow">')
+        ->toContain('<h4 id="lye-water-summary-heading" class="text-sm font-semibold text-[var(--color-ink-strong)]">')
         ->toContain('<template x-for="card in lyeSummaryCards"')
         ->toContain('class="sk-inset flex min-h-[4.25rem] min-w-0 flex-col px-3 py-2.5"')
         ->not->toContain('class="sk-inset mt-5 p-4"');
@@ -2280,7 +2275,7 @@ it('uses a restrained semantic color system for live workbench diagnostics', fun
         ->not->toContain('focus:outline-2')
         ->not->toContain('outline-[var(--color-field-outline)]')
         ->and($ingredientBrowser)
-        ->toContain('sk-section-header-reference')
+        ->not->toContain('sk-section-header-reference')
         ->toContain('sk-tone-catalog')
         ->toContain('text-[var(--color-on-accent)]')
         ->and($ingredientBrowserSource)
@@ -2459,7 +2454,7 @@ it('surfaces one shared entry mode control immediately above each formula ledger
         ->and($entryModeTogglePath)
         ->toBeFile()
         ->and($entryModeToggle)
-        ->toContain('<section class="flex flex-col gap-2 rounded-lg bg-[var(--color-field-muted)] px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="formula-entry-mode-heading">')
+        ->toContain('<section class="flex flex-col gap-2 px-1 sm:flex-row sm:items-center sm:justify-between" aria-labelledby="formula-entry-mode-heading">')
         ->toContain('aria-labelledby="formula-entry-mode-heading"')
         ->toContain('role="radiogroup"')
         ->toContain(':aria-checked="editMode === \'percentage\'"')

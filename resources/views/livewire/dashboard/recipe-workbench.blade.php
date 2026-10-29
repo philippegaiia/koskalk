@@ -1,7 +1,8 @@
 @php
     $isCosmeticWorkbench = ($workbench['productFamily']['slug'] ?? 'soap') === 'cosmetic';
     $isLiquidSoapWorkbench = ($workbench['productFamily']['soap_process'] ?? null) === 'liquid_paste';
-    $isPublicCalculator = request()->routeIs('calculator') && ! (bool) ($workbench['canPersist'] ?? false);
+    $isGuestCalculator = is_array($workbench['guestCalculator'] ?? null);
+    $isPublicCalculator = $isGuestCalculator || (request()->routeIs('calculator') && ! (bool) ($workbench['canPersist'] ?? false));
     $isCalculatorRoute = request()->routeIs('calculator');
     $contextualHelp = $workbench['contextualHelp'] ?? ['topics' => [], 'tabs' => []];
     unset($workbench['contextualHelp']);
@@ -27,10 +28,10 @@
     }
 @endphp
 
-<div x-data="recipeWorkbench(@js($workbench))" x-init="if (@js($isPublicCalculator) && ! ['formula', 'output'].includes(activeWorkbenchTab)) activeWorkbenchTab = 'formula'" x-effect="if (packagingCatalogModalOpen || isIfraCategoryModalOpen || pendingCosmeticPhaseRemoval || editingTakeoverOpen) $dispatch('contextual-help:modal')" @editing-updated.window="handleEditingUpdated($event.detail.editing)" @dragover.window="autoScrollDuringRowDrag($event)" @drop.window="endRowDrag()" @dragend.window="endRowDrag()" @blur.window="stopRowDragScroll()" @dragleave.document="leaveRowDragDocument($event)" class="sk-workbench @container/workbench mx-auto max-w-app space-y-6">
+<div wire:ignore.self x-data="recipeWorkbench(@js($workbench))" x-init="if (@js($isPublicCalculator) && ! ['formula', 'output'].includes(activeWorkbenchTab)) activeWorkbenchTab = 'formula'" x-effect="if (packagingCatalogModalOpen || isIfraCategoryModalOpen || pendingCosmeticPhaseRemoval || editingTakeoverOpen) $dispatch('contextual-help:modal')" @editing-updated.window="handleEditingUpdated($event.detail.editing)" @dragover.window="autoScrollDuringRowDrag($event)" @drop.window="endRowDrag()" @dragend.window="endRowDrag()" @blur.window="stopRowDragScroll()" @dragleave.document="leaveRowDragDocument($event)" class="sk-workbench @container/workbench mx-auto max-w-app space-y-6">
  <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
  <div class="space-y-4">
- @include('livewire.dashboard.partials.recipe-workbench.header')
+ @include($isGuestCalculator ? 'livewire.dashboard.partials.recipe-workbench.guest-header' : 'livewire.dashboard.partials.recipe-workbench.header')
  @error('expected_revision')
  <p role="alert" class="rounded-lg bg-[var(--color-warning-soft)] p-3 text-sm text-[var(--color-warning-strong)]">{{ $message }}</p>
  @enderror
@@ -78,5 +79,7 @@
  @include('livewire.dashboard.partials.recipe-workbench.save-error-modal')
  @endunless
 
+ @unless ($isPublicCalculator)
  <x-filament-actions::modals />
+ @endunless
 </div>

@@ -33,6 +33,7 @@ import { createPackagingSection } from './sections/packaging-section';
 import { createCostingSection } from './sections/costing-section';
 import { createPresentationSection } from './sections/presentation-section';
 import { createVersionSection } from './sections/version-section';
+import { createGuestSection } from './sections/guest-section';
 import { createEditingSection } from './editing';
 import { createRecipeWorkbenchOutputSection } from './outputs';
 
@@ -217,7 +218,7 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         curedWaterPercentage: payload.curedWaterPercentage ?? 11,
         search: '',
         activeCategory: isCosmeticFormula ? 'all' : 'lipids',
-        ingredientBrowserOpen: false,
+        ingredientBrowserOpen: Boolean(payload.guestCalculator),
         isComplianceSettingsOpen: false,
         isFattyAcidDetailsOpen: false,
         isFormulaSettingsOpen: initialDraft === null,
@@ -334,6 +335,7 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         init() {
             this.applyDraft(initialDraft);
             this.applySnapshot(initialSnapshot);
+            this.initializeGuestCalculator?.();
             this.isLyeLiquidCompositionOpen = (this.phaseItems.lye_water ?? []).length > 0;
             this.initializeCostingState();
             this.resetPackagingCatalogForm();
@@ -356,13 +358,7 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
                 }
             });
 
-            if (!this.isCosmeticFormula && this.phaseItems.saponified_oils.length === 0) {
-                const defaultOil = this.filteredIngredients.find((ingredient) => ingredient.can_add_to_saponified_oils);
-
-                if (defaultOil) {
-                    this.addIngredient(defaultOil, 'saponified_oils', false);
-                }
-            }
+            this.addDefaultSoapOil();
 
             ['oilWeight', 'manufacturingMode', 'exposureMode', 'regulatoryRegime', 'lyeType', 'kohPurity', 'dualKohPercentage', 'waterMode', 'waterValue', 'superfat', 'selectedIfraProductCategoryId', 'ifraCategorySelectionMode'].forEach((key) => {
                 this.$watch(key, () => this.scheduleCalculationPreview());
@@ -391,6 +387,7 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         },
 
         destroy() {
+            this.destroyGuestCalculator?.();
             this.cancelDroppedRowSettling();
             this.endRowDrag();
             this.removeUnsavedChangesGuard();
@@ -678,6 +675,12 @@ function createCatalogSection() {
                 oils: this.phaseItems?.saponified_oils ?? [],
                 lyeLiquids: this.phaseItems?.lye_water ?? [],
             });
+        },
+
+        addDefaultSoapOil() {
+            if (this.isCosmeticFormula || this.phaseItems.saponified_oils.length > 0) { return; }
+            const defaultOil = this.filteredIngredients.find((ingredient) => ingredient.can_add_to_saponified_oils);
+            if (defaultOil) { this.addIngredient(defaultOil, 'saponified_oils', false); }
         },
 
         addIngredient(ingredient, requestedPhase = null, shouldAnimate = true) {
@@ -1256,7 +1259,7 @@ function createCatalogSection() {
             }
 
             if (targetRows.some((targetRow) => {
-                return targetRow.id !== row.id
+                return row.ingredient_id != null && targetRow.id !== row.id
                     && Number(targetRow.ingredient_id) === Number(row.ingredient_id);
             })) {
                 return false;
@@ -1827,7 +1830,7 @@ function createPersistenceSection() {
                 this.calculationPreviewTimer = null;
                 this.isPreviewingCalculation = true;
                 this.refreshCalculationPreview(resetBaseline);
-            }, 500);
+            }, this.isGuestCalculator ? Math.max(1000, (this.guestPreviewRetryAt ?? 0) - Date.now()) : 500);
         },
 
         async refreshCalculationPreview(resetBaseline = false) {
@@ -2026,6 +2029,10 @@ export function createRecipeWorkbench(payload, createRegistry = null) {
         createPresentationSection(),
         createLiquidSoapSection(payload),
     ].forEach((section) => defineSection(component, section));
+
+    if (payload.guestCalculator) {
+        defineSection(component, createGuestSection(payload));
+    }
 
     if (typeof createRecipeWorkbenchOutputSection === 'function') {
         defineSection(component, createRecipeWorkbenchOutputSection(payload.output ?? null));

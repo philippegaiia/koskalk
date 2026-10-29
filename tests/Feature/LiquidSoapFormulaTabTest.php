@@ -25,7 +25,7 @@ function liquidSoapFormulaTabMarkup(string $html): array
     return [
         'section' => $document->getElementById('liquid-soap-process') !== null,
         'additions_share_label' => str_contains((string) $document->getElementById('post-reaction-phases')?->textContent, __('workbench.liquid.final_share_label')),
-        'batch_totals' => collect($xpath->query('//p[contains(@class, "sk-eyebrow")]'))->contains(fn (DOMElement $heading): bool => trim($heading->textContent) === __('workbench.additions.batch_totals')),
+        'batch_totals' => collect($xpath->query('//h3'))->contains(fn (DOMElement $heading): bool => trim($heading->textContent) === __('workbench.additions.batch_totals')),
         'lye_buttons' => $lyeGroup === null
             ? []
             : collect($xpath->query('.//button[@role="radio"]', $lyeGroup))->map(fn (DOMElement $button): string => trim($button->textContent))->values()->all(),

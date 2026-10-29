@@ -410,13 +410,12 @@ assert.equal(registry.blocksNavigation(), false);
 JS);
 });
 
-it('documents the installed Filament rich editor state and upload event contract', function () {
+it('keeps the installed Filament rich editor state and upload event contract', function () {
     $richEditorSource = file_get_contents(dirname(__DIR__, 2).'/vendor/filament/forms/resources/js/components/rich-editor.js');
     $localFilesSource = file_get_contents(dirname(__DIR__, 2).'/vendor/filament/forms/resources/js/components/rich-editor/extension-local-files.js');
 
     expect($richEditorSource)
         ->toContain("editor.on('update'")
-        ->toContain('this.state = editor.getJSON()')
         ->toContain("'rich-editor-uploading-file'")
         ->toContain("'rich-editor-uploaded-file'")
         ->toContain("'rich-editor-file-validation-message'");
@@ -424,6 +423,45 @@ it('documents the installed Filament rich editor state and upload event contract
     expect($localFilesSource)
         ->toContain("'form-processing-started'")
         ->toContain("'form-processing-finished'");
+
+    runRecipeContentAutosaveContract(<<<'JS'
+const { readFileSync } = await import('node:fs');
+const source = readFileSync('vendor/filament/forms/resources/js/components/rich-editor.js', 'utf8');
+const start = source.indexOf("editor.on('update'");
+const end = source.indexOf("editor.on('selectionUpdate'", start);
+assert.ok(start >= 0 && end > start, 'The installed editor must register its update handler');
+const registerUpdate = new Function('editor', 'isDestroyed', 'isLiveDebounced', 'debouncedCommit', source.slice(start, end));
+const initial = { type: 'doc', content: [] };
+const changed = { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Updated procedure' }] }] };
+let current = initial;
+let assignments = 0;
+let commits = 0;
+let update;
+const component = {
+    shouldUpdateState: true,
+    fileValidationMessage: 'Previous upload error',
+    $nextTick: (callback) => callback(),
+    get state() { return current; },
+    set state(value) { current = value; assignments++; },
+};
+const editor = { on: (event, callback) => { assert.equal(event, 'update'); update = callback; }, getJSON: () => changed };
+registerUpdate.call(component, editor, false, true, () => commits++);
+update({ editor });
+assert.deepEqual(component.state, changed);
+assert.equal(component.shouldUpdateState, false);
+assert.equal(component.fileValidationMessage, null);
+assert.equal(assignments, 1);
+assert.equal(commits, 1);
+
+update({ editor });
+assert.equal(assignments, 1, 'Unchanged JSON should not trigger another state assignment');
+
+registerUpdate.call(component, editor, true, true, () => commits++);
+editor.getJSON = () => initial;
+update({ editor });
+assert.deepEqual(component.state, changed, 'Destroyed editors must not overwrite current content');
+assert.equal(commits, 2);
+JS);
 });
 
 it('formats saved timestamps with the browser locale', function () {

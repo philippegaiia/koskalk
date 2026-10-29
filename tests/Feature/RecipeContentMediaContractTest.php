@@ -29,6 +29,29 @@ use function Pest\Laravel\mock;
 
 uses(RefreshDatabase::class);
 
+it('preserves the workbench Alpine root while media selections update the form preview', function () {
+    [$user, $workspace] = recipeMediaContractWorkspace();
+    $recipe = recipeMediaContractRecipe($user, $workspace);
+    $asset = MediaAsset::factory()->pdf()->ready()->create([
+        'workspace_id' => $workspace->id,
+        'original_filename' => 'Bench procedure.pdf',
+    ]);
+
+    $component = Livewire::actingAs($user)
+        ->test(RecipeWorkbench::class, ['recipe' => $recipe])
+        ->set('data.sop_document_media_asset_ids', [$asset->id])
+        ->assertSeeText('Bench procedure.pdf');
+
+    $document = new DOMDocument;
+    $document->loadHTML($component->html(), LIBXML_NOERROR | LIBXML_NOWARNING);
+    $xpath = new DOMXPath($document);
+    $root = $xpath->query('//div[contains(concat(" ", normalize-space(@class), " "), " sk-workbench ")]')->item(0);
+
+    expect($root)->toBeInstanceOf(DOMElement::class)
+        ->and($root->hasAttribute('wire:ignore.self'))->toBeTrue()
+        ->and($root->hasAttribute('wire:ignore'))->toBeFalse();
+});
+
 it('preserves a legacy featured path when saving content without retired upload fields', function () {
     $recipe = Recipe::factory()->create([
         'featured_image_path' => 'recipes/legacy/featured.webp',

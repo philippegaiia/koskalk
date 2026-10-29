@@ -1,4 +1,10 @@
-@if (is_array($workbench['output'] ?? null) && ! ($isPublicCalculator ?? false))
+@if ($isGuestCalculator ?? false)
+    <div :aria-busy="guestOutputPending" class="flex shrink-0 items-center justify-end gap-2 pb-2 @6xl/workbench:pb-0">
+        <button type="button" @click="printGuestFormula()" :disabled="!guestCanPrint || guestOutputPending" class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap">
+            <x-action-icon name="printer" />{{ __('formula_documents.actions.print_short') }}
+        </button>
+    </div>
+@elseif (is_array($workbench['output'] ?? null) && ! ($isPublicCalculator ?? false))
     {{-- Print and export buttons follow the shared output-button pattern: see "Print and export buttons share one look" in .ai/rules/views.md. --}}
     <div x-show="['formula', 'instructions', 'costing', 'output'].includes(activeWorkbenchTab)" x-cloak :aria-busy="outputPending" class="flex shrink-0 items-center justify-end gap-2 pb-2 @6xl/workbench:pb-0">
         <div x-show="activeWorkbenchTab === 'formula'" x-cloak class="flex items-center gap-2">

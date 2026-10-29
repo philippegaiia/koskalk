@@ -25,6 +25,7 @@ use App\Http\Controllers\ProductionBatchController;
 use App\Http\Controllers\ProductionEditingController;
 use App\Http\Controllers\ProductionPickingPrintController;
 use App\Http\Controllers\ProductionRunPrintController;
+use App\Http\Controllers\PublicCalculatorController;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\RecipeMediaController;
 use App\Http\Controllers\RecipeWorkbenchOutputController;
@@ -35,6 +36,16 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
 Route::post('/language', LocalePreferenceController::class)->name('language.update');
+
+Route::get('/calculators', [PublicCalculatorController::class, 'index'])->name('calculators.index');
+Route::prefix('/calculators/{calculator}')
+    ->whereIn('calculator', ['solid-soap', 'liquid-soap', 'cosmetics'])
+    ->name('calculators.')
+    ->group(function (): void {
+        Route::get('/', [PublicCalculatorController::class, 'show'])->middleware('throttle:30,1,calculator-page')->name('show');
+        Route::post('/preview', [PublicCalculatorController::class, 'preview'])->middleware('throttle:calculator-preview')->name('preview');
+        Route::post('/print', [PublicCalculatorController::class, 'print'])->middleware('throttle:10,1,calculator-print')->name('print');
+    });
 
 Route::get('/workspace-invitations/{token}', [WorkspaceInvitationAcceptanceController::class, 'show'])
     ->middleware('throttle:20,1')

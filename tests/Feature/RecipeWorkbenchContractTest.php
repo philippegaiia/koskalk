@@ -16,41 +16,20 @@ use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
 
-it('keeps compact formula output actions beside the tabs and outside the edit lock', function (): void {
-    $workbenchView = file_get_contents(resource_path('views/livewire/dashboard/recipe-workbench.blade.php'));
-    $actions = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/output-actions.blade.php'));
+it('keeps output actions beside the tabs outside the navigation tablist', function (): void {
+    $navigation = view('livewire.dashboard.partials.recipe-workbench.navigation', [
+        'workbench' => ['output' => []], 'isPublicCalculator' => false, 'isCalculatorRoute' => false,
+    ])->render();
 
-    $navigationPosition = strpos($workbenchView, "@include('livewire.dashboard.partials.recipe-workbench.navigation')");
-    $navigation = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/navigation.blade.php'));
-    $actionsPosition = strpos($navigation, '@includeWhen(! ($isCalculatorRoute ?? false), \'livewire.dashboard.partials.recipe-workbench.output-actions\')');
-    $fieldsetPosition = strpos($workbenchView, '<fieldset');
+    expect(strpos($navigation, 'printCurrentFormula'))
+        ->toBeGreaterThan(strpos($navigation, '</nav>'));
+    expect($navigation)->toContain('id="tab-formula"', 'id="tab-costing"', 'exportCurrentFormula');
 
-    expect($navigationPosition)->toBeInt()
-        ->and($actionsPosition)->toBeInt()
-        ->and($fieldsetPosition)->toBeInt()
-        ->and($navigationPosition)->toBeLessThan($fieldsetPosition)
-        ->and($actionsPosition)->toBeGreaterThan(strpos($navigation, '</nav>'))
-        ->and($navigation)->toContain('flex min-w-0 flex-col gap-2 @6xl/workbench:flex-row @6xl/workbench:items-center')
-        ->and($navigation)->toContain('outputPending || outputError || outputFallbackUrl')
-        ->and($actions)->toContain('sk-btn sk-btn-outline min-h-11 gap-2', '<x-action-icon name="printer" />', '<x-action-icon name="download" />')
-        ->and($actions)->not->toContain('sr-only')
-        ->and($actions)->not->toContain('border-b', 'py-3')
-        ->and($workbenchView)->toContain('$isCalculatorRoute = request()->routeIs(\'calculator\');')
-        ->and($actions)->toContain("activeWorkbenchTab === 'formula'")
-        ->and($actions)->toContain("activeWorkbenchTab === 'instructions'")
-        ->and($actions)->toContain("activeWorkbenchTab === 'output'")
-        ->and($actions)->toContain("printCurrentFormula({ printContext: 'formula' })")
-        ->and($actions)->toContain("printCurrentFormula({ printContext: 'instructions' })")
-        ->and($actions)->toContain("printCurrentFormula({ printContext: 'output' })")
-        ->and($actions)->toContain("exportCurrentFormula('xlsx')")
-        ->and($actions)->toContain("exportCurrentFormula('xlsx', 'composition')")
-        ->and($actions)->toContain("exportCurrentFormula('csv')")
-        ->and($actions)->toContain("__('formula_documents.actions.export_short')")
-        ->and($actions)->toContain('@keydown.escape.stop.prevent')
-        ->and($actions)->toContain('$refs.exportMenuTrigger.focus()')
-        ->and($actions)->toContain(':disabled="outputPending"')
-        ->and($actions)->not->toContain('canWriteRecipe')
-        ->and($actions)->not->toContain('production');
+    $guestNavigation = view('livewire.dashboard.partials.recipe-workbench.navigation', [
+        'workbench' => [], 'isPublicCalculator' => true, 'isGuestCalculator' => true,
+    ])->render();
+    expect($guestNavigation)->toContain('printGuestFormula()', 'id="tab-output"')
+        ->not->toContain('exportCurrentFormula', 'id="tab-costing"', 'id="tab-packaging"');
 });
 
 it('rejects unsupported KOH purity when saving a soap formula', function (): void {

@@ -1,5 +1,5 @@
 <section class="space-y-4" aria-labelledby="post-reaction-heading">
- <div id="post-reaction-phases" class="overflow-hidden sk-card sk-phase-craft sk-tone-summary transition-shadow duration-300">
+ <div id="post-reaction-phases" class="overflow-hidden sk-card sk-zone-work sk-phase-craft sk-tone-summary transition-shadow duration-300">
  <div class="sk-section-header sk-section-header-formula border-b border-[var(--color-line)] px-5 py-4">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  <div>
@@ -13,9 +13,9 @@
  </div>
  </div>
 
- <div class="space-y-5 p-5">
+ <div class="space-y-5 [&>div:first-of-type]:border-t-0 [&>div:last-of-type]:border-b-0">
  <template x-if="additiveRows.length > 0 || canDropRowInPhase('additives')">
- <div id="soap-phase-additives" class="overflow-hidden sk-inset transition-shadow duration-300">
+ <div id="soap-phase-additives" class="overflow-hidden border-y border-[var(--color-line)] transition-shadow duration-300">
  <div class="sk-section-header sk-section-header-formula border-b border-[var(--color-line)] px-4 py-3">
  <p class="font-medium text-[var(--color-ink-strong)]">{{ __('workbench.common.additives') }}</p>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('workbench.additions.additives_help') }}</p>
@@ -104,7 +104,7 @@
  </template>
 
  <template x-if="fragranceRows.length > 0">
- <div id="soap-phase-fragrance" class="overflow-hidden sk-inset transition-shadow duration-300">
+ <div id="soap-phase-fragrance" class="overflow-hidden border-y border-[var(--color-line)] transition-shadow duration-300">
  <div class="sk-section-header sk-section-header-formula border-b border-[var(--color-line)] px-4 py-3">
  <p class="font-medium text-[var(--color-ink-strong)]">{{ __('workbench.common.fragrance') }}</p>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('workbench.additions.fragrance_help') }}</p>
@@ -189,13 +189,13 @@
  @unless ($isLiquidSoapWorkbench ?? false)
  <div class="sk-card sk-tone-summary overflow-hidden">
  <div class="sk-section-header sk-section-header-formula border-b px-5 py-4">
- <p class="sk-eyebrow">{{ __('workbench.additions.batch_totals') }}</p>
+ <h3 class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.additions.batch_totals') }}</h3>
  </div>
 
  <div class="grid gap-px bg-[var(--color-line)] sm:grid-cols-2 xl:grid-cols-4">
  <template x-for="card in totalSummaryCards" :key="card.id">
  <div class="flex flex-col bg-[var(--color-panel)] px-4 py-3">
- <p class="sk-eyebrow min-h-8" x-text="card.label"></p>
+ <p class="min-h-8 text-xs font-medium leading-4 text-[var(--color-ink-soft)]" x-text="card.label"></p>
  <p class="numeric mt-1.5 text-xl font-semibold text-[var(--color-ink-strong)]" x-text="card.value"></p>
  </div>
  </template>

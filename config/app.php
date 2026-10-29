@@ -55,6 +55,13 @@ return [
     'url' => env('APP_URL', 'http://localhost'),
 
     /*
+    | Public account sign-up page (registration with email verification).
+    | Free calculators link here; override it if sign-up lives elsewhere.
+    */
+
+    'registration_url' => env('APP_REGISTRATION_URL', '/register'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------

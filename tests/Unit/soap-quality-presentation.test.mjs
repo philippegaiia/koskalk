@@ -8,7 +8,7 @@ function presentation(qualities = {}, applicability = {}) {
         backendCalculation: { properties: { qualities, quality_applicability: applicability } },
         number: value => Number(value ?? 0),
         format: (value, digits) => Number(value).toFixed(digits),
-        t: key => key,
+        t: (key, replacements = {}) => [key, ...Object.values(replacements)].join(' '),
     };
 
     return Object.defineProperties(state, Object.getOwnPropertyDescriptors(createPresentationSection()));
@@ -22,9 +22,9 @@ test('keeps the advisable cleansing ceiling at forty and accepts high mildness',
     assert.equal(view.qualityExplanation('cleansing_strength', 40), 'qualities.cleansing_balanced');
     assert.equal(view.qualityExplanation('cleansing_strength', 41), 'qualities.cleansing_high');
     assert.equal(view.qualityTone('mildness', 95), 'ideal');
-    assert.equal(view.qualityFlags().some(flag => flag.label === 'High cleansing'), false);
+    assert.equal(view.qualityFlags().some(flag => flag.label === 'qualities.high_cleansing'), false);
     view.backendCalculation.properties.qualities.cleansing_strength = 41;
-    assert.equal(view.qualityFlags().some(flag => flag.label === 'High cleansing'), true);
+    assert.equal(view.qualityFlags().some(flag => flag.label === 'qualities.high_cleansing'), true);
 });
 
 test('shows supported liquid tendencies while omitting unavailable bar and skin predictions', () => {
@@ -42,10 +42,10 @@ test('shows supported liquid tendencies while omitting unavailable bar and skin 
     assert.deepEqual(view.latherAndFeelQualityRows().map(row => row.key), [
         'bubble_volume', 'creamy_lather', 'lather_stability',
     ]);
-    assert.equal(view.qualityDisplayValue({ key: 'bubble_volume', value: 50 }), '50.0 tendency');
+    assert.equal(view.qualityDisplayValue({ key: 'bubble_volume', value: 50 }), 'qualities.tendency_value 50.0');
     assert.equal(view.qualityTone('bubble_volume', 50), 'neutral');
     assert.equal(view.targetZoneStyle('bubble_volume'), null);
-    assert.equal(view.qualityFlags().some(flag => flag.label === 'High cleansing'), false);
+    assert.equal(view.qualityFlags().some(flag => flag.label === 'qualities.high_cleansing'), false);
 });
 
 test('presents shrinkage as a localized risk tendency alongside four week hardness', () => {

@@ -1,11 +1,14 @@
 <?php
 
+use App\Models\InterfaceTranslation;
 use App\Models\ProductArea;
 use App\Models\ProductCategory;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
+use App\Models\SupportedLocale;
 use App\Models\User;
 use App\Services\ProductCreationCatalog;
+use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 
@@ -131,6 +134,27 @@ it('opens the Workbench only after a compatible Product Type is selected', funct
     $this->actingAs($user)
         ->get(route('recipes.choose-type', ['entry' => 'unknown']))
         ->assertNotFound();
+});
+
+it('titles the Workbench in the user locale', function (): void {
+    $this->seed(SupportedLocaleSeeder::class);
+    SupportedLocale::query()->where('code', 'fr')->update(['is_active' => true]);
+    $fixture = productCreationFixture();
+    collect(File::json(database_path('seeders/data/interface-translations.json'))['translations'])
+        ->where('group', 'workbench')
+        ->filter(fn (array $row): bool => str_starts_with($row['key'], 'page.'))
+        ->each(fn (array $row) => InterfaceTranslation::query()->create($row));
+
+    $this->actingAs(User::factory()->create(['locale' => 'fr']))
+        ->get(route('recipes.create', [
+            'family' => 'cosmetic',
+            'type' => $fixture['faceCream']->slug,
+        ]))
+        ->assertSuccessful()
+        ->assertSee('<title>Nouvelle formule cosmétique · ', false)
+        ->assertSee('Atelier de formulation')
+        ->assertDontSee('Recipe workbench')
+        ->assertDontSee('New Cosmetic Formula');
 });
 
 it('offers liquid soap as a Product choice only while its family is active', function (): void {

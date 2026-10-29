@@ -12,7 +12,7 @@
  <p class="mt-1 max-w-3xl text-sm text-[var(--color-ink-soft)]">{{ __('workbench.output.cosmetic.help') }}</p>
  </div>
  <div class="flex flex-col items-start gap-3 lg:items-end">
- @include('livewire.dashboard.partials.recipe-workbench.label-market-switcher')
+ @includeUnless(($isGuestCalculator ?? false), 'livewire.dashboard.partials.recipe-workbench.label-market-switcher')
  <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">{{ __('workbench.output.cosmetic.basis') }}</span>
  </div>
  </div>
@@ -83,7 +83,7 @@
  </section>
 
  @include('livewire.dashboard.partials.recipe-workbench.ingredient-list-preview')
- @include('livewire.dashboard.partials.recipe-workbench.restrictions-preview')
+ @includeUnless(($isGuestCalculator ?? false), 'livewire.dashboard.partials.recipe-workbench.restrictions-preview')
 @else
  <section class="sk-card p-5" aria-labelledby="output-soap-heading">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -92,7 +92,7 @@
  <p class="mt-1 max-w-3xl text-sm text-[var(--color-ink-soft)]">{{ ($isLiquidSoapWorkbench ?? false) ? __('workbench.output.soap.liquid_help') : __('workbench.output.soap.help') }}</p>
  </div>
  <div class="flex flex-col items-start gap-3 lg:items-end">
- @include('livewire.dashboard.partials.recipe-workbench.label-market-switcher')
+ @includeUnless(($isGuestCalculator ?? false), 'livewire.dashboard.partials.recipe-workbench.label-market-switcher')
  <span class="rounded-full border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">{{ ($isLiquidSoapWorkbench ?? false) ? __('workbench.output.soap.liquid_basis') : __('workbench.output.soap.basis') }}</span>
  </div>
  </div>
@@ -221,7 +221,7 @@
  </section>
 
  @include('livewire.dashboard.partials.recipe-workbench.ingredient-list-preview')
- @include('livewire.dashboard.partials.recipe-workbench.restrictions-preview')
+ @includeUnless(($isGuestCalculator ?? false), 'livewire.dashboard.partials.recipe-workbench.restrictions-preview')
 
  <template x-if="curedSoapIngredientRows.some(row => row.source_is_user_owned?.some(Boolean)) || (activeIngredientListVariant?.declaration_rows ?? []).some(row => row.source_is_user_owned?.some(Boolean))">
       <p class="px-1 text-[0.6875rem] leading-4 text-[var(--color-ink-soft)]">
@@ -231,7 +231,14 @@
  </template>
 @endif
 
- @unless ($isPublicCalculator)
+ @if ($isGuestCalculator ?? false)
+ <x-workflow-action-bar max-width="max-w-app" data-guest-output-action-bar>
+     <x-slot:leading><p class="text-xs text-[var(--color-ink-soft)]" x-text="guestStorageMessage"></p></x-slot:leading>
+     <button type="button" @click="printGuestFormula()" :disabled="!guestCanPrint || guestOutputPending" class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap">
+         <x-action-icon name="printer" />{{ __('formula_documents.actions.print_short') }}
+     </button>
+ </x-workflow-action-bar>
+ @elseif (! $isPublicCalculator)
         <x-workflow-action-bar max-width="max-w-app" data-output-save-bar>
  <x-slot:leading>
  <p x-show="saveMessage" class="text-sm text-[var(--color-ink-soft)]" role="status" x-text="saveMessage"></p>
@@ -240,5 +247,5 @@
  <span x-text="isFormulaLocked ? t('header.locked') : (isSaving ? t('header.saving') : t('header.save'))"></span>
  </button>
  </x-workflow-action-bar>
- @endunless
+ @endif
 </div>

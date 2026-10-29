@@ -7,6 +7,7 @@ use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\ProductFamily;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Collection;
 
 class RecipeWorkbenchIngredientCatalogBuilder
 {
@@ -15,9 +16,10 @@ class RecipeWorkbenchIngredientCatalogBuilder
     ) {}
 
     /**
+     * @param  Collection<int, Ingredient>|null  $ingredients
      * @return array<int, array<string, mixed>>
      */
-    public function build(?User $user, ?ProductFamily $productFamily = null): array
+    public function build(?User $user, ?ProductFamily $productFamily = null, ?Collection $ingredients = null): array
     {
         $translationLocales = Ingredient::translationLocaleCandidates();
         $isCosmetic = $productFamily?->slug === 'cosmetic'
@@ -43,7 +45,7 @@ class RecipeWorkbenchIngredientCatalogBuilder
             $relations['translations'] = fn ($query) => $query->whereIn('locale', $translationLocales);
         }
 
-        return Ingredient::query()
+        $ingredients ??= Ingredient::query()
             ->with($relations)
             ->where('is_active', true)
             ->accessibleTo($user)
@@ -51,8 +53,10 @@ class RecipeWorkbenchIngredientCatalogBuilder
                 fn (IngredientCategory $category): string => $category->value,
                 IngredientCategory::cases(),
             ))
-            ->get()
-            ->filter(fn (Ingredient $ingredient): bool => $isCosmetic || $ingredient->availableWorkbenchPhases() !== [])
+            ->get();
+        $ingredients->loadMissing($relations);
+
+        return $ingredients->filter(fn (Ingredient $ingredient): bool => $isCosmetic || $ingredient->availableWorkbenchPhases() !== [])
             ->map(function (Ingredient $ingredient) use ($defaultPricesByIngredient, $translationLocales, $isLiquidSoap): array {
                 $category = $ingredient->category;
                 $subcategory = $ingredient->subcategory;

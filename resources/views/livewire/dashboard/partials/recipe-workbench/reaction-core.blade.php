@@ -1,4 +1,4 @@
-<section id="soap-phase-saponified_oils" class="overflow-hidden sk-card sk-phase-core sk-tone-chemistry transition-shadow duration-300" aria-labelledby="reaction-core-heading">
+<section id="soap-phase-saponified_oils" class="overflow-hidden sk-card sk-zone-work sk-phase-core sk-tone-chemistry transition-shadow duration-300" aria-labelledby="reaction-core-heading">
  <div class="sk-section-header sk-section-header-formula border-b border-[var(--color-line)] px-5 py-4">
  <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
  <h3 id="reaction-core-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.saponification.title') }} <x-contextual-help.trigger topic="soap.reaction_core" :topics="$contextualHelp['topics'] ?? []" /></h3>
@@ -71,7 +71,7 @@
  @focus="open = true; reposition()"
  @blur="open = false"
  @click.prevent="open = !open; if (open) { reposition(); }"
-	 class="grid size-9 place-items-center rounded-full border border-[var(--color-line)] bg-white text-[11px] font-semibold text-[var(--color-ink-soft)] transition-colors duration-150 motion-reduce:transition-none hover:border-[var(--color-line-strong)] hover:text-[var(--color-ink-strong)]" aria-label="Show ingredient details" aria-haspopup="dialog" :aria-expanded="open.toString()">
+	 class="grid size-9 place-items-center rounded-full text-[var(--color-ink-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)] focus-visible:bg-[var(--color-field-muted)]" aria-label="Show ingredient details" aria-haspopup="dialog" :aria-expanded="open.toString()">
  <x-action-icon name="info" />
  </button>
  </template>
@@ -164,12 +164,12 @@
  </div>
 
  <section class="mt-5" aria-labelledby="lye-water-summary-heading">
- <p id="lye-water-summary-heading" class="sk-eyebrow">{{ __('workbench.saponification.lye_water') }}</p>
+ <h4 id="lye-water-summary-heading" class="text-sm font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.saponification.lye_water') }}</h4>
 
  <div class="mt-3 grid grid-cols-[repeat(auto-fit,minmax(min(100%,12rem),1fr))] gap-3">
  <template x-for="card in lyeSummaryCards" :key="`${lyeType}-${card.id}`">
  <div class="sk-inset flex min-h-[4.25rem] min-w-0 flex-col px-3 py-2.5">
- <p class="sk-eyebrow" x-text="card.label"></p>
+ <p class="text-xs font-medium leading-4 text-[var(--color-ink-soft)]" x-text="card.label"></p>
  <p class="numeric mt-2 whitespace-nowrap text-xl font-semibold text-[var(--color-ink-strong)]" x-text="formatLyeSummaryCardValue(card)"></p>
  </div>
  </template>

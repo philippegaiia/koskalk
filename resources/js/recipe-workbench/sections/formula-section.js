@@ -309,7 +309,7 @@ export function createFormulaSection() {
                 label: this.isCosmeticFormula ? this.t('cosmetic.balance_label') : this.t('status.oils'),
                 value: `${this.formatPercentageTotal(total)}%`,
                 detail: this.oilPercentageIsBalanced
-                    ? this.t('status.ready')
+                    ? (this.isGuestCalculator ? this.t('status.amounts_calculated') : this.t('status.ready'))
                     : this.t('status.balanced_remaining', { amount: this.format(delta, 2) }),
                 tone: this.oilPercentageIsBalanced ? 'success' : 'danger',
             };
@@ -396,14 +396,14 @@ export function createFormulaSection() {
                 cards.splice(1, 0, this.lyeWaterDiagnostic);
             }
 
-            return cards;
+            return this.isGuestCalculator ? cards.filter((card) => !['compliance-context', 'formula-state'].includes(card.id)) : cards;
         },
 
         get formulaDiagnosticSummaryCards() {
             return [
                 this.formulaBalanceDiagnostic,
                 this.zeroQuantityDiagnostic,
-                this.draftDiagnostic,
+                ...(this.isGuestCalculator ? [] : [this.draftDiagnostic]),
             ];
         },
 

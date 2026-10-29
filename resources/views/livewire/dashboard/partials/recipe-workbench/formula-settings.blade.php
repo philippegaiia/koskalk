@@ -17,7 +17,7 @@
 <section class="sk-card px-4 py-3" aria-labelledby="formula-setup-heading">
 	<div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 		<div class="min-w-0">
-			<p id="formula-setup-heading" class="sk-eyebrow">{{ __('workbench.settings.title') }}</p>
+			<h3 id="formula-setup-heading" class="text-base font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.settings.title') }}</h3>
 			<div x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="! isFormulaSettingsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
 				<div class="overflow-hidden">
 					<div class="mt-1.5 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 text-xs" data-formula-settings-primary role="group" aria-label="Primary formulation settings">
@@ -54,6 +54,7 @@
 			<fieldset @if (! $isPublicCalculator && ! $canEditRecipe) disabled @endif :disabled="!canWriteRecipe || (isSaving && !hasSavedRecipe)" :inert="isSaving && !hasSavedRecipe" :class="!canWriteRecipe ? 'opacity-75' : ''" class="mt-4 transition">
 @if ($isCosmeticWorkbench)
 	 <div class="space-y-4">
+@unless ($isGuestCalculator ?? false)
 	 <div data-cosmetic-primary-settings class="grid min-w-0 gap-4 lg:grid-cols-2">
 @unless ($isPublicCalculator)
     @include('livewire.dashboard.partials.recipe-workbench.formula-output-type', ['inlineFormulaOutputType' => true])
@@ -82,6 +83,7 @@
 	 </template>
 	 </div>
 	 </div>
+@endunless
 	 <div class="grid min-w-0 gap-4 lg:grid-cols-2 xl:grid-cols-4">
 	 <div class="sk-inset min-w-0 p-4">
 	 <p id="setting-batch-weight" class="sk-eyebrow">{{ __('workbench.common.total_batch') }}</p>
@@ -93,6 +95,7 @@
 	 </div>
 	 <input aria-labelledby="setting-batch-weight" x-effect="syncOilWeightInput($el)" @input="updateOilWeight($event)" @blur="normalizeOilWeightBlur($event)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] transition" />
 	 </div>
+@unless ($isGuestCalculator ?? false)
 	 <div class="sk-inset sk-tone-info min-w-0 p-4">
 	 <p id="setting-exposure" class="sk-eyebrow">{{ __('workbench.settings.product_use') }}</p>
 	 <div role="radiogroup" aria-label="{{ __('workbench.accessibility.product_use') }}" class="mt-3 flex flex-wrap gap-2">
@@ -129,12 +132,13 @@
 		 </div>
 	 </div>
 	 </div>
+@endunless
 	 </div>
 	 </div>
 @else
 	 <div>
 	 <div class="grid min-w-0 gap-4 @3xl/workbench:grid-cols-2 @4xl/workbench:grid-cols-3 @5xl/workbench:grid-cols-4">
-	 <div class="sk-inset sk-tone-chemistry min-w-0 p-4">
+	 <div class="sk-inset min-w-0 p-4">
 	 <p id="setting-lye-type" class="sk-eyebrow">{{ __('workbench.common.lye_type') }} <x-contextual-help.trigger topic="soap.alkali_and_purity" :topics="$contextualHelp['topics'] ?? []" /></p>
 	 <div role="radiogroup" aria-label="Lye type" class="mt-3 flex flex-wrap gap-2">
  @unless ($isLiquidSoapWorkbench ?? false)
@@ -171,7 +175,7 @@
 	 </div>
 	 <input aria-labelledby="setting-base-weight" x-effect="syncOilWeightInput($el)" @input="updateOilWeight($event)" @blur="normalizeOilWeightBlur($event)" type="text" inputmode="decimal" class="sk-input numeric mt-3" />
 	 </div>
-	 <div class="sk-inset sk-tone-chemistry min-w-0 p-4">
+	 <div class="sk-inset min-w-0 p-4">
 	 <p id="setting-water-mode" class="sk-eyebrow">{{ __('workbench.settings.water_mode') }} <x-contextual-help.trigger topic="soap.water_mode" :topics="$contextualHelp['topics'] ?? []" /></p>
 	 <div role="radiogroup" aria-label="Water calculation mode" class="mt-3 grid gap-2">
 	 <button type="button" role="radio" :aria-checked="waterMode === 'percent_of_oils'" @click="waterMode = 'percent_of_oils'" :class="waterMode === 'percent_of_oils' ? 'border-[var(--color-active)] bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'border-[var(--color-field-outline)] bg-transparent text-[var(--color-ink-strong)] hover:border-[var(--color-line-strong)] hover:bg-[var(--color-field-muted)]'" class="rounded-[1rem] border px-4 py-2.5 text-left text-xs font-medium transition-colors">{{ __('workbench.common.water_percent') }}</button>
@@ -180,7 +184,7 @@
 	 </div>
 	 <input aria-labelledby="setting-water-mode" x-model="waterValue" @blur="normalizeDecimalBlur($event)" type="text" inputmode="decimal" class="sk-input numeric mt-3" />
 	 </div>
-	 <div class="sk-inset sk-tone-chemistry min-w-0 p-4">
+	 <div class="sk-inset min-w-0 p-4">
 	 <p id="setting-superfat" class="sk-eyebrow">{{ __('workbench.settings.lye_reduction') }} <x-contextual-help.trigger topic="soap.superfat" :topics="$contextualHelp['topics'] ?? []" /></p>
 	 <div class="mt-3 flex items-center justify-between gap-3 text-sm">
 	 <span>
@@ -219,6 +223,7 @@
 	 </div>
 	 </div>
 
+@unless ($isGuestCalculator ?? false)
 	 <div @class([
 	 'mt-4 grid min-w-0 gap-4 @3xl/workbench:grid-cols-2',
 	 '@4xl/workbench:grid-cols-3' => ! $isPublicCalculator,
@@ -249,6 +254,7 @@
 	 </div>
 	 </div>
 	 </div>
+@endunless
 
 @unless ($isPublicCalculator)
 	 <div x-show="productionOutputType === 'manufactured_ingredient'" x-cloak class="mt-4 sk-inset sk-tone-info p-4">
@@ -256,6 +262,7 @@
 	 </div>
 @endunless
 
+@unless ($isGuestCalculator ?? false)
 	 <div data-formula-compliance-settings x-cloak class="grid transition-[grid-template-rows,visibility] duration-300 ease-out motion-reduce:transition-none" :class="isComplianceSettingsOpen || !canWriteRecipe ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'">
 	 <div class="overflow-hidden">
 	 <div class="mt-4 space-y-4">
@@ -272,7 +279,7 @@
 	 </div>
 	 </div>
 	 </div>
-	 <div class="mt-4 sk-inset sk-tone-chemistry p-4">
+	 <div class="mt-4 sk-inset p-4">
 	 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 	 <div>
 	 <p class="sk-eyebrow">{{ __('workbench.settings.lye_liquid') }}</p>
@@ -332,6 +339,7 @@
 	 </div>
 	 </div>
 	 </div>
+@endunless
 	 </div>
 @endif
 </fieldset>

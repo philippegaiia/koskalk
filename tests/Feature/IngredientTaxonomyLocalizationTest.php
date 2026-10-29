@@ -47,6 +47,24 @@ it('includes every taxonomy translation in every supported non-English locale', 
     }
 });
 
+it('does not ship English placeholders as taxonomy translations', function () {
+    $catalogue = json_decode(file_get_contents(database_path('seeders/data/interface-translations.json')), true, flags: JSON_THROW_ON_ERROR);
+    $taxonomyRows = collect($catalogue['translations'])
+        ->where('group', 'ingredients')
+        ->filter(fn (array $row): bool => preg_match('/^(sub)?categories\.[a-z0-9_]+\.(label|description)$/', $row['key']) === 1);
+
+    expect($taxonomyRows)->not->toBeEmpty();
+
+    foreach ($taxonomyRows as $row) {
+        foreach ($catalogue['locales'] as $locale) {
+            expect($row['text'][$locale])
+                ->not->toMatch('/^(Kategorie|Categoría|Catégorie|Categoria|Categorie)\s*:/u', "{$locale} {$row['key']} is a prefixed placeholder")
+                ->not->toContain('Classification guidance')
+                ->not->toContain('retained for migration');
+        }
+    }
+});
+
 it('labels the stable preservatives subcategory for preservatives and preservation boosters', function (): void {
     $english = require lang_path('en/ingredients.php');
 

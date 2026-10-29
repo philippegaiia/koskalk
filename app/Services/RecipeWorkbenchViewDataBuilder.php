@@ -167,9 +167,12 @@ class RecipeWorkbenchViewDataBuilder
     }
 
     /**
+     * Saved-recipe facts the bench shows, such as whether a version has been
+     * published. Saves return them because they do not re-render the bench.
+     *
      * @return array<string, mixed>|null
      */
-    private function recipeData(?Recipe $recipe, ?User $user): ?array
+    public function recipeData(?Recipe $recipe, ?User $user): ?array
     {
         if (! $recipe instanceof Recipe) {
             return null;

@@ -174,6 +174,12 @@ export function createRecipeWorkbenchOutputSection(config) {
         outputFallbackLabel: '',
         outputDestroyed: false,
 
+        setOutputRecipe(recipePublicId) {
+            if (this.outputConfig && recipePublicId) {
+                this.outputConfig = { ...this.outputConfig, recipe: recipePublicId };
+            }
+        },
+
         destroyOutputSection() {
             this.outputDestroyed = true;
             clearFallback(this);

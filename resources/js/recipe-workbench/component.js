@@ -401,6 +401,21 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
             }
         },
 
+        /**
+         * The bench root ignores Livewire re-renders, so saved-recipe facts that
+         * only the server knows arrive with save and delete responses instead.
+         */
+        applySavedRecipeState(recipe) {
+            if (!recipe || typeof recipe !== 'object') {
+                return;
+            }
+
+            this.hasSavedFormula = Boolean(recipe.has_saved_formula);
+            this.savedRecipeUrl = recipe.saved_formula_url ?? null;
+            this.isFormulaLocked = Boolean(recipe.is_locked);
+            this.setOutputRecipe?.(recipe.public_id ?? null);
+        },
+
         toggleFormulaDiagnostics() {
             this.isFormulaDiagnosticsOpen = !this.isFormulaDiagnosticsOpen;
         },

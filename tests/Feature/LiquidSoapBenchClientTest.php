@@ -324,7 +324,7 @@ JS);
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
 
-it('stays saved after one save when the page re-renders with the server formula during the request', function () {
+it('stays saved after one save when the server resizes the formula it saved', function () {
     $process = runLiquidSoapBenchScript(<<<'JS'
 const workbench = bench(liquidFamily);
 workbench.oilWeight = 10;
@@ -337,20 +337,27 @@ workbench.activateSavedRecipeEditing = async () => {};
 workbench.refreshDirtyBaseline();
 
 // More acid changes the final batch, so the server resizes the fragrance
-// kept at 0.9138% of it. The save's Livewire re-render re-initializes the
-// bench from that saved formula before the save call returns.
+// kept at 0.9138% of it and returns that saved formula with the response.
 workbench.setLiquidNeutralizerWeight('1.9');
 workbench.$wire = { data: {}, publish: async () => {
-    workbench.phaseItems.fragrance[0].percentage = 6.443;
-    workbench.refreshDirtyBaseline();
+    const phaseItems = JSON.parse(JSON.stringify(workbench.phaseItems));
+    phaseItems.fragrance[0].percentage = 6.443;
 
-    return { ok: true };
+    return { ok: true, snapshot: { draft: {
+        formulaName: workbench.formulaName,
+        oilUnit: 'kg',
+        oilWeight: 10,
+        phases: workbench.phaseOrder,
+        phaseItems,
+        liquidProcess: { ...workbench.liquidProcess },
+    } } };
 } };
 await workbench.publish();
 assert.equal(workbench.saveStatus, 'success');
+assert.equal(workbench.phaseItems.fragrance[0].percentage, 6.443);
 assert.equal(workbench.hasUnsavedWorkbenchChanges(), false);
 
-// A dose typed while a save without a re-render is running stays unsaved.
+// A dose typed while a save is running stays unsaved.
 workbench.$wire = { data: {}, publish: async () => {
     workbench.setLiquidNeutralizerWeight('2.1');
 

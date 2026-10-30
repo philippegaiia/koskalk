@@ -41,7 +41,6 @@ it('creates a paste intake batch with one or more identities', function (): void
             'input_method' => 'paste',
             'pasted_input' => "current_name,inci_name\nCoconut Oil,\nArgan Oil,Argania Spinosa Kernel Oil",
             'family_hint' => 'lipids',
-            'allow_gap_research' => false,
         ])
         ->call('create')
         ->assertHasNoFormErrors();

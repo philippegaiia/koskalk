@@ -33,7 +33,6 @@ final class IngredientEnrichmentSubjectBuilder
                 IngredientCategory::tryFrom((string) ($canonical['category'] ?? '')),
             ),
             fingerprint: $built['fingerprint'],
-            allowGapResearch: false,
         );
     }
 
@@ -78,7 +77,6 @@ final class IngredientEnrichmentSubjectBuilder
             duplicateResolution: $item->duplicate_resolution,
             researchFamily: $family,
             fingerprint: hash('sha256', $this->snapshotBuilder->canonicalJson($fingerprintInput)),
-            allowGapResearch: (bool) ($item->batch?->allow_gap_research ?? false),
         );
     }
 

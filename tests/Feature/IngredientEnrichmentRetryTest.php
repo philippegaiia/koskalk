@@ -54,7 +54,7 @@ it('retries an unresolved warning from its stage boundary and enables web gap re
         ],
     ]);
 
-    app(RetryIngredientEnrichmentFailures::class)->handle($admin, $batch, allowGapResearch: true);
+    app(RetryIngredientEnrichmentFailures::class)->handle($admin, $batch);
 
     expect($item->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Pending)
         ->and(array_keys($item->fresh()->research_stages))->toBe([
@@ -66,7 +66,7 @@ it('retries an unresolved warning from its stage boundary and enables web gap re
 
     Bus::assertBatched(function (PendingBatch $pending): bool {
         return collect($pending->jobs)->contains(
-            fn (mixed $job): bool => $job instanceof ResearchIngredientEnrichment && $job->allowGapResearch,
+            fn (mixed $job): bool => $job instanceof ResearchIngredientEnrichment,
         );
     });
 });

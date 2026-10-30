@@ -27,7 +27,6 @@ it('accepts one ten and seventy intake rows with the same queue workflow', funct
     $admin = User::factory()->create(['is_admin' => true]);
     $intake = IngredientIntakeBatch::factory()->create([
         'family_hint' => IngredientResearchFamily::Colourants,
-        'allow_gap_research' => true,
     ]);
 
     foreach (range(1, $count) as $row) {
@@ -49,8 +48,6 @@ it('accepts one ten and seventy intake rows with the same queue workflow', funct
         ->and($intake->fresh()->queued_count)->toBe($count)
         ->and($intake->items()->where('status', IngredientIntakeItemStatus::Queued)->count())->toBe($count)
         ->and($enrichment->items->every(fn ($item): bool => data_get($item->snapshot, 'research_rules.research_family') === 'colourants'))
-        ->toBeTrue()
-        ->and($enrichment->items->every(fn ($item): bool => data_get($item->snapshot, 'research_rules.allow_gap_research') === true))
         ->toBeTrue();
 
     Bus::assertBatched(function (PendingBatch $pending) use ($count): bool {

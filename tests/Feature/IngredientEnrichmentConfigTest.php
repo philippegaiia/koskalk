@@ -1,6 +1,5 @@
 <?php
 
-
 it('configures direct batches and an official web search domain allow list safely', function (): void {
     expect(config('ingredient-enrichment.direct_ai'))->toMatchArray([
         'default_batch_size' => 10,
@@ -41,8 +40,8 @@ it('keeps guidance research policy separate from the official metadata domain al
         ->toMatchArray(['enabled' => false])
         ->and(file_get_contents(base_path('.env.example')))
         ->toContain('INGREDIENT_ENRICHMENT_GUIDANCE_GENERATION_ENABLED=false')
-        ->and(config('ingredient-enrichment.openai.gap_research'))
-        ->toMatchArray(['enabled' => false])
+        ->and(config('ingredient-enrichment.openai.gap_research'))->toBeNull()
+        ->and(file_get_contents(base_path('.env.example')))->not->toContain('GAP_RESEARCH')
         ->and(config('ingredient-enrichment.openai.guidance_research.maximum_tool_calls'))->toBe(5)
         ->and(config('ingredient-enrichment.openai.guidance_research.allowed_source_kinds'))
         ->toContain('supplier_technical', 'professional_reference', 'specialist_reference')

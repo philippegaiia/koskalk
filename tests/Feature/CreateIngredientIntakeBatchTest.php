@@ -30,7 +30,6 @@ it('creates a draft intake batch for one or more parsed rows', function (int $co
         'notes' => 'Imported for review',
         'input_method' => IngredientIntakeInputMethod::Paste,
         'family_hint' => IngredientResearchFamily::Lipids,
-        'allow_gap_research' => true,
     ], $rows);
 
     expect($batch)->toBeInstanceOf(IngredientIntakeBatch::class)

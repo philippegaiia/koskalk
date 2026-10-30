@@ -25,7 +25,7 @@ class ResearchIngredientEnrichmentItem
         private readonly IngredientEnrichmentSubjectAvailability $availability,
     ) {}
 
-    public function handle(int $itemId, bool $allowGapResearch = false): void
+    public function handle(int $itemId): void
     {
         $record = DB::transaction(function () use ($itemId): ?array {
             $item = IngredientEnrichmentBatchItem::query()->lockForUpdate()->find($itemId);

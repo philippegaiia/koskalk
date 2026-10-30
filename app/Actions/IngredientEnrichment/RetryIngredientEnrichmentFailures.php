@@ -41,7 +41,6 @@ class RetryIngredientEnrichmentFailures
     public function handle(
         User $actor,
         IngredientEnrichmentBatch $batch,
-        bool $allowGapResearch = false,
     ): IngredientEnrichmentBatch {
         Gate::forUser($actor)->authorize('retry', $batch);
         /** @var array{ids:list<int>, mode:IngredientEnrichmentBatchMode|null} $retry */
@@ -133,12 +132,12 @@ class RetryIngredientEnrichmentFailures
         $mode = $retry['mode'];
 
         if ($ids !== []) {
-            $jobs = collect($ids)->map(function (int $id) use ($mode, $allowGapResearch): object {
+            $jobs = collect($ids)->map(function (int $id) use ($mode): object {
                 if ($mode instanceof IngredientEnrichmentBatchMode && $mode->isGuidance()) {
                     return new GenerateIngredientGuidanceRefresh($id);
                 }
 
-                return new ResearchIngredientEnrichment($id, $allowGapResearch);
+                return new ResearchIngredientEnrichment($id);
             })->all();
             $laravelBatch = Bus::batch($jobs)
                 ->name("ingredient-enrichment-retry:{$batch->public_id}")->allowFailures()

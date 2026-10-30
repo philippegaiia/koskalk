@@ -79,8 +79,10 @@ class IngredientEnrichmentPipeline
             IngredientEnrichmentResearchStage::EuOfficial,
             fn (): IngredientSourceStageResult => $this->eurLex->verify([
                 'inci_name' => is_array($euCandidate) ? ($euCandidate['inci_name'] ?? null) : ($record['inci_name'] ?? null),
-                'soap_inci_naoh_name' => data_get($euStructured->data, 'soap_salts.naoh.inci_name'),
-                'soap_inci_koh_name' => data_get($euStructured->data, 'soap_salts.koh.inci_name'),
+                'soap_inci_naoh_name' => data_get($euStructured->data, 'soap_salts.naoh.inci_name')
+                    ?? $this->counterpartSoapSalt(data_get($euStructured->data, 'soap_salts.koh.inci_name'), 'naoh'),
+                'soap_inci_koh_name' => data_get($euStructured->data, 'soap_salts.koh.inci_name')
+                    ?? $this->counterpartSoapSalt(data_get($euStructured->data, 'soap_salts.naoh.inci_name'), 'koh'),
             ]),
         );
         $usCandidate = $this->identityMatcher->select(
@@ -616,16 +618,22 @@ class IngredientEnrichmentPipeline
     private function result(array $input, array $facts, array $editorial): array
     {
         $proposal = is_array($facts['proposal'] ?? null) ? $facts['proposal'] : [];
-        $soapNaoh = filled($proposal['soap_inci_naoh_name'] ?? null)
-            ? $proposal['soap_inci_naoh_name']
-            : ($editorial['soap_inci_naoh_name'] ?? null);
-        $soapKoh = filled($proposal['soap_inci_koh_name'] ?? null)
-            ? $proposal['soap_inci_koh_name']
-            : ($editorial['soap_inci_koh_name'] ?? null);
+        $soapSalts = [];
+        $derivedSoapSalts = [];
+        foreach (['naoh' => 'koh', 'koh' => 'naoh'] as $cation => $counterpart) {
+            $field = "soap_inci_{$cation}_name";
+            $verifiedCounterpart = $proposal["soap_inci_{$counterpart}_name"] ?? null;
+            $derived = filled($proposal[$field] ?? null) ? null : $this->counterpartSoapSalt($verifiedCounterpart, $cation);
+            if ($derived !== null) {
+                $derivedSoapSalts["proposal.{$field}"] = (string) $verifiedCounterpart;
+            }
+            $soapSalts[$field] = filled($proposal[$field] ?? null)
+                ? $proposal[$field]
+                : ($derived ?? $editorial[$field] ?? null);
+        }
         $proposal = [
             ...$proposal,
-            'soap_inci_naoh_name' => $soapNaoh,
-            'soap_inci_koh_name' => $soapKoh,
+            ...$soapSalts,
             'display_name' => $editorial['display_name'] ?? $proposal['display_name'] ?? null,
             'category' => filled($proposal['category'] ?? null)
                 ? $proposal['category']
@@ -651,7 +659,7 @@ class IngredientEnrichmentPipeline
                 ...($facts['field_confidence'] ?? []),
                 ...$this->editorialFieldConfidence($editorial, $proposal),
             ],
-            'value_provenance' => $this->valueProvenance($input, $facts, $editorial, $proposal),
+            'value_provenance' => $this->valueProvenance($input, $facts, $editorial, $proposal, $derivedSoapSalts),
             'evidence' => [
                 ...($facts['evidence'] ?? []),
                 ...collect($editorial['guidance_evidence'] ?? [])
@@ -733,9 +741,10 @@ class IngredientEnrichmentPipeline
      * @param  array<string, mixed>  $facts
      * @param  array<string, mixed>  $editorial
      * @param  array<string, mixed>  $proposal
+     * @param  array<string, string>  $derivedSoapSalts  derived salt field => verified counterpart name
      * @return list<array{field:string,kind:string,reasoning:string,source_urls:list<string>}>
      */
-    private function valueProvenance(array $input, array $facts, array $editorial, array $proposal): array
+    private function valueProvenance(array $input, array $facts, array $editorial, array $proposal, array $derivedSoapSalts = []): array
     {
         $evidence = collect($facts['evidence'] ?? [])
             ->filter(fn (mixed $row): bool => is_array($row) && is_string($row['field'] ?? null))
@@ -801,9 +810,12 @@ class IngredientEnrichmentPipeline
             $rows[] = [
                 'field' => $field,
                 'kind' => filled($value) ? ($hasSource ? 'source_confirmed' : 'ai_proposed') : 'unresolved',
-                'reasoning' => filled($value)
-                    ? ($hasSource ? 'Matched to an exact deterministic soap entry.' : 'Proposed independently from the reviewed base identity because no exact official salt entry was located.')
-                    : 'No independently verified salt declaration was available.',
+                'reasoning' => match (true) {
+                    ! filled($value) => 'No independently verified salt declaration was available.',
+                    $hasSource => 'Matched to an exact deterministic soap entry.',
+                    isset($derivedSoapSalts[$field]) => "Derived from the verified {$derivedSoapSalts[$field]} by swapping sodium and potassium; this name is not listed in the EU glossary.",
+                    default => 'Proposed independently from the reviewed base identity because no exact official salt entry was located.',
+                },
                 'source_urls' => $this->sourceUrls($fieldEvidence->all()),
             ];
         }
@@ -896,6 +908,26 @@ class IngredientEnrichmentPipeline
     }
 
     /** @param callable(): IngredientSourceStageResult $callback */
+    /**
+     * Sodium and potassium soaps of one oil share the INCI stem, so the
+     * missing salt is the verified one with its cation swapped
+     * ("SODIUM ARGANATE" -> "POTASSIUM ARGANATE"). The caller still checks
+     * the derived name against the official glossary.
+     */
+    private function counterpartSoapSalt(mixed $name, string $targetCation): ?string
+    {
+        if (! is_string($name)) {
+            return null;
+        }
+
+        [$from, $to] = $targetCation === 'koh' ? ['SODIUM', 'POTASSIUM'] : ['POTASSIUM', 'SODIUM'];
+        if (preg_match('/^'.$from.'\s+(?<stem>\S.*)$/iu', trim($name), $parts) !== 1) {
+            return null;
+        }
+
+        return $to.' '.mb_strtoupper(trim($parts['stem']));
+    }
+
     private function runStage(
         int $itemId,
         IngredientEnrichmentResearchStage $stage,

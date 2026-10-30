@@ -231,6 +231,113 @@ it('runs deterministic stages before one editorial pass and resumes their persis
     expect($item->fresh()->research_stages['eu_structured']['source_calls'])->toBe(1);
 });
 
+it('derives the missing soap salt by swapping sodium and potassium', function (bool $glossaryListsPotassium, string $expectedKind): void {
+    config()->set('interface-translations.catalogue_locales', []);
+    $item = IngredientEnrichmentBatchItem::factory()->create([
+        'catalog_key' => 'argan_oil',
+        'snapshot' => [
+            'catalog_key' => 'argan_oil',
+            'source_fingerprint' => str_repeat('a', 64),
+            'current' => [
+                'canonical' => ['display_name' => 'Argan oil', 'inci_name' => null, 'category' => 'lipids', 'subcategory' => 'vegetable_oils'],
+                'identifiers' => [],
+            ],
+            'vocabulary' => ['locales' => []],
+        ],
+        'source_fingerprint' => str_repeat('a', 64),
+    ]);
+    app()->instance(CosingCheckerClient::class, new class extends CosingCheckerClient
+    {
+        public function __construct() {}
+
+        public function lookup(array $record): IngredientSourceStageResult
+        {
+            return new IngredientSourceStageResult(IngredientEnrichmentResearchStage::EuStructured, 'completed', [
+                'candidates' => [['cosing_ref' => '54495', 'inci_name' => 'ARGANIA SPINOSA KERNEL OIL', 'cas' => [], 'ec' => [], 'functions' => []]],
+                'soap_salts' => ['naoh' => ['inci_name' => 'SODIUM ARGANATE']],
+            ]);
+        }
+    });
+    $glossary = new class($glossaryListsPotassium) extends EurLexGlossaryClient
+    {
+        /** @var array<string, mixed> */
+        public array $requested = [];
+
+        public function __construct(private readonly bool $listsPotassium) {}
+
+        public function verify(array $facts): IngredientSourceStageResult
+        {
+            $this->requested = $facts;
+            $evidence = fn (string $field): array => [
+                'field' => $field,
+                'source_name' => 'EUR-Lex Common Ingredient Names Glossary',
+                'source_url' => 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32025D1175',
+                'source_tier' => 'official',
+                'confidence' => 'verified',
+                'source_version' => '32025D1175',
+                'source_updated_at' => null,
+                'retrieved_at' => now()->toIso8601String(),
+            ];
+
+            return new IngredientSourceStageResult(IngredientEnrichmentResearchStage::EuOfficial, 'completed', [
+                'matched' => true,
+                'common_ingredient_name' => 'ARGANIA SPINOSA KERNEL OIL',
+                'soap_inci_naoh_name' => 'SODIUM ARGANATE',
+                'soap_inci_koh_name' => $this->listsPotassium ? 'POTASSIUM ARGANATE' : null,
+            ], evidence: array_values(array_filter([
+                $evidence('proposal.inci_name'),
+                $evidence('proposal.soap_inci_naoh_name'),
+                $this->listsPotassium ? $evidence('proposal.soap_inci_koh_name') : null,
+            ])));
+        }
+    };
+    app()->instance(EurLexGlossaryClient::class, $glossary);
+    app()->instance(OpenFdaSubstanceClient::class, new class extends OpenFdaSubstanceClient
+    {
+        public function __construct() {}
+
+        public function lookup(array $record): IngredientSourceStageResult
+        {
+            return new IngredientSourceStageResult(IngredientEnrichmentResearchStage::UsIdentity, 'completed', [
+                'candidates' => [['unii' => '4V59G5UW9X', 'common_name' => 'ARGAN OIL', 'inci_names' => ['ARGANIA SPINOSA KERNEL OIL'], 'cas' => []]],
+            ]);
+        }
+    });
+    app()->instance(IngredientEditorialClient::class, new class implements IngredientEditorialClient
+    {
+        public function edit(array $facts): IngredientEditorialResponse
+        {
+            return new IngredientEditorialResponse(
+                editorial: [
+                    'display_name' => 'Argan oil',
+                    'saponification_name' => 'Argan',
+                    'soap_inci_koh_name' => 'POTASSIUM ARGAN OILATE',
+                    'soapmaking_relevant' => true,
+                    'translations' => [],
+                    'warnings' => [],
+                    'unresolved_questions' => [],
+                ],
+                responseId: 'resp_editorial',
+                requestId: 'req_editorial',
+                model: 'gpt-test',
+                inputTokens: 1,
+                outputTokens: 1,
+            );
+        }
+    });
+
+    $response = app(IngredientEnrichmentPipeline::class)->run($item->id);
+    $kohProvenance = collect($response->result['value_provenance'])->firstWhere('field', 'proposal.soap_inci_koh_name');
+
+    expect($glossary->requested['soap_inci_koh_name'])->toBe('POTASSIUM ARGANATE')
+        ->and(data_get($response->result, 'proposal.soap_inci_naoh_name'))->toBe('SODIUM ARGANATE')
+        ->and(data_get($response->result, 'proposal.soap_inci_koh_name'))->toBe('POTASSIUM ARGANATE')
+        ->and($kohProvenance['kind'])->toBe($expectedKind);
+})->with([
+    'glossary lists the potassium salt' => [true, 'source_confirmed'],
+    'glossary does not list the potassium salt' => [false, 'ai_proposed'],
+]);
+
 it('identifies the earliest failed or unresolved stage as the safe retry boundary', function (): void {
     $failed = IngredientEnrichmentBatchItem::factory()->create([
         'research_stages' => [

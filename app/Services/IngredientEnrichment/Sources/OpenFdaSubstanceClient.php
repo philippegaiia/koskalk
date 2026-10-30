@@ -36,12 +36,34 @@ class OpenFdaSubstanceClient
         $sourceCalls = 0;
         $candidates = [];
 
-        foreach ($this->queryTerms($record) as $term) {
+        $terms = $this->queryTerms($record);
+        // GSRS name search is an exact, case-sensitive match. Most names are upper
+        // case, but some records carry only a sentence-case name ("Coconut oil"),
+        // so sentence-case forms are tried only when no upper-case form found a record.
+        $sentenceCaseTerms = collect($terms)
+            ->map(fn (string $term): string => Str::ucfirst(Str::lower($term)))
+            ->reject(fn (string $term): bool => in_array($term, $terms, true))
+            ->unique()
+            ->values()
+            ->all();
+        $queries = $terms;
+
+        while (true) {
+            if ($queries === []) {
+                if ($candidates !== [] || $sentenceCaseTerms === []) {
+                    break;
+                }
+
+                [$queries, $sentenceCaseTerms] = [$sentenceCaseTerms, []];
+            }
+
+            $term = array_shift($queries);
+
             try {
                 $response = $this->http->json(
                     source: 'open_fda',
                     url: (string) $source['base_url'],
-                    query: ['search' => 'names.name:"'.Str::upper(str_replace('"', '', $term)).'"', 'limit' => 20],
+                    query: ['search' => 'names.name:"'.str_replace('"', '', $term).'"', 'limit' => 20],
                     version: (string) ($source['source_version'] ?? 'openfda-gsrs-v1'),
                     ttl: now()->addDays((int) $source['ttl_days']),
                 );
@@ -114,6 +136,8 @@ class OpenFdaSubstanceClient
             ->flatMap(fn (string $term): array => $this->searchTerms->variants($term))
             ->map(fn (string $value): string => trim($value))
             ->unique(fn (string $value): string => mb_strtolower($value))
+            ->map(fn (string $value): string => Str::upper($value))
+            ->unique()
             ->values()
             ->all();
     }

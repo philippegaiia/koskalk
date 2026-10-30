@@ -132,6 +132,7 @@ it('runs deterministic stages before one editorial pass and resumes their persis
                 editorial: [
                     'display_name' => 'Argan oil',
                     'inci_name' => 'FINALIZED EDITORIAL INCI',
+                    'soap_inci_naoh_name' => 'SODIUM ARGAN OILATE',
                     'saponification_name' => 'Argan oil',
                     'info_markdown' => "## Overview\nArgan oil is a plant-derived lipid.\n\n## Formulation use\nIt is used for emollience.\n\n## Soapmaking\nIt can be included as an oil component.",
                     'soapmaking_relevant' => true,

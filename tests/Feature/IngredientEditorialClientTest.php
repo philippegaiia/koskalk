@@ -407,7 +407,7 @@ it('keeps research commentary out of metadata editorial output', function (): vo
 it('filters low-value editorial claims instead of mechanically expanding source facts', function (): void {
     $prompt = app(IngredientEnrichmentEditorialPrompt::class)->build(editorialFacts());
 
-    expect($prompt['version'])->toBe('ingredient-enrichment-metadata-v1')
+    expect($prompt['version'])->toBe('ingredient-enrichment-metadata-v2')
         ->and($prompt['instructions'])
         ->toContain('Do not research the web')
         ->toContain('Do not write `info_markdown`');

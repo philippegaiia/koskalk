@@ -1,6 +1,8 @@
 <?php
 
+use App\Services\IngredientEnrichment\IngredientSourceException;
 use App\Services\IngredientEnrichment\Sources\EurLexGlossaryClient;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function (): void {
@@ -65,6 +67,24 @@ it('verifies sodium and potassium soap names independently from the official glo
         'soap_inci_koh_name' => null,
     ])->and(collect($result->evidence)->pluck('field')->all())->toContain('proposal.soap_inci_naoh_name')
         ->not->toContain('proposal.soap_inci_koh_name');
+});
+
+it('fails on an empty bot challenge instead of caching an empty glossary', function (): void {
+    config()->set('ingredient-enrichment.sources.eur_lex_glossary.fetch_url', 'https://cellar.test/resource/celex/32025D1175');
+    config()->set('ingredient-enrichment.sources.eur_lex_glossary.fetch_language', 'eng');
+    Http::preventStrayRequests();
+    Http::fakeSequence('cellar.test/*')
+        ->push('', 202)
+        ->push(fixtureHtml('eur-lex-glossary.html'));
+
+    expect(fn () => app(EurLexGlossaryClient::class)->verify(['inci_name' => 'ARGANIA SPINOSA KERNEL OIL']))
+        ->toThrow(IngredientSourceException::class);
+
+    $result = app(EurLexGlossaryClient::class)->verify(['inci_name' => 'ARGANIA SPINOSA KERNEL OIL']);
+
+    expect($result->data['matched'])->toBeTrue()
+        ->and($result->evidence[0]['source_url'])->toBe('https://eur-lex.test/legal-content/EN/TXT/HTML/?uri=CELEX:32025D1175');
+    Http::assertSent(fn (Request $request): bool => $request->hasHeader('Accept-Language', 'eng'));
 });
 
 function fixtureHtml(string $name): string

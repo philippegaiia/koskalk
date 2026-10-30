@@ -29,6 +29,7 @@ class CachedIngredientSourceHttpClient
 
     /**
      * @param  array<string, scalar|null>  $query
+     * @param  array<string, string>  $headers
      */
     public function text(
         string $source,
@@ -36,12 +37,15 @@ class CachedIngredientSourceHttpClient
         array $query,
         string $version,
         DateTimeInterface $ttl,
+        array $headers = [],
+        bool $cacheResponse = true,
     ): IngredientSourceResponse {
-        return $this->get($source, $url, $query, $version, $ttl, false);
+        return $this->get($source, $url, $query, $version, $ttl, false, $headers, $cacheResponse);
     }
 
     /**
      * @param  array<string, scalar|null>  $query
+     * @param  array<string, string>  $headers
      */
     private function get(
         string $source,
@@ -50,13 +54,15 @@ class CachedIngredientSourceHttpClient
         string $version,
         DateTimeInterface $ttl,
         bool $expectsJson,
+        array $headers = [],
+        bool $cacheResponse = true,
     ): IngredientSourceResponse {
         $this->assertConfiguredHost($source, $url);
 
         $normalizedQuery = $this->normalizeQuery($query);
         $requestedUrl = $this->requestedUrl($url, $normalizedQuery);
         $cacheKey = $this->cacheKey($source, $requestedUrl, $version, $expectsJson);
-        $cached = cache()->get($cacheKey);
+        $cached = $cacheResponse ? cache()->get($cacheKey) : null;
 
         if (is_array($cached) && array_key_exists('payload', $cached)) {
             return new IngredientSourceResponse(
@@ -81,6 +87,9 @@ class CachedIngredientSourceHttpClient
             $request = $expectsJson
                 ? $request->acceptJson()
                 : $request->accept('text/html,application/xhtml+xml');
+            if ($headers !== []) {
+                $request = $request->withHeaders($headers);
+            }
             $response = $normalizedQuery === []
                 ? $request->get($url)
                 : $request->get($url, $normalizedQuery);
@@ -88,22 +97,26 @@ class CachedIngredientSourceHttpClient
             throw new IngredientSourceException($source);
         }
 
-        if ($response->failed()) {
+        // A 202 is an anti-bot challenge or deferred job, never the requested record.
+        if ($response->failed() || $response->status() === 202) {
             throw new IngredientSourceException($source, $response->status());
         }
 
         $payload = $expectsJson ? $response->json() : $response->body();
-        if (($expectsJson && ! is_array($payload)) || (! $expectsJson && ! is_string($payload))) {
+        if (($expectsJson && ! is_array($payload))
+            || (! $expectsJson && (! is_string($payload) || trim($payload) === ''))) {
             throw new IngredientSourceException($source, $response->status());
         }
 
         $retrievedAt = now()->toImmutable();
-        cache()->put($cacheKey, [
-            'payload' => $payload,
-            'status' => $response->status(),
-            'url' => $requestedUrl,
-            'retrieved_at' => $retrievedAt->toIso8601String(),
-        ], $ttl);
+        if ($cacheResponse) {
+            cache()->put($cacheKey, [
+                'payload' => $payload,
+                'status' => $response->status(),
+                'url' => $requestedUrl,
+                'retrieved_at' => $retrievedAt->toIso8601String(),
+            ], $ttl);
+        }
 
         return new IngredientSourceResponse(
             payload: $payload,
@@ -151,13 +164,15 @@ class CachedIngredientSourceHttpClient
 
     private function assertConfiguredHost(string $source, string $url): void
     {
-        $configuredUrl = config("ingredient-enrichment.sources.{$source}.base_url")
-            ?? config("ingredient-enrichment.sources.{$source}.url");
-        $configuredHost = is_string($configuredUrl) ? parse_url($configuredUrl, PHP_URL_HOST) : null;
         $requestedHost = parse_url($url, PHP_URL_HOST);
+        $configuredHosts = collect(['fetch_url', 'base_url', 'url'])
+            ->map(fn (string $key): mixed => config("ingredient-enrichment.sources.{$source}.{$key}"))
+            ->filter(fn (mixed $configuredUrl): bool => is_string($configuredUrl))
+            ->map(fn (string $configuredUrl): mixed => parse_url($configuredUrl, PHP_URL_HOST))
+            ->filter(fn (mixed $host): bool => is_string($host));
 
-        if (! is_string($configuredHost) || ! is_string($requestedHost)
-            || ! hash_equals(mb_strtolower($configuredHost), mb_strtolower($requestedHost))) {
+        if (! is_string($requestedHost)
+            || ! $configuredHosts->contains(fn (string $host): bool => hash_equals(mb_strtolower($host), mb_strtolower($requestedHost)))) {
             throw new IngredientSourceException($source);
         }
     }

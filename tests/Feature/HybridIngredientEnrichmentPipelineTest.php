@@ -225,7 +225,7 @@ it('assembles precise argan facts from deterministic eu and us sources before ed
         ->and($identifiers->get('unii')->all())->toBe(['4V59G5UW9X'])
         ->and(collect($proposal['market_labels'])->firstWhere('market_code', 'eu')['declaration_name'])->toBe('ARGANIA SPINOSA KERNEL OIL')
         ->and(collect($proposal['market_labels'])->firstWhere('market_code', 'us'))->toMatchArray([
-            'declaration_name' => 'Argan (Argania Spinosa) Oil',
+            'declaration_name' => 'Argania Spinosa (Argan) Kernel Oil',
             'confidence' => 'supported',
         ])
         ->and(collect($proposal['cosing_functions'])->pluck('key')->all())->toBe([
@@ -255,7 +255,7 @@ it('retains all apricot identifiers and keeps eu and us declarations distinct', 
         ->and($identifiers->get('unii')->all())->toBe(['54JB35T06A'])
         ->and(collect($proposal['market_labels'])->pluck('declaration_name', 'market_code')->all())->toBe([
             'eu' => 'PRUNUS ARMENIACA KERNEL OIL',
-            'us' => 'Apricot Kernel (Prunus Armeniaca) Oil',
+            'us' => 'Prunus Armeniaca (Apricot) Kernel Oil',
         ])
         ->and(collect($proposal['cosing_functions'])->pluck('key')->all())->toBe([
             'perfuming', 'skin_conditioning',
@@ -273,7 +273,7 @@ it('keeps EU and harmonized US botanical declarations distinct', function (): vo
         'cas' => ['8001-31-8'],
     ]);
 
-    expect($result->data['declaration_name'])->toBe('Coconut (Cocos Nucifera) Oil');
+    expect($result->data['declaration_name'])->toBe('Cocos Nucifera (Coconut) Oil');
 });
 
 it('uses the FDA INCI alias to resolve a plain English oil to the exact EU identity', function (): void {
@@ -294,7 +294,7 @@ it('uses the FDA INCI alias to resolve a plain English oil to the exact EU ident
         ->and($identifiers->get('unii')->all())->toBe(['Q9L0O73W7L'])
         ->and(collect($proposal['market_labels'])->pluck('declaration_name', 'market_code')->all())->toBe([
             'eu' => 'COCOS NUCIFERA OIL',
-            'us' => 'Coconut (Cocos Nucifera) Oil',
+            'us' => 'Cocos Nucifera (Coconut) Oil',
         ])
         ->and(data_get($editorial->facts, 'editorial_context.identity_description'))
         ->toBe('Fixed oil obtained from the dried endosperm of Cocos nucifera.');
@@ -368,7 +368,7 @@ it('resumes from the FDA identity boundary before querying downstream EU sources
     Http::fake(function ($request) use (&$fdaAvailable) {
         return match (true) {
             str_contains($request->url(), 'cosingchecker.com') => Http::response(file_get_contents(base_path('tests/Fixtures/IngredientEnrichment/cosing-argan.json'))),
-            str_contains($request->url(), 'eur-lex.europa.eu') => Http::response(file_get_contents(base_path('tests/Fixtures/IngredientEnrichment/eur-lex-glossary.html'))),
+            str_contains($request->url(), 'publications.europa.eu/resource/celex') => Http::response(file_get_contents(base_path('tests/Fixtures/IngredientEnrichment/eur-lex-glossary.html'))),
             str_contains($request->url(), 'api.fda.gov') => $fdaAvailable
                 ? Http::response(file_get_contents(base_path('tests/Fixtures/IngredientEnrichment/openfda-argan.json')))
                 : Http::response([], 503),
@@ -736,7 +736,7 @@ function fakeHybridIngredientSources(string $fixture): void
     Http::fake(function ($request) use ($fixture) {
         $path = match (true) {
             str_contains($request->url(), 'cosingchecker.com') => "tests/Fixtures/IngredientEnrichment/cosing-{$fixture}.json",
-            str_contains($request->url(), 'eur-lex.europa.eu') => 'tests/Fixtures/IngredientEnrichment/eur-lex-glossary.html',
+            str_contains($request->url(), 'publications.europa.eu/resource/celex') => 'tests/Fixtures/IngredientEnrichment/eur-lex-glossary.html',
             str_contains($request->url(), 'api.fda.gov') => "tests/Fixtures/IngredientEnrichment/openfda-{$fixture}.json",
             str_contains($request->url(), 'fda.gov') => 'tests/Fixtures/IngredientEnrichment/fda-colours.html',
             default => null,

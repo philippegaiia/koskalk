@@ -289,7 +289,7 @@ it('uses quiet actionable formula balance readouts and flat formula ledgers', fu
         ->and($translationSource)
         ->toContain("'add_percentage' => 'Add :amount%'")
         ->toContain("'remove_percentage' => 'Remove :amount%'")
-        ->toContain("'balanced' => 'Balanced'");
+        ->toContain("'balanced' => 'Complete'");
 });
 
 it('presents batch totals as one compact neutral summary grid', function () {

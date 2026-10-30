@@ -93,7 +93,7 @@
 	 <button type="button" role="radio" :aria-checked="oilUnit === 'oz'" @click="changeOilUnit('oz')" :class="oilUnit === 'oz' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">oz</button>
 	 <button type="button" role="radio" :aria-checked="oilUnit === 'lb'" @click="changeOilUnit('lb')" :class="oilUnit === 'lb' ? 'bg-[var(--color-active)] text-[var(--color-on-active)] shadow-sm' : 'bg-[var(--color-control)] text-[var(--color-ink-soft)] hover:bg-[var(--color-panel)]'" class="rounded-full px-4 py-2.5 text-xs font-medium transition">lb</button>
 	 </div>
-	 <input aria-labelledby="setting-batch-weight" x-effect="syncOilWeightInput($el)" @input="updateOilWeight($event)" @blur="normalizeOilWeightBlur($event)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-4 py-3 text-sm text-[var(--color-ink-strong)] transition" />
+	 <input aria-labelledby="setting-batch-weight" x-effect="syncOilWeightInput($el)" @input="updateOilWeight($event)" @blur="normalizeOilWeightBlur($event)" type="text" inputmode="decimal" class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-4 py-2.5 text-sm text-[var(--color-ink-strong)] transition" />
 	 </div>
 @unless ($isGuestCalculator ?? false)
 	 <div class="sk-inset sk-tone-info min-w-0 p-4">
@@ -198,7 +198,7 @@
 	 <span :class="superfatStatus === 'excess_lye' ? 'text-[var(--color-danger-strong)]' : (superfatStatus === 'low_margin' ? 'text-[var(--color-warning-strong)]' : 'text-[var(--color-ink-strong)]')" class="numeric font-semibold" x-text="`${format(superfat, 1)}%`"></span>
 	 </div>
 	 <input aria-labelledby="setting-superfat" x-model.number="superfat" @change="confirmNegativeSuperfat($event)" type="range" min="-20" max="20" step="0.5" :class="superfatStatus === 'excess_lye' ? 'accent-[var(--color-danger)]' : (superfatStatus === 'low_margin' ? 'accent-[var(--color-warning)]' : 'accent-[var(--color-active)]')" class="mt-3 w-full" />
-	 <input aria-labelledby="setting-superfat" x-model="superfat" @blur="normalizeDecimalBlur($event, true)" @change="confirmNegativeSuperfat($event)" type="text" inputmode="decimal" :class="superfatStatus === 'excess_lye' ? 'border-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : (superfatStatus === 'low_margin' ? 'border-[var(--color-warning-soft)] text-[var(--color-warning-strong)]' : 'border-[var(--color-line)] text-[var(--color-ink-strong)]')" class="sk-superfat-control numeric mt-3 w-full rounded-lg border bg-[var(--color-field)] px-4 py-3 text-sm transition" />
+	 <input aria-labelledby="setting-superfat" x-model="superfat" @blur="normalizeDecimalBlur($event, true)" @change="confirmNegativeSuperfat($event)" type="text" inputmode="decimal" :class="superfatStatus === 'excess_lye' ? 'border-[var(--color-danger-soft)] text-[var(--color-danger-strong)]' : (superfatStatus === 'low_margin' ? 'border-[var(--color-warning-soft)] text-[var(--color-warning-strong)]' : 'border-[var(--color-line)] text-[var(--color-ink-strong)]')" class="sk-superfat-control numeric mt-3 w-full rounded-lg border bg-[var(--color-field)] px-4 py-2.5 text-sm transition" />
 	 <template x-if="nominalSuperfat !== null">
 	 <p class="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">
 	 <span class="font-medium text-[var(--color-ink-strong)]">{{ __('workbench.settings.nominal_superfat') }}</span>

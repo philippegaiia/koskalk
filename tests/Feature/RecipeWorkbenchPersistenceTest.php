@@ -6013,7 +6013,7 @@ eval(`${sectionSource}\nglobalThis.createFormulaSection = createFormulaSection;`
 
 const translations = {
     'status.add_percentage': 'Add :amount%',
-    'status.balanced': 'Balanced',
+    'status.balanced': 'Complete',
     'status.remove_percentage': 'Remove :amount%',
 };
 
@@ -6077,9 +6077,9 @@ JS;
     expect(json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR))
         ->toBe([
             ['displayedTotal' => '99.99', 'canonicalBalanced' => false, 'canSaveDraft' => false, 'canSaveRecipe' => false, 'label' => 'Add 0.01%'],
-            ['displayedTotal' => '100.00', 'canonicalBalanced' => true, 'canSaveDraft' => true, 'canSaveRecipe' => true, 'label' => 'Balanced'],
-            ['displayedTotal' => '100.00', 'canonicalBalanced' => true, 'canSaveDraft' => true, 'canSaveRecipe' => true, 'label' => 'Balanced'],
-            ['displayedTotal' => '100.00', 'canonicalBalanced' => true, 'canSaveDraft' => true, 'canSaveRecipe' => true, 'label' => 'Balanced'],
+            ['displayedTotal' => '100.00', 'canonicalBalanced' => true, 'canSaveDraft' => true, 'canSaveRecipe' => true, 'label' => 'Complete'],
+            ['displayedTotal' => '100.00', 'canonicalBalanced' => true, 'canSaveDraft' => true, 'canSaveRecipe' => true, 'label' => 'Complete'],
+            ['displayedTotal' => '100.00', 'canonicalBalanced' => true, 'canSaveDraft' => true, 'canSaveRecipe' => true, 'label' => 'Complete'],
             ['displayedTotal' => '100.01', 'canonicalBalanced' => false, 'canSaveDraft' => false, 'canSaveRecipe' => false, 'label' => 'Remove 0.01%'],
         ]);
 });

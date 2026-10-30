@@ -51266,12 +51266,12 @@
       "group": "workbench",
       "key": "status.balanced",
       "text": {
-        "de": "Ausgeglichen",
-        "es": "Equilibrado",
-        "fr": "Équilibré",
-        "it": "Bilanciato",
-        "nl": "In balans",
-        "pt_BR": "Equilibrada"
+        "de": "Vollständig",
+        "es": "Completo",
+        "fr": "Complet",
+        "it": "Completo",
+        "nl": "Volledig",
+        "pt_BR": "Completo"
       }
     },
     {

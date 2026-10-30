@@ -605,7 +605,7 @@ return [
     ],
     'status' => [
         'add_percentage' => 'Add :amount%',
-        'balanced' => 'Balanced',
+        'balanced' => 'Complete',
         'title' => 'Formula status',
         'oils' => 'Oils',
         'lye_water' => 'Lye and water',

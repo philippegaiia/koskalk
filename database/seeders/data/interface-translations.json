@@ -1948,7 +1948,7 @@
       "text": {
         "de": "Stelle eine Ölmischung zusammen und berechne Alkali, Wasser und Überfettung für feste Seife.",
         "es": "Crea una mezcla de aceites y calcula el álcali, el agua y el sobreengrasado para jabón sólido.",
-        "fr": "Composez un mélange d’huiles et calculez l’alcali, l’eau et le surgraissage pour un savon solide.",
+        "fr": "Composez un mélange d’huiles et calculez l’alcali, l’eau et le surgras pour un savon solide.",
         "it": "Componi una miscela di oli e calcola alcali, acqua e sconto soda per il sapone solido.",
         "nl": "Stel een oliemengsel samen en bereken alkali, water en overvetting voor vaste zeep.",
         "pt_BR": "Monte uma mistura de óleos e calcule álcali, água e sobreengorduramento para sabonete sólido."
@@ -2032,7 +2032,7 @@
       "text": {
         "de": "Überfettung (%)",
         "es": "Sobreengrasado (%)",
-        "fr": "Surgraissage (%)",
+        "fr": "Surgras (%)",
         "it": "Sconto soda (%)",
         "nl": "Overvetting (%)",
         "pt_BR": "Sobreengorduramento (%)"
@@ -3520,7 +3520,7 @@
       "text": {
         "de": "Theoretische Überfettung",
         "es": "Sobreengrasado teórico",
-        "fr": "Surgraissage théorique",
+        "fr": "Surgras théorique",
         "it": "Sovragrassaggio teorico",
         "nl": "Theoretische overvetting",
         "pt_BR": "Sobreengorduramento teórico"
@@ -3940,7 +3940,7 @@
       "text": {
         "de": "Seife und Überfettung",
         "es": "Jabón y sobreengrasado",
-        "fr": "Savon et surgraissage",
+        "fr": "Savon et surgras",
         "it": "Sapone e sovragrassaggio",
         "nl": "Zeep en overvetting",
         "pt_BR": "Sabão e sobreengorduramento"
@@ -3952,7 +3952,7 @@
       "text": {
         "de": "Überfettung",
         "es": "Sobreengrasado",
-        "fr": "Surgraissage",
+        "fr": "Surgras",
         "it": "Sovragrassaggio",
         "nl": "Overvetting",
         "pt_BR": "Sobreengorduramento"
@@ -6004,7 +6004,7 @@
       "text": {
         "de": "Überfettung",
         "es": "Sobreengrasado",
-        "fr": "Surgraissage",
+        "fr": "Surgras",
         "it": "Sovragrassaggio",
         "nl": "Overvetting",
         "pt_BR": "Sobreengorduramento"
@@ -42508,7 +42508,7 @@
       "text": {
         "de": "Überfettung (%)",
         "es": "Sobreengrasado (%)",
-        "fr": "Surgraissage (%)",
+        "fr": "Surgras (%)",
         "it": "Surgrassamento (%)",
         "nl": "Overvetting (%)",
         "pt_BR": "Sobreengorduramento (%)"
@@ -44128,7 +44128,7 @@
       "text": {
         "de": "Überfettung",
         "es": "Sobreengrasado",
-        "fr": "Surgraissage",
+        "fr": "Surgras",
         "it": "Superfat",
         "nl": "Overvetting",
         "pt_BR": "Sobreengorduramento"
@@ -48136,7 +48136,7 @@
       "text": {
         "de": "Saponified oils + superfat",
         "es": "Saponified oils + superfat",
-        "fr": "Huiles saponifiées + surgraissage",
+        "fr": "Huiles saponifiées + surgras",
         "it": "Saponified oils + superfat",
         "nl": "Saponified oils + superfat",
         "pt_BR": "Saponified oils + superfat"
@@ -49276,7 +49276,7 @@
       "text": {
         "de": "Sehr hohe schnelle Reinigungskraft; Verwendungszweck und Überfettung berücksichtigen.",
         "es": "Poder de limpieza rápida muy alto; considera el uso previsto y el sobreengrasado.",
-        "fr": "Pouvoir lavant rapide très élevé ; tenez compte de l’usage prévu et du surgraissage.",
+        "fr": "Pouvoir lavant rapide très élevé ; tenez compte de l’usage prévu et du surgras.",
         "it": "Potere detergente rapido molto elevato; considera l’uso previsto e il surgrassaggio.",
         "nl": "Zeer sterke snelle reiniging; houd rekening met het beoogde gebruik en de overvetting.",
         "pt_BR": "Poder de limpeza rápida muito alto; considere o uso pretendido e o sobreengorduramento."
@@ -49396,7 +49396,7 @@
       "text": {
         "de": "Die starke Reinigung kann austrocknend wirken, wenn Überfettung und Verwendungszweck nicht sorgfältig abgestimmt sind.",
         "es": "Su fuerte limpieza puede resecar si no se equilibran cuidadosamente el sobreengrasado y el uso previsto.",
-        "fr": "Le pouvoir lavant élevé peut être desséchant si le surgraissage et l’usage prévu ne sont pas soigneusement adaptés.",
+        "fr": "Le pouvoir lavant élevé peut être desséchant si le surgras et l’usage prévu ne sont pas soigneusement adaptés.",
         "it": "La forte detersione può seccare se surgrassaggio e uso previsto non sono ben bilanciati.",
         "nl": "De sterke reiniging kan uitdrogend aanvoelen als overvetting en beoogd gebruik niet zorgvuldig zijn afgestemd.",
         "pt_BR": "A limpeza intensa pode ressecar se o sobreengorduramento e o uso previsto não forem bem equilibrados."
@@ -49480,7 +49480,7 @@
       "text": {
         "de": "Stabilität der Überfettung in Flüssigseife",
         "es": "Estabilidad del sobreengrasado líquido",
-        "fr": "Stabilité du surgraissage en savon liquide",
+        "fr": "Stabilité du surgras en savon liquide",
         "it": "Stabilità del surgrassaggio nel sapone liquido",
         "nl": "Stabiliteit van overvetting in vloeibare zeep",
         "pt_BR": "Estabilidade do sobreengorduramento no sabão líquido"
@@ -49492,7 +49492,7 @@
       "text": {
         "de": "Positive Überfettung in Flüssigseife kann Trübung, unvorhersehbare Verdickung oder Trennung verursachen.",
         "es": "El sobreengrasado positivo en jabón líquido puede causar turbidez, espesamiento imprevisible o separación.",
-        "fr": "Un surgraissage positif en savon liquide peut provoquer un trouble, un épaississement imprévisible ou une séparation.",
+        "fr": "Un surgras positif en savon liquide peut provoquer un trouble, un épaississement imprévisible ou une séparation.",
         "it": "Il surgrassaggio positivo nel sapone liquido può causare opacità, addensamento imprevedibile o separazione.",
         "nl": "Positieve overvetting in vloeibare zeep kan troebelheid, onvoorspelbare verdikking of scheiding veroorzaken.",
         "pt_BR": "O sobreengorduramento positivo no sabão líquido pode causar turvação, espessamento imprevisível ou separação."
@@ -49672,7 +49672,7 @@
       "text": {
         "de": "Negative Überfettung erfordert pH-Kontrolle",
         "es": "El sobreengrasado negativo requiere control de pH",
-        "fr": "Surgraissage négatif : contrôler le pH",
+        "fr": "Surgras négatif : contrôler le pH",
         "it": "Il surgrassaggio negativo richiede controllo del pH",
         "nl": "Negatieve overvetting vereist pH-controle",
         "pt_BR": "Sobreengorduramento negativo exige controle de pH"
@@ -49684,7 +49684,7 @@
       "text": {
         "de": "Flüssigseife mit negativer Überfettung benötigt vor Gebrauch eine Neutralisierungsstrategie und pH-Kontrolle.",
         "es": "El jabón líquido con sobreengrasado negativo requiere una estrategia de neutralización y control de pH antes del uso.",
-        "fr": "Un savon liquide à surgraissage négatif nécessite une stratégie de neutralisation et un contrôle du pH avant utilisation.",
+        "fr": "Un savon liquide à surgras négatif nécessite une stratégie de neutralisation et un contrôle du pH avant utilisation.",
         "it": "Il sapone liquido con surgrassaggio negativo richiede una strategia di neutralizzazione e controllo del pH prima dell’uso.",
         "nl": "Vloeibare zeep met negatieve overvetting vereist vóór gebruik een neutralisatiestrategie en pH-controle.",
         "pt_BR": "Sabão líquido com sobreengorduramento negativo exige estratégia de neutralização e controle de pH antes do uso."
@@ -50544,18 +50544,6 @@
     },
     {
       "group": "workbench",
-      "key": "settings.lye_reduction",
-      "text": {
-        "de": "Laugenreduktion / -überschuss",
-        "es": "Reducción / exceso de álcali",
-        "fr": "Réduction / excès d’alcali",
-        "it": "Riduzione / eccesso di alcali",
-        "nl": "Loogreductie / -overschot",
-        "pt_BR": "Redução / excesso de álcali"
-      }
-    },
-    {
-      "group": "workbench",
       "key": "settings.manufactured_ingredient",
       "text": {
         "de": "Ingrediens",
@@ -50702,24 +50690,24 @@
       "group": "workbench",
       "key": "settings.nominal_superfat",
       "text": {
-        "de": "Nominelle Überfettung",
-        "es": "Sobreengrasado nominal",
-        "fr": "Surgraissage nominal",
-        "it": "Superfat nominale",
-        "nl": "Nominale overvetting",
-        "pt_BR": "Sobreengorduramento nominal"
+        "de": "Gesamte Überfettung mit zugesetzten Ölen",
+        "es": "Sobreengrasado total con aceites añadidos",
+        "fr": "Surgras total avec huiles ajoutées",
+        "it": "Superfat totale con oli aggiunti",
+        "nl": "Totale overvetting met toegevoegde oliën",
+        "pt_BR": "Sobreengorduramento total com óleos adicionados"
       }
     },
     {
       "group": "workbench",
       "key": "settings.nominal_superfat_note",
       "text": {
-        "de": "Laugenreduktion + verseifbare Zusätze (% der Öle). Eine Rezeptkonvention, keine exakt gleichwertige Laugenreduktion.",
-        "es": "Reducción de álcali + adiciones saponificables (% de aceites). Una convención de receta, no una reducción de álcali equivalente exacta.",
-        "fr": "Réduction d’alcali + ajouts saponifiables (% des huiles). Une convention de formulation, pas une réduction d’alcali exactement équivalente.",
-        "it": "Riduzione dell’alcali + aggiunte saponificabili (% degli oli). Una convenzione di ricetta, non una riduzione dell’alcali esattamente equivalente.",
-        "nl": "Loogreductie + verzeepbare toevoegingen (% van de oliën). Een receptconventie, geen exact gelijkwaardige loogreductie.",
-        "pt_BR": "Redução de álcali + adições saponificáveis (% dos óleos). Uma convenção de receita, não uma redução de álcali exatamente equivalente."
+        "de": "Überfettung plus die nach der Reaktion zugesetzten Fettstoffe, in % der verseiften Öle.",
+        "es": "Sobreengrasado más las materias grasas añadidas después de la reacción, en % de los aceites saponificados.",
+        "fr": "Surgras plus les matières grasses ajoutées après la réaction, en % des huiles saponifiées.",
+        "it": "Superfat più le materie grasse aggiunte dopo la reazione, in % degli oli saponificati.",
+        "nl": "Overvetting plus de na de reactie toegevoegde vetstoffen, in % van de verzeepte oliën.",
+        "pt_BR": "Sobreengorduramento mais as matérias graxas adicionadas após a reação, em % dos óleos saponificados."
       }
     },
     {
@@ -51036,30 +51024,6 @@
     },
     {
       "group": "workbench",
-      "key": "settings.summary.lye_excess",
-      "text": {
-        "de": "Laugenüberschuss",
-        "es": "Exceso de álcali",
-        "fr": "Excès d’alcali",
-        "it": "Eccesso di alcali",
-        "nl": "Loogoverschot",
-        "pt_BR": "Excesso de álcali"
-      }
-    },
-    {
-      "group": "workbench",
-      "key": "settings.summary.lye_reduction",
-      "text": {
-        "de": "Laugenreduktion",
-        "es": "Reducción de álcali",
-        "fr": "Réduction d’alcali",
-        "it": "Riduzione degli alcali",
-        "nl": "Loogreductie",
-        "pt_BR": "Redução de álcali"
-      }
-    },
-    {
-      "group": "workbench",
       "key": "settings.summary.water_ratio",
       "text": {
         "de": "Verhältnis :value:1",
@@ -51352,7 +51316,7 @@
       "text": {
         "de": "Eine negative Überfettung hinterlässt überschüssige Lauge. Ohne fachgerechte Neutralisation und Prüfung kann das Produkt Reizungen oder Verätzungen verursachen. Fortfahren?",
         "es": "Un sobreengrasado negativo deja un exceso de álcali. Si el producto no se neutraliza y comprueba correctamente, puede causar irritación o quemaduras. ¿Continuar?",
-        "fr": "Un surgraissage négatif laisse un excès de soude. Sans neutralisation et tests appropriés, le produit peut provoquer des irritations ou des brûlures. Continuer ?",
+        "fr": "Un surgras négatif laisse un excès de soude. Sans neutralisation et tests appropriés, le produit peut provoquer des irritations ou des brûlures. Continuer ?",
         "it": "Un superfat negativo lascia alcali in eccesso. Se il prodotto non viene neutralizzato e testato correttamente, può causare irritazioni o ustioni. Continuare?",
         "nl": "Een negatieve overvetting laat overtollige loog achter. Zonder correcte neutralisatie en tests kan het product irritatie of brandwonden veroorzaken. Doorgaan?",
         "pt_BR": "Um sobreengorduramento negativo deixa soda cáustica em excesso. Isso pode causar irritação ou queimaduras, a menos que o produto seja corretamente neutralizado e testado. Continuar?"
@@ -51724,7 +51688,7 @@
       "text": {
         "de": "Die Überfettung fester Seife darf nicht unter :floor % liegen.",
         "es": "El sobreengrasado del jabón en pastilla no puede ser inferior a :floor %.",
-        "fr": "Le surgraissage d’un savon solide ne peut pas être inférieur à :floor %.",
+        "fr": "Le surgras d’un savon solide ne peut pas être inférieur à :floor %.",
         "it": "Il superfat del sapone solido non può essere inferiore a :floor%.",
         "nl": "De overvetting van zeepblokken mag niet lager zijn dan :floor%.",
         "pt_BR": "O sobreengorduramento do sabão em barra não pode ser inferior a :floor%."
@@ -51736,7 +51700,7 @@
       "text": {
         "de": "Die Überfettung flüssiger Seife darf mit KOH :purity % nicht unter :floor % liegen.",
         "es": "El sobreengrasado del jabón líquido no puede ser inferior a :floor % con KOH al :purity %.",
-        "fr": "Le surgraissage d’un savon liquide ne peut pas être inférieur à :floor % avec de la KOH à :purity %.",
+        "fr": "Le surgras d’un savon liquide ne peut pas être inférieur à :floor % avec de la KOH à :purity %.",
         "it": "Il superfat del sapone liquido non può essere inferiore a :floor% con KOH al :purity%.",
         "nl": "De overvetting van vloeibare zeep mag met KOH :purity% niet lager zijn dan :floor%.",
         "pt_BR": "O sobreengorduramento do sabão líquido não pode ser inferior a :floor% com KOH a :purity%."

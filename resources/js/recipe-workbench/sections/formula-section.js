@@ -252,8 +252,8 @@ export function createFormulaSection() {
                     },
                     {
                         id: 'formula-superfat',
-                        label: this.t(this.superfat < 0 ? 'settings.summary.lye_excess' : 'settings.summary.lye_reduction'),
-                        value: `${this.format(Math.abs(this.superfat), 1)}%`,
+                        label: this.t('common.superfat'),
+                        value: `${this.format(this.superfat, 1)}%`,
                         tone: { excess_lye: 'danger', low_margin: 'warning' }[this.superfatStatus] ?? 'chemistry',
                     },
                 );
@@ -474,6 +474,16 @@ export function createFormulaSection() {
 
         get nominalSuperfat() {
             return this.freeFatSummary ? this.number(this.freeFatSummary.nominal_percentage) : null;
+        },
+
+        get superfatWithAddedOils() {
+            const appliedSuperfat = this.backendCalculation?.lye?.superfat_percentage;
+
+            if (this.nominalSuperfat === null || appliedSuperfat == null) {
+                return null;
+            }
+
+            return Math.abs(this.nominalSuperfat - this.number(appliedSuperfat)) >= 0.005 ? this.nominalSuperfat : null;
         },
 
         get estimatedFreeFat() {

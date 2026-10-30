@@ -112,11 +112,19 @@ workbench.backendLabeling = { free_fat: {
 assert.equal(workbench.superfatStatus, 'normal');
 assert.equal(workbench.estimatedFreeFat, 2.5);
 assert.equal(workbench.nominalSuperfat, 5);
-workbench.translations = { settings: {
+assert.equal(workbench.superfatWithAddedOils, 5);
+workbench.translations = { common: { superfat: 'Superfat' }, settings: {
     free_fat: 'Estimated free fat',
     free_fat_cured_basis: 'of cured soap',
     free_fat_liquid_basis: 'of finished diluted soap',
 } };
+const superfatCard = workbench.formulaSetupSummaryCards.find((card) => card.id === 'formula-superfat');
+assert.equal(superfatCard.label, 'Superfat');
+assert.equal(superfatCard.value, `${workbench.format(-5, 1)}%`);
+assert.ok(superfatCard.value.startsWith('-') || superfatCard.value.startsWith('−'));
+workbench.backendLabeling.free_fat.nominal_percentage = -5;
+assert.equal(workbench.superfatWithAddedOils, null);
+workbench.backendLabeling.free_fat.nominal_percentage = 5;
 const freeFatCard = () => workbench.formulaSetupSummaryCards.find((card) => card.id === 'formula-free-fat');
 assert.equal(freeFatCard().label, 'Estimated free fat');
 assert.equal(freeFatCard().value, '2.50% of cured soap');
@@ -153,6 +161,7 @@ workbench.backendLabeling = { free_fat: {
     unavailable_reason: 'free_koh_remains',
 } };
 assert.equal(workbench.nominalSuperfat, 3);
+assert.equal(workbench.superfatWithAddedOils, null);
 assert.equal(workbench.estimatedFreeFat, null);
 const cards = workbench.formulaSetupSummaryCards;
 assert.ok(!cards.some((card) => card.id === 'formula-nominal-superfat'));
@@ -228,11 +237,11 @@ JS);
         ->and($process->getOutput())->toBe('');
 });
 
-it('labels the formula settings summary through translations', function () {
+it('labels the signed superfat in the formula settings summary through translations', function () {
     $process = runRecipeWorkbenchSuperfatScript(<<<'JS'
 workbench.translations = {
-    common: { superfat: 'Surgraissage' },
-    settings: { summary: { base: 'Base', entry: 'Saisie', lye: 'Alcali', lye_reduction: 'Réduction d’alcali', lye_excess: 'Excès d’alcali', lye_concentration: 'Concentration :value %' } },
+    common: { superfat: 'Surgras' },
+    settings: { summary: { base: 'Base', entry: 'Saisie', lye: 'Alcali', lye_concentration: 'Concentration :value %' } },
 };
 workbench.waterMode = 'lye_concentration';
 workbench.waterValue = 34;
@@ -240,8 +249,8 @@ workbench.superfat = -3;
 
 const cards = Object.fromEntries(workbench.formulaSetupSummaryCards.map((card) => [card.id, card]));
 
-assert.equal(cards['formula-superfat'].label, 'Excès d’alcali');
-assert.equal(cards['formula-superfat'].value, '3.0%');
+assert.equal(cards['formula-superfat'].label, 'Surgras');
+assert.equal(cards['formula-superfat'].value, '-3.0%');
 assert.equal(cards['formula-superfat'].tone, 'danger');
 assert.equal(cards['formula-lye'].label, 'Alcali');
 assert.equal(cards['formula-weight'].label, 'Base');
@@ -254,7 +263,7 @@ workbench.backendCalculation = null;
 for (const [superfat, value] of [[5, '5.0%'], [0, '0.0%']]) {
     workbench.superfat = superfat;
     const card = workbench.formulaSetupSummaryCards.find((card) => card.id === 'formula-superfat');
-    assert.equal(card.label, 'Réduction d’alcali');
+    assert.equal(card.label, 'Surgras');
     assert.equal(card.value, value);
     assert.equal(card.tone, 'chemistry');
 }
@@ -263,7 +272,7 @@ workbench.superfat = -5;
 workbench.backendLabeling = { free_fat: { nominal_percentage: -5, percentage: 0, basis: 'cured_soap' } };
 workbench.translations.settings.free_fat_cured_basis = 'du savon séché';
 const negativeCards = workbench.formulaSetupSummaryCards;
-assert.equal(negativeCards.find((card) => card.id === 'formula-superfat').value, '5.0%');
+assert.equal(negativeCards.find((card) => card.id === 'formula-superfat').value, '-5.0%');
 assert.equal(negativeCards.find((card) => card.id === 'formula-free-fat').value, '0.00% du savon séché');
 assert.ok(!negativeCards.some((card) => card.id === 'formula-nominal-superfat'));
 assert.equal(workbench.nominalSuperfat, -5);

@@ -79,11 +79,12 @@ _Avoid_: Soap oil
 **SAP profile**:
 The saponification values for an ingredient, with KOH SAP as the canonical source value and NaOH SAP derived from it.
 
-**Lye reduction / excess**:
-The signed adjustment to the reaction core's theoretical alkali requirement. Positive values reduce the alkali; negative values add excess alkali.
+**Superfat**:
+The signed adjustment to the reaction core's theoretical alkali requirement, labelled Superfat (French: Surgras) as in other soap calculators. Positive values reduce the alkali; negative values add excess alkali.
+_Avoid_: Lye reduction, lye discount (as labels)
 
-**Nominal superfat**:
-The recipe convention of adding the lye reduction percentage to saponifiable finishing additions expressed as a percentage of the base materials. It is not an exact equivalent alkali reduction or a finished-product fat concentration.
+**Total superfat with added oils** (nominal superfat):
+The recipe convention of adding the superfat percentage to saponifiable finishing additions expressed as a percentage of the base materials. Shown only when such additions exist. It is not an exact equivalent alkali reduction or a finished-product fat concentration.
 
 **Estimated free fat**:
 The estimated unsaponified fatty material remaining as a percentage of the finished product's total mass: the cured bar at its assumed residual water content, or the final diluted liquid soap after neutralization and additions. Eligibility follows verified soap chemistry, including oils, butters, waxes and fatty acids. For bars, all finishing phases use the same modeled reaction share for verified fatty materials, including carriers in fragrance blends. For liquid soap, all modeled remaining fat counts, including unreacted fatty-acid neutralizer and fatty acids released from soap by acid conversion. Dilution changes the percentage, not the fat mass. Inferred fatty acids are shown as one composition-only estimate without inventing declaration names. The value is never negative; excess alkali is a separate result. The liquid estimate is withheld while residual KOH exceeds the process tolerance; nominal superfat remains available.

@@ -56,7 +56,7 @@ return [
         'approve' => 'Approve',
         'reject' => 'Reject',
         'apply' => 'Apply approved',
-        'apply_description' => 'This applies items you have already approved. It does not approve any proposal.',
+        'apply_description' => 'Saves every approved proposal in this batch to its ingredient. Proposals you have not approved yet are left as they are.',
         'retry' => 'Retry failures',
         'retry_gaps' => 'Retry gaps',
         'allow_gap_research' => 'Use restricted web research',

@@ -7,11 +7,14 @@ use App\Actions\IngredientEnrichment\RejectIngredientEnrichmentItem;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientEnrichmentBatchStatus;
 use App\Enums\IngredientEnrichmentItemStatus;
+use App\Enums\IngredientLabelMarket;
 use App\Models\Ingredient;
 use App\Models\IngredientEnrichmentBatch;
 use App\Models\IngredientEnrichmentBatchItem;
+use App\Models\IngredientMarketLabel;
 use App\Models\SupportedLocale;
 use App\Models\User;
+use App\Services\IngredientEnrichment\IngredientEnrichmentApprovalPresenter;
 use App\Services\IngredientEnrichment\IngredientEnrichmentBatchService;
 use App\Services\IngredientEnrichment\IngredientEnrichmentInputBuilder;
 use App\Services\IngredientEnrichment\IngredientEnrichmentPlanner;
@@ -73,6 +76,57 @@ it('keeps approval write free then explicitly applies the approved proposal', fu
         ->and($approved->fresh()->status)->toBe(IngredientEnrichmentItemStatus::Applied)
         ->and($approved->fresh()->applied_by_user_id)->toBe($admin->id)
         ->and($batch->fresh()->status)->toBe(IngredientEnrichmentBatchStatus::Applied);
+});
+
+it('offers and applies a replacement for a reviewer-approved market label', function (): void {
+    config()->set('ingredient-enrichment.guidance.minimum_words', 1);
+
+    foreach (['de', 'es', 'fr', 'it', 'nl', 'pt_BR'] as $locale) {
+        SupportedLocale::factory()->create(['code' => $locale, 'name' => $locale]);
+    }
+    $admin = User::factory()->create(['is_admin' => true]);
+    $ingredient = Ingredient::factory()->create([
+        'catalog_key' => 'review_oil',
+        'category' => IngredientCategory::Other,
+        'display_name' => 'Review Oil',
+        'inci_name' => null,
+        'info_markdown' => null,
+    ]);
+    IngredientMarketLabel::factory()->for($ingredient)->create([
+        'market_code' => IngredientLabelMarket::Us,
+        'declaration_name' => 'Review (Reviewus Oleum) Oil',
+        'reviewed_by_user_id' => $admin->id,
+        'reviewed_at' => now(),
+    ]);
+    IngredientMarketLabel::factory()->for($ingredient)->create([
+        'market_code' => IngredientLabelMarket::Ca,
+        'declaration_name' => 'Canadian Review Oil',
+    ]);
+    $fingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    $result = reviewResult($ingredient, $fingerprint);
+    $batch = IngredientEnrichmentBatch::factory()->create(['status' => IngredientEnrichmentBatchStatus::ReadyForReview, 'total_count' => 1]);
+    $item = IngredientEnrichmentBatchItem::factory()->create([
+        'ingredient_enrichment_batch_id' => $batch->id,
+        'ingredient_id' => $ingredient->id,
+        'catalog_key' => $ingredient->catalog_key,
+        'status' => IngredientEnrichmentItemStatus::Ready,
+        'snapshot' => ['source_fingerprint' => $fingerprint],
+        'source_fingerprint' => $fingerprint,
+        'result' => $result,
+        'plan' => app(IngredientEnrichmentPlanner::class)->plan($ingredient, $result),
+    ]);
+
+    expect(collect($item->plan['decisions'])->firstWhere('field', 'proposal.market_labels.us')['decision'])->toBe('preserved')
+        ->and(app(IngredientEnrichmentApprovalPresenter::class)->replacementConflicts($item))->toHaveKey('market_labels');
+
+    app(ApproveIngredientEnrichmentItem::class)->handle($admin, $item, ['market_labels']);
+    $totals = app(ApplyApprovedIngredientEnrichment::class)->handle($admin, $batch);
+    $labels = $ingredient->fresh()->marketLabels->keyBy(fn (IngredientMarketLabel $label): string => $label->market_code->value);
+
+    expect($totals['applied'])->toBe(1)
+        ->and($labels['us']->declaration_name)->toBe('Review Oil')
+        ->and($labels['us']->reviewed_by_user_id)->toBeNull()
+        ->and($labels['ca']->declaration_name)->toBe('Canadian Review Oil');
 });
 
 it('lets the reviewer approve unresolved proposals individually', function (): void {

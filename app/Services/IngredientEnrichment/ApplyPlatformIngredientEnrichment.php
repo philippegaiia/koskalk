@@ -162,11 +162,11 @@ class ApplyPlatformIngredientEnrichment
 
         $marketRows = is_array($proposal['market_labels'] ?? null) ? $proposal['market_labels'] : [];
         if ($marketRows !== []) {
-            if (in_array(IngredientEnrichmentReplaceField::MarketLabels->value, $replaceFields, true)) {
-                $this->marketLabelService->replaceImported($ingredient, $marketRows);
-            } else {
-                $this->marketLabelService->mergeImported($ingredient, $marketRows);
-            }
+            $this->marketLabelService->mergeImported(
+                $ingredient,
+                $marketRows,
+                overrideReviewed: in_array(IngredientEnrichmentReplaceField::MarketLabels->value, $replaceFields, true),
+            );
         }
 
         $ingredient = Ingredient::withoutGlobalScopes()->findOrFail($ingredient->id);

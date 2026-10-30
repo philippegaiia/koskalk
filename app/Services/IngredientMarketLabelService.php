@@ -83,13 +83,17 @@ class IngredientMarketLabelService
     }
 
     /**
+     * Imports proposed market rows without touching other markets. A label a
+     * reviewer has approved is kept unless the reviewer explicitly chose to
+     * override it.
+     *
      * @param  array<int, array<string, mixed>>  $rows
      */
-    public function mergeImported(Ingredient $ingredient, array $rows): void
+    public function mergeImported(Ingredient $ingredient, array $rows, bool $overrideReviewed = false): void
     {
         $validatedRows = $this->validatedRows($ingredient, $rows);
 
-        DB::transaction(function () use ($ingredient, $validatedRows): void {
+        DB::transaction(function () use ($ingredient, $validatedRows, $overrideReviewed): void {
             $lockedIngredient = Ingredient::withoutGlobalScopes()
                 ->lockForUpdate()
                 ->findOrFail($ingredient->id);
@@ -102,7 +106,7 @@ class IngredientMarketLabelService
                 ->map(fn (IngredientLabelMarket $market): string => $market->value);
 
             foreach ($validatedRows as $row) {
-                if ($reviewedMarketCodes->contains($row['market_code']->value)) {
+                if (! $overrideReviewed && $reviewedMarketCodes->contains($row['market_code']->value)) {
                     continue;
                 }
 

@@ -81,7 +81,12 @@ return [
             'ttl_days' => 30,
         ],
         'eur_lex_glossary' => [
+            // Cited to reviewers. EUR-Lex answers server requests with an empty
+            // 202 bot challenge, so the glossary is fetched from the Publications
+            // Office Cellar endpoint, which serves the same act as XHTML.
             'url' => 'https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32025D1175',
+            'fetch_url' => 'https://publications.europa.eu/resource/celex/32025D1175',
+            'fetch_language' => 'eng',
             'celex' => '32025D1175',
             'ttl_days' => 30,
         ],
@@ -105,7 +110,7 @@ return [
         'timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_TIMEOUT', 600),
         'connect_timeout_seconds' => (int) env('INGREDIENT_ENRICHMENT_CONNECT_TIMEOUT', 15),
         'prompt_version' => 'ingredient-enrichment-research-v3',
-        'editorial_prompt_version' => 'ingredient-enrichment-metadata-v1',
+        'editorial_prompt_version' => 'ingredient-enrichment-metadata-v2',
         'guidance_prompt_version' => 'ingredient-guidance-v16',
         'guidance_localization_prompt_version' => 'ingredient-guidance-localization-v6',
         'identity_name_localization_prompt_version' => 'ingredient-identity-name-localization-v1',

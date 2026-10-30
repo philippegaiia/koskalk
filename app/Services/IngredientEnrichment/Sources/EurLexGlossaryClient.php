@@ -33,18 +33,8 @@ class EurLexGlossaryClient
         }
 
         $source = config('ingredient-enrichment.sources.eur_lex_glossary');
-        $response = $this->http->text(
-            source: 'eur_lex_glossary',
-            url: (string) $source['url'],
-            query: [],
-            version: (string) $source['celex'],
-            ttl: now()->addDays((int) $source['ttl_days']),
-        );
-        $names = cache()->remember(
-            'ingredient-enrichment:eur-lex-glossary:'.hash('sha256', (string) $source['celex'].':parser-v1'),
-            now()->addDays((int) $source['ttl_days']),
-            fn (): array => $this->parseNameMap($response->payload),
-        );
+        $glossary = $this->glossary($source);
+        $names = $glossary['names'];
         $matchedNames = $requestedNames->map(fn (string $name): ?string => $names[$this->normalize($name)] ?? null);
         $commonName = $matchedNames->get('inci_name');
 
@@ -58,8 +48,8 @@ class EurLexGlossaryClient
                     ...($requestedNames->has('soap_inci_naoh_name') ? ['soap_inci_naoh_name' => $matchedNames->get('soap_inci_naoh_name')] : []),
                     ...($requestedNames->has('soap_inci_koh_name') ? ['soap_inci_koh_name' => $matchedNames->get('soap_inci_koh_name')] : []),
                 ],
-                evidence: $this->evidenceForMatchedNames($matchedNames, $source, $response->retrievedAt->toIso8601String()),
-                sourceCalls: $response->sourceCalls,
+                evidence: $this->evidenceForMatchedNames($matchedNames, $source, $glossary['retrieved_at']),
+                sourceCalls: $glossary['source_calls'],
             );
         }
 
@@ -72,9 +62,51 @@ class EurLexGlossaryClient
                 ...($requestedNames->has('soap_inci_naoh_name') ? ['soap_inci_naoh_name' => $matchedNames->get('soap_inci_naoh_name')] : []),
                 ...($requestedNames->has('soap_inci_koh_name') ? ['soap_inci_koh_name' => $matchedNames->get('soap_inci_koh_name')] : []),
             ],
-            evidence: $this->evidenceForMatchedNames($matchedNames, $source, $response->retrievedAt->toIso8601String()),
-            sourceCalls: $response->sourceCalls,
+            evidence: $this->evidenceForMatchedNames($matchedNames, $source, $glossary['retrieved_at']),
+            sourceCalls: $glossary['source_calls'],
         );
+    }
+
+    /**
+     * Only a non-empty parsed name map is cached, so an outage or challenge page
+     * fails the stage instead of silently disabling verification for the TTL.
+     *
+     * @param  array<string, mixed>  $source
+     * @return array{names: array<string, string>, retrieved_at: string, source_calls: int}
+     */
+    private function glossary(array $source): array
+    {
+        $cacheKey = 'ingredient-enrichment:eur-lex-glossary:'.hash('sha256', (string) $source['celex'].':parser-v2');
+        $cached = cache()->get($cacheKey);
+        if (is_array($cached) && is_array($cached['names'] ?? null) && $cached['names'] !== []) {
+            return [
+                'names' => $cached['names'],
+                'retrieved_at' => (string) $cached['retrieved_at'],
+                'source_calls' => 0,
+            ];
+        }
+
+        $response = $this->http->text(
+            source: 'eur_lex_glossary',
+            url: (string) ($source['fetch_url'] ?? $source['url']),
+            query: [],
+            version: (string) $source['celex'],
+            ttl: now()->addDays((int) $source['ttl_days']),
+            headers: filled($source['fetch_language'] ?? null) ? ['Accept-Language' => (string) $source['fetch_language']] : [],
+            cacheResponse: false,
+        );
+        $names = $this->parseNameMap($response->payload);
+        if ($names === []) {
+            throw new IngredientSourceException('eur_lex_glossary', $response->status);
+        }
+
+        $glossary = [
+            'names' => $names,
+            'retrieved_at' => $response->retrievedAt->toIso8601String(),
+        ];
+        cache()->put($cacheKey, $glossary, now()->addDays((int) $source['ttl_days']));
+
+        return [...$glossary, 'source_calls' => $response->sourceCalls];
     }
 
     /**

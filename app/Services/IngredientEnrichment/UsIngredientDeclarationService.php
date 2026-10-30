@@ -8,20 +8,28 @@ use Illuminate\Support\Str;
 
 class UsIngredientDeclarationService
 {
-    /** @var array<string, string> */
-    private const FDA_BOTANICAL_LABEL_EXAMPLES = [
-        'PRUNUS AMYGDALUS DULCIS OIL' => 'Sweet Almond (Prunus Amygdalus Dulcis) Oil',
+    /**
+     * US INCI names whose bracketed common name cannot be derived from the
+     * registry common name ("ALMOND OIL" would otherwise give "(Almond)").
+     *
+     * @var array<string, string>
+     */
+    private const KNOWN_US_INCI_NAMES = [
+        'PRUNUS AMYGDALUS DULCIS OIL' => 'Prunus Amygdalus Dulcis (Sweet Almond) Oil',
     ];
 
     /** @var list<string> */
     private const FORM_WORDS = ['oil', 'butter', 'tallow', 'fat', 'wax', 'lard', 'suet', 'ghee'];
 
     /** @var list<string> */
+    private const PLANT_PART_WORDS = ['seed', 'kernel', 'fruit', 'nut', 'extract', 'meal', 'husk', 'germ', 'pulp'];
+
+    /** @var list<string> */
     private const MEANINGFUL_EDITORIAL_SEPARATORS = ['/', '&', '+', '|'];
 
     /**
      * Editorial grade/processing phrases removed from a catalogue display name
-     * before it supplies the common part of an FDA-style label. These describe
+     * before it supplies the bracketed common name of a US INCI label. These describe
      * the product, never the material.
      *
      * @var list<string>
@@ -42,7 +50,7 @@ class UsIngredientDeclarationService
 
     /**
      * Single editorial qualifier words removed from a catalogue display name
-     * before it supplies the common part of an FDA-style label.
+     * before it supplies the bracketed common name of a US INCI label.
      *
      * @var list<string>
      */
@@ -87,7 +95,7 @@ class UsIngredientDeclarationService
             );
         }
 
-        $inciNames = collect([...($candidate['inci_names'] ?? []), $verifiedInciName])
+        $inciNames = collect([$verifiedInciName, ...($candidate['inci_names'] ?? [])])
             ->filter(fn (mixed $name): bool => is_string($name) && trim($name) !== '')
             ->map(fn (string $name): string => trim($name))
             ->unique(fn (string $name): string => Str::lower($name))
@@ -115,51 +123,48 @@ class UsIngredientDeclarationService
         );
     }
 
-    /** @param list<string> $inciNames */
+    /**
+     * Builds the US INCI label "Latin (Common) Part Form", for example
+     * "Cocos Nucifera (Coconut) Oil" or "Argania Spinosa (Argan) Kernel Oil".
+     *
+     * @param  list<string>  $inciNames
+     */
     private function harmonizedBotanicalName(string $commonName, array $inciNames, ?string $displayName = null): string
     {
         foreach ($inciNames as $inciName) {
-            $officialLabelExample = self::FDA_BOTANICAL_LABEL_EXAMPLES[Str::upper(trim($inciName))] ?? null;
+            $knownUsInciName = self::KNOWN_US_INCI_NAMES[Str::upper(trim($inciName))] ?? null;
 
-            if ($officialLabelExample !== null) {
-                return $officialLabelExample;
+            if ($knownUsInciName !== null) {
+                return $knownUsInciName;
             }
         }
 
-        foreach ([$commonName, ...$inciNames] as $name) {
-            if (preg_match('/^(?<latin>.+?)\s+\((?<common>[^)]+)\)\s+(?<suffix>.+)$/u', trim($name), $parts) !== 1) {
-                continue;
+        foreach ([...$inciNames, $commonName] as $name) {
+            if (preg_match('/^.+?\s+\([^)]+\)\s+.+$/u', trim($name)) === 1) {
+                return Str::title(trim($name));
             }
-
-            $plainCommonName = trim($parts['common'].' '.$parts['suffix']);
-            if (mb_strtolower($plainCommonName) !== mb_strtolower($commonName)) {
-                continue;
-            }
-
-            return Str::title($parts['common'])
-                .' ('.Str::title($parts['latin']).') '
-                .Str::title($parts['suffix']);
         }
 
-        $commonIsLatin = $inciNames !== []
-            && mb_strtolower(trim($commonName)) === mb_strtolower(trim((string) $inciNames[0]));
+        $commonIsLatin = collect($inciNames)
+            ->contains(fn (string $inciName): bool => mb_strtolower($inciName) === mb_strtolower(trim($commonName)));
         $commonPart = $commonIsLatin && is_string($displayName) && trim($displayName) !== ''
             ? $this->stripEditorialQualifiers($displayName)
             : $commonName;
-        $latin = $commonIsLatin ? $inciNames[0] : ($inciNames[0] ?? null);
 
-        $composed = $latin === null ? null : $this->composeBotanicalLabel($commonPart, $latin);
-        if ($composed !== null) {
-            return $composed;
+        foreach ($inciNames as $inciName) {
+            $composed = $this->composeUsInciLabel($commonPart, $inciName);
+            if ($composed !== null) {
+                return $composed;
+            }
         }
 
-        return $commonName;
+        return $this->plainInciName($commonPart, $inciNames) ?? $commonName;
     }
 
     /**
      * Removes editorial grade and marketing qualifiers ("Organic Virgin Marula
      * Oil" -> "Marula Oil") so the display name can supply the common part of
-     * an FDA-style declaration without leaking product claims onto a
+     * a US INCI declaration without leaking product claims onto a
      * regulatory surface. Material-distinguishing adjectives (sweet, bitter,
      * high oleic, ...) are preserved.
      */
@@ -582,10 +587,11 @@ class UsIngredientDeclarationService
     }
 
     /**
-     * Composes the FDA-style label "Common (Botanical) Form", for example
-     * "Coconut (Cocos Nucifera) Oil" or "Beef (Adeps Bovis) Tallow".
+     * Inserts the common name after the botanical name of a Latin INCI and
+     * keeps the INCI plant part and form after it: "Argan Oil" with
+     * "ARGANIA SPINOSA KERNEL OIL" gives "Argania Spinosa (Argan) Kernel Oil".
      */
-    private function composeBotanicalLabel(string $commonName, string $latin): ?string
+    private function composeUsInciLabel(string $commonName, string $latin): ?string
     {
         $formPattern = implode('|', collect(self::FORM_WORDS)
             ->map(fn (string $form): string => preg_quote($form, '/'))
@@ -599,33 +605,55 @@ class UsIngredientDeclarationService
             return null;
         }
 
-        $noun = trim($parts['noun']);
-        $form = trim($parts['form']);
-        $latin = $this->stripDuplicatedCommonAlias($latin, $noun);
-        $latinParts = preg_split('/\s+/u', Str::title($latin), -1, PREG_SPLIT_NO_EMPTY) ?: [];
-        while ($latinParts !== []
-            && in_array(mb_strtolower((string) end($latinParts)), [...self::FORM_WORDS, 'seed', 'kernel', 'fruit', 'nut', 'extract', 'meal', 'husk'], true)) {
-            array_pop($latinParts);
+        $botanicalWords = preg_split('/\s+/u', Str::title(trim($latin)), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $tailWords = [];
+        while ($botanicalWords !== []
+            && in_array(mb_strtolower((string) end($botanicalWords)), [...self::FORM_WORDS, ...self::PLANT_PART_WORDS], true)) {
+            array_unshift($tailWords, array_pop($botanicalWords));
         }
-        $latinBase = implode(' ', $latinParts);
-        if ($latinBase === '') {
+
+        if ($botanicalWords === [] || $tailWords === []
+            || ! in_array(mb_strtolower((string) end($tailWords)), self::FORM_WORDS, true)) {
             return null;
         }
 
-        return Str::title($noun).' ('.$latinBase.') '.Str::title($form);
+        $tailPartWords = collect(array_slice($tailWords, 0, -1))
+            ->map(fn (string $word): string => mb_strtolower($word))
+            ->all();
+        $commonWords = preg_split('/\s+/u', Str::title(trim($parts['noun'])), -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        while ($commonWords !== [] && in_array(mb_strtolower((string) end($commonWords)), $tailPartWords, true)) {
+            array_pop($commonWords);
+        }
+
+        $botanical = implode(' ', $botanicalWords);
+        $tail = implode(' ', $tailWords);
+        $common = implode(' ', $commonWords);
+
+        if ($common === '' || $this->normalizeNameForComparison($common) === $this->normalizeNameForComparison($botanical)) {
+            return $botanical.' '.$tail;
+        }
+
+        return $botanical.' ('.$common.') '.$tail;
     }
 
-    private function stripDuplicatedCommonAlias(string $latin, string $commonNoun): string
+    /**
+     * Picks a registry INCI that is itself a plain English name, such as
+     * "TALLOW" next to "ADEPS BOVIS", when no botanical label can be composed.
+     *
+     * @param  list<string>  $inciNames
+     */
+    private function plainInciName(string $commonName, array $inciNames): ?string
     {
-        $normalizedCommonNoun = $this->normalizeNameForComparison($commonNoun);
+        $commonWords = explode(' ', $this->normalizeNameForComparison($commonName));
 
-        return trim((string) (preg_replace_callback(
-            '/\s*\((?<alias>[^()]*)\)/u',
-            fn (array $matches): string => $this->normalizeNameForComparison((string) $matches['alias']) === $normalizedCommonNoun
-                ? ''
-                : (string) $matches[0],
-            $latin,
-        ) ?? $latin));
+        foreach ($inciNames as $inciName) {
+            $inciWords = explode(' ', $this->normalizeNameForComparison($inciName));
+            if ($inciWords !== [''] && array_diff($inciWords, $commonWords) === []) {
+                return Str::title(trim($inciName));
+            }
+        }
+
+        return null;
     }
 
     private function normalizeNameForComparison(string $name): string

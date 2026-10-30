@@ -9,7 +9,6 @@ use App\Contracts\IngredientGuidanceAuthoringClient;
 use App\Contracts\IngredientGuidanceLocalizationClient;
 use App\Contracts\IngredientGuidanceResearchClient;
 use App\Contracts\IngredientIdentityNameLocalizationClient;
-use App\Contracts\IngredientResearchClient;
 use App\Listeners\CreateDefaultCompany;
 use App\Listeners\SyncPlanEntitlementFromPaddleSubscription;
 use App\Services\ContextualHelp\OpenAiHelpTranslationClient;
@@ -19,7 +18,6 @@ use App\Services\IngredientEnrichment\OpenAiIngredientGapResearchClient;
 use App\Services\IngredientEnrichment\OpenAiIngredientGuidanceClient;
 use App\Services\IngredientEnrichment\OpenAiIngredientGuidanceLocalizationClient;
 use App\Services\IngredientEnrichment\OpenAiIngredientIdentityNameLocalizationClient;
-use App\Services\IngredientEnrichment\OpenAiIngredientResearchClient;
 use App\Services\IngredientEnrichment\SourcePublisherDomainResolver;
 use App\Services\LocalePreferenceResolver;
 use App\Services\WorkspaceAuthorization;
@@ -50,7 +48,6 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(IngredientGuidanceLocalizationClient::class, OpenAiIngredientGuidanceLocalizationClient::class);
         $this->app->bind(IngredientIdentityNameLocalizationClient::class, OpenAiIngredientIdentityNameLocalizationClient::class);
         $this->app->bind(IngredientGuidanceResearchClient::class, OpenAiIngredientGapResearchClient::class);
-        $this->app->bind(IngredientResearchClient::class, OpenAiIngredientResearchClient::class);
     }
 
     public function boot(): void

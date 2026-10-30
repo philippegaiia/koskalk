@@ -616,16 +616,16 @@ class IngredientEnrichmentPipeline
     private function result(array $input, array $facts, array $editorial): array
     {
         $proposal = is_array($facts['proposal'] ?? null) ? $facts['proposal'] : [];
-        $editorialSoapNaoh = filled($editorial['soap_inci_naoh_name'] ?? null)
-            ? $editorial['soap_inci_naoh_name']
-            : ($proposal['soap_inci_naoh_name'] ?? null);
-        $editorialSoapKoh = filled($editorial['soap_inci_koh_name'] ?? null)
-            ? $editorial['soap_inci_koh_name']
-            : ($proposal['soap_inci_koh_name'] ?? null);
+        $soapNaoh = filled($proposal['soap_inci_naoh_name'] ?? null)
+            ? $proposal['soap_inci_naoh_name']
+            : ($editorial['soap_inci_naoh_name'] ?? null);
+        $soapKoh = filled($proposal['soap_inci_koh_name'] ?? null)
+            ? $proposal['soap_inci_koh_name']
+            : ($editorial['soap_inci_koh_name'] ?? null);
         $proposal = [
             ...$proposal,
-            'soap_inci_naoh_name' => $editorialSoapNaoh,
-            'soap_inci_koh_name' => $editorialSoapKoh,
+            'soap_inci_naoh_name' => $soapNaoh,
+            'soap_inci_koh_name' => $soapKoh,
             'display_name' => $editorial['display_name'] ?? $proposal['display_name'] ?? null,
             'category' => filled($proposal['category'] ?? null)
                 ? $proposal['category']

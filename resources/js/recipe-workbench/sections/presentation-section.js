@@ -632,6 +632,12 @@ export function createPresentationSection() {
             return this.incorporatedSoapIngredientRows.reduce((sum, row) => sum + this.number(row.percent_of_formula), 0);
         },
 
+        incorporatedPercentOfOils(row) {
+            const oilWeight = this.oilWeightTotal();
+
+            return oilWeight > 0 ? (this.number(row.weight) / oilWeight) * 100 : null;
+        },
+
         outputIngredientCommonName(row) {
             const label = String(row.label ?? '').trim().toUpperCase();
             const standaloneNames = {

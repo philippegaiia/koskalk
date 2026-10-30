@@ -6700,8 +6700,8 @@ it('keeps the incorporated composition collapsed and exclusive to the soap outpu
     expect($xpath->query('//details[@data-incorporated-composition]//table'))->toHaveCount(1);
     $headings = $xpath->query('//details[@data-incorporated-composition]//th');
     expect(array_map(fn (DOMNode $heading): string => trim($heading->textContent), iterator_to_array($headings)))
-        ->toBe(['#', 'Ingredient', 'INCI name', '% formula']);
-    expect($xpath->query('//details[@data-incorporated-composition]//tbody/template/tr/td'))->toHaveCount(4);
+        ->toBe(['#', 'Ingredient', 'INCI name', '% total formula', '% of oils']);
+    expect($xpath->query('//details[@data-incorporated-composition]//tbody/template/tr/td'))->toHaveCount(5);
     expect($xpath->query('//details[@data-incorporated-composition]//tbody/tr/td[@colspan="2"]'))->toHaveCount(1);
     expect($soapOutput)->toContain('outputIngredientCommonName(row) || row.display_label || row.label');
     $compositionTables = $xpath->query('//table[colgroup]');
@@ -6765,6 +6765,7 @@ const workbench = {
     ],
   },
   number: (value) => Number(value ?? 0),
+  oilWeightTotal: () => 800,
   t: (key) => ({ 'output.common.water': 'Water', 'output.common.glycerin': 'Glycerin' }[key] ?? key),
 };
 
@@ -6786,6 +6787,10 @@ assert.equal(workbench.finalIngredientList, 'Olive oil, Aqua, Sodium hydroxide')
 assert.deepEqual(workbench.incorporatedSoapIngredientRows.map(row => row.label), ['OLIVE OIL', 'AQUA', 'SODIUM HYDROXIDE']);
 assert.equal(workbench.incorporatedSoapIngredientRows[1].weight, 200);
 assert.equal(workbench.incorporatedSoapIngredientTotalPercent, 100);
+assert.deepEqual(workbench.incorporatedSoapIngredientRows.map(row => workbench.incorporatedPercentOfOils(row)), [100, 25, 18]);
+workbench.oilWeightTotal = () => 0;
+assert.equal(workbench.incorporatedPercentOfOils(workbench.incorporatedSoapIngredientRows[0]), null);
+workbench.oilWeightTotal = () => 800;
 assert.equal(workbench.outputIngredientCommonName({ label: 'SODIUM OLIVATE', display_label: 'Sodium olivate', source_ingredients: ['Olive oil'] }), 'Olive oil');
 assert.equal(workbench.outputIngredientCommonName({ label: 'AQUA', display_label: 'Aqua', source_ingredients: ['Lye water'] }), 'Water');
 assert.equal(workbench.outputIngredientCommonName({ label: 'GLYCERIN', source_ingredients: ['Saponification'] }), '');

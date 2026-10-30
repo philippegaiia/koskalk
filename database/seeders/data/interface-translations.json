@@ -48530,12 +48530,12 @@
       "group": "workbench",
       "key": "output.soap.incorporated_help",
       "text": {
-        "de": "Vor Verseifung und Reifung, einschließlich Verdünnungsflüssigkeiten und Alkalien. Die Prozentwerte beziehen sich auf das Gesamtgewicht der Formel.",
-        "es": "Antes de la saponificación y el curado, incluidos los líquidos de dilución y los álcalis. Los porcentajes se basan en el peso total de la fórmula.",
-        "fr": "Avant saponification et cure, y compris les liquides de dilution et les alcalis. Les pourcentages sont calculés sur le poids total de la formule.",
-        "it": "Prima della saponificazione e della stagionatura, inclusi i liquidi di diluizione e gli alcali. Le percentuali si riferiscono al peso totale della formula.",
-        "nl": "Vóór verzeping en rijping, inclusief verdunningsvloeistoffen en alkaliën. De percentages zijn gebaseerd op het totale formulegewicht.",
-        "pt_BR": "Antes da saponificação e da cura, incluindo líquidos de diluição e álcalis. As porcentagens são calculadas sobre o peso total da fórmula."
+        "de": "Vor Verseifung und Reifung, einschließlich Verdünnungsflüssigkeiten und Alkalien. % Gesamtformel bezieht sich auf das Gesamtgewicht der Formel, % der Öle auf das Gesamtgewicht der Öle.",
+        "es": "Antes de la saponificación y el curado, incluidos los líquidos de dilución y los álcalis. El % de fórmula total se basa en el peso total de la fórmula; el % de aceites, en el peso total de los aceites.",
+        "fr": "Avant saponification et cure, y compris les liquides de dilution et les alcalis. Le % formule totale est calculé sur le poids total de la formule ; le % des huiles, sur le poids total des huiles.",
+        "it": "Prima della saponificazione e della stagionatura, inclusi i liquidi di diluizione e gli alcali. La % formula totale si riferisce al peso totale della formula; la % degli oli al peso totale degli oli.",
+        "nl": "Vóór verzeping en rijping, inclusief verdunningsvloeistoffen en alkaliën. % totale formule is gebaseerd op het totale formulegewicht, % van oliën op het totale oliegewicht.",
+        "pt_BR": "Antes da saponificação e da cura, incluindo líquidos de diluição e álcalis. A % da fórmula total é calculada sobre o peso total da fórmula; a % dos óleos, sobre o peso total dos óleos."
       }
     },
     {
@@ -48644,6 +48644,30 @@
         "it": "Lotto finito",
         "nl": "Afgewerkte batch",
         "pt_BR": "Lote pronto"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.percent_of_oils",
+      "text": {
+        "de": "% der Öle",
+        "es": "% de aceites",
+        "fr": "% des huiles",
+        "it": "% degli oli",
+        "nl": "% van oliën",
+        "pt_BR": "% dos óleos"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "output.soap.percent_total_formula",
+      "text": {
+        "de": "% Gesamtformel",
+        "es": "% fórmula total",
+        "fr": "% formule totale",
+        "it": "% formula totale",
+        "nl": "% totale formule",
+        "pt_BR": "% fórmula total"
       }
     },
     {

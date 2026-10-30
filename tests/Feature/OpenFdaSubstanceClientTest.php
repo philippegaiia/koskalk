@@ -1,6 +1,7 @@
 <?php
 
 use App\Services\IngredientEnrichment\Sources\OpenFdaSubstanceClient;
+use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
 
 beforeEach(function (): void {
@@ -185,6 +186,26 @@ it('continues FDA discovery past an ordinary alias until an exact INCI name is f
 /**
  * @return array<string, mixed>
  */
+it('falls back to sentence-case names when no upper-case name finds a record', function (): void {
+    Http::preventStrayRequests();
+    Http::fake(function (Request $request) {
+        return $request->data()['search'] === 'names.name:"Coconut oil"'
+            ? Http::response(openFdaFixture('openfda-coconut.json'))
+            : Http::response(['error' => ['code' => 'NOT_FOUND']], 404);
+    });
+
+    $result = app(OpenFdaSubstanceClient::class)->lookup([
+        'display_name' => 'Coconut oil',
+        'inci_name' => 'Cocos nucifera oil',
+        'identifiers' => [],
+    ]);
+    $searches = Http::recorded()->map(fn (array $recorded): string => (string) $recorded[0]->data()['search']);
+
+    expect(collect($result->data['candidates'])->pluck('unii')->all())->toBe(['Q9L0O73W7L'])
+        ->and($searches->first())->toBe('names.name:"COCOS NUCIFERA OIL"')
+        ->and($searches->last())->toBe('names.name:"Coconut oil"');
+});
+
 function openFdaFixture(string $name): array
 {
     return json_decode((string) file_get_contents(base_path("tests/Fixtures/IngredientEnrichment/{$name}")), true, flags: JSON_THROW_ON_ERROR);

@@ -3,8 +3,6 @@
 namespace App\Services\IngredientEnrichment;
 
 use App\Contracts\IngredientEditorialClient;
-use App\Contracts\IngredientGuidanceAuthoringClient;
-use App\Contracts\IngredientGuidanceResearchClient;
 use App\Contracts\IngredientIdentityNameLocalizationClient;
 use App\Data\IngredientEnrichmentPipelineResponse;
 use App\Data\IngredientSourceStageResult;
@@ -15,7 +13,6 @@ use App\Services\IngredientEnrichment\Sources\CosingCheckerClient;
 use App\Services\IngredientEnrichment\Sources\EurLexGlossaryClient;
 use App\Services\IngredientEnrichment\Sources\FdaColourAdditiveClient;
 use App\Services\IngredientEnrichment\Sources\OpenFdaSubstanceClient;
-use Carbon\CarbonImmutable;
 use Throwable;
 
 class IngredientEnrichmentPipeline
@@ -31,14 +28,9 @@ class IngredientEnrichmentPipeline
         private readonly IngredientEnrichmentFactsBuilder $facts,
         private readonly IngredientEditorialClient $editorial,
         private readonly IngredientIdentityNameLocalizationClient $identityNameLocalization,
-        private readonly IngredientGuidanceAuthoringClient $guidanceAuthoring,
-        private readonly IngredientGuidanceResearchClient $guidanceResearchClient,
-        private readonly IngredientGuidanceEvidencePolicy $guidanceEvidencePolicy,
-        private readonly LocalizedGuidanceHeadings $localizedGuidanceHeadings,
-        private readonly CorroboratedIngredientIdentifierService $corroboratedIdentifiers,
     ) {}
 
-    public function run(int $itemId, bool $allowGapResearch = false): IngredientEnrichmentPipelineResponse
+    public function run(int $itemId): IngredientEnrichmentPipelineResponse
     {
         $item = IngredientEnrichmentBatchItem::query()->findOrFail($itemId);
         $input = $this->input($item);
@@ -153,83 +145,9 @@ class IngredientEnrichmentPipeline
             );
         }
 
-        $guidanceGenerationEnabled = (bool) config(
-            'ingredient-enrichment.openai.guidance_generation.enabled',
-            false,
-        );
-        $guidanceResearch = $this->runStage(
-            $itemId,
-            IngredientEnrichmentResearchStage::AiGuidanceResearch,
-            function () use ($editorialFacts, $allowGapResearch, $guidanceGenerationEnabled): IngredientSourceStageResult {
-                if (! $guidanceGenerationEnabled) {
-                    return new IngredientSourceStageResult(
-                        stage: IngredientEnrichmentResearchStage::AiGuidanceResearch,
-                        status: 'skipped',
-                        data: ['reason' => 'external_guidance_workflow'],
-                    );
-                }
-
-                $shouldResearch = $allowGapResearch
-                    || (bool) config('ingredient-enrichment.openai.guidance_research.enabled', true);
-
-                if (! $shouldResearch) {
-                    return new IngredientSourceStageResult(
-                        stage: IngredientEnrichmentResearchStage::AiGuidanceResearch,
-                        status: 'completed',
-                        data: $this->emptyGuidanceResearchData(),
-                    );
-                }
-
-                $response = $this->guidanceResearchClient->research($editorialFacts);
-                $validation = $this->guidanceEvidencePolicy->partitionCandidates(
-                    $response->candidateEvidence,
-                    $response->sources,
-                );
-                $candidateEvidence = $validation->accepted;
-                $guidanceEvidence = $this->guidanceEvidencePolicy->toPersisted(
-                    $candidateEvidence,
-                    CarbonImmutable::now(),
-                );
-                $warnings = collect($response->warnings)
-                    ->when($validation->rejected !== [], fn ($warnings) => $warnings->push(
-                        trans_choice(
-                            'ingredient_enrichment.warnings.guidance_evidence_rejected',
-                            count($validation->rejected),
-                            ['count' => count($validation->rejected)],
-                        ),
-                    ))
-                    ->when($candidateEvidence === [], fn ($warnings) => $warnings->push(
-                        __('ingredient_enrichment.warnings.guidance_evidence_none_accepted'),
-                    ))
-                    ->filter(fn (mixed $warning): bool => is_string($warning) && trim($warning) !== '')
-                    ->unique()
-                    ->values()
-                    ->all();
-
-                return new IngredientSourceStageResult(
-                    stage: IngredientEnrichmentResearchStage::AiGuidanceResearch,
-                    status: 'completed',
-                    data: [
-                        'performed' => true,
-                        'candidate_evidence' => $candidateEvidence,
-                        'guidance_evidence' => $guidanceEvidence,
-                        'rejected_evidence' => $validation->rejected,
-                        'warnings' => $warnings,
-                        'unresolved_questions' => $response->unresolvedQuestions,
-                        'sources' => $response->sources,
-                        'provider_response_id' => $response->responseId,
-                        'provider_request_id' => $response->requestId,
-                        'provider_model' => $response->model,
-                        'input_tokens' => $response->inputTokens,
-                        'output_tokens' => $response->outputTokens,
-                        'web_search_calls' => $response->webSearchCalls,
-                    ],
-                );
-            },
-        );
-        if (($guidanceResearch->data['performed'] ?? false) === true) {
-            $facts = $this->corroboratedIdentifiers->merge($facts, $guidanceResearch->data['guidance_evidence'] ?? []);
-        }
+        // Guidance is researched and written only by the separate Rerun guidance
+        // workflow; full enrichment covers identity, declarations and names.
+        $this->skipGuidanceStage($itemId, IngredientEnrichmentResearchStage::AiGuidanceResearch);
         $editorial = $this->runStage(
             $itemId,
             IngredientEnrichmentResearchStage::AiEditorial,
@@ -307,98 +225,14 @@ class IngredientEnrichmentPipeline
                 );
             },
         );
-        $legacyGuidance = array_key_exists('info_markdown', $metadataValues)
-            ? [
-                'info_markdown' => is_string($metadataValues['info_markdown'] ?? null)
-                    ? $metadataValues['info_markdown']
-                    : '',
-                'warnings' => $metadataValues['warnings'] ?? [],
-                'unresolved_questions' => $metadataValues['unresolved_questions'] ?? [],
-            ]
-            : null;
-        $guidance = $this->runStage(
-            $itemId,
-            IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
-            function () use ($editorialFacts, $guidanceResearch, $legacyGuidance, $guidanceGenerationEnabled): IngredientSourceStageResult {
-                if (! $guidanceGenerationEnabled) {
-                    return new IngredientSourceStageResult(
-                        stage: IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
-                        status: 'skipped',
-                        data: ['reason' => 'external_guidance_workflow'],
-                    );
-                }
-
-                if ($legacyGuidance !== null) {
-                    return new IngredientSourceStageResult(
-                        stage: IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
-                        status: 'completed',
-                        data: [
-                            'guidance' => $legacyGuidance,
-                            'provider_response_id' => '',
-                            'provider_request_id' => '',
-                            'provider_model' => '',
-                            'input_tokens' => 0,
-                            'output_tokens' => 0,
-                        ],
-                    );
-                }
-
-                $context = [
-                    ...$editorialFacts,
-                    'guidance_evidence' => $this->guidanceEvidence($guidanceResearch),
-                    'guidance_unresolved_questions' => is_array($guidanceResearch->data['unresolved_questions'] ?? null)
-                        ? $guidanceResearch->data['unresolved_questions']
-                        : [],
-                ];
-                $response = $this->guidanceAuthoring->author($context);
-
-                return new IngredientSourceStageResult(
-                    stage: IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
-                    status: 'completed',
-                    data: [
-                        'guidance' => $response->guidance,
-                        'provider_response_id' => $response->responseId,
-                        'provider_request_id' => $response->requestId,
-                        'provider_model' => $response->model,
-                        'input_tokens' => $response->inputTokens,
-                        'output_tokens' => $response->outputTokens,
-                    ],
-                );
-            },
-        );
-        $this->runStage(
-            $itemId,
-            IngredientEnrichmentResearchStage::AiGuidanceLocalization,
-            fn (): IngredientSourceStageResult => new IngredientSourceStageResult(
-                stage: IngredientEnrichmentResearchStage::AiGuidanceLocalization,
-                status: 'skipped',
-                data: ['reason' => $guidanceGenerationEnabled ? 'separate_translation_workflow' : 'external_guidance_workflow'],
-            ),
-        );
-        $metadataValues['info_markdown'] = $guidanceGenerationEnabled
-            ? (string) data_get($guidance->data, 'guidance.info_markdown', '')
-            : null;
-        $metadataValues['warnings'] = collect($metadataValues['warnings'] ?? [])
-            ->merge(data_get($guidance->data, 'guidance.warnings', []))
-            ->merge($guidanceResearch->data['warnings'] ?? [])
-            ->filter()->unique()->values()->all();
-        $metadataValues['unresolved_questions'] = collect($metadataValues['unresolved_questions'] ?? [])
-            ->merge(data_get($guidance->data, 'guidance.unresolved_questions', []))
-            ->merge($guidanceResearch->data['unresolved_questions'] ?? [])
-            ->filter()->unique()->values()->all();
-        $soapmakingRelevant = $guidanceGenerationEnabled
-            ? $this->localizedGuidanceHeadings->hasExactHeading(
-                (string) $metadataValues['info_markdown'],
-                (string) config('ingredient-enrichment.guidance.soapmaking_heading', 'Soapmaking'),
-            )
-            : (bool) ($metadataValues['soapmaking_relevant'] ?? false);
-        $metadataValues['soapmaking_relevant'] = $soapmakingRelevant;
+        $this->skipGuidanceStage($itemId, IngredientEnrichmentResearchStage::AiGuidanceAuthoring);
+        $this->skipGuidanceStage($itemId, IngredientEnrichmentResearchStage::AiGuidanceLocalization);
+        $metadataValues['info_markdown'] = null;
+        $metadataValues['soapmaking_relevant'] = (bool) ($metadataValues['soapmaking_relevant'] ?? false);
         $metadataValues['translations'] = is_array($identityNameLocalization->data['translations'] ?? null)
             ? $identityNameLocalization->data['translations']
             : [];
-        $metadataValues['guidance_evidence'] = $guidanceGenerationEnabled
-            ? $this->guidanceEvidence($guidanceResearch)
-            : [];
+        $metadataValues['guidance_evidence'] = [];
         $validation = $this->runStage(
             $itemId,
             IngredientEnrichmentResearchStage::Validation,
@@ -419,50 +253,29 @@ class IngredientEnrichmentPipeline
                     'url' => (string) $evidence['source_url'],
                     'title' => (string) ($evidence['source_name'] ?? $evidence['source_url']),
                 ])
-                ->merge(collect($guidanceResearch->data['sources'] ?? [])
-                    ->filter(fn (mixed $source): bool => is_array($source)
-                        && is_string($source['url'] ?? null)
-                        && collect($guidanceResearch->data['guidance_evidence'] ?? [])
-                            ->contains(fn (mixed $evidence): bool => is_array($evidence)
-                                && ($evidence['source_url'] ?? null) === $source['url']))
-                    ->map(fn (array $source): array => [
-                        'url' => (string) $source['url'],
-                        'title' => (string) ($source['title'] ?? $source['url']),
-                    ])
-                    ->values()
-                    ->all())
                 ->unique('url')
                 ->values()
                 ->all(),
             providerResponseId: (string) (
-                $guidance->data['provider_response_id']
-                    ?? $identityNameLocalization->data['provider_response_id']
+                $identityNameLocalization->data['provider_response_id']
                     ?? $editorial->data['provider_response_id']
                     ?? ''
             ),
             providerRequestId: (string) (
-                $guidance->data['provider_request_id']
-                    ?? $identityNameLocalization->data['provider_request_id']
+                $identityNameLocalization->data['provider_request_id']
                     ?? $editorial->data['provider_request_id']
                     ?? ''
             ),
             providerModel: (string) (
-                $guidance->data['provider_model']
-                    ?? $identityNameLocalization->data['provider_model']
+                $identityNameLocalization->data['provider_model']
                     ?? $editorial->data['provider_model']
                     ?? ''
             ),
             inputTokens: (int) ($editorial->data['input_tokens'] ?? 0)
-                + (int) ($identityNameLocalization->data['input_tokens'] ?? 0)
-                + (int) ($guidance->data['input_tokens'] ?? 0)
-                + (int) ($guidanceResearch->data['input_tokens'] ?? 0),
+                + (int) ($identityNameLocalization->data['input_tokens'] ?? 0),
             outputTokens: (int) ($editorial->data['output_tokens'] ?? 0)
-                + (int) ($identityNameLocalization->data['output_tokens'] ?? 0)
-                + (int) ($guidance->data['output_tokens'] ?? 0)
-                + (int) ($guidanceResearch->data['output_tokens'] ?? 0),
-            webSearchCalls: (int) ($editorial->data['web_search_calls'] ?? 0)
-                + (int) ($guidance->data['web_search_calls'] ?? 0)
-                + (int) ($guidanceResearch->data['web_search_calls'] ?? 0),
+                + (int) ($identityNameLocalization->data['output_tokens'] ?? 0),
+            webSearchCalls: (int) ($editorial->data['web_search_calls'] ?? 0),
             structuredSourceCalls: collect($completed)->sum(fn (array $stage): int => (int) ($stage['source_calls'] ?? 0)),
         );
     }
@@ -503,36 +316,13 @@ class IngredientEnrichmentPipeline
         return $normalized->all();
     }
 
-    /** @return array<string, mixed> */
-    private function emptyGuidanceResearchData(): array
+    private function skipGuidanceStage(int $itemId, IngredientEnrichmentResearchStage $stage): void
     {
-        return [
-            'performed' => false,
-            'candidate_evidence' => [],
-            'guidance_evidence' => [],
-            'rejected_evidence' => [],
-            'warnings' => [],
-            'unresolved_questions' => [],
-            'sources' => [],
-            'provider_response_id' => '',
-            'provider_request_id' => '',
-            'provider_model' => '',
-            'input_tokens' => 0,
-            'output_tokens' => 0,
-            'web_search_calls' => 0,
-        ];
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    private function guidanceEvidence(IngredientSourceStageResult $guidanceResearch): array
-    {
-        $rows = $guidanceResearch->data['guidance_evidence']
-            ?? $guidanceResearch->data['candidate_evidence']
-            ?? [];
-
-        return $this->guidanceEvidencePolicy->normalizePersisted($rows);
+        $this->runStage($itemId, $stage, fn (): IngredientSourceStageResult => new IngredientSourceStageResult(
+            stage: $stage,
+            status: 'skipped',
+            data: ['reason' => 'separate_guidance_workflow'],
+        ));
     }
 
     /** @param array<string, mixed> $record @return array<string, mixed> */

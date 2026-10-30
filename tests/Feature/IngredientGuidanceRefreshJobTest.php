@@ -1147,7 +1147,7 @@ it('invalidates downstream guidance caches when a queued retry recomputes author
 
     $job = new GenerateIngredientGuidanceRefresh($fixture['item']->id);
     expect(fn () => $job->handle(app(IngredientGuidanceRefreshProcessor::class)))
-        ->toThrow(LogicException::class);
+        ->toThrow(ValidationException::class);
 
     expect($calls)->toBe(['author' => 1, 'localize' => 0])
         ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_authoring.status'))->toBe('failed')
@@ -2349,9 +2349,10 @@ it('fails fresh authoring with invalid required sections before localization', f
     $fixture = guidanceResumeFixture();
 
     expect(fn () => app(IngredientGuidanceRefreshProcessor::class)->handle($fixture['item']->id))
-        ->toThrow(LogicException::class);
+        ->toThrow(ValidationException::class);
 
     expect($calls)->toBe(['author' => 1, 'localize' => 0])
+        ->and($fixture['item']->fresh()->failure_message)->toStartWith('The generated guidance was rejected:')
         ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_authoring.status'))->toBe('failed')
         ->and(data_get($fixture['item']->fresh()->research_stages, 'ai_guidance_localization'))->toBeNull();
 

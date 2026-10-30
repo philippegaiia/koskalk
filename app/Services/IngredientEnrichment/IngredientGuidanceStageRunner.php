@@ -11,6 +11,7 @@ use App\Models\IngredientEnrichmentBatch;
 use App\Models\IngredientEnrichmentBatchItem;
 use App\Services\IngredientTranslationSourceFingerprint;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use LogicException;
 use Throwable;
 
@@ -278,10 +279,32 @@ class IngredientGuidanceStageRunner
         }
         $this->validateStringList($guidance, 'warnings', 'Guidance authoring stage data');
         $this->validateStringList($guidance, 'unresolved_questions', 'Guidance authoring stage data');
-        if (! $this->validator->validateGuidance($englishGuidance)['valid']) {
-            throw new LogicException('Guidance authoring stage data contains invalid guidance.');
+        $validation = $this->validator->validateGuidance($englishGuidance);
+        if (! $validation['valid']) {
+            $this->rejectGuidance($validation['errors'], $guidance['warnings']);
         }
         $this->validateProviderAccounting($data, 'Guidance authoring stage data');
+    }
+
+    /**
+     * Rejected guidance fails the item with a reviewer-readable reason instead
+     * of a bare exception class, so the cause shows in Failure details.
+     *
+     * @param  array<string, list<string>>  $errors
+     * @param  list<string>  $warnings
+     *
+     * @throws ValidationException
+     */
+    private function rejectGuidance(array $errors, array $warnings): never
+    {
+        $reasons = collect($errors)->flatten()->filter(fn (mixed $error): bool => is_string($error))->unique();
+        if (in_array(__('ingredient_enrichment.warnings.guidance_claim_omitted'), $warnings, true)) {
+            $reasons->push(__('ingredient_enrichment.validation.guidance_claims_dropped'));
+        }
+
+        throw ValidationException::withMessages([
+            'info_markdown' => [__('ingredient_enrichment.validation.guidance_rejected', ['reason' => $reasons->implode(' ')])],
+        ]);
     }
 
     /**

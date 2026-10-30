@@ -66,6 +66,8 @@ return [
         'saponification_name_required' => 'A saponification name is required for soapmaking-relevant ingredients.',
         'guidance_headings' => 'Guidance headings must use the approved sections in order.',
         'guidance_required_section_body' => 'Overview and Formulation use must each include guidance content.',
+        'guidance_rejected' => 'The generated guidance was rejected: :reason',
+        'guidance_claims_dropped' => 'Some sentences were dropped because no research source or ingredient fact supported them; run Rerun guidance with Fresh research.',
         'aliases_array' => 'Synonyms must be an array.',
         'alias_object' => 'Each synonym must be an object.',
         'alias_locale' => 'The synonym language code is invalid.',

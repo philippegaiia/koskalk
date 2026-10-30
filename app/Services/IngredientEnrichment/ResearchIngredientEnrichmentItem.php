@@ -90,7 +90,7 @@ class ResearchIngredientEnrichmentItem
         }
 
         try {
-            $response = $this->pipeline->run($itemId, $allowGapResearch);
+            $response = $this->pipeline->run($itemId);
             if (($response->result['identity_unresolved'] ?? false) === true) {
                 $this->markIdentityUnresolved($itemId, $response->result);
 

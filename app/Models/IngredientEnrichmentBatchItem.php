@@ -132,8 +132,14 @@ class IngredientEnrichmentBatchItem extends Model
 
         $orderedStages = $effectiveMode?->guidanceStages() ?? [];
         if ($orderedStages === []) {
+            // Full enrichment never runs the guidance stages (they belong to the
+            // separate guidance workflow), so their skipped rows are not gaps.
             $orderedStages = collect(IngredientEnrichmentResearchStage::ordered())
-                ->reject(fn (IngredientEnrichmentResearchStage $stage): bool => $stage === IngredientEnrichmentResearchStage::AiGuidanceLocalization)
+                ->reject(fn (IngredientEnrichmentResearchStage $stage): bool => in_array($stage, [
+                    IngredientEnrichmentResearchStage::AiGuidanceResearch,
+                    IngredientEnrichmentResearchStage::AiGuidanceAuthoring,
+                    IngredientEnrichmentResearchStage::AiGuidanceLocalization,
+                ], true))
                 ->values()
                 ->all();
         }

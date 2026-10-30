@@ -303,10 +303,7 @@ class IngredientEnrichmentBatchService
                         return new GenerateIngredientGuidanceRefresh($item->id);
                     }
 
-                    return new ResearchIngredientEnrichment(
-                        $item->id,
-                        (bool) data_get($item->snapshot, 'research_rules.allow_gap_research', false),
-                    );
+                    return new ResearchIngredientEnrichment($item->id);
                 })
                 ->all();
 

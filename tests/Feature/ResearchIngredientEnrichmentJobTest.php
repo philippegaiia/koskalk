@@ -62,7 +62,7 @@ it('marks an item with the identity-unresolved failure when the pipeline gates b
     {
         public function __construct() {}
 
-        public function run(int $itemId, bool $allowGapResearch = false): IngredientEnrichmentPipelineResponse
+        public function run(int $itemId): IngredientEnrichmentPipelineResponse
         {
             return new IngredientEnrichmentPipelineResponse([
                 'format' => 'soapkraft-ingredient-enrichment-result',
@@ -114,7 +114,7 @@ it('researches, validates, plans, and persists a proposal without changing the i
     {
         public function __construct(private array $result, private array $source) {}
 
-        public function run(int $itemId, bool $allowGapResearch = false): IngredientEnrichmentPipelineResponse
+        public function run(int $itemId): IngredientEnrichmentPipelineResponse
         {
             return new IngredientEnrichmentPipelineResponse($this->result, [$this->source], 'resp_1', 'req_1', 'gpt-test', 100, 50, 0, 3);
         }
@@ -173,7 +173,7 @@ it('validates and plans an intake proposal before it reaches review', function (
     {
         public function __construct(private array $result, private array $source) {}
 
-        public function run(int $itemId, bool $allowGapResearch = false): IngredientEnrichmentPipelineResponse
+        public function run(int $itemId): IngredientEnrichmentPipelineResponse
         {
             return new IngredientEnrichmentPipelineResponse($this->result, [$this->source], 'resp_intake', 'req_intake', 'gpt-test', 100, 50, 0, 3);
         }
@@ -208,7 +208,7 @@ it('marks a changed source snapshot stale without calling the provider', functio
     {
         public function __construct() {}
 
-        public function run(int $itemId, bool $allowGapResearch = false): IngredientEnrichmentPipelineResponse
+        public function run(int $itemId): IngredientEnrichmentPipelineResponse
         {
             throw new RuntimeException('Provider must not be called.');
         }
@@ -238,7 +238,7 @@ it('persists safe provider diagnostics when research fails', function (): void {
     {
         public function __construct() {}
 
-        public function run(int $itemId, bool $allowGapResearch = false): IngredientEnrichmentPipelineResponse
+        public function run(int $itemId): IngredientEnrichmentPipelineResponse
         {
             throw new IngredientResearchProviderException(
                 'provider_http_400_unsupported_parameter',
@@ -278,7 +278,7 @@ it('persists safe field diagnostics when a generated proposal fails validation',
     {
         public function __construct() {}
 
-        public function run(int $itemId, bool $allowGapResearch = false): IngredientEnrichmentPipelineResponse
+        public function run(int $itemId): IngredientEnrichmentPipelineResponse
         {
             IngredientEnrichmentBatchItem::query()->findOrFail($itemId)->update([
                 'research_stages' => [

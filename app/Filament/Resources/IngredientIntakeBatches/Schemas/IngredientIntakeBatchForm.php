@@ -8,7 +8,6 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
@@ -37,9 +36,6 @@ class IngredientIntakeBatchForm
                             ->label(__('ingredient_intake_admin.form.notes'))
                             ->rows(3)
                             ->columnSpanFull(),
-                        Toggle::make('allow_gap_research')
-                            ->label(__('ingredient_intake_admin.form.allow_gap_research'))
-                            ->helperText(__('ingredient_intake_admin.form.allow_gap_research_help')),
                     ])
                     ->columns([
                         'default' => 1,

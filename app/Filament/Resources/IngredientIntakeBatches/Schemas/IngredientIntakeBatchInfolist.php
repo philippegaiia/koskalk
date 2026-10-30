@@ -23,10 +23,6 @@ class IngredientIntakeBatchInfolist
                         TextEntry::make('input_method')->formatStateUsing(fn ($state): string => $state->label()),
                         TextEntry::make('family_hint')
                             ->formatStateUsing(fn ($state): string => $state?->label() ?? __('ingredient_intake_admin.table.no_family')),
-                        TextEntry::make('allow_gap_research')
-                            ->formatStateUsing(fn (mixed $state): string => $state
-                                ? __('ingredient_intake_admin.infolist.enabled')
-                                : __('ingredient_intake_admin.infolist.disabled')),
                         TextEntry::make('total_count'),
                         TextEntry::make('ready_count'),
                         TextEntry::make('failed_count'),

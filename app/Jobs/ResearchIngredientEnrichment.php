@@ -23,7 +23,6 @@ class ResearchIngredientEnrichment implements ShouldBeUnique, ShouldQueue
 
     public function __construct(
         public readonly int $itemId,
-        public readonly bool $allowGapResearch = false,
     ) {
         $this->timeout = (int) config('ingredient-enrichment.direct_ai.job_timeout_seconds');
     }
@@ -34,7 +33,7 @@ class ResearchIngredientEnrichment implements ShouldBeUnique, ShouldQueue
             return;
         }
 
-        $processor->handle($this->itemId, $this->allowGapResearch);
+        $processor->handle($this->itemId);
     }
 
     public function failed(?Throwable $exception): void

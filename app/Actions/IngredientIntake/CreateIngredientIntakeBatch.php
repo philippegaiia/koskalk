@@ -75,7 +75,6 @@ class CreateIngredientIntakeBatch
                     'notes' => $validated['notes'],
                     'input_method' => $validated['input_method'],
                     'family_hint' => $validated['family_hint'],
-                    'allow_gap_research' => $validated['allow_gap_research'],
                     'original_filename' => $upload instanceof UploadedFile
                         ? $upload->getClientOriginalName()
                         : null,
@@ -117,8 +116,7 @@ class CreateIngredientIntakeBatch
      *     name: string,
      *     notes: string|null,
      *     input_method: IngredientIntakeInputMethod,
-     *     family_hint: IngredientResearchFamily|null,
-     *     allow_gap_research: bool
+     *     family_hint: IngredientResearchFamily|null
      * }
      */
     private function validateMetadata(array $metadata, int $rowCount): array
@@ -169,7 +167,6 @@ class CreateIngredientIntakeBatch
             'notes' => is_string($metadata['notes'] ?? null) ? trim($metadata['notes']) : null,
             'input_method' => $inputMethod,
             'family_hint' => $familyHint,
-            'allow_gap_research' => (bool) ($metadata['allow_gap_research'] ?? false),
         ];
     }
 

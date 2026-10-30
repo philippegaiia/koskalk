@@ -112,7 +112,6 @@ class IngredientEnrichmentInputBuilder
                 'research_family' => $subject->researchFamily->value,
                 'duplicate_context' => $subject->duplicateContext,
                 'duplicate_resolution' => $subject->duplicateResolution?->value,
-                'allow_gap_research' => $subject->allowGapResearch,
             ],
         ];
 

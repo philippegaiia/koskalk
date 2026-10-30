@@ -127,9 +127,6 @@ return [
             'pubmed.ncbi.nlm.nih.gov',
             'cir-safety.org',
         ],
-        'gap_research' => [
-            'enabled' => env('INGREDIENT_ENRICHMENT_GAP_RESEARCH_ENABLED', false),
-        ],
         'guidance_generation' => [
             'enabled' => env('INGREDIENT_ENRICHMENT_GUIDANCE_GENERATION_ENABLED', false),
         ],

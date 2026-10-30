@@ -22,7 +22,6 @@ final readonly class IngredientEnrichmentSubject
         public ?IngredientDuplicateResolution $duplicateResolution,
         public IngredientResearchFamily $researchFamily,
         public string $fingerprint,
-        public bool $allowGapResearch = false,
     ) {}
 
     /**
@@ -51,7 +50,6 @@ final readonly class IngredientEnrichmentSubject
             'duplicate_context' => $this->duplicateContext,
             'duplicate_resolution' => $this->duplicateResolution?->value,
             'research_family' => $this->researchFamily->value,
-            'allow_gap_research' => $this->allowGapResearch,
         ];
     }
 

@@ -30,7 +30,6 @@ class CreateIngredientIntakeBatch extends CreateRecord
             'notes' => $data['notes'] ?? null,
             'input_method' => $data['input_method'] ?? null,
             'family_hint' => $data['family_hint'] ?? null,
-            'allow_gap_research' => $data['allow_gap_research'] ?? false,
             'upload' => $upload,
         ], $rows);
     }

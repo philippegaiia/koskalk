@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
-    'created_by_user_id', 'status', 'name', 'notes', 'input_method', 'family_hint', 'allow_gap_research',
+    'created_by_user_id', 'status', 'name', 'notes', 'input_method', 'family_hint',
     'original_filename', 'storage_disk', 'storage_path', 'ingredient_enrichment_batch_id',
     'total_count', 'draft_count', 'needs_resolution_count', 'queued_count', 'researching_count',
     'ready_count', 'failed_count', 'approved_count', 'promoted_count', 'rejected_count',
@@ -30,7 +30,6 @@ class IngredientIntakeBatch extends Model
     protected $attributes = [
         'status' => IngredientIntakeBatchStatus::Draft->value,
         'input_method' => IngredientIntakeInputMethod::Paste->value,
-        'allow_gap_research' => false,
         'total_count' => 0,
         'draft_count' => 0,
         'needs_resolution_count' => 0,
@@ -64,7 +63,6 @@ class IngredientIntakeBatch extends Model
             'status' => IngredientIntakeBatchStatus::class,
             'input_method' => IngredientIntakeInputMethod::class,
             'family_hint' => IngredientResearchFamily::class,
-            'allow_gap_research' => 'boolean',
             'total_count' => 'integer',
             'draft_count' => 'integer',
             'needs_resolution_count' => 'integer',

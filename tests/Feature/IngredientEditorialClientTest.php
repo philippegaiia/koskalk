@@ -115,7 +115,7 @@ it('redacts an unparseable provider error body after transient retries', functio
 
 it('uses bounded practical web search only in an explicitly enabled guidance-research call', function (): void {
     config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
-    config()->set('ingredient-enrichment.openai.gap_research.enabled', true);
+    config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
     Http::preventStrayRequests();
     Http::fake([
         'api.openai.com/v1/responses' => Http::response([
@@ -190,9 +190,8 @@ it('uses bounded practical web search only in an explicitly enabled guidance-res
     });
 });
 
-it('does not permit an implicit gap-research request when the feature is disabled', function (): void {
+it('does not permit an implicit guidance-research request when research is disabled', function (): void {
     config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
-    config()->set('ingredient-enrichment.openai.gap_research.enabled', false);
     config()->set('ingredient-enrichment.openai.guidance_research.enabled', false);
     Http::preventStrayRequests();
     Http::fake();
@@ -205,7 +204,6 @@ it('does not permit an implicit gap-research request when the feature is disable
 
 it('allows an explicitly fresh research call when ordinary research is disabled', function (): void {
     config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
-    config()->set('ingredient-enrichment.openai.gap_research.enabled', false);
     config()->set('ingredient-enrichment.openai.guidance_research.enabled', false);
     Http::preventStrayRequests();
     Http::fake([
@@ -346,7 +344,7 @@ it('returns blocked guidance candidates without applying the evidence policy in 
 
 it('does not apply identity evidence policy inside the guidance transport', function (): void {
     config()->set('ingredient-enrichment.openai.api_key', 'test-key-never-log');
-    config()->set('ingredient-enrichment.openai.gap_research.enabled', true);
+    config()->set('ingredient-enrichment.openai.guidance_research.enabled', true);
     Http::preventStrayRequests();
     Http::fake([
         'api.openai.com/v1/responses' => Http::response([

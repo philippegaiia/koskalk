@@ -19,8 +19,6 @@ return [
         'pasted_input_help' => "Include a header, for example:\ncurrent_name,inci_name\nCoconut Oil,",
         'upload' => 'CSV file',
         'upload_help' => 'Private upload. Supported columns are current_name and inci_name; the original file is retained with the batch.',
-        'allow_gap_research' => 'Allow controlled gap research',
-        'allow_gap_research_help' => 'Use the approved-site gap stage for unresolved fields after deterministic sources have been checked.',
         'current_name' => 'Current name',
         'inci_name' => 'INCI name',
         'resolution' => 'Duplicate decision',
@@ -62,8 +60,6 @@ return [
     'infolist' => [
         'summary' => 'Intake summary',
         'enrichment_batch' => 'Research batch',
-        'enabled' => 'Enabled',
-        'disabled' => 'Disabled',
     ],
     'item' => [
         'row' => 'Row',

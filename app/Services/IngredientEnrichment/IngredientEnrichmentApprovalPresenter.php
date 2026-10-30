@@ -25,7 +25,14 @@ class IngredientEnrichmentApprovalPresenter
         foreach (IngredientEnrichmentReplaceField::cases() as $field) {
             $decision = $decisions->get($this->decisionPath($field));
 
-            if (! is_array($decision) || ! $this->wouldOverwriteExistingValue($field, $decision)) {
+            if (! is_array($decision)) {
+                continue;
+            }
+
+            $isConflict = $field === IngredientEnrichmentReplaceField::MarketLabels
+                ? $this->hasPreservedReviewedRow($decisions->keys()->all(), $decisions->all())
+                : $this->wouldOverwriteExistingValue($field, $decision);
+            if (! $isConflict) {
                 continue;
             }
 
@@ -62,10 +69,22 @@ class IngredientEnrichmentApprovalPresenter
                 strtoupper((string) ($row['normalized_value'] ?? $row['value'] ?? '')),
             ])),
             IngredientEnrichmentReplaceField::CosingFunctions => $this->removesRows($current, $proposed, fn (array $row): string => (string) ($row['key'] ?? '')),
-            IngredientEnrichmentReplaceField::MarketLabels => $this->removesRows($current, $proposed, fn (array $row): string => (string) ($row['market_code'] ?? '')),
             IngredientEnrichmentReplaceField::Translations => $this->translationsWouldBeOverwritten($current, $proposed),
             default => true,
         };
+    }
+
+    /**
+     * A reviewed market label is kept on apply, so offering Replace is the only
+     * way to accept a changed declaration for that market.
+     *
+     * @param  list<string>  $fields
+     * @param  array<string, array<string, mixed>>  $decisions
+     */
+    private function hasPreservedReviewedRow(array $fields, array $decisions): bool
+    {
+        return collect($fields)->contains(fn (string $field): bool => str_starts_with($field, 'proposal.market_labels.')
+            && ($decisions[$field]['decision'] ?? null) === 'preserved');
     }
 
     /**

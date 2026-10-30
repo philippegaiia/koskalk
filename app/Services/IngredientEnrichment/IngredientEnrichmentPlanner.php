@@ -5,6 +5,7 @@ namespace App\Services\IngredientEnrichment;
 use App\Enums\IngredientEnrichmentReplaceField;
 use App\Enums\IngredientSubcategory;
 use App\Models\Ingredient;
+use App\Models\IngredientMarketLabel;
 use Carbon\CarbonImmutable;
 use Illuminate\Validation\ValidationException;
 
@@ -29,6 +30,7 @@ class IngredientEnrichmentPlanner
         $warnings = [];
         $errors = [];
         $effective = $current;
+        $reviewedMarketCodes = $this->reviewedMarketCodes($ingredient);
 
         foreach (['display_name', 'inci_name', 'category', 'subcategory', 'saponification_name', 'soap_inci_naoh_name', 'soap_inci_koh_name', 'info_markdown'] as $field) {
             $currentValue = data_get($current, "canonical.{$field}");
@@ -71,7 +73,7 @@ class IngredientEnrichmentPlanner
             $replaceCollection = in_array($field, $replaceFields, true);
             $collection = $replaceCollection
                 ? $this->replaceRows($field, $currentRows, $proposedRows)
-                : $this->mergeRows($field, $currentRows, $proposedRows);
+                : $this->mergeRows($field, $currentRows, $proposedRows, $field === 'market_labels' ? $reviewedMarketCodes : []);
             $decision = $this->collectionDecision($currentRows, $collection, $replaceCollection);
 
             $decisions[] = [
@@ -89,7 +91,12 @@ class IngredientEnrichmentPlanner
             if (in_array($field, ['cosing_functions', 'market_labels'], true)) {
                 $decisions = [
                     ...$decisions,
-                    ...$this->sourceBackedRowDecisions($field, $currentRows, $proposedRows),
+                    ...$this->sourceBackedRowDecisions(
+                        $field,
+                        $currentRows,
+                        $proposedRows,
+                        $field === 'market_labels' && ! $replaceCollection ? $reviewedMarketCodes : [],
+                    ),
                 ];
             }
             $effective[$field] = $collection;
@@ -199,11 +206,31 @@ class IngredientEnrichmentPlanner
     }
 
     /**
+     * Market codes whose label a reviewer approved; a merge keeps them.
+     *
+     * @return list<string>
+     */
+    private function reviewedMarketCodes(Ingredient $ingredient): array
+    {
+        if (! $ingredient->exists) {
+            return [];
+        }
+
+        return $ingredient->marketLabels()
+            ->whereNotNull('reviewed_by_user_id')
+            ->get(['market_code'])
+            ->map(fn (IngredientMarketLabel $label): string => $label->market_code->value)
+            ->values()
+            ->all();
+    }
+
+    /**
      * @param  list<array<string,mixed>>  $current
      * @param  list<array<string,mixed>>  $proposed
+     * @param  list<string>  $lockedKeys
      * @return list<array<string,mixed>>
      */
-    private function mergeRows(string $field, array $current, array $proposed): array
+    private function mergeRows(string $field, array $current, array $proposed, array $lockedKeys = []): array
     {
         if ($field === 'translations') {
             $byLocale = collect($current)->keyBy('locale');
@@ -246,7 +273,7 @@ class IngredientEnrichmentPlanner
                     'source_reference' => (string) ($row['source_url'] ?? ''),
                     'source_checked_at' => (string) ($row['checked_at'] ?? ''),
                 ]);
-            } elseif ($field === 'market_labels' || ! $merged->has($rowKey)) {
+            } elseif (($field === 'market_labels' && ! in_array($rowKey, $lockedKeys, true)) || ! $merged->has($rowKey)) {
                 $merged->put($rowKey, $row);
             }
         }
@@ -308,9 +335,10 @@ class IngredientEnrichmentPlanner
      *
      * @param  list<array<string,mixed>>  $current
      * @param  list<array<string,mixed>>  $proposed
+     * @param  list<string>  $lockedKeys
      * @return list<array{field:string,decision:string,current:mixed,proposed:mixed}>
      */
-    private function sourceBackedRowDecisions(string $field, array $current, array $proposed): array
+    private function sourceBackedRowDecisions(string $field, array $current, array $proposed, array $lockedKeys = []): array
     {
         $key = $field === 'cosing_functions'
             ? fn (array $row): string => (string) ($row['key'] ?? '')
@@ -339,7 +367,11 @@ class IngredientEnrichmentPlanner
             $same = $this->sourceBackedRowsMatch($field, $currentRow, $row);
             $decisions[] = [
                 'field' => $path,
-                'decision' => $same ? 'unchanged' : 'replace',
+                'decision' => match (true) {
+                    $same => 'unchanged',
+                    in_array($rowKey, $lockedKeys, true) => 'preserved',
+                    default => 'replace',
+                },
                 'current' => $currentRow,
                 'proposed' => $row,
             ];
@@ -387,6 +419,10 @@ class IngredientEnrichmentPlanner
      */
     private function replaceRows(string $field, array $current, array $proposed): array
     {
+        if ($field === 'market_labels') {
+            return $this->mergeRows($field, $current, $proposed);
+        }
+
         if ($field !== 'translations') {
             return $proposed;
         }

@@ -212,7 +212,7 @@ export async function persistPackagingCatalogItem(workbench, payload) {
 
         if (!response?.ok) {
             workbench.packagingCatalogStatus = 'error';
-            workbench.packagingCatalogMessage = response?.message ?? workbench.t('packaging.messages.save_failed');
+            workbench.packagingCatalogMessage = saveErrorMessages(response).join(' ') || workbench.t('packaging.messages.save_failed');
 
             return false;
         }

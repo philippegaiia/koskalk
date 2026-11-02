@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Services\CurrentMaterialPriceService;
 use Illuminate\Testing\TestResponse;
+use Symfony\Component\Process\Process;
 use Tests\TestCase;
 
 /*
@@ -217,4 +218,60 @@ function jpegWithExifOrientation(int $width, int $height, int $orientation): str
     $app1 = "Exif\0\0".$tiff;
 
     return substr($jpeg, 0, 2)."\xFF\xE1".pack('n', strlen($app1) + 2).$app1.substr($jpeg, 2);
+}
+
+function runRecipeWorkbenchScenario(string $scenario): void
+{
+    $bootstrap = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import vm from 'node:vm';
+
+// Resolve the same extensionless local imports Vite accepts, keeping production modules intact.
+const modules = new Map();
+function loadModule(filename) {
+    filename = path.resolve(filename);
+    if (!modules.has(filename)) {
+        modules.set(filename, new vm.SourceTextModule(fs.readFileSync(filename, 'utf8'), { identifier: filename }));
+    }
+    return modules.get(filename);
+}
+const entry = loadModule('resources/js/recipe-workbench/component.js');
+await entry.link((specifier, referencing) => {
+    const filename = path.resolve(path.dirname(referencing.identifier), specifier);
+    return loadModule(path.extname(filename) ? filename : `${filename}.js`);
+});
+await entry.evaluate();
+const registryModule = loadModule('resources/js/dirty-state-registry.js');
+await registryModule.link(() => {});
+await registryModule.evaluate();
+const registry = registryModule.namespace.createDirtyStateRegistry();
+globalThis.window = { location: { hash: '' } };
+const baseline = { recipe_revision: 4, current_version_id: 12, costing_revision: 2, status: 'acquired' };
+const workbench = entry.namespace.createRecipeWorkbench({
+    canPersist: true, recipe: { id: 30, current_version_id: 12 }, editing: baseline,
+    ingredients: [], phases: [],
+}, () => registry);
+workbench.editingStatus = 'acquired';
+workbench.editingOwnsLease = true;
+workbench.$wire = { async releaseEditing() { return { ok: true }; } };
+function deferred() {
+    let resolve;
+    const promise = new Promise((done) => { resolve = done; });
+    return { promise, resolve };
+}
+function saved(revision, units, costingRevision = revision) {
+    return {
+        ok: true,
+        editing: { ...baseline, recipe_revision: revision, costing_revision: costingRevision },
+        costing: { settings: { unitsProduced: units }, item_prices: [], packaging_items: [] },
+    };
+}
+JS;
+
+    $process = new Process(['node', '--experimental-vm-modules', '--input-type=module', '--eval', $bootstrap."\n".$scenario], base_path());
+    $process->run();
+
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 }

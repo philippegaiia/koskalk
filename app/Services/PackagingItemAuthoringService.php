@@ -7,6 +7,7 @@ use App\Enums\PackagingCategory;
 use App\Models\PackagingItem;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Support\NumberLocale;
 use Closure;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Arr;
@@ -215,7 +216,7 @@ class PackagingItemAuthoringService
         $this->currentMaterialPriceService->rememberPackaging(
             workspace: $packagingItem->workspace,
             packagingItem: $packagingItem,
-            pricePerItem: (string) $unitCost,
+            pricePerItem: NumberLocale::normalizeDecimalString($unitCost) ?? '',
             currency: $user->defaultCurrency(),
             source: MaterialPriceSource::ManualCosting,
             sourceId: null,

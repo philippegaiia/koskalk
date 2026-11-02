@@ -2702,6 +2702,66 @@ JS;
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
 
+it('saves localized packaging prices from the recipe workbench', function (string $price, string $storedPrice) {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $result = $component->savePackagingCatalogItem([
+        'name' => 'Localized price box',
+        'unit_cost' => $price,
+    ], app(RecipeWorkbenchService::class));
+
+    expect($result['ok'])->toBeTrue();
+    $packagingItem = PackagingItem::query()->findOrFail($result['packaging_item']['id']);
+    expect($packagingItem->unit_cost)->toBe($storedPrice);
+})->with([
+    'decimal comma' => ['0,67', '0.670000000000'],
+    'decimal point' => ['0.67', '0.670000000000'],
+    'zero price' => ['0,00', '0.000000000000'],
+    'small price' => ['0,0001', '0.000100000000'],
+]);
+
+it('rejects invalid packaging prices without creating an item', function (string $price) {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $result = $component->savePackagingCatalogItem([
+        'name' => 'Invalid price box',
+        'unit_cost' => $price,
+    ], app(RecipeWorkbenchService::class));
+
+    expect($result['ok'])->toBeFalse()
+        ->and($result['message'])->not->toBeEmpty();
+    $this->assertDatabaseMissing('packaging_items', ['name' => 'Invalid price box']);
+})->with(['negative price' => '-0,67', 'invalid price' => 'abc']);
+
+it('returns a visible validation message when a packaging code is already used', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+    createPackagingItemForWorkspace([
+        'user_id' => $user->id,
+        'name' => 'Existing box',
+        'material_code' => 'BOX-100',
+    ]);
+    $component = app(RecipeWorkbench::class);
+    $component->mount();
+
+    $result = $component->savePackagingCatalogItem([
+        'name' => 'New box',
+        'material_code' => 'box-100',
+        'unit_cost' => '0.25',
+    ], app(RecipeWorkbenchService::class));
+
+    expect($result['ok'])->toBeFalse()
+        ->and($result['message'])->toBe(__('packaging.validation.material_code_unique'))
+        ->and($result['errors']['material_code'])->toBe([__('packaging.validation.material_code_unique')]);
+    $this->assertDatabaseMissing('packaging_items', ['name' => 'New box']);
+});
+
 it('returns the saved packaging item payload when saving a packaging catalog item', function () {
     $user = User::factory()->create();
 
@@ -3380,190 +3440,44 @@ it('includes the user packaging catalog on the rendered workbench component', fu
         ]);
 });
 
-it('can save a packaging catalog item and add it to the packaging plan', function () {
-    $script = <<<'JS'
-import fs from 'node:fs';
-
-const state = {
-  costingCurrency: 'EUR',
-  packagingCatalog: [],
-  packagingPlanRows: [],
-  packagingCostRows: [],
-  packagingCatalogStatus: null,
-  packagingCatalogMessage: '',
-  packagingCatalogForm: {
-    id: null,
-    name: 'Amber Jar',
-    material_code: 'PK-JAR-250',
-    unit_cost: 1.2345,
-    currency: 'EUR',
-    notes: 'For boxed bars',
-  },
-  hasSavedRecipe: true,
-  costingSaveTimer: null,
-  scheduleCostingSave() {},
-  makeLocalPackagingRowId() {
-    return `row-${this.packagingCostRows.length + 1}`;
-  },
-  resetPackagingCatalogForm() {
-    this.packagingCatalogForm = {
-      id: null,
-      name: '',
-      material_code: '',
-      unit_cost: '',
-      currency: this.costingCurrency ?? 'EUR',
-      notes: '',
-    };
-  },
-  $wire: {
-    async savePackagingCatalogItem(payload) {
-      return {
-        ok: true,
-        message: 'Packaging item saved.',
-        packaging_catalog: [
-          {
-            id: 41,
-            name: payload.name,
-            material_code: payload.material_code,
-            unit_cost: payload.unit_cost,
-            currency: payload.currency,
-            notes: payload.notes,
-          },
-        ],
-        packaging_item: {
-          id: 41,
-          name: payload.name,
-          material_code: payload.material_code,
-          unit_cost: payload.unit_cost,
-          currency: payload.currency,
-          notes: payload.notes,
-        },
-      };
-    },
-  },
+it('can save a packaging catalog item and add it to the packaging plan', function (): void {
+    runRecipeWorkbenchScenario(<<<'JS'
+workbench.openPackagingCatalogModal();
+workbench.packagingCatalogForm = {
+    id: null, name: 'Amber Jar', material_code: 'PK-JAR-250', unit_cost: 1.2345, currency: 'EUR', notes: 'For boxed bars',
 };
-
-const bridgeSource = fs
-  .readFileSync('resources/js/recipe-workbench/bridge.js', 'utf8')
-  .replace(/^import[\s\S]*?;\n/gm, '')
-  .replace(/export (async )?function /g, '$1function ');
-
-const costingSource = fs
-  .readFileSync('resources/js/recipe-workbench/sections/costing-section.js', 'utf8')
-  .replace(/^import[\s\S]*?;\n/gm, '')
-  .replace('export function createCostingSection', 'function createCostingSection');
-
-const packagingSource = fs
-  .readFileSync('resources/js/recipe-workbench/sections/packaging-section.js', 'utf8')
-  .replace(/^import[\s\S]*?;\n/gm, '')
-  .replace('export function createPackagingSection', 'function createPackagingSection');
-
-globalThis.persistPackagingCatalogItem = undefined;
-globalThis.persistCosting = async () => {};
-globalThis.createCostingSection = undefined;
-globalThis.createPackagingSection = undefined;
-eval(`${bridgeSource}\nglobalThis.persistPackagingCatalogItem = persistPackagingCatalogItem;`);
-eval(`const persistCosting = globalThis.persistCosting;\n${costingSource}\nglobalThis.createCostingSection = createCostingSection;`);
-eval(`${packagingSource}\nglobalThis.createPackagingSection = createPackagingSection;`);
-
-Object.defineProperties(state, Object.getOwnPropertyDescriptors(createPackagingSection()));
-Object.defineProperties(state, Object.getOwnPropertyDescriptors(createCostingSection({})));
-
-await state.savePackagingCatalogItemAndAdd();
-
-console.log(JSON.stringify({
-  packagingCatalogCount: state.packagingCatalog.length,
-  packagingCatalogStatus: state.packagingCatalogStatus,
-  packagingCatalogMessage: state.packagingCatalogMessage,
-  packagingCatalogModalOpen: state.packagingCatalogModalOpen,
-  row: state.packagingPlanRows[0] ?? null,
-  costingRows: state.packagingCostRows.length,
-  form: state.packagingCatalogForm,
-}));
-JS;
-
-    $process = Process::fromShellCommandline(
-        'node --input-type=module -e '.escapeshellarg($script),
-        base_path(),
-    );
-
-    $process->run();
-
-    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
-
-    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
-
-    expect($payload['packagingCatalogCount'])->toBe(1)
-        ->and($payload['packagingCatalogStatus'])->toBe('success')
-        ->and($payload['packagingCatalogMessage'])->toBe('Packaging item saved.')
-        ->and($payload['packagingCatalogModalOpen'])->toBeFalse()
-        ->and($payload['row'])->toMatchArray([
-            'packaging_item_id' => 41,
-            'name' => 'Amber Jar',
-            'material_code' => 'PK-JAR-250',
-            'components_per_unit' => 1,
-            'notes' => '',
-        ])
-        ->and($payload['costingRows'])->toBe(0)
-        ->and($payload['form'])->toMatchArray([
-            'id' => null,
-            'name' => '',
-            'material_code' => '',
-            'unit_cost' => '',
-            'currency' => 'EUR',
-            'notes' => '',
-        ]);
+workbench.$wire.savePackagingCatalogItem = async (payload) => ({
+    ok: true, message: 'Packaging item saved.',
+    packaging_catalog: [{ ...payload, id: 41 }], packaging_item: { ...payload, id: 41 },
+});
+await workbench.savePackagingCatalogItemAndAdd();
+assert.equal(workbench.packagingCatalog.length, 1);
+assert.equal(workbench.packagingCatalogStatus, 'success');
+assert.equal(workbench.packagingCatalogMessage, 'Packaging item saved.');
+assert.equal(workbench.packagingCatalogModalOpen, false);
+const row = workbench.packagingPlanRows[0];
+assert.equal(row.packaging_item_id, 41);
+assert.equal(row.name, 'Amber Jar');
+assert.equal(row.material_code, 'PK-JAR-250');
+assert.equal(row.components_per_unit, 1);
+assert.equal(row.notes, '');
+assert.equal(workbench.packagingCostRows.length, 1);
+assert.equal(workbench.packagingCostRows[0].quantity, 1);
+assert.deepEqual(workbench.packagingCatalogForm, {
+    id: null, name: '', material_code: '', unit_cost: '', currency: 'EUR', notes: '',
+});
+JS);
 });
 
-it('adds a saved catalog item to the packaging plan with one component per unit', function () {
-    $script = <<<'JS'
-import fs from 'node:fs';
-
-const state = {
-  packagingPlanRows: [],
-  makeLocalPackagingPlanRowId() {
-    return `row-${this.packagingPlanRows.length + 1}`;
-  },
-};
-
-const source = fs
-  .readFileSync('resources/js/recipe-workbench/sections/packaging-section.js', 'utf8')
-  .replace(/^import[\s\S]*?;\n/gm, '')
-  .replace('export function createPackagingSection', 'function createPackagingSection');
-
-globalThis.createPackagingSection = undefined;
-eval(`${source}\nglobalThis.createPackagingSection = createPackagingSection;`);
-
-Object.defineProperties(state, Object.getOwnPropertyDescriptors(createPackagingSection()));
-
-state.addPackagingPlanRow({
-  id: 91,
-  name: 'Soap box',
-  unit_cost: 0.42,
-});
-
-console.log(JSON.stringify({
-  row: state.packagingPlanRows[0] ?? null,
-}));
-JS;
-
-    $process = Process::fromShellCommandline(
-        'node --input-type=module -e '.escapeshellarg($script),
-        base_path(),
-    );
-
-    $process->run();
-
-    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
-
-    $payload = json_decode(trim($process->getOutput()), true, 512, JSON_THROW_ON_ERROR);
-
-    expect($payload['row'])->toMatchArray([
-        'packaging_item_id' => 91,
-        'name' => 'Soap box',
-        'components_per_unit' => 1,
-        'notes' => '',
-    ]);
+it('adds a saved catalog item to the packaging plan with one component per unit', function (): void {
+    runRecipeWorkbenchScenario(<<<'JS'
+workbench.addPackagingPlanRow({ id: 91, name: 'Soap box', unit_cost: 0.42 });
+const row = workbench.packagingPlanRows[0];
+assert.equal(row.packaging_item_id, 91);
+assert.equal(row.name, 'Soap box');
+assert.equal(row.components_per_unit, 1);
+assert.equal(row.notes, '');
+JS);
 });
 
 it('allows lipids to move between soap oils and additives', function () {
@@ -7160,75 +7074,18 @@ JS;
 });
 
 it('clears final ingredient list undo after a successful save and snapshot reload', function (): void {
-    $script = <<<'JS'
-import { createEditingSection } from './resources/js/recipe-workbench/editing.js';
-import assert from 'node:assert/strict';
-import fs from 'node:fs';
-
-const source = fs
-  .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
-  .replace(/^import[\s\S]*?;\n/gm, '')
-  .replace('export function createRecipeWorkbench', 'function createRecipeWorkbench');
-
-const buildSnapshotStateFromSnapshot = () => ({});
-const buildDraftStateFromDraft = () => null;
-const persistWorkbench = async (workbench) => {
-  workbench.saveStatus = 'success';
-  return { ok: true };
-};
-
-eval(`${source}\nglobalThis.createPersistenceSection = createPersistenceSection;`);
-
-const workbench = {
-  ingredientListUndo: {
-    target: 'inci',
-    value: 'Previous INCI',
-    basisHash: 'previous-basis',
-    message: 'Undo this list change',
-  },
-  removedFormulaRowUndo: {
-    phaseKey: 'phase_a',
-    row: { id: 'row-1' },
-    index: 0,
-  },
-  lastCalculationPhaseSignature: 'before',
-  currentCalculationPhaseSignature() {
-    return 'after';
-  },
-  reconcileCostingPrices() {},
-  syncIngredientListVariantSelection() {},
-  refreshDirtyBaseline() {},
-  dirtyStateRegistry: { set() {} },
-};
-
-Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(createEditingSection({})));
-workbench.flushCostingSave = async () => true;
-Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(globalThis.createPersistenceSection()));
-
+    runRecipeWorkbenchScenario(<<<'JS'
+workbench.ingredientListUndo = { target: 'inci', value: 'Previous INCI' };
+workbench.removedFormulaRowUndo = { phaseKey: 'phase_a', row: { id: 'row-1' }, index: 0 };
 workbench.applySnapshot({ draft: {} });
-
 assert.equal(workbench.ingredientListUndo, null);
 assert.equal(workbench.removedFormulaRowUndo, null);
-
-workbench.ingredientListUndo = {
-  target: 'plain',
-  value: 'Previous plain list',
-  basisHash: 'plain-basis',
-  message: 'Undo this plain list change',
-};
-
+workbench.ingredientListUndo = { target: 'plain', value: 'Previous plain list' };
+workbench.$wire.save = async () => ({ ok: true });
 await workbench.persist('save');
-
+assert.equal(workbench.saveStatus, 'success');
 assert.equal(workbench.ingredientListUndo, null);
-JS;
-
-    $process = Process::fromShellCommandline(
-        'node --input-type=module -e '.escapeshellarg($script),
-        base_path(),
-    );
-    $process->run();
-
-    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput());
+JS);
 });
 
 function makeCarrierOilIngredient(): Ingredient

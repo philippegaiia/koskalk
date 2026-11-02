@@ -8,9 +8,38 @@ export function createSearchCombobox(config) {
         options: config.options ?? [],
         retainSelection: config.retainSelection ?? false,
         allowEmpty: config.allowEmpty ?? true,
+        panelStyle: {},
 
         init() {
             this.syncSelection(this.selectedId);
+
+            if (config.floatingOptions) {
+                this.$watch('open', () => this.$nextTick(() => this.repositionOptions()));
+                this.$watch('query', () => this.$nextTick(() => this.repositionOptions()));
+            }
+        },
+
+        repositionOptions() {
+            if (!config.floatingOptions || !this.open || !this.$refs.control) {
+                return;
+            }
+
+            const rect = this.$refs.control.getBoundingClientRect();
+            const gutter = 16;
+            const gap = 6;
+            const width = Math.min(rect.width, window.innerWidth - gutter * 2);
+            const desiredHeight = Math.min(288, this.$refs.options?.scrollHeight ?? 288);
+            const below = Math.max(0, window.innerHeight - rect.bottom - gap - gutter);
+            const above = Math.max(0, rect.top - gap - gutter);
+            const opensAbove = below < desiredHeight && above > below;
+            const height = Math.min(desiredHeight, opensAbove ? above : below);
+
+            this.panelStyle = {
+                top: `${opensAbove ? rect.top - gap - height : rect.bottom + gap}px`,
+                left: `${Math.max(gutter, Math.min(rect.left, window.innerWidth - width - gutter))}px`,
+                width: `${width}px`,
+                maxHeight: `${height}px`,
+            };
         },
 
         sameId(left, right) {
@@ -85,6 +114,10 @@ export function createSearchCombobox(config) {
         },
 
         selectOption(option) {
+            if (config.floatingOptions && this.$refs.input?.matches(':disabled')) {
+                return;
+            }
+
             if (this.retainSelection) {
                 this.selectedId = option.id;
                 this.selectedLabel = option.label;

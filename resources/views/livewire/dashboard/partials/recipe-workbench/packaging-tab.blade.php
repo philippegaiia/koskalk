@@ -27,6 +27,7 @@
  :action-label="__('workbench.packaging.plan.add')"
  :empty-message="__('workbench.packaging.plan.no_matches')"
  :retain-selection="false"
+ :floating-options="true"
  class="w-full sm:w-72 sm:min-w-72"
  x-effect="replaceOptions(packagingCatalog.map((item) => ({ id: item.id, label: item.material_code ? item.name + ' · ' + item.material_code : item.name, description: item.notes || '', searchText: [item.name, item.material_code, item.notes].filter(Boolean).join(' ') })))"
  x-on:search-combobox-selected="selectPackagingCatalogItem(packagingCatalog.find((item) => String(item.id) === String($event.detail.id)))"
@@ -38,6 +39,8 @@
  </div>
  </div>
  </div>
+
+ <p x-cloak x-show="packagingCatalogMessage && !packagingCatalogModalOpen" role="status" aria-live="polite" class="border-b border-[var(--color-line)] px-5 py-3 text-sm text-[var(--color-ink-strong)]" x-text="packagingCatalogMessage"></p>
 
  <template x-if="packagingPlanRows.length === 0">
  <div class="px-5 py-8 text-sm text-[var(--color-ink-soft)]">

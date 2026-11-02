@@ -763,7 +763,15 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
     #[Renderless]
     public function savePackagingCatalogItem(array $packagingItem, RecipeWorkbenchService $recipeWorkbenchService): array
     {
-        return $this->withCreationWorkspace(fn (): array => $this->performSavePackagingCatalogItem($packagingItem, $recipeWorkbenchService));
+        try {
+            return $this->withCreationWorkspace(fn (): array => $this->performSavePackagingCatalogItem($packagingItem, $recipeWorkbenchService));
+        } catch (ValidationException $exception) {
+            return [
+                'ok' => false,
+                'message' => collect($exception->errors())->flatten()->first() ?? $exception->getMessage(),
+                'errors' => $exception->errors(),
+            ];
+        }
     }
 
     /** @param array<string, mixed> $packagingItem */

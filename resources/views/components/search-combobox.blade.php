@@ -11,6 +11,7 @@
     'allowEmpty' => true,
     'disabled' => false,
     'inlineOptions' => false,
+    'floatingOptions' => false,
     'wrapLabels' => false,
     'optionAddedEvent' => null,
     'optionAddedIdKey' => 'id',
@@ -27,15 +28,20 @@
         selectedLabel: @js($selectedLabel),
         retainSelection: @js($retainSelection),
         allowEmpty: @js($allowEmpty),
+        floatingOptions: @js($floatingOptions && ! $inlineOptions),
     })"
     @if ($optionAddedEvent) x-on:{{ $optionAddedEvent }}.window="registerOption($event.detail, @js($optionAddedIdKey), @js($optionAddedLabelKey))" @endif
     @if ($wrapLabels)
         @search-combobox-selected="$nextTick(() => $refs.selectionLabel?.focus())"
     @endif
-    @click.outside="closeOptions()"
+    @click.outside="if (! $refs.options?.contains($event.target)) closeOptions()"
+    @if ($floatingOptions && ! $inlineOptions)
+        @resize.window="repositionOptions()"
+        @scroll.window.capture="repositionOptions()"
+    @endif
 >
     <label for="{{ $id }}" class="sr-only">{{ $label }}</label>
-    <div :data-has-selection="selectedId !== null && selectedId !== ''" class="sk-combobox-control flex items-center rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] transition">
+    <div x-ref="control" :data-has-selection="selectedId !== null && selectedId !== ''" class="sk-combobox-control flex items-center rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] transition">
         @if ($wrapLabels)
             <button
                 x-ref="selectionLabel"
@@ -53,6 +59,7 @@
             ></button>
         @endif
         <input
+            x-ref="input"
             @if ($wrapLabels) x-show="open || selectedLabel === ''" @endif
             id="{{ $id }}"
             x-model="query"
@@ -85,12 +92,20 @@
         </button>
     </div>
 
+    @if ($floatingOptions && ! $inlineOptions)
+    <template x-teleport="body" @search-combobox-selected>
+    @endif
     <div
+        x-ref="options"
         x-cloak
         x-show="open"
         id="{{ $id }}-options"
         role="listbox"
-        class="{{ $inlineOptions ? 'relative mt-1.5 max-h-48' : 'absolute left-0 right-0 top-[calc(100%+0.35rem)] z-30 max-h-72' }} overflow-y-auto overscroll-contain rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-1 shadow-[0_10px_30px_color-mix(in_oklch,var(--color-ink-strong)_14%,transparent)]"
+        @if ($floatingOptions && ! $inlineOptions)
+            :style="panelStyle"
+            @keydown.escape.prevent.stop="closeOptions(); $refs.input?.focus()"
+        @endif
+        class="{{ $inlineOptions ? 'relative mt-1.5 max-h-48' : ($floatingOptions ? 'fixed z-[90] max-h-72' : 'absolute left-0 right-0 top-[calc(100%+0.35rem)] z-30 max-h-72') }} overflow-y-auto overscroll-contain rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] p-1 shadow-[0_10px_30px_color-mix(in_oklch,var(--color-ink-strong)_14%,transparent)]"
     >
         <template x-if="filteredOptions.length === 0">
             <p class="px-3 py-2.5 text-sm text-[var(--color-ink-soft)]">{{ $emptyMessage }}</p>
@@ -116,4 +131,7 @@
             </button>
         </template>
     </div>
+    @if ($floatingOptions && ! $inlineOptions)
+    </template>
+    @endif
 </div>

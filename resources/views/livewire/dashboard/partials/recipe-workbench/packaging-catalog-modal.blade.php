@@ -41,13 +41,13 @@
  </div>
 
  <template x-if="packagingCatalogMessage">
- <p class="mt-4 text-sm text-[var(--color-ink-soft)]" x-text="packagingCatalogMessage"></p>
+ <p role="alert" class="mt-4 text-sm" :class="packagingCatalogStatus === 'error' ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-strong)]'" x-text="packagingCatalogMessage"></p>
  </template>
 
  <div class="mt-5 flex flex-wrap justify-end gap-2">
  <button type="button" @click="closePackagingCatalogModal()" class="sk-btn sk-btn-ghost">{{ __('workbench.packaging.modal.cancel') }}</button>
- <button type="button" @click="savePackagingCatalogItemOnly()" class="sk-btn sk-btn-outline">{{ __('workbench.packaging.modal.save_to_library') }}</button>
- <button type="button" @click="savePackagingCatalogItemAndAdd()" class="sk-btn sk-btn-primary">
+ <button type="button" @click="savePackagingCatalogItemOnly()" :disabled="packagingCatalogStatus === 'saving'" class="sk-btn sk-btn-outline">{{ __('workbench.packaging.modal.save_to_library') }}</button>
+ <button type="button" @click="savePackagingCatalogItemAndAdd()" :disabled="packagingCatalogStatus === 'saving'" class="sk-btn sk-btn-primary">
  {{ __('workbench.packaging.modal.save_and_add') }}
  </button>
  </div>

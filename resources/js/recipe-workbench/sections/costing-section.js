@@ -121,6 +121,7 @@ export function createCostingSection(payload) {
                 quantity: row.components_per_unit ?? row.quantity ?? 1,
             }));
             this.packagingCatalog = costingPayload?.packaging_catalog ?? this.packagingCatalog ?? [];
+            this.reconcilePackagingCosts();
             this.reconcileCostingPrices();
             savedCostingState = {
                 costingOilWeight: this.costingOilWeight,
@@ -610,25 +611,35 @@ export function createCostingSection(payload) {
             return this.hasUnpricedIngredientRows || this.hasUnpricedPackagingRows;
         },
 
-        /**
-         * Before the first save no costing payload exists, so the live packaging
-         * plan stands in for the saved costing rows; prices start unpriced and
-         * persistence stays blocked by the existing "save product first" guard.
-         */
-        get displayedPackagingCostRows() {
-            if (this.packagingCostRows.length > 0 || this.isLoadingCosting || this.hasLoadedCosting) {
-                return this.packagingCostRows;
-            }
+        reconcilePackagingCosts() {
+            const remaining = [...this.packagingCostRows];
+            const planIds = new Set((this.packagingPlanRows ?? []).map((row) => row.id));
+            this.packagingCostRows = (this.packagingPlanRows ?? []).map((plan) => {
+                const matchingPlanIndex = remaining.findIndex((row) => row.planRowId === plan.id);
+                const index = matchingPlanIndex >= 0 ? matchingPlanIndex : remaining.findIndex((row) => !planIds.has(row.planRowId)
+                    && (row.packaging_item_id ?? null) === (plan.packaging_item_id ?? null) && row.name === plan.name);
+                const row = index < 0
+                    ? { id: this.makeLocalPackagingRowId(), unit_cost: null }
+                    : remaining.splice(index, 1)[0];
 
-            return (this.packagingPlanRows ?? []).map((row) => ({
-                id: row.id,
-                packaging_item_id: row.packaging_item_id ?? null,
-                name: row.name ?? '',
-                material_code: row.material_code ?? null,
-                unit_cost: null,
-                quantity: nonNegativeNumber(row.components_per_unit),
-                isUnsavedPlanRow: true,
-            }));
+                Object.assign(row, {
+                    planRowId: plan.id,
+                    packaging_item_id: plan.packaging_item_id ?? null,
+                    name: plan.name ?? '',
+                    material_code: plan.material_code ?? null,
+                    quantity: nonNegativeNumber(plan.components_per_unit),
+                });
+
+                return row;
+            });
+        },
+
+        get displayedPackagingCostRows() {
+            return this.packagingCostRows;
+        },
+
+        makeLocalPackagingRowId() {
+            return `packaging-cost-${Date.now()}-${Math.random().toString(16).slice(2)}`;
         },
 
         get packagingCostPerFinishedUnitTotal() {

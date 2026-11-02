@@ -1792,6 +1792,7 @@ function createPersistenceSection() {
             }
 
             Object.assign(this, nextState);
+            this.reconcilePackagingCosts();
             this.lastCalculationPhaseSignature = this.currentCalculationPhaseSignature();
             this.reconcileCostingPrices();
             this.syncIngredientListVariantSelection();
@@ -1807,6 +1808,7 @@ function createPersistenceSection() {
             }
 
             Object.assign(this, nextState);
+            this.reconcilePackagingCosts();
             this.lastCalculationPhaseSignature = this.currentCalculationPhaseSignature();
             this.reconcileCostingPrices();
             this.syncIngredientListVariantSelection();

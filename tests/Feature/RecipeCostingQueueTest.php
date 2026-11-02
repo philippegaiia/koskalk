@@ -2,6 +2,86 @@
 
 use Symfony\Component\Process\Process;
 
+it('loads projected packaging prices without persisted costing row ids', function (): void {
+    runCostingQueueScenario(<<<'JS'
+workbench.packagingPlanRows = [{ id: 1, packaging_item_id: 7, name: 'Soap box', components_per_unit: 1 }];
+workbench.applyCostingPayload({ packaging_items: [
+    { id: null, packaging_item_id: 7, name: 'Soap box', unit_cost: 0.25, components_per_unit: 1 },
+] });
+assert.equal(workbench.displayedPackagingCostRows[0].unit_cost, 0.25);
+JS);
+});
+
+it('retains a packaging price entered before the first costing load', function (): void {
+    runCostingQueueScenario(<<<'JS'
+workbench.addPackagingPlanRow({ id: 7, name: 'Soap box' });
+const row = workbench.displayedPackagingCostRows[0];
+workbench.updatePackagingUnitCost(row, '0.25');
+assert.equal(workbench.displayedPackagingCostRows[0].unit_cost, 0.25);
+assert.equal(workbench.packagingCostRows[0].unit_cost, 0.25);
+clearTimeout(workbench.costingSaveTimer);
+JS);
+});
+
+it('keeps loaded packaging costs aligned with plan removals and quantities', function (): void {
+    runCostingQueueScenario(<<<'JS'
+workbench.addPackagingPlanRow({ id: 7, name: 'Soap box' });
+workbench.applyCostingPayload({ packaging_items: [
+    { id: 10, packaging_item_id: 7, name: 'Soap box', unit_cost: 0.25, components_per_unit: 1 },
+] });
+workbench.hasLoadedCosting = true;
+workbench.updatePackagingPlanComponents(workbench.packagingPlanRows[0], '2');
+assert.equal(workbench.displayedPackagingCostRows[0].quantity, 2);
+assert.equal(workbench.displayedPackagingCostRows[0].unit_cost, 0.25);
+workbench.removePackagingPlanRow(workbench.packagingPlanRows[0].id);
+assert.deepEqual(workbench.displayedPackagingCostRows, []);
+assert.deepEqual(workbench.packagingCostRows, []);
+JS);
+});
+
+it('excludes removed packaging returned by a later costing load', function (): void {
+    runCostingQueueScenario(<<<'JS'
+workbench.packagingPlanRows = [];
+workbench.$wire.loadCosting = async () => ({
+    ...saved(4, 10, 2),
+    costing: { packaging_items: [
+        { id: 10, packaging_item_id: 7, name: 'Removed box', unit_cost: 0.25, components_per_unit: 1 },
+    ] },
+});
+assert.equal(await workbench.ensureCostingLoaded(), true);
+assert.deepEqual(workbench.displayedPackagingCostRows, []);
+JS);
+});
+
+it('preserves the remaining duplicate packaging price through removal and saved row identities', function (): void {
+    runCostingQueueScenario(<<<'JS'
+workbench.addPackagingPlanRow({ id: 7, name: 'Soap box' });
+workbench.addPackagingPlanRow({ id: 7, name: 'Soap box' });
+workbench.applyCostingPayload({ packaging_items: [
+    { id: 10, packaging_item_id: 7, name: 'Soap box', unit_cost: 0, components_per_unit: 1 },
+    { id: 11, packaging_item_id: 7, name: 'Soap box', unit_cost: 0.25, components_per_unit: 1 },
+] });
+workbench.removePackagingPlanRow(workbench.packagingPlanRows[0].id);
+assert.equal(workbench.displayedPackagingCostRows[0].unit_cost, 0.25);
+workbench.applyDraft({ packagingItems: [
+    { id: 20, packaging_item_id: 7, name: 'Soap box', components_per_unit: 2 },
+] });
+assert.equal(workbench.displayedPackagingCostRows[0].unit_cost, 0.25);
+assert.equal(workbench.displayedPackagingCostRows[0].quantity, 2);
+let sent;
+workbench.$wire.saveCosting = async (payload) => {
+    sent = payload.packaging_items;
+    return { ...saved(5, 10), costing: { packaging_items: [
+        { id: 12, packaging_item_id: 7, name: 'Soap box', unit_cost: 0.30, components_per_unit: 2 },
+    ] } };
+};
+workbench.updatePackagingUnitCost(workbench.displayedPackagingCostRows[0], '0.30');
+assert.equal(await workbench.flushCostingSave(), true);
+assert.deepEqual(sent, [{ packaging_item_id: 7, name: 'Soap box', unit_cost: 0.30, components_per_unit: 2 }]);
+assert.equal(workbench.displayedPackagingCostRows[0].unit_cost, 0.30);
+JS);
+});
+
 it('keeps locked costing scenarios local and resets every assumption to the saved baseline', function (): void {
     runCostingQueueScenario(<<<'JS'
 let writes = 0;
@@ -15,6 +95,7 @@ for (const isCosmeticFormula of [false, true]) {
     workbench.hasLoadedCosting = true;
     workbench.phaseOrder = [{ key: 'main', name: 'Main' }];
     workbench.phaseItems = { main: [{ id: 'oil', ingredient_id: 1, name: 'Oil', percentage: 100 }] };
+    workbench.packagingPlanRows = [{ id: 'jar-plan', name: 'Jar', components_per_unit: 1 }];
     workbench.costingPriceByRowId = {};
     workbench.applyCostingPayload({
         settings: { oilWeightForCosting: 1000, oilUnitForCosting: 'g', unitsProduced: 10, currency: 'EUR' },

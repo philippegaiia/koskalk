@@ -14,6 +14,7 @@ export function createPackagingSection() {
                     notes: '',
                 },
             ];
+            this.reconcilePackagingCosts();
         },
 
         selectPackagingCatalogItem(packagingItem) {
@@ -26,10 +27,12 @@ export function createPackagingSection() {
 
         removePackagingPlanRow(rowId) {
             this.packagingPlanRows = this.packagingPlanRows.filter((row) => row.id !== rowId);
+            this.reconcilePackagingCosts();
         },
 
         updatePackagingPlanComponents(row, value) {
             row.components_per_unit = roundTo(nonNegativeNumber(parseDecimalInput(value)), 3);
+            this.reconcilePackagingCosts();
         },
 
         makeLocalPackagingPlanRowId() {

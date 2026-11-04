@@ -4,6 +4,7 @@ namespace App\Services\IngredientEnrichment;
 
 use App\Contracts\IngredientEditorialClient;
 use App\Contracts\IngredientIdentityNameLocalizationClient;
+use App\Contracts\IngredientInciSuggestionClient;
 use App\Data\IngredientEnrichmentPipelineResponse;
 use App\Data\IngredientSourceStageResult;
 use App\Enums\IngredientCategory;
@@ -28,19 +29,18 @@ class IngredientEnrichmentPipeline
         private readonly IngredientEnrichmentFactsBuilder $facts,
         private readonly IngredientEditorialClient $editorial,
         private readonly IngredientIdentityNameLocalizationClient $identityNameLocalization,
+        private readonly IngredientInciSuggestionClient $inciSuggestions,
     ) {}
 
     public function run(int $itemId): IngredientEnrichmentPipelineResponse
     {
         $item = IngredientEnrichmentBatchItem::query()->findOrFail($itemId);
         $input = $this->input($item);
-        $identity = $this->runStage($itemId, IngredientEnrichmentResearchStage::IdentityPreparation, function () use ($input): IngredientSourceStageResult {
-            return new IngredientSourceStageResult(
-                stage: IngredientEnrichmentResearchStage::IdentityPreparation,
-                status: 'completed',
-                data: ['record' => $input['record']],
-            );
-        });
+        $identity = $this->runStage(
+            $itemId,
+            IngredientEnrichmentResearchStage::IdentityPreparation,
+            fn (): IngredientSourceStageResult => $this->prepareIdentity($input['record']),
+        );
         $record = is_array($identity->data['record'] ?? null) ? $identity->data['record'] : $input['record'];
 
         $usIdentity = $this->runStage(
@@ -96,6 +96,7 @@ class IngredientEnrichmentPipeline
             ),
         );
         $facts = is_array($conflict->data['facts'] ?? null) ? $conflict->data['facts'] : [];
+        $facts['warnings'] = [...$identity->warnings, ...($facts['warnings'] ?? [])];
         $editorialFacts = [
             ...$facts,
             'catalog_key' => $input['catalog_key'],
@@ -137,9 +138,9 @@ class IngredientEnrichmentPipeline
                 sources: [],
                 providerResponseId: '',
                 providerRequestId: '',
-                providerModel: '',
-                inputTokens: 0,
-                outputTokens: 0,
+                providerModel: (string) data_get($identity->data, 'inci_suggestion.provider_model', ''),
+                inputTokens: (int) data_get($identity->data, 'inci_suggestion.input_tokens', 0),
+                outputTokens: (int) data_get($identity->data, 'inci_suggestion.output_tokens', 0),
                 webSearchCalls: 0,
                 structuredSourceCalls: 0,
             );
@@ -272,9 +273,11 @@ class IngredientEnrichmentPipeline
                     ?? ''
             ),
             inputTokens: (int) ($editorial->data['input_tokens'] ?? 0)
-                + (int) ($identityNameLocalization->data['input_tokens'] ?? 0),
+                + (int) ($identityNameLocalization->data['input_tokens'] ?? 0)
+                + (int) data_get($identity->data, 'inci_suggestion.input_tokens', 0),
             outputTokens: (int) ($editorial->data['output_tokens'] ?? 0)
-                + (int) ($identityNameLocalization->data['output_tokens'] ?? 0),
+                + (int) ($identityNameLocalization->data['output_tokens'] ?? 0)
+                + (int) data_get($identity->data, 'inci_suggestion.output_tokens', 0),
             webSearchCalls: (int) ($editorial->data['web_search_calls'] ?? 0),
             structuredSourceCalls: collect($completed)->sum(fn (array $stage): int => (int) ($stage['source_calls'] ?? 0)),
         );
@@ -314,6 +317,80 @@ class IngredientEnrichmentPipeline
         }
 
         return $normalized->all();
+    }
+
+    /**
+     * A row with no INCI or identifier is first looked up by its typed name,
+     * in the same order as the registry stages that follow. Only when neither
+     * registry recognises it does a model suggest INCI names; a suggestion is
+     * kept only when a registry record matches it exactly, so the model never
+     * establishes identity itself.
+     *
+     * @param  array<string, mixed>  $record
+     */
+    private function prepareIdentity(array $record): IngredientSourceStageResult
+    {
+        $hasIdentity = filled($record['inci_name'] ?? null) || filled($record['identifiers'] ?? []);
+        [$identified, $sourceCalls] = $hasIdentity ? [true, 0] : $this->registryIdentifies($record);
+        if ($identified) {
+            return new IngredientSourceStageResult(
+                stage: IngredientEnrichmentResearchStage::IdentityPreparation,
+                status: 'completed',
+                data: ['record' => $record],
+                sourceCalls: $sourceCalls,
+            );
+        }
+
+        $response = $this->inciSuggestions->suggest($record);
+        $confirmed = null;
+        foreach ($response->inciNames as $inciName) {
+            [$identified, $calls] = $this->registryIdentifies([...$record, 'inci_name' => $inciName]);
+            $sourceCalls += $calls;
+            if ($identified) {
+                $confirmed = $inciName;
+                break;
+            }
+        }
+
+        return new IngredientSourceStageResult(
+            stage: IngredientEnrichmentResearchStage::IdentityPreparation,
+            status: 'completed',
+            data: [
+                'record' => $confirmed === null ? $record : [...$record, 'inci_name' => $confirmed],
+                'inci_suggestion' => [
+                    'suggested_inci_names' => $response->inciNames,
+                    'confirmed_inci_name' => $confirmed,
+                    'provider_response_id' => $response->responseId,
+                    'provider_request_id' => $response->requestId,
+                    'provider_model' => $response->model,
+                    'input_tokens' => $response->inputTokens,
+                    'output_tokens' => $response->outputTokens,
+                ],
+            ],
+            warnings: $confirmed === null
+                ? []
+                : [(string) __('ingredient_enrichment.warnings.inci_suggested', ['inci' => $confirmed])],
+            sourceCalls: $sourceCalls,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $record
+     * @return array{0: bool, 1: int}
+     */
+    private function registryIdentifies(array $record): array
+    {
+        $us = $this->openFda->lookup($record);
+        if ($this->identityMatcher->select($us->data['candidates'] ?? [], $record)['candidate'] !== null) {
+            return [true, $us->sourceCalls];
+        }
+
+        $eu = $this->cosing->lookup($record);
+
+        return [
+            $this->identityMatcher->select($eu->data['candidates'] ?? [], $record)['candidate'] !== null,
+            $us->sourceCalls + $eu->sourceCalls,
+        ];
     }
 
     private function skipGuidanceStage(int $itemId, IngredientEnrichmentResearchStage $stage): void

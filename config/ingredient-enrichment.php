@@ -114,6 +114,8 @@ return [
         'guidance_prompt_version' => 'ingredient-guidance-v16',
         'guidance_localization_prompt_version' => 'ingredient-guidance-localization-v6',
         'identity_name_localization_prompt_version' => 'ingredient-identity-name-localization-v1',
+        'inci_suggestion_prompt_version' => 'ingredient-inci-suggestion-v1',
+        'inci_suggestion_reasoning_effort' => env('INGREDIENT_ENRICHMENT_INCI_SUGGESTION_REASONING_EFFORT', 'low'),
         'allowed_domains' => [
             'ec.europa.eu',
             'single-market-economy.ec.europa.eu',

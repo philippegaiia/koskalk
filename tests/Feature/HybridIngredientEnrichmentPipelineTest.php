@@ -4,10 +4,12 @@ use App\Contracts\IngredientEditorialClient;
 use App\Contracts\IngredientGuidanceAuthoringClient;
 use App\Contracts\IngredientGuidanceResearchClient;
 use App\Contracts\IngredientIdentityNameLocalizationClient;
+use App\Contracts\IngredientInciSuggestionClient;
 use App\Data\IngredientEditorialResponse;
 use App\Data\IngredientGapResearchResponse;
 use App\Data\IngredientGuidanceAuthoringResponse;
 use App\Data\IngredientIdentityNameLocalizationResponse;
+use App\Data\IngredientInciSuggestionResponse;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientEnrichmentResearchStage;
 use App\Enums\IngredientSubcategory;
@@ -70,13 +72,15 @@ it('stops before guidance when identity cannot be confirmed against the registri
             throw new RuntimeException('authoring must not run when identity is unresolved');
         }
     });
+    fakeHybridInciSuggestions(['UNVERIFIABLE SEED OIL']);
     $item = hybridPipelineItem('unverifiable_kernel_oil', 'Unverifiable Kernel Oil');
 
     $response = app(IngredientEnrichmentPipeline::class)->run($item->id);
     $fresh = $item->fresh();
 
     expect($response->result['identity_unresolved'])->toBeTrue()
-        ->and($response->inputTokens)->toBe(0)
+        ->and(data_get($fresh->research_stages, 'identity_preparation.data.inci_suggestion.confirmed_inci_name'))->toBeNull()
+        ->and($response->inputTokens)->toBe(50)
         ->and($response->webSearchCalls)->toBe(0)
         ->and(data_get($fresh->research_stages, 'ai_guidance_research.status'))->toBe('skipped')
         ->and(data_get($fresh->research_stages, 'ai_guidance_authoring.status'))->toBe('skipped')
@@ -132,6 +136,41 @@ it('keeps full enrichment to identity and name translations even when guidance g
         ->toMatchArray(['confidence' => 'unresolved'])
         ->and(collect($response->result['value_provenance'])->firstWhere('field', 'proposal.info_markdown'))
         ->toMatchArray(['kind' => 'unresolved']);
+});
+
+it('confirms an AI-suggested INCI in a registry when the typed name alone finds nothing', function (): void {
+    config()->set('interface-translations.catalogue_locales', []);
+    seedHybridCosingFunctions();
+    cache()->flush();
+    fakeHybridIngredientSources('argan');
+    fakeHybridEditorialClient();
+    $suggestions = fakeHybridInciSuggestions(['ARGANIA SPINOSA KERNEL OIL']);
+    $item = hybridPipelineItem('moroccan_kernel_oil', 'Moroccan kernel oil');
+
+    $response = app(IngredientEnrichmentPipeline::class)->run($item->id);
+
+    expect($suggestions->calls)->toBe(1)
+        ->and(data_get($response->result, 'proposal.inci_name'))->toBe('ARGANIA SPINOSA KERNEL OIL')
+        ->and(data_get($item->fresh()->research_stages, 'identity_preparation.data.inci_suggestion.confirmed_inci_name'))
+        ->toBe('ARGANIA SPINOSA KERNEL OIL')
+        ->and($response->result['warnings'])->toContain(
+            __('ingredient_enrichment.warnings.inci_suggested', ['inci' => 'ARGANIA SPINOSA KERNEL OIL']),
+        );
+});
+
+it('does not ask for INCI suggestions when the typed name already identifies the material', function (): void {
+    config()->set('interface-translations.catalogue_locales', []);
+    seedHybridCosingFunctions();
+    cache()->flush();
+    fakeHybridIngredientSources('argan');
+    fakeHybridEditorialClient();
+    $suggestions = fakeHybridInciSuggestions([]);
+    $item = hybridPipelineItem('argan_name_only_oil', 'Argan oil');
+
+    app(IngredientEnrichmentPipeline::class)->run($item->id);
+
+    expect($suggestions->calls)->toBe(0)
+        ->and(data_get($item->fresh()->research_stages, 'identity_preparation.data.inci_suggestion'))->toBeNull();
 });
 
 it('assembles precise argan facts from deterministic eu and us sources before editorial work', function (): void {
@@ -284,7 +323,7 @@ it('uses an AI taxonomy proposal for an unclassified intake subject and marks it
         ]);
 });
 
-it('resumes from the FDA identity boundary before querying downstream EU sources', function (): void {
+it('resumes from the FDA identity probe before querying downstream EU sources', function (): void {
     seedHybridCosingFunctions();
     cache()->flush();
     $editorial = fakeHybridEditorialClient();
@@ -304,11 +343,9 @@ it('resumes from the FDA identity boundary before querying downstream EU sources
 
     expect(fn () => app(IngredientEnrichmentPipeline::class)->run($item->id))
         ->toThrow(IngredientSourceException::class)
-        ->and(array_keys($item->fresh()->research_stages))->toBe([
-            'identity_preparation', 'us_identity',
-        ])
-        ->and(data_get($item->fresh()->research_stages, 'us_identity.status'))->toBe('failed')
-        ->and($item->fresh()->retryableFromStage())->toBe(IngredientEnrichmentResearchStage::UsIdentity)
+        ->and(array_keys($item->fresh()->research_stages))->toBe(['identity_preparation'])
+        ->and(data_get($item->fresh()->research_stages, 'identity_preparation.status'))->toBe('failed')
+        ->and($item->fresh()->retryableFromStage())->toBe(IngredientEnrichmentResearchStage::IdentityPreparation)
         ->and($editorial->calls)->toBe(0);
 
     $fdaAvailable = true;
@@ -375,6 +412,37 @@ function fakeHybridIngredientSources(string $fixture): void
             ? Http::response([], 404)
             : Http::response(file_get_contents(base_path($path)), 200);
     });
+}
+
+/**
+ * @param  list<string>  $inciNames
+ */
+function fakeHybridInciSuggestions(array $inciNames): IngredientInciSuggestionClient
+{
+    $client = new class($inciNames) implements IngredientInciSuggestionClient
+    {
+        public int $calls = 0;
+
+        /** @param list<string> $inciNames */
+        public function __construct(private readonly array $inciNames) {}
+
+        public function suggest(array $record): IngredientInciSuggestionResponse
+        {
+            $this->calls++;
+
+            return new IngredientInciSuggestionResponse(
+                inciNames: $this->inciNames,
+                responseId: 'resp_inci_suggestion',
+                requestId: 'req_inci_suggestion',
+                model: 'gpt-test',
+                inputTokens: 50,
+                outputTokens: 5,
+            );
+        }
+    };
+    app()->instance(IngredientInciSuggestionClient::class, $client);
+
+    return $client;
 }
 
 function fakeHybridEditorialClient(

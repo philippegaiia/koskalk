@@ -198,7 +198,7 @@ it('runs deterministic stages before one editorial pass and resumes their persis
         'ai_guidance_authoring',
         'ai_guidance_localization',
         'validation',
-    ])->and($response->structuredSourceCalls)->toBe(3)
+    ])->and($response->structuredSourceCalls)->toBe(4)
         ->and($response->inputTokens)->toBe(334)
         ->and($response->outputTokens)->toBe(130)
         ->and(data_get($response->result, 'proposal.inci_name'))->toBe('ARGANIA SPINOSA KERNEL OIL')

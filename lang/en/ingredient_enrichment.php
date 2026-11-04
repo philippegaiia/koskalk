@@ -180,7 +180,8 @@ return [
         'guidance_evidence_rejected' => ':count researched evidence item was rejected because it did not meet the evidence rules.|:count researched evidence items were rejected because they did not meet the evidence rules.',
         'guidance_evidence_none_accepted' => 'No researched evidence passed validation; the proposed guidance uses catalogue facts only.',
         'guidance_claim_omitted' => 'A guidance claim was omitted because it did not faithfully represent its cited evidence or trusted facts.',
-        'identity_unresolved' => 'Identity could not be confirmed against the deterministic registries; guidance research was not run.',
+        'identity_unresolved' => 'Identity could not be confirmed against the EU and FDA registries from the name; add the INCI name to the row and run it again.',
+        'inci_suggested' => 'No INCI was supplied, so :inci was suggested from the name and confirmed in a registry. Check it is the intended material.',
         'technical_identifier_corroborated' => 'Identifier reported by multiple independent consulted technical sources.',
     ],
     'replacement' => [

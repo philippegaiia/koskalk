@@ -63,6 +63,7 @@ class RecipeWorkbenchViewDataBuilder
         ];
 
         return [
+            'organization' => app(ProductOrganizationService::class)->options($user),
             'editing' => $editing,
             'output' => $output,
             'contextualHelp' => ['topics' => $helpContent, 'tabs' => $helpTabs],

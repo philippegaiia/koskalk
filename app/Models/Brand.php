@@ -21,6 +21,11 @@ class Brand extends Model
         return $this->belongsTo(Workspace::class);
     }
 
+    public function productCollections(): HasMany
+    {
+        return $this->hasMany(ProductCollection::class);
+    }
+
     public function recipes(): HasMany
     {
         return $this->hasMany(Recipe::class);

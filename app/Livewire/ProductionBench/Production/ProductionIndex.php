@@ -11,6 +11,8 @@ use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Livewire\Concerns\NormalizesDatePickerState;
+use App\Models\Brand;
+use App\Models\ProductCollection;
 use App\Models\ProductionLocation;
 use App\Models\ProductionRun;
 use App\Models\Recipe;
@@ -29,6 +31,7 @@ use Filament\Forms\Contracts\HasForms;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -66,6 +69,12 @@ class ProductionIndex extends Component implements HasActions, HasForms
     public string $dateTo = '';
 
     public int $perPage = 25;
+
+    #[Url(as: 'brand')]
+    public string $brandFilter = '';
+
+    #[Url(as: 'collection')]
+    public string $collectionFilter = '';
 
     #[Url(as: 'recipe')]
     public string $recipeFilter = '';
@@ -115,6 +124,17 @@ class ProductionIndex extends Component implements HasActions, HasForms
         $this->clearSelection();
         $this->displayedProductionRevisions = [];
         $this->resetPage();
+    }
+
+    public function updatedBrandFilter(): void
+    {
+        $this->collectionFilter = '';
+        $this->updatedRecipeFilter();
+    }
+
+    public function updatedCollectionFilter(): void
+    {
+        $this->updatedRecipeFilter();
     }
 
     public function filterDatesForm(Schema $schema): Schema
@@ -273,6 +293,11 @@ class ProductionIndex extends Component implements HasActions, HasForms
         return view('livewire.production-bench.production.production-index', [
             'contextualHelp' => $helpTopics->resolve('index', app()->getLocale()),
             'workspace' => $workspace,
+            'brandOptions' => Brand::query()->where('workspace_id', $workspace->id)->orderBy('name')->get(),
+            'collectionOptions' => ProductCollection::query()->where('workspace_id', $workspace->id)
+                ->with(['brand' => fn (BelongsTo $relation): BelongsTo => $relation->where('workspace_id', $workspace->id)])
+                ->when($this->brandFilter !== '', fn (Builder $query): Builder => $query->where('brand_id', ctype_digit($this->brandFilter) ? (int) $this->brandFilter : 0))
+                ->orderBy('name')->get(),
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'canMutate' => $canMutate,
@@ -306,6 +331,8 @@ class ProductionIndex extends Component implements HasActions, HasForms
                         ->orWhere('batch_number', 'like', "%{$search}%");
                 });
             })
+            ->when($this->brandFilter !== '', fn (Builder $query): Builder => $query->where('brand_id', ctype_digit($this->brandFilter) ? (int) $this->brandFilter : 0))
+            ->when($this->collectionFilter !== '', fn (Builder $query): Builder => $query->where('product_collection_id', ctype_digit($this->collectionFilter) ? (int) $this->collectionFilter : 0))
             ->when($this->status !== '', fn (Builder $query): Builder => $query->where('status', $this->status))
             ->when($this->recipeFilter !== '', function (Builder $query) use ($recipeId): void {
                 $recipeId === null

@@ -43,6 +43,7 @@
                     @endforeach
                 </select>
             </label>
+            @include('livewire.production-bench.production.organization-filters')
             {{ $this->filterDatesForm->getComponent('dateFrom') }}
             {{ $this->filterDatesForm->getComponent('dateTo') }}
             @if ($workspace->uses_production_locations)
@@ -147,6 +148,9 @@
                                     <td data-production-cell class="min-w-0 px-5 py-3 align-top">
                                         <a href="{{ route('production-bench.production.show', $production) }}" wire:navigate data-row-link class="block">
                                             <p class="line-clamp-2 font-semibold text-[var(--color-ink-strong)]">{{ $production->displayRecipeName() }}</p>
+                                            @if ($production->organizationLabel())
+                                                <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $production->organizationLabel() }}</p>
+                                            @endif
                                             <p class="mt-1 font-mono text-xs text-[var(--color-ink-soft)]">{{ $identifierLabel }} {{ $production->displayIdentifier() }}</p>
                                         </a>
                                     </td>
@@ -228,6 +232,9 @@
                                     <div class="flex flex-wrap items-start justify-between gap-2">
                                         <div class="min-w-0">
                                             <h3 class="line-clamp-2 text-base font-semibold text-[var(--color-ink-strong)]">{{ $production->displayRecipeName() }}</h3>
+                                            @if ($production->organizationLabel())
+                                                <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $production->organizationLabel() }}</p>
+                                            @endif
                                             <p class="mt-1 font-mono text-xs text-[var(--color-ink-soft)]">{{ $identifierLabel }} {{ $production->displayIdentifier() }}</p>
                                         </div>
                                         <span class="inline-block rounded-full px-2.5 py-1 text-xs font-medium {{ $statusColorMap[$production->status->value] ?? 'bg-[var(--color-ink-muted)]/10 text-[var(--color-ink-muted)]' }}">{{ $production->status->label() }}</span>

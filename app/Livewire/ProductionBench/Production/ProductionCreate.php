@@ -9,6 +9,8 @@ use App\Enums\ProductionRunSource;
 use App\Enums\ProductionRunStatus;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Livewire\Concerns\InteractsWithProductionWorkspace;
+use App\Models\Brand;
+use App\Models\ProductCollection;
 use App\Models\ProductionBatchPreset;
 use App\Models\ProductionLocation;
 use App\Models\ProductionTaskSet;
@@ -28,9 +30,12 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 
 class ProductionCreate extends Component implements HasActions, HasForms
@@ -39,6 +44,12 @@ class ProductionCreate extends Component implements HasActions, HasForms
     use InteractsWithAppNotifications;
     use InteractsWithForms;
     use InteractsWithProductionWorkspace;
+
+    #[Url(as: 'brand')]
+    public string $brandFilter = '';
+
+    #[Url(as: 'collection')]
+    public string $collectionFilter = '';
 
     public string $recipeId = '';
 
@@ -69,6 +80,23 @@ class ProductionCreate extends Component implements HasActions, HasForms
         $this->basisInputUnit = $this->workspace()->mass_display_system->priceUnit()->value;
         $this->idempotencyKey = (string) Str::uuid();
 
+    }
+
+    public function updatedBrandFilter(): void
+    {
+        $this->collectionFilter = '';
+        $this->resetFilteredProduct();
+    }
+
+    public function updatedCollectionFilter(): void
+    {
+        $this->resetFilteredProduct();
+    }
+
+    private function resetFilteredProduct(): void
+    {
+        $this->recipeId = '';
+        $this->updatedRecipeId();
     }
 
     public function updatedRecipeId(): void
@@ -286,6 +314,11 @@ class ProductionCreate extends Component implements HasActions, HasForms
         return view('livewire.production-bench.production.production-create', [
             'contextualHelp' => $helpTopics->resolve('create', app()->getLocale()),
             'workspace' => $workspace,
+            'brandOptions' => Brand::query()->where('workspace_id', $workspace->id)->orderBy('name')->get(),
+            'collectionOptions' => ProductCollection::query()->where('workspace_id', $workspace->id)
+                ->with(['brand' => fn (BelongsTo $relation): BelongsTo => $relation->where('workspace_id', $workspace->id)])
+                ->when($this->brandFilter !== '', fn (Builder $query): Builder => $query->where('brand_id', ctype_digit($this->brandFilter) ? (int) $this->brandFilter : 0))
+                ->orderBy('name')->get(),
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'productionLocations' => $productionLocations,
@@ -299,6 +332,8 @@ class ProductionCreate extends Component implements HasActions, HasForms
             'recipes' => Recipe::query()
                 ->where('workspace_id', $workspace->id)
                 ->whereNull('archived_at')
+                ->when($this->brandFilter !== '', fn (Builder $query): Builder => $query->where('brand_id', ctype_digit($this->brandFilter) ? (int) $this->brandFilter : 0))
+                ->when($this->collectionFilter !== '', fn (Builder $query): Builder => $query->where('product_collection_id', ctype_digit($this->collectionFilter) ? (int) $this->collectionFilter : 0))
                 ->whereHas('publishedVersions')
                 ->with('productFamily')
                 ->orderBy('name')
@@ -411,6 +446,8 @@ class ProductionCreate extends Component implements HasActions, HasForms
         return Recipe::withoutGlobalScopes()
             ->where('workspace_id', $this->workspace()->id)
             ->whereNull('archived_at')
+            ->when($this->brandFilter !== '', fn (Builder $query): Builder => $query->where('brand_id', ctype_digit($this->brandFilter) ? (int) $this->brandFilter : 0))
+            ->when($this->collectionFilter !== '', fn (Builder $query): Builder => $query->where('product_collection_id', ctype_digit($this->collectionFilter) ? (int) $this->collectionFilter : 0))
             ->whereHas('publishedVersions')
             ->with('productFamily', 'productionTaskSets', 'productionBatchPresets')
             ->find((int) $this->recipeId);

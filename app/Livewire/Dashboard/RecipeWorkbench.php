@@ -13,6 +13,7 @@ use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\MediaAssetUsageService;
+use App\Services\ProductOrganizationService;
 use App\Services\ProductTypeIfraOptionsBuilder;
 use App\Services\RecipeContentPersistenceService;
 use App\Services\RecipeContentUpdater;
@@ -760,6 +761,34 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
      * @param  array<string, mixed>  $packagingItem
      * @return array<string, mixed>
      */
+    /** @param array<string, mixed> $group */
+    #[Renderless]
+    public function createProductOrganizationGroup(array $group, ProductOrganizationService $organization): array
+    {
+        try {
+            return $this->withCreationWorkspace(function () use ($group, $organization): array {
+                $user = $this->currentUser();
+                abort_unless($user instanceof User, 403);
+                if ($this->currentRecipe() instanceof Recipe) {
+                    $this->authorize('update', $this->currentRecipe());
+                }
+                $type = $group['type'] ?? null;
+                $name = is_string($group['name'] ?? null) ? $group['name'] : '';
+                if ($type === 'brand') {
+                    $record = $organization->createBrand($user, $name);
+                } elseif ($type === 'collection' && is_numeric($group['brand_id'] ?? null)) {
+                    $record = $organization->createCollection($user, (int) $group['brand_id'], $name);
+                } else {
+                    throw ValidationException::withMessages(['brand_id' => __('organization.choose_brand')]);
+                }
+
+                return ['ok' => true, 'id' => $record->id, 'organization' => $organization->options($user), 'message' => __('organization.saved')];
+            });
+        } catch (ValidationException $exception) {
+            return ['ok' => false, 'message' => collect($exception->errors())->flatten()->first() ?? $exception->getMessage(), 'errors' => $exception->errors()];
+        }
+    }
+
     #[Renderless]
     public function savePackagingCatalogItem(array $packagingItem, RecipeWorkbenchService $recipeWorkbenchService): array
     {

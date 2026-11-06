@@ -80,8 +80,14 @@
         @endunless
     </div>
 
-    <div x-show="productTypeName || saveMessage || calculationPreviewMessage" x-cloak class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--color-ink-soft)]">
+    <div x-show="productTypeName || saveMessage || calculationPreviewMessage || @js(! $isPublicCalculator)" x-cloak class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--color-ink-soft)]">
         <span x-show="productTypeName" class="sk-badge sk-badge-neutral" x-text="productTypeName"></span>
+        @unless ($isPublicCalculator)
+            <button x-ref="productOrganizationTrigger" type="button" @click="openOrganizationDialog()" aria-haspopup="dialog" :aria-expanded="isOrganizationDialogOpen.toString()" aria-controls="product-organization-dialog" :aria-label="(productOrganizationLabel || @js(__('organization.set_organization'))) + ' — ' + @js(__('organization.edit_organization'))" class="inline-flex min-h-8 max-w-full items-center gap-1 rounded-md px-1 text-left font-medium text-[var(--color-ink-soft)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]" data-product-organization-trigger>
+                <span class="min-w-0 break-words" x-text="productOrganizationLabel || @js(__('organization.set_organization'))"></span>
+                <x-action-icon name="chevron-down" class="size-3 shrink-0" />
+            </button>
+        @endunless
         <template x-if="saveMessage">
             <span role="status" :class="saveStatus === 'error' ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-soft)]'" x-text="saveMessage"></span>
         </template>

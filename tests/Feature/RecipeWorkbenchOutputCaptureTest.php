@@ -191,6 +191,8 @@ assert.equal(section.costingPriceForRow.call({ costingPriceByRowId: { [row.rowId
 const packageState = {
     makeLocalPackagingRowId: () => 'local-row',
     defaultCurrency: 'EUR',
+    packagingPlanRows: [{ id: 'jar-plan', name: 'Jar', components_per_unit: 1 }],
+    reconcilePackagingCosts: section.reconcilePackagingCosts,
     reconcileCostingPrices() {},
 };
 section.applyCostingPayload.call(packageState, { packaging_items: [{ name: 'Jar', unit_cost: null, components_per_unit: 1 }] });

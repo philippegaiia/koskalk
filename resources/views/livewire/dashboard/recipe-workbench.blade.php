@@ -28,7 +28,7 @@
     }
 @endphp
 
-<div wire:ignore.self x-data="recipeWorkbench(@js($workbench))" x-init="if (@js($isPublicCalculator) && ! ['formula', 'output'].includes(activeWorkbenchTab)) activeWorkbenchTab = 'formula'" x-effect="if (packagingCatalogModalOpen || isIfraCategoryModalOpen || pendingCosmeticPhaseRemoval || editingTakeoverOpen) $dispatch('contextual-help:modal')" @editing-updated.window="handleEditingUpdated($event.detail.editing)" @dragover.window="autoScrollDuringRowDrag($event)" @drop.window="endRowDrag()" @dragend.window="endRowDrag()" @blur.window="stopRowDragScroll()" @dragleave.document="leaveRowDragDocument($event)" class="sk-workbench @container/workbench mx-auto max-w-app space-y-6">
+<div wire:ignore.self x-data="recipeWorkbench(@js($workbench))" x-init="if (@js($isPublicCalculator) && ! ['formula', 'output'].includes(activeWorkbenchTab)) activeWorkbenchTab = 'formula'" x-effect="if (isOrganizationDialogOpen || packagingCatalogModalOpen || isIfraCategoryModalOpen || pendingCosmeticPhaseRemoval || editingTakeoverOpen) $dispatch('contextual-help:modal')" @editing-updated.window="handleEditingUpdated($event.detail.editing)" @dragover.window="autoScrollDuringRowDrag($event)" @drop.window="endRowDrag()" @dragend.window="endRowDrag()" @blur.window="stopRowDragScroll()" @dragleave.document="leaveRowDragDocument($event)" class="sk-workbench @container/workbench mx-auto max-w-app space-y-6">
  <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
  <div class="space-y-4">
  @include($isGuestCalculator ? 'livewire.dashboard.partials.recipe-workbench.guest-header' : 'livewire.dashboard.partials.recipe-workbench.header')
@@ -76,6 +76,7 @@
  @include('livewire.dashboard.partials.recipe-workbench.costing-tab')
  </fieldset>
 
+ @include('livewire.dashboard.partials.recipe-workbench.organization-modal')
  @include('livewire.dashboard.partials.recipe-workbench.save-error-modal')
  @endunless
 

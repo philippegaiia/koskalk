@@ -313,7 +313,7 @@ it('keeps classification fields inside an accessible filter panel outside the to
 
     expect($xpath->query('//*[@data-product-filter-toolbar]//select'))->toHaveCount(1);
     expect($xpath->query('//*[@data-product-filter-toolbar]//input[@type="search"]'))->toHaveCount(1);
-    expect($xpath->query('//*[@data-product-filter-panel]//select'))->toHaveCount(3);
+    expect($xpath->query('//*[@data-product-filter-panel]//select'))->toHaveCount(5);
     expect($toggle->getAttribute('aria-controls'))->toBe($panel->getAttribute('id'));
     expect($panel->getAttribute('role'))->toBe('dialog')
         ->and($panel->getAttribute('aria-modal'))->toBe('true')

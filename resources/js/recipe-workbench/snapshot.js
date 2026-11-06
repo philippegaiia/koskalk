@@ -53,6 +53,8 @@ export function draftStateFromDraft(draft, currentState) {
         currentVersionId: draft.recipe?.current_version_id ?? currentState.currentVersionId,
         currentVersionNumber: draft.recipe?.version_number ?? currentState.currentVersionNumber,
         currentVersionIsDraft: draft.recipe?.is_current ?? currentState.currentVersionIsDraft,
+        brandId: Object.hasOwn(draft, 'brandId') ? draft.brandId : currentState.brandId,
+        productCollectionId: Object.hasOwn(draft, 'productCollectionId') ? draft.productCollectionId : currentState.productCollectionId,
         productTypeId: draft.productTypeId === null || draft.productTypeId === undefined
             ? ''
             : String(draft.productTypeId),

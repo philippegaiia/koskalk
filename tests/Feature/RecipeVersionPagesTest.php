@@ -279,8 +279,8 @@ it('renders an existing formula workbench within its initial query budget', func
 
     DB::disableQueryLog();
 
-    // Includes snapshot locks/revisions and fresh update/create policy checks; render reuses the mount result.
-    expect($queries->count() - $helpQueries->count())->toBeLessThanOrEqual(57)
+    // Includes snapshot locks/revisions, fresh policy checks and the two organization catalogues with fresh workspace access; render reuses the mount result.
+    expect($queries->count() - $helpQueries->count())->toBeLessThanOrEqual(61)
         ->and($helpQueries->count())->toBeLessThanOrEqual(2);
 });
 

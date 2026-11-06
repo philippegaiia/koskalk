@@ -86,7 +86,7 @@ return [
         'close' => 'Close filters',
         'done' => 'Done',
         'updating' => 'Updating…',
-        'search_placeholder' => 'Search products',
+        'search_placeholder' => 'Search products, brands or collections',
         'search' => [
             'label' => 'Search',
             'placeholder' => 'Product name, area, category, or type',

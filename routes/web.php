@@ -25,6 +25,7 @@ use App\Http\Controllers\ProductionBatchController;
 use App\Http\Controllers\ProductionEditingController;
 use App\Http\Controllers\ProductionPickingPrintController;
 use App\Http\Controllers\ProductionRunPrintController;
+use App\Http\Controllers\ProductOrganizationController;
 use App\Http\Controllers\PublicCalculatorController;
 use App\Http\Controllers\RecipeController;
 use App\Http\Controllers\RecipeMediaController;
@@ -210,6 +211,8 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 ->name('media');
             Route::get('/{packagingItem}', 'edit')->name('edit');
         });
+
+    Route::get('/dashboard/brands-and-collections', ProductOrganizationController::class)->name('product-organization.index');
 
     Route::view('/dashboard/settings', 'settings')->name('settings');
 

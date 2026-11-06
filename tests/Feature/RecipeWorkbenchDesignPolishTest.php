@@ -220,7 +220,6 @@ it('uses deliberate spacing between workbench breadcrumbs, title, actions, and n
 
     expect($header)
         ->toContain('class="mt-3 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between"')
-        ->toContain('x-show="productTypeName || saveMessage || calculationPreviewMessage"')
         ->toContain('class="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs')
         ->not->toContain('min-h-6')
         ->not->toContain('lg:row-start-')

@@ -5,11 +5,15 @@ namespace Database\Seeders;
 use App\Models\ProductArea;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
+use App\Support\ProductTaxonomyTranslations;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 class ProductTaxonomySeeder extends Seeder
 {
+    private ?ProductTaxonomyTranslations $translations = null;
+
     /**
      * Run the database seeds.
      */
@@ -49,9 +53,10 @@ class ProductTaxonomySeeder extends Seeder
                         'name' => $areaData['name'],
                         'sort_order' => $areaData['sort_order'],
                         'is_active' => true,
-                        'translations' => $this->translationsFor($areaData['slug']),
                     ],
                 );
+
+                $this->fillMissingTranslations($area);
 
                 foreach ($areaData['categories'] as $categoryData) {
                     $category = $area->productCategories()->updateOrCreate(
@@ -60,9 +65,10 @@ class ProductTaxonomySeeder extends Seeder
                             'name' => $categoryData['name'],
                             'sort_order' => $categoryData['sort_order'],
                             'is_active' => true,
-                            'translations' => $this->translationsFor($categoryData['slug']),
                         ],
                     );
+
+                    $this->fillMissingTranslations($category);
 
                     foreach ($categoryData['types'] as $index => $typeData) {
                         $familyIds = collect($typeData['families'])
@@ -82,7 +88,6 @@ class ProductTaxonomySeeder extends Seeder
                             'name' => $typeData['name'],
                             'sort_order' => ($index + 1) * 10,
                             'is_active' => true,
-                            'translations' => $this->translationsFor($typeData['slug']),
                         ];
 
                         if ($typeData['slug'] === 'lip-product' && $historicalLipType !== null) {
@@ -96,6 +101,7 @@ class ProductTaxonomySeeder extends Seeder
                             );
                         }
 
+                        $this->fillMissingTranslations($productType);
                         $productType->productFamilies()->sync($familyIds->all());
                     }
                 }
@@ -121,79 +127,13 @@ class ProductTaxonomySeeder extends Seeder
         ];
     }
 
-    /** @return array{fr: array{name: string}}|null */
-    private function translationsFor(string $slug): ?array
+    private function fillMissingTranslations(Model $record): void
     {
-        $name = $this->frenchNames()[$slug] ?? null;
-
-        return $name === null ? null : ['fr' => ['name' => $name]];
-    }
-
-    /** @return array<string, string> */
-    private function frenchNames(): array
-    {
-        return [
-            'personal-care' => 'Soins personnels',
-            'home-household' => 'Maison et entretien',
-            'body-cleansing' => 'Nettoyage du corps',
-            'skin-care' => 'Soins de la peau',
-            'hair-care' => 'Soins capillaires',
-            'lips-oral-care' => 'Lèvres et soins bucco-dentaires',
-            'deodorant-fragrance' => 'Déodorants et parfums',
-            'grooming' => 'Rasage et soins masculins',
-            'makeup' => 'Maquillage',
-            'sun-tan-care' => 'Soins solaires et autobronzants',
-            'other' => 'Autres',
-            'home-fragrance' => 'Parfums d’intérieur',
-            'dish-care' => 'Vaisselle',
-            'laundry' => 'Linge',
-            'surface-toilet-care' => 'Surfaces et sanitaires',
-            'bar-soap-cleansing-bar' => 'Savon solide / pain nettoyant',
-            'liquid-soap-body-wash' => 'Savon liquide / gel douche',
-            'face-cleanser' => 'Nettoyant visage',
-            'bath-salts-soaks-bombs' => 'Sels / bains / bombes de bain',
-            'shaving-soap-cream' => 'Savon / crème à raser',
-            'body-cream-lotion-oil' => 'Crème / lotion / huile pour le corps',
-            'face-cream-serum-toner' => 'Crème / sérum / lotion tonique visage',
-            'hand-nail-care' => 'Soins des mains / ongles',
-            'foot-cream-powder' => 'Crème / poudre pour les pieds',
-            'face-mask' => 'Masque visage',
-            'baby-cream-oil-powder' => 'Crème / huile / poudre pour bébé',
-            'massage-body-oil' => 'Huile de massage / pour le corps',
-            'skin-contact-massage-candle' => 'Bougie de massage pour la peau',
-            'shampoo' => 'Shampooing',
-            'rinse-off-conditioner' => 'Après-shampooing à rincer',
-            'leave-in-styling-hair-oil' => 'Soin sans rinçage / coiffant / huile capillaire',
-            'rinse-off-hair-chemical-treatment' => 'Coloration / traitement chimique capillaire à rincer',
-            'lip-product' => 'Produit pour les lèvres',
-            'toothpaste-mouthwash' => 'Dentifrice / bain de bouche',
-            'deodorant-antiperspirant' => 'Déodorant / anti-transpirant',
-            'body-mist-spray' => 'Brume / spray corporel',
-            'fine-fragrance-solid-perfume' => 'Parfum / parfum solide',
-            'aftershave-splash' => 'Lotion après-rasage',
-            'aftershave-cream-balm' => 'Crème / baume après-rasage',
-            'face-eye-makeup' => 'Maquillage visage / yeux',
-            'makeup-remover' => 'Démaquillant',
-            'body-sun-self-tan-care' => 'Soin solaire / autobronzant corps',
-            'face-sun-self-tan-care' => 'Soin solaire / autobronzant visage',
-            'other-cosmetics' => 'Autre produit cosmétique',
-            'candle-wax-melt' => 'Bougie / fondant parfumé',
-            'reed-diffuser-refill' => 'Diffuseur à bâtonnets / recharge liquide',
-            'room-air-freshener-spray' => 'Spray d’ambiance / désodorisant',
-            'pillow-spray' => 'Brume d’oreiller',
-            'fabric-linen-spray' => 'Brume textile / linge',
-            'incense-passive-air-fragrance' => 'Encens / parfum d’ambiance passif',
-            'hand-dishwashing-product' => 'Savon / détergent pour vaisselle à la main',
-            'automatic-dishwasher-product' => 'Produit pour lave-vaisselle',
-            'hand-wash-laundry-product' => 'Savon / détergent pour lavage du linge à la main',
-            'machine-laundry-detergent' => 'Lessive liquide / en poudre',
-            'laundry-pre-treatment' => 'Prétraitement / détachant pour le linge',
-            'fabric-softener' => 'Assouplissant',
-            'dryer-sheet-scent-beads' => 'Feuille sèche-linge / perles parfumées',
-            'hard-surface-cleaner' => 'Nettoyant pour surfaces dures',
-            'toilet-gel-rim-block' => 'Gel WC / bloc cuvette',
-            'other-home-product' => 'Autre produit pour la maison',
-        ];
+        $this->translations ??= app(ProductTaxonomyTranslations::class);
+        $translations = $this->translations->mergeMissing($record->translations, $record->slug, $record->getTable());
+        if ($translations !== ($record->translations ?? [])) {
+            $record->update(['translations' => $translations]);
+        }
     }
 
     /**

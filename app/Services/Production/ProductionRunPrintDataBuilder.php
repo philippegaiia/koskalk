@@ -133,6 +133,7 @@ final class ProductionRunPrintDataBuilder
             'batch_number' => $production->batch_number,
             'planning_reference' => $production->planning_batch_number,
             'formula' => $production->recipe_name_snapshot,
+            'organization' => $production->organizationLabel(),
             'version' => $production->source_formula_version_number,
             'calculation_basis' => $context['calculation_basis'] ?? null,
             'basis_quantity_grams' => $production->basis_quantity_grams,

@@ -77,6 +77,8 @@ class RecipeWorkbenchVersionPayloadMapper
                 'version_number' => $version->version_number,
                 'is_current' => $version->is_current,
             ],
+            'brandId' => $version->recipe?->brand_id,
+            'productCollectionId' => $version->recipe?->product_collection_id,
             'productTypeId' => $version->recipe?->product_type_id,
             'formulaName' => $version->name,
             'oilUnit' => $displayUnit->value,

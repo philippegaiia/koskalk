@@ -29,6 +29,7 @@ import { formatDecimalInput, resolveNumberLocale } from './number-format';
 import { MASS_UNITS, convertMass } from './mass';
 import { copyText } from './clipboard';
 import { createFormulaSection } from './sections/formula-section';
+import { createOrganizationSection } from './sections/organization-section';
 import { createPackagingSection } from './sections/packaging-section';
 import { createCostingSection } from './sections/costing-section';
 import { createPresentationSection } from './sections/presentation-section';
@@ -240,6 +241,14 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         ingredientListUndo: null,
         ingredients: payload.ingredients ?? [],
         manufacturedIngredients: payload.manufacturedIngredients ?? [],
+        brandId: payload.savedDraft?.brandId ?? null,
+        productCollectionId: payload.savedDraft?.productCollectionId ?? null,
+        organizationBrands: payload.organization?.brands ?? [],
+        organizationCollections: payload.organization?.collections ?? [],
+        organizationGroupName: '',
+        organizationGroupType: null,
+        organizationMessage: '',
+        organizationStatus: null,
         productionOutputType: 'finished_product',
         outputIngredientId: '',
         readyDelayDays: '',
@@ -2034,6 +2043,10 @@ export function createRecipeWorkbench(payload, createRegistry = null) {
 
     if (payload.guestCalculator) {
         defineSection(component, createGuestSection(payload));
+    }
+
+    if (typeof createOrganizationSection === 'function') {
+        defineSection(component, createOrganizationSection());
     }
 
     if (typeof createRecipeWorkbenchOutputSection === 'function') {

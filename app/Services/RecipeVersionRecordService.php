@@ -13,7 +13,10 @@ use Illuminate\Support\Str;
 
 class RecipeVersionRecordService
 {
-    public function __construct(private readonly WorkspaceProvisioner $workspaceProvisioner) {}
+    public function __construct(
+        private readonly WorkspaceProvisioner $workspaceProvisioner,
+        private readonly ProductOrganizationService $organization,
+    ) {}
 
     public function createRecipe(User $user, ProductFamily $productFamily, string $name, ?int $productTypeId = null): Recipe
     {
@@ -61,6 +64,8 @@ class RecipeVersionRecordService
         if ($recipe->name !== $normalizedPayload['name']) {
             $recipe->name = $normalizedPayload['name'];
         }
+
+        $recipe->fill($this->organization->assignment($user, $normalizedPayload, $recipe));
 
         $recipe->production_output_type = $normalizedPayload['production_output_type'];
         $recipe->output_ingredient_id = $normalizedPayload['output_ingredient_id'];

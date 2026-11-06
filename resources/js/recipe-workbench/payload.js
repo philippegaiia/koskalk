@@ -53,6 +53,8 @@ export function serializeDraft(state) {
     );
 
     return {
+        brand_id: state.brandId === '' || state.brandId === null || state.brandId === undefined ? null : Number(state.brandId),
+        product_collection_id: state.productCollectionId === '' || state.productCollectionId === null || state.productCollectionId === undefined ? null : Number(state.productCollectionId),
         name: state.formulaName,
         oil_unit: state.oilUnit,
         oil_weight: nonNegativeNumber(state.oilWeight),

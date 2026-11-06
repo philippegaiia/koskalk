@@ -22595,6 +22595,702 @@
       }
     },
     {
+      "group": "organization",
+      "key": "all_brands",
+      "text": {
+        "de": "Alle Marken",
+        "es": "Todas las marcas",
+        "fr": "Toutes les marques",
+        "it": "Tutti i marchi",
+        "nl": "Alle merken",
+        "pt_BR": "Todas as marcas"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "all_collections",
+      "text": {
+        "de": "Alle Kollektionen",
+        "es": "Todas las colecciones",
+        "fr": "Toutes les collections",
+        "it": "Tutte le collezioni",
+        "nl": "Alle collecties",
+        "pt_BR": "Todas as coleções"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "back_to_products",
+      "text": {
+        "de": "Zurück zu Produkten",
+        "es": "Volver a productos",
+        "fr": "Retour aux produits",
+        "it": "Torna ai prodotti",
+        "nl": "Terug naar producten",
+        "pt_BR": "Voltar aos produtos"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "brand",
+      "text": {
+        "de": "Marke",
+        "es": "Marca",
+        "fr": "Marque",
+        "it": "Marchio",
+        "nl": "Merk",
+        "pt_BR": "Marca"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "brand_children_help",
+      "text": {
+        "de": "Verschieben oder löschen Sie zuerst die Kollektionen, oder bestätigen Sie die Entfernung der Marke samt Kollektionen.",
+        "es": "Primero mueve o elimina las colecciones, o confirma la retirada para eliminar la marca y sus colecciones.",
+        "fr": "Déplacez ou supprimez d’abord les collections, ou confirmez le retrait pour supprimer la marque et ses collections.",
+        "it": "Prima sposta o elimina le collezioni, oppure conferma la rimozione del marchio e delle sue collezioni.",
+        "nl": "Verplaats of verwijder eerst de collecties, of bevestig het verwijderen van het merk en de collecties.",
+        "pt_BR": "Primeiro mova ou exclua as coleções, ou confirme a remoção da marca e de suas coleções."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "cancel",
+      "text": {
+        "de": "Abbrechen",
+        "es": "Cancelar",
+        "fr": "Annuler",
+        "it": "Annulla",
+        "nl": "Annuleren",
+        "pt_BR": "Cancelar"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "cards",
+      "text": {
+        "de": "Karten",
+        "es": "Tarjetas",
+        "fr": "Cartes",
+        "it": "Schede",
+        "nl": "Kaarten",
+        "pt_BR": "Cartões"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "choose_brand",
+      "text": {
+        "de": "Wählen Sie vor dem Erstellen einer Kollektion eine Marke.",
+        "es": "Elige una marca antes de crear una colección.",
+        "fr": "Choisissez une marque avant de créer une collection.",
+        "it": "Scegli un marchio prima di creare una collezione.",
+        "nl": "Kies een merk voordat je een collectie maakt.",
+        "pt_BR": "Escolha uma marca antes de criar uma coleção."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "clear_assignments",
+      "text": {
+        "de": "Betroffene Produktzuordnungen entfernen und gegebenenfalls untergeordnete Kollektionen löschen.",
+        "es": "Quitar las asignaciones de los productos afectados y eliminar las colecciones dependientes, si las hay.",
+        "fr": "Retirer les affectations des produits concernés et supprimer les collections enfants, le cas échéant.",
+        "it": "Rimuovi le assegnazioni dei prodotti interessati ed elimina le eventuali collezioni figlie.",
+        "nl": "Verwijder de betrokken producttoewijzingen en eventuele onderliggende collecties.",
+        "pt_BR": "Remover as atribuições dos produtos afetados e excluir as coleções filhas, se houver."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "close",
+      "text": {
+        "de": "Fertig",
+        "es": "Listo",
+        "fr": "Terminé",
+        "it": "Fine",
+        "nl": "Gereed",
+        "pt_BR": "Concluído"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "collection",
+      "text": {
+        "de": "Kollektion",
+        "es": "Colección",
+        "fr": "Collection",
+        "it": "Collezione",
+        "nl": "Collectie",
+        "pt_BR": "Coleção"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "confirm_delete",
+      "text": {
+        "de": "Gruppe löschen",
+        "es": "Eliminar grupo",
+        "fr": "Supprimer le groupe",
+        "it": "Elimina gruppo",
+        "nl": "Groep verwijderen",
+        "pt_BR": "Excluir grupo"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "create",
+      "text": {
+        "de": "Erstellen",
+        "es": "Crear",
+        "fr": "Créer",
+        "it": "Crea",
+        "nl": "Maken",
+        "pt_BR": "Criar"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "create_brand",
+      "text": {
+        "de": "Marke erstellen",
+        "es": "Crear marca",
+        "fr": "Créer une marque",
+        "it": "Crea marchio",
+        "nl": "Merk maken",
+        "pt_BR": "Criar marca"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "create_collection",
+      "text": {
+        "de": "Kollektion erstellen",
+        "es": "Crear colección",
+        "fr": "Créer une collection",
+        "it": "Crea collezione",
+        "nl": "Collectie maken",
+        "pt_BR": "Criar coleção"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "delete",
+      "text": {
+        "de": "Löschen",
+        "es": "Eliminar",
+        "fr": "Supprimer",
+        "it": "Elimina",
+        "nl": "Verwijderen",
+        "pt_BR": "Excluir"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "delete_brand",
+      "text": {
+        "de": "Marke löschen",
+        "es": "Eliminar marca",
+        "fr": "Supprimer la marque",
+        "it": "Elimina marchio",
+        "nl": "Merk verwijderen",
+        "pt_BR": "Excluir marca"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "delete_collection",
+      "text": {
+        "de": "Kollektion löschen",
+        "es": "Eliminar colección",
+        "fr": "Supprimer la collection",
+        "it": "Elimina collezione",
+        "nl": "Collectie verwijderen",
+        "pt_BR": "Excluir coleção"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "delete_help",
+      "text": {
+        "de": "Produkte und Produktionsverlauf bleiben erhalten. Verwendete Gruppen erfordern eine Neuzuordnung oder bestätigte Entfernung.",
+        "es": "Se conservan los productos y el historial de producción. Los grupos en uso requieren reasignación o retirada confirmada.",
+        "fr": "Les produits et l’historique de production sont conservés. Un groupe utilisé nécessite une réaffectation ou un retrait confirmé.",
+        "it": "I prodotti e lo storico di produzione vengono conservati. I gruppi utilizzati richiedono una riassegnazione o una rimozione confermata.",
+        "nl": "Producten en productiegeschiedenis blijven bewaard. Gebruikte groepen vereisen een nieuwe toewijzing of bevestigde verwijdering.",
+        "pt_BR": "Os produtos e o histórico de produção são mantidos. Grupos em uso exigem reatribuição ou remoção confirmada."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "edit",
+      "text": {
+        "de": "Bearbeiten",
+        "es": "Editar",
+        "fr": "Modifier",
+        "it": "Modifica",
+        "nl": "Bewerken",
+        "pt_BR": "Editar"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "edit_brand",
+      "text": {
+        "de": "Marke bearbeiten",
+        "es": "Editar marca",
+        "fr": "Modifier la marque",
+        "it": "Modifica marchio",
+        "nl": "Merk bewerken",
+        "pt_BR": "Editar marca"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "edit_collection",
+      "text": {
+        "de": "Kollektion bearbeiten",
+        "es": "Editar colección",
+        "fr": "Modifier la collection",
+        "it": "Modifica collezione",
+        "nl": "Collectie bewerken",
+        "pt_BR": "Editar coleção"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "edit_organization",
+      "text": {
+        "de": "Marke und Kollektion bearbeiten",
+        "es": "Editar marca y colección",
+        "fr": "Modifier la marque et la collection",
+        "it": "Modifica marchio e collezione",
+        "nl": "Merk en collectie bewerken",
+        "pt_BR": "Editar marca e coleção"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "invalid_brand",
+      "text": {
+        "de": "Wählen Sie eine Marke in diesem Arbeitsbereich.",
+        "es": "Elige una marca de este espacio de trabajo.",
+        "fr": "Choisissez une marque de cet espace de travail.",
+        "it": "Scegli un marchio in questo spazio di lavoro.",
+        "nl": "Kies een merk in deze werkruimte.",
+        "pt_BR": "Escolha uma marca deste espaço de trabalho."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "invalid_collection",
+      "text": {
+        "de": "Wählen Sie eine Kollektion dieser Marke in diesem Arbeitsbereich.",
+        "es": "Elige una colección de esta marca en este espacio de trabajo.",
+        "fr": "Choisissez une collection de cette marque dans cet espace de travail.",
+        "it": "Scegli una collezione di questo marchio in questo spazio di lavoro.",
+        "nl": "Kies een collectie van dit merk in deze werkruimte.",
+        "pt_BR": "Escolha uma coleção desta marca neste espaço de trabalho."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "invalid_name",
+      "text": {
+        "de": "Geben Sie einen Namen mit bis zu 255 Zeichen ein.",
+        "es": "Introduce un nombre de hasta 255 caracteres.",
+        "fr": "Saisissez un nom de 255 caractères maximum.",
+        "it": "Inserisci un nome di massimo 255 caratteri.",
+        "nl": "Voer een naam van maximaal 255 tekens in.",
+        "pt_BR": "Digite um nome com até 255 caracteres."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "list",
+      "text": {
+        "de": "Liste",
+        "es": "Lista",
+        "fr": "Liste",
+        "it": "Elenco",
+        "nl": "Lijst",
+        "pt_BR": "Lista"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "manage",
+      "text": {
+        "de": "Marken und Kollektionen verwalten",
+        "es": "Gestionar marcas y colecciones",
+        "fr": "Gérer les marques et collections",
+        "it": "Gestisci marchi e collezioni",
+        "nl": "Merken en collecties beheren",
+        "pt_BR": "Gerenciar marcas e coleções"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "management_deleted",
+      "text": {
+        "de": "Gruppe gelöscht.",
+        "es": "Grupo eliminado.",
+        "fr": "Groupe supprimé.",
+        "it": "Gruppo eliminato.",
+        "nl": "Groep verwijderd.",
+        "pt_BR": "Grupo excluído."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "management_intro",
+      "text": {
+        "de": "Produkte nach Marken und Kollektionen ordnen. Produktionsaufzeichnungen behalten ihre ursprünglichen Bezeichnungen.",
+        "es": "Organiza los productos por marcas y colecciones. Los registros de producción conservan sus etiquetas originales.",
+        "fr": "Organisez les produits par marque et collection. Les productions conservent leurs libellés d’origine.",
+        "it": "Organizza i prodotti per marchio e collezione. I registri di produzione mantengono le etichette originali.",
+        "nl": "Orden producten per merk en collectie. Productieregistraties behouden hun oorspronkelijke namen.",
+        "pt_BR": "Organize produtos por marcas e coleções. Os registros de produção mantêm os nomes originais."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "management_read_only",
+      "text": {
+        "de": "Sie können diese Gruppen ansehen. Zum Bearbeiten ist die Rolle Eigentümer, Administrator oder Bearbeiter erforderlich.",
+        "es": "Puedes consultar estos grupos. Para editarlos se necesita el rol Propietario, Administrador o Editor.",
+        "fr": "Vous pouvez consulter ces groupes. Leur modification nécessite le rôle Propriétaire, Administrateur ou Éditeur.",
+        "it": "Puoi consultare questi gruppi. Per modificarli serve il ruolo Proprietario, Amministratore o Editor.",
+        "nl": "Je kunt deze groepen bekijken. Bewerken vereist de rol Eigenaar, Beheerder of Bewerker.",
+        "pt_BR": "Você pode consultar estes grupos. Para editar, é necessário o papel de Proprietário, Administrador ou Editor."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "management_saved",
+      "text": {
+        "de": "Zuordnung gespeichert.",
+        "es": "Organización guardada.",
+        "fr": "Organisation enregistrée.",
+        "it": "Organizzazione salvata.",
+        "nl": "Indeling opgeslagen.",
+        "pt_BR": "Organização salva."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "move_help",
+      "text": {
+        "de": "Beim Verschieben einer Kollektion ändert sich die Marke der zugeordneten Produkte.",
+        "es": "Mover una colección cambia la marca de sus productos asignados.",
+        "fr": "Déplacer une collection change la marque des produits associés.",
+        "it": "Spostare una collezione cambia il marchio dei prodotti associati.",
+        "nl": "Bij het verplaatsen van een collectie verandert het merk van de gekoppelde producten.",
+        "pt_BR": "Mover uma coleção altera a marca dos produtos associados."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "name",
+      "text": {
+        "de": "Name",
+        "es": "Nombre",
+        "fr": "Nom",
+        "it": "Nome",
+        "nl": "Naam",
+        "pt_BR": "Nome"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "no_brand",
+      "text": {
+        "de": "Keine Marke",
+        "es": "Sin marca",
+        "fr": "Sans marque",
+        "it": "Nessun marchio",
+        "nl": "Geen merk",
+        "pt_BR": "Sem marca"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "no_brands_yet",
+      "text": {
+        "de": "Noch keine Marken. Erstellen Sie eine Marke, um Ihre Produkte zu ordnen.",
+        "es": "Aún no hay marcas. Crea una marca para organizar tus productos.",
+        "fr": "Aucune marque pour le moment. Créez une marque pour organiser vos produits.",
+        "it": "Nessun marchio al momento. Crea un marchio per organizzare i prodotti.",
+        "nl": "Nog geen merken. Maak een merk om je producten te ordenen.",
+        "pt_BR": "Ainda não há marcas. Crie uma marca para organizar seus produtos."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "no_collection",
+      "text": {
+        "de": "Keine Kollektion",
+        "es": "Sin colección",
+        "fr": "Sans collection",
+        "it": "Nessuna collezione",
+        "nl": "Geen collectie",
+        "pt_BR": "Sem coleção"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "no_collections_yet",
+      "text": {
+        "de": "Noch keine Kollektionen.",
+        "es": "Aún no hay colecciones.",
+        "fr": "Aucune collection pour le moment.",
+        "it": "Nessuna collezione al momento.",
+        "nl": "Nog geen collecties.",
+        "pt_BR": "Ainda não há coleções."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "no_reassignment",
+      "text": {
+        "de": "Keine Neuzuordnung",
+        "es": "Sin reasignación",
+        "fr": "Aucune réaffectation",
+        "it": "Nessuna riassegnazione",
+        "nl": "Niet opnieuw toewijzen",
+        "pt_BR": "Sem reatribuição"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "organization",
+      "text": {
+        "de": "Marke und Kollektion",
+        "es": "Marca y colección",
+        "fr": "Marque et collection",
+        "it": "Marchio e collezione",
+        "nl": "Merk en collectie",
+        "pt_BR": "Marca e coleção"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "product",
+      "text": {
+        "de": "Produkt",
+        "es": "Producto",
+        "fr": "Produit",
+        "it": "Prodotto",
+        "nl": "Product",
+        "pt_BR": "Produto"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "product_type",
+      "text": {
+        "de": "Produkttyp",
+        "es": "Tipo de producto",
+        "fr": "Type de produit",
+        "it": "Tipo di prodotto",
+        "nl": "Producttype",
+        "pt_BR": "Tipo de produto"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "product_view",
+      "text": {
+        "de": "Produktansicht",
+        "es": "Vista de productos",
+        "fr": "Vue des produits",
+        "it": "Vista prodotti",
+        "nl": "Productweergave",
+        "pt_BR": "Visualização de produtos"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "products_count",
+      "text": {
+        "de": ":count Produkte",
+        "es": ":count productos",
+        "fr": ":count produits",
+        "it": ":count prodotti",
+        "nl": ":count producten",
+        "pt_BR": ":count produtos"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "reassign_brand",
+      "text": {
+        "de": "Produkte einer Marke neu zuordnen",
+        "es": "Reasignar productos a una marca",
+        "fr": "Réaffecter les produits à une marque",
+        "it": "Riassegna i prodotti a un marchio",
+        "nl": "Producten aan een merk toewijzen",
+        "pt_BR": "Reatribuir produtos a uma marca"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "reassign_collection",
+      "text": {
+        "de": "Produkte einer Kollektion neu zuordnen",
+        "es": "Reasignar productos a una colección",
+        "fr": "Réaffecter les produits à une collection",
+        "it": "Riassegna i prodotti a una collezione",
+        "nl": "Producten aan een collectie toewijzen",
+        "pt_BR": "Reatribuir produtos a uma coleção"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "reassign_help",
+      "text": {
+        "de": "Bei verwendeten Gruppen wählen Sie ein Ziel oder bestätigen unten das Entfernen der Zuordnungen.",
+        "es": "Para un grupo en uso, elige un destino o confirma expresamente la eliminación de asignaciones abajo.",
+        "fr": "Pour un groupe utilisé, choisissez une destination ou confirmez explicitement le retrait ci-dessous.",
+        "it": "Per un gruppo utilizzato, scegli una destinazione o conferma esplicitamente la rimozione delle assegnazioni sotto.",
+        "nl": "Kies voor een gebruikte groep een bestemming of bevestig hieronder uitdrukkelijk het verwijderen van de toewijzingen.",
+        "pt_BR": "Para um grupo em uso, escolha um destino ou confirme expressamente a remoção das atribuições abaixo."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "save",
+      "text": {
+        "de": "Speichern",
+        "es": "Guardar",
+        "fr": "Enregistrer",
+        "it": "Salva",
+        "nl": "Opslaan",
+        "pt_BR": "Salvar"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "save_failed",
+      "text": {
+        "de": "Speichern fehlgeschlagen. Bitte versuchen Sie es erneut.",
+        "es": "No se pudo guardar. Inténtalo de nuevo.",
+        "fr": "Enregistrement impossible. Réessayez.",
+        "it": "Impossibile salvare. Riprova.",
+        "nl": "Opslaan mislukt. Probeer het opnieuw.",
+        "pt_BR": "Não foi possível salvar. Tente novamente."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "saved",
+      "text": {
+        "de": "Gespeichert. Speichern Sie das Produkt, um die Auswahl zu behalten.",
+        "es": "Guardado. Guarda el producto para conservar la selección.",
+        "fr": "Enregistré. Enregistrez le produit pour conserver cette sélection.",
+        "it": "Salvato. Salva il prodotto per mantenere la selezione.",
+        "nl": "Opgeslagen. Sla het product op om de selectie te bewaren.",
+        "pt_BR": "Salvo. Salve o produto para manter a seleção."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "selection_help",
+      "text": {
+        "de": "Änderungen werden mit dem Produkt gespeichert.",
+        "es": "Los cambios se guardan con el producto.",
+        "fr": "Les changements sont enregistrés avec le produit.",
+        "it": "Le modifiche vengono salvate con il prodotto.",
+        "nl": "Wijzigingen worden met het product opgeslagen.",
+        "pt_BR": "As alterações são salvas com o produto."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "set_organization",
+      "text": {
+        "de": "Marke / Kollektion festlegen",
+        "es": "Definir marca / colección",
+        "fr": "Définir la marque / collection",
+        "it": "Imposta marchio / collezione",
+        "nl": "Merk / collectie instellen",
+        "pt_BR": "Definir marca / coleção"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "updated",
+      "text": {
+        "de": "Zuletzt aktualisiert",
+        "es": "Última actualización",
+        "fr": "Dernière modification",
+        "it": "Ultimo aggiornamento",
+        "nl": "Laatst bijgewerkt",
+        "pt_BR": "Última atualização"
+      }
+    },
+    {
+      "group": "organization",
+      "key": "validation.brand_has_collections",
+      "text": {
+        "de": "Verschieben oder löschen Sie zuerst die Kollektionen, oder bestätigen Sie ausdrücklich die Entfernung dieser Marke samt Kollektionen.",
+        "es": "Primero mueve o elimina las colecciones, o confirma expresamente la retirada de esta marca y sus colecciones.",
+        "fr": "Déplacez ou supprimez d’abord les collections, ou confirmez explicitement le retrait de cette marque et de ses collections.",
+        "it": "Prima sposta o elimina le collezioni, oppure conferma esplicitamente la rimozione di questo marchio e delle sue collezioni.",
+        "nl": "Verplaats of verwijder eerst de collecties, of bevestig uitdrukkelijk het verwijderen van dit merk en de collecties.",
+        "pt_BR": "Primeiro mova ou exclua as coleções, ou confirme expressamente a remoção desta marca e de suas coleções."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "validation.choose_target",
+      "text": {
+        "de": "Wählen Sie ein anderes Ziel oder bestätigen Sie die Entfernung ohne Ziel.",
+        "es": "Elige otro destino o confirma la retirada sin destino.",
+        "fr": "Choisissez une autre destination, ou confirmez le retrait sans destination.",
+        "it": "Scegli una destinazione diversa o conferma la rimozione senza destinazione.",
+        "nl": "Kies een andere bestemming of bevestig het verwijderen zonder bestemming.",
+        "pt_BR": "Escolha outro destino ou confirme a remoção sem destino."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "validation.confirm_brand_clear",
+      "text": {
+        "de": "Wählen Sie eine Zielmarke oder bestätigen Sie das Entfernen der Produktzuordnungen.",
+        "es": "Elige una marca de destino o confirma la retirada de las asignaciones.",
+        "fr": "Choisissez une marque de destination ou confirmez le retrait des affectations.",
+        "it": "Scegli un marchio di destinazione o conferma la rimozione delle assegnazioni.",
+        "nl": "Kies een doelmerk of bevestig het verwijderen van de producttoewijzingen.",
+        "pt_BR": "Escolha uma marca de destino ou confirme a remoção das atribuições."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "validation.confirm_collection_clear",
+      "text": {
+        "de": "Wählen Sie eine Zielkollektion oder bestätigen Sie das Entfernen der Produktzuordnungen.",
+        "es": "Elige una colección de destino o confirma la retirada de las asignaciones.",
+        "fr": "Choisissez une collection de destination ou confirmez le retrait des affectations.",
+        "it": "Scegli una collezione di destinazione o conferma la rimozione delle assegnazioni.",
+        "nl": "Kies een doelcollectie of bevestig het verwijderen van de producttoewijzingen.",
+        "pt_BR": "Escolha uma coleção de destino ou confirme a remoção das atribuições."
+      }
+    },
+    {
+      "group": "organization",
+      "key": "validation.name_taken",
+      "text": {
+        "de": "Eine Gruppe mit diesem Namen existiert hier bereits.",
+        "es": "Ya existe un grupo con este nombre aquí.",
+        "fr": "Un groupe portant ce nom existe déjà ici.",
+        "it": "Esiste già un gruppo con questo nome.",
+        "nl": "Er bestaat hier al een groep met deze naam.",
+        "pt_BR": "Já existe um grupo com este nome aqui."
+      }
+    },
+    {
       "group": "packaging",
       "key": "accessibility.delete",
       "text": {
@@ -40670,12 +41366,12 @@
       "group": "products",
       "key": "filters.search_placeholder",
       "text": {
-        "de": "Produkte suchen",
-        "es": "Buscar productos",
-        "fr": "Rechercher des produits",
-        "it": "Cerca prodotti",
-        "nl": "Producten zoeken",
-        "pt_BR": "Buscar produtos"
+        "de": "Produkte, Marken oder Kollektionen suchen",
+        "es": "Buscar productos, marcas o colecciones",
+        "fr": "Rechercher des produits, marques ou collections",
+        "it": "Cerca prodotti, marchi o collezioni",
+        "nl": "Zoek producten, merken of collecties",
+        "pt_BR": "Pesquisar produtos, marcas ou coleções"
       }
     },
     {

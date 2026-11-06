@@ -2,12 +2,15 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Models\Brand;
 use App\Models\ProductArea;
 use App\Models\ProductCategory;
+use App\Models\ProductCollection;
 use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Services\ContextualHelp\ApplicationHelpTopics;
 use App\Services\CurrentAppUserResolver;
+use App\Services\WorkspaceAuthorization;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -34,6 +37,34 @@ class RecipesIndex extends Component
     #[Url(as: 'archived')]
     public string $archivedFilter = 'active';
 
+    #[Url(as: 'brand')]
+    public string $brandFilter = '';
+
+    #[Url(as: 'collection')]
+    public string $collectionFilter = '';
+
+    #[Url(as: 'view', except: 'cards')]
+    public string $viewMode = 'cards';
+
+    public int $perPage = 25;
+
+    public function mount(): void
+    {
+        $preferredView = request()->query('view', session('products.view', 'cards'));
+        $this->viewMode = in_array($preferredView, ['cards', 'list'], true) ? $preferredView : 'cards';
+    }
+
+    public function setViewMode(string $view): void
+    {
+        if (! in_array($view, ['cards', 'list'], true)) {
+            return;
+        }
+
+        $this->viewMode = $view;
+        session(['products.view' => $view]);
+        $this->resetPage();
+    }
+
     public function render(ApplicationHelpTopics $helpTopics): View
     {
         $currentUser = app(CurrentAppUserResolver::class)->resolve();
@@ -50,12 +81,24 @@ class RecipesIndex extends Component
         $productAreaOptions = collect();
         $productCategoryOptions = collect();
         $productTypeOptions = collect();
+        $brandOptions = collect();
+        $collectionOptions = collect();
 
         if ($currentUser !== null) {
+            $workspaceId = app(WorkspaceAuthorization::class)->selectedWorkspace($currentUser)?->id;
+            if ($workspaceId !== null) {
+                $brandOptions = Brand::query()->where('workspace_id', $workspaceId)->orderBy('name')->pluck('name', 'id');
+                $collectionOptions = ProductCollection::query()->with('brand')->where('workspace_id', $workspaceId)
+                    ->when($this->brandFilter !== '', fn (Builder $query) => $query->where('brand_id', ctype_digit($this->brandFilter) ? (int) $this->brandFilter : -1))
+                    ->orderBy('name')->get()
+                    ->mapWithKeys(fn (ProductCollection $collection): array => [$collection->id => $this->brandFilter === '' ? $collection->brand->name.' · '.$collection->name : $collection->name]);
+            }
             $canCreateRecipe = $currentUser->can('create', Recipe::class);
             $recipesQuery = Recipe::query()
                 ->with([
                     'productFamily',
+                    'brand',
+                    'productCollection',
                     'productType.productCategory.productArea',
                     'currentVersion',
                     'latestPublishedVersion',
@@ -64,6 +107,13 @@ class RecipesIndex extends Component
                 ->withCount('productionRuns');
 
             $this->scopeArchiveState($recipesQuery);
+
+            if ($this->brandFilter !== '') {
+                $recipesQuery->where('brand_id', ctype_digit($this->brandFilter) ? (int) $this->brandFilter : -1);
+            }
+            if ($this->collectionFilter !== '') {
+                $recipesQuery->where('product_collection_id', ctype_digit($this->collectionFilter) ? (int) $this->collectionFilter : -1);
+            }
 
             $availableProductTypes = ProductType::query()
                 ->with('productCategory.productArea')
@@ -102,16 +152,19 @@ class RecipesIndex extends Component
                 $recipesQuery->where(function (Builder $query) use ($searchOperator, $searchValue): void {
                     $query
                         ->where('name', $searchOperator, $searchValue)
+                        ->orWhereHas('brand', fn (Builder $brandQuery) => $brandQuery->where('name', $searchOperator, $searchValue))
+                        ->orWhereHas('productCollection', fn (Builder $collectionQuery) => $collectionQuery->where('name', $searchOperator, $searchValue))
                         ->orWhereHas('productType', fn (Builder $typeQuery) => $typeQuery->where('name', $searchOperator, $searchValue))
                         ->orWhereHas('productType.productCategory', fn (Builder $categoryQuery) => $categoryQuery->where('name', $searchOperator, $searchValue))
                         ->orWhereHas('productType.productCategory.productArea', fn (Builder $areaQuery) => $areaQuery->where('name', $searchOperator, $searchValue));
                 });
             }
 
+            $listPageSize = in_array($this->perPage, [10, 25, 50, 100], true) ? $this->perPage : 25;
             $recipes = $recipesQuery
                 ->latest()
                 ->orderByDesc('id')
-                ->paginate(12);
+                ->paginate($this->viewMode === 'list' ? $listPageSize : 12);
 
             $recipeCount = $recipes->total();
             $workspacePermissions = [];
@@ -140,6 +193,8 @@ class RecipesIndex extends Component
             'productAreaOptions' => $productAreaOptions,
             'productCategoryOptions' => $productCategoryOptions,
             'productTypeOptions' => $productTypeOptions,
+            'brandOptions' => $brandOptions,
+            'collectionOptions' => $collectionOptions,
             'selectedProductArea' => $selectedProductArea,
             'selectedProductCategory' => $selectedProductCategory,
             'selectedProductType' => $selectedProductType,
@@ -161,7 +216,7 @@ class RecipesIndex extends Component
 
     public function updated(string $property): void
     {
-        if (in_array($property, ['search', 'archivedFilter', 'productAreaFilter', 'productCategoryFilter', 'productTypeFilter'], true)) {
+        if (in_array($property, ['search', 'archivedFilter', 'productAreaFilter', 'productCategoryFilter', 'productTypeFilter', 'brandFilter', 'collectionFilter', 'perPage'], true)) {
             $this->resetPage();
         }
     }
@@ -177,12 +232,19 @@ class RecipesIndex extends Component
         $this->productTypeFilter = '';
     }
 
+    public function updatedBrandFilter(): void
+    {
+        $this->collectionFilter = '';
+    }
+
     public function clearFilters(): void
     {
         $this->search = '';
         $this->productAreaFilter = '';
         $this->productCategoryFilter = '';
         $this->productTypeFilter = '';
+        $this->brandFilter = '';
+        $this->collectionFilter = '';
         $this->archivedFilter = 'active';
         $this->resetPage();
     }

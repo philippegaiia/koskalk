@@ -30,6 +30,7 @@
                 </div>
 
                 <div class="grid gap-5 md:grid-cols-2">
+                    @include('livewire.production-bench.production.organization-filters')
                     <label class="space-y-2">
                         <span class="text-sm font-medium">{{ __('production_bench.settings.product') }}</span>
                         <select wire:model.live="recipeId" required @disabled($isReadOnly) class="sk-input w-full">

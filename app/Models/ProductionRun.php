@@ -21,6 +21,10 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
     'production_location_id',
     'workspace_id',
     'recipe_id',
+    'brand_id',
+    'product_collection_id',
+    'brand_name_snapshot',
+    'collection_name_snapshot',
     'recipe_version_id',
     'production_output_type',
     'output_ingredient_id',
@@ -137,6 +141,14 @@ class ProductionRun extends Model
         return $this->recipe_name_snapshot
             ?? $this->recipe?->name
             ?? __('production_bench.production.unknown_product');
+    }
+
+    public function organizationLabel(): ?string
+    {
+        $labels = collect([$this->brand_name_snapshot, $this->collection_name_snapshot])
+            ->filter(fn (?string $label): bool => $label !== null && $label !== '');
+
+        return $labels->isEmpty() ? null : $labels->implode(' · ');
     }
 
     public function taskSet(): BelongsTo

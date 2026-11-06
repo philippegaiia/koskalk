@@ -53,7 +53,7 @@ it('uses product-first terminology throughout the recipes index', function () {
         ->assertSeeText('Manage your products.')
         ->assertSeeText('Create and manage finished products, including their formulas, packaging, and saved versions.')
         ->assertSeeText('New product')
-        ->assertSee('placeholder="Search products"', false)
+        ->assertSee('placeholder="Search products, brands or collections"', false)
         ->assertSeeText('Filters')
         ->assertSeeText('All areas')
         ->assertSeeText('All categories')

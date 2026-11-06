@@ -19,6 +19,9 @@
                 <h1 class="text-2xl font-semibold">{{ $document['formula'] ?? $unavailable }}</h1>
                 <p class="numeric text-xl font-semibold">{{ $document['identifier'] }}</p>
             </div>
+            @if ($document['organization'] ?? null)
+                <p class="mt-1 text-sm text-slate-600">{{ $document['organization'] }}</p>
+            @endif
             @if ($document['aborted'])
                 <p class="my-3 border-2 border-red-700 p-3 text-xl font-bold text-red-800">{{ __('production_bench.production.status.aborted') }}: {{ $document['abort_reason'] }}</p>
             @endif

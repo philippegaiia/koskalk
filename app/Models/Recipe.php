@@ -41,6 +41,7 @@ use Illuminate\Support\Collection;
     'owner_id',
     'workspace_id',
     'brand_id',
+    'product_collection_id',
     'created_by',
     'visibility',
     'name',
@@ -99,6 +100,11 @@ class Recipe extends Model implements HasRichContent
     public function outputIngredient(): BelongsTo
     {
         return $this->belongsTo(Ingredient::class, 'output_ingredient_id')->withoutGlobalScopes();
+    }
+
+    public function productCollection(): BelongsTo
+    {
+        return $this->belongsTo(ProductCollection::class);
     }
 
     public function brand(): BelongsTo

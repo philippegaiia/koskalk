@@ -1,0 +1,1208 @@
+{
+  "product_areas": {
+    "personal-care": {
+      "fr": {
+        "name": "Soins personnels"
+      },
+      "de": {
+        "name": "Körperpflege"
+      },
+      "es": {
+        "name": "Cuidado personal"
+      },
+      "it": {
+        "name": "Cura della persona"
+      },
+      "nl": {
+        "name": "Persoonlijke verzorging"
+      },
+      "pt_BR": {
+        "name": "Cuidados pessoais"
+      }
+    },
+    "home-household": {
+      "fr": {
+        "name": "Maison et entretien"
+      },
+      "de": {
+        "name": "Haushalt und Reinigung"
+      },
+      "es": {
+        "name": "Hogar y limpieza"
+      },
+      "it": {
+        "name": "Casa e pulizia"
+      },
+      "nl": {
+        "name": "Huis en huishouden"
+      },
+      "pt_BR": {
+        "name": "Casa e limpeza"
+      }
+    }
+  },
+  "product_categories": {
+    "body-cleansing": {
+      "fr": {
+        "name": "Nettoyage du corps"
+      },
+      "de": {
+        "name": "Körperreinigung"
+      },
+      "es": {
+        "name": "Limpieza corporal"
+      },
+      "it": {
+        "name": "Detersione del corpo"
+      },
+      "nl": {
+        "name": "Lichaamsreiniging"
+      },
+      "pt_BR": {
+        "name": "Limpeza corporal"
+      }
+    },
+    "skin-care": {
+      "fr": {
+        "name": "Soins de la peau"
+      },
+      "de": {
+        "name": "Hautpflege"
+      },
+      "es": {
+        "name": "Cuidado de la piel"
+      },
+      "it": {
+        "name": "Cura della pelle"
+      },
+      "nl": {
+        "name": "Huidverzorging"
+      },
+      "pt_BR": {
+        "name": "Cuidados com a pele"
+      }
+    },
+    "hair-care": {
+      "fr": {
+        "name": "Soins capillaires"
+      },
+      "de": {
+        "name": "Haarpflege"
+      },
+      "es": {
+        "name": "Cuidado capilar"
+      },
+      "it": {
+        "name": "Cura dei capelli"
+      },
+      "nl": {
+        "name": "Haarverzorging"
+      },
+      "pt_BR": {
+        "name": "Cuidados capilares"
+      }
+    },
+    "lips-oral-care": {
+      "fr": {
+        "name": "Lèvres et soins bucco-dentaires"
+      },
+      "de": {
+        "name": "Lippen- und Mundpflege"
+      },
+      "es": {
+        "name": "Cuidado de labios y bucal"
+      },
+      "it": {
+        "name": "Cura delle labbra e del cavo orale"
+      },
+      "nl": {
+        "name": "Lip- en mondverzorging"
+      },
+      "pt_BR": {
+        "name": "Cuidados labiais e bucais"
+      }
+    },
+    "deodorant-fragrance": {
+      "fr": {
+        "name": "Déodorants et parfums"
+      },
+      "de": {
+        "name": "Deodorants und Düfte"
+      },
+      "es": {
+        "name": "Desodorantes y fragancias"
+      },
+      "it": {
+        "name": "Deodoranti e profumi"
+      },
+      "nl": {
+        "name": "Deodorant en geur"
+      },
+      "pt_BR": {
+        "name": "Desodorantes e fragrâncias"
+      }
+    },
+    "grooming": {
+      "fr": {
+        "name": "Rasage et soins masculins"
+      },
+      "de": {
+        "name": "Rasur und Pflege"
+      },
+      "es": {
+        "name": "Afeitado y cuidado personal"
+      },
+      "it": {
+        "name": "Rasatura e cura personale"
+      },
+      "nl": {
+        "name": "Scheren en verzorging"
+      },
+      "pt_BR": {
+        "name": "Barbear e cuidados pessoais"
+      }
+    },
+    "makeup": {
+      "fr": {
+        "name": "Maquillage"
+      },
+      "de": {
+        "name": "Make-up"
+      },
+      "es": {
+        "name": "Maquillaje"
+      },
+      "it": {
+        "name": "Trucco"
+      },
+      "nl": {
+        "name": "Make-up"
+      },
+      "pt_BR": {
+        "name": "Maquiagem"
+      }
+    },
+    "sun-tan-care": {
+      "fr": {
+        "name": "Soins solaires et autobronzants"
+      },
+      "de": {
+        "name": "Sonnenpflege und Selbstbräuner"
+      },
+      "es": {
+        "name": "Cuidado solar y autobronceado"
+      },
+      "it": {
+        "name": "Protezione solare e autoabbronzanti"
+      },
+      "nl": {
+        "name": "Zonbescherming en zelfbruiners"
+      },
+      "pt_BR": {
+        "name": "Proteção solar e autobronzeamento"
+      }
+    },
+    "other": {
+      "fr": {
+        "name": "Autres"
+      },
+      "de": {
+        "name": "Sonstiges"
+      },
+      "es": {
+        "name": "Otros"
+      },
+      "it": {
+        "name": "Altro"
+      },
+      "nl": {
+        "name": "Overige"
+      },
+      "pt_BR": {
+        "name": "Outros"
+      }
+    },
+    "home-fragrance": {
+      "fr": {
+        "name": "Parfums d’intérieur"
+      },
+      "de": {
+        "name": "Raumdüfte"
+      },
+      "es": {
+        "name": "Fragancias para el hogar"
+      },
+      "it": {
+        "name": "Profumazione della casa"
+      },
+      "nl": {
+        "name": "Huisparfums"
+      },
+      "pt_BR": {
+        "name": "Fragrâncias para ambientes"
+      }
+    },
+    "dish-care": {
+      "fr": {
+        "name": "Vaisselle"
+      },
+      "de": {
+        "name": "Geschirrreinigung"
+      },
+      "es": {
+        "name": "Lavado de vajilla"
+      },
+      "it": {
+        "name": "Lavaggio delle stoviglie"
+      },
+      "nl": {
+        "name": "Vaatwas"
+      },
+      "pt_BR": {
+        "name": "Lavagem de louças"
+      }
+    },
+    "laundry": {
+      "fr": {
+        "name": "Linge"
+      },
+      "de": {
+        "name": "Wäschepflege"
+      },
+      "es": {
+        "name": "Cuidado de la ropa"
+      },
+      "it": {
+        "name": "Cura del bucato"
+      },
+      "nl": {
+        "name": "Wasverzorging"
+      },
+      "pt_BR": {
+        "name": "Cuidados com roupas"
+      }
+    },
+    "surface-toilet-care": {
+      "fr": {
+        "name": "Surfaces et sanitaires"
+      },
+      "de": {
+        "name": "Oberflächen- und Toilettenreinigung"
+      },
+      "es": {
+        "name": "Limpieza de superficies e inodoros"
+      },
+      "it": {
+        "name": "Pulizia di superfici e sanitari"
+      },
+      "nl": {
+        "name": "Oppervlakte- en toiletreiniging"
+      },
+      "pt_BR": {
+        "name": "Limpeza de superfícies e sanitários"
+      }
+    }
+  },
+  "product_types": {
+    "bar-soap-cleansing-bar": {
+      "fr": {
+        "name": "Savon solide / pain nettoyant"
+      },
+      "de": {
+        "name": "Stückseife / Waschstück"
+      },
+      "es": {
+        "name": "Jabón en pastilla / barra limpiadora"
+      },
+      "it": {
+        "name": "Sapone solido / panetto detergente"
+      },
+      "nl": {
+        "name": "Vaste zeep / reinigingsblok"
+      },
+      "pt_BR": {
+        "name": "Sabonete em barra / barra de limpeza"
+      }
+    },
+    "liquid-soap-body-wash": {
+      "fr": {
+        "name": "Savon liquide / gel douche"
+      },
+      "de": {
+        "name": "Flüssigseife / Duschgel"
+      },
+      "es": {
+        "name": "Jabón líquido / gel de ducha"
+      },
+      "it": {
+        "name": "Sapone liquido / bagnodoccia"
+      },
+      "nl": {
+        "name": "Vloeibare zeep / douchegel"
+      },
+      "pt_BR": {
+        "name": "Sabonete líquido / gel de banho"
+      }
+    },
+    "face-cleanser": {
+      "fr": {
+        "name": "Nettoyant visage"
+      },
+      "de": {
+        "name": "Gesichtsreiniger"
+      },
+      "es": {
+        "name": "Limpiador facial"
+      },
+      "it": {
+        "name": "Detergente viso"
+      },
+      "nl": {
+        "name": "Gezichtsreiniger"
+      },
+      "pt_BR": {
+        "name": "Limpador facial"
+      }
+    },
+    "bath-salts-soaks-bombs": {
+      "fr": {
+        "name": "Sels / bains / bombes de bain"
+      },
+      "de": {
+        "name": "Badesalze / Badezusätze / Badebomben"
+      },
+      "es": {
+        "name": "Sales / baños / bombas de baño"
+      },
+      "it": {
+        "name": "Sali / bagni / bombe da bagno"
+      },
+      "nl": {
+        "name": "Badzout / badproducten / bruisballen"
+      },
+      "pt_BR": {
+        "name": "Sais / banhos / bombas de banho"
+      }
+    },
+    "shaving-soap-cream": {
+      "fr": {
+        "name": "Savon / crème à raser"
+      },
+      "de": {
+        "name": "Rasierseife / Rasiercreme"
+      },
+      "es": {
+        "name": "Jabón / crema de afeitar"
+      },
+      "it": {
+        "name": "Sapone / crema da barba"
+      },
+      "nl": {
+        "name": "Scheerzeep / scheercrème"
+      },
+      "pt_BR": {
+        "name": "Sabão / creme de barbear"
+      }
+    },
+    "body-cream-lotion-oil": {
+      "fr": {
+        "name": "Crème / lotion / huile pour le corps"
+      },
+      "de": {
+        "name": "Körpercreme / Körperlotion / Körperöl"
+      },
+      "es": {
+        "name": "Crema / loción / aceite corporal"
+      },
+      "it": {
+        "name": "Crema / lozione / olio corpo"
+      },
+      "nl": {
+        "name": "Lichaamscrème / lotion / olie"
+      },
+      "pt_BR": {
+        "name": "Creme / loção / óleo corporal"
+      }
+    },
+    "face-cream-serum-toner": {
+      "fr": {
+        "name": "Crème / sérum / lotion tonique visage"
+      },
+      "de": {
+        "name": "Gesichtscreme / Serum / Gesichtswasser"
+      },
+      "es": {
+        "name": "Crema / sérum / tónico facial"
+      },
+      "it": {
+        "name": "Crema / siero / tonico viso"
+      },
+      "nl": {
+        "name": "Gezichtscrème / serum / toner"
+      },
+      "pt_BR": {
+        "name": "Creme / sérum / tônico facial"
+      }
+    },
+    "hand-nail-care": {
+      "fr": {
+        "name": "Soins des mains / ongles"
+      },
+      "de": {
+        "name": "Hand- und Nagelpflege"
+      },
+      "es": {
+        "name": "Cuidado de manos y uñas"
+      },
+      "it": {
+        "name": "Cura di mani e unghie"
+      },
+      "nl": {
+        "name": "Hand- en nagelverzorging"
+      },
+      "pt_BR": {
+        "name": "Cuidados com mãos e unhas"
+      }
+    },
+    "foot-cream-powder": {
+      "fr": {
+        "name": "Crème / poudre pour les pieds"
+      },
+      "de": {
+        "name": "Fußcreme / Fußpuder"
+      },
+      "es": {
+        "name": "Crema / polvo para pies"
+      },
+      "it": {
+        "name": "Crema / polvere per piedi"
+      },
+      "nl": {
+        "name": "Voetcrème / voetpoeder"
+      },
+      "pt_BR": {
+        "name": "Creme / pó para os pés"
+      }
+    },
+    "face-mask": {
+      "fr": {
+        "name": "Masque visage"
+      },
+      "de": {
+        "name": "Gesichtsmaske"
+      },
+      "es": {
+        "name": "Mascarilla facial"
+      },
+      "it": {
+        "name": "Maschera viso"
+      },
+      "nl": {
+        "name": "Gezichtsmasker"
+      },
+      "pt_BR": {
+        "name": "Máscara facial"
+      }
+    },
+    "baby-cream-oil-powder": {
+      "fr": {
+        "name": "Crème / huile / poudre pour bébé"
+      },
+      "de": {
+        "name": "Babycreme / Babyöl / Babypuder"
+      },
+      "es": {
+        "name": "Crema / aceite / polvo para bebés"
+      },
+      "it": {
+        "name": "Crema / olio / polvere per bambini"
+      },
+      "nl": {
+        "name": "Babycrème / babyolie / babypoeder"
+      },
+      "pt_BR": {
+        "name": "Creme / óleo / pó para bebês"
+      }
+    },
+    "massage-body-oil": {
+      "fr": {
+        "name": "Huile de massage / pour le corps"
+      },
+      "de": {
+        "name": "Massageöl / Körperöl"
+      },
+      "es": {
+        "name": "Aceite de masaje / corporal"
+      },
+      "it": {
+        "name": "Olio da massaggio / corpo"
+      },
+      "nl": {
+        "name": "Massageolie / lichaamsolie"
+      },
+      "pt_BR": {
+        "name": "Óleo de massagem / corporal"
+      }
+    },
+    "skin-contact-massage-candle": {
+      "fr": {
+        "name": "Bougie de massage pour la peau"
+      },
+      "de": {
+        "name": "Massagekerze für Hautkontakt"
+      },
+      "es": {
+        "name": "Vela de masaje para contacto con la piel"
+      },
+      "it": {
+        "name": "Candela da massaggio per contatto con la pelle"
+      },
+      "nl": {
+        "name": "Massagekaars voor huidcontact"
+      },
+      "pt_BR": {
+        "name": "Vela de massagem para contato com a pele"
+      }
+    },
+    "shampoo": {
+      "fr": {
+        "name": "Shampooing"
+      },
+      "de": {
+        "name": "Shampoo"
+      },
+      "es": {
+        "name": "Champú"
+      },
+      "it": {
+        "name": "Shampoo"
+      },
+      "nl": {
+        "name": "Shampoo"
+      },
+      "pt_BR": {
+        "name": "Xampu"
+      }
+    },
+    "rinse-off-conditioner": {
+      "fr": {
+        "name": "Après-shampooing à rincer"
+      },
+      "de": {
+        "name": "Haarspülung zum Ausspülen"
+      },
+      "es": {
+        "name": "Acondicionador con aclarado"
+      },
+      "it": {
+        "name": "Balsamo con risciacquo"
+      },
+      "nl": {
+        "name": "Uitspoelbare conditioner"
+      },
+      "pt_BR": {
+        "name": "Condicionador com enxágue"
+      }
+    },
+    "leave-in-styling-hair-oil": {
+      "fr": {
+        "name": "Soin sans rinçage / coiffant / huile capillaire"
+      },
+      "de": {
+        "name": "Haarpflege ohne Ausspülen / Styling / Haaröl"
+      },
+      "es": {
+        "name": "Cuidado sin aclarado / peinado / aceite capilar"
+      },
+      "it": {
+        "name": "Trattamento senza risciacquo / styling / olio per capelli"
+      },
+      "nl": {
+        "name": "Verzorging zonder uitspoelen / styling / haarolie"
+      },
+      "pt_BR": {
+        "name": "Cuidado sem enxágue / finalizador / óleo capilar"
+      }
+    },
+    "rinse-off-hair-chemical-treatment": {
+      "fr": {
+        "name": "Coloration / traitement chimique capillaire à rincer"
+      },
+      "de": {
+        "name": "Haarfarbe / chemische Haarbehandlung zum Ausspülen"
+      },
+      "es": {
+        "name": "Tinte / tratamiento químico capilar con aclarado"
+      },
+      "it": {
+        "name": "Tintura / trattamento chimico per capelli con risciacquo"
+      },
+      "nl": {
+        "name": "Uitspoelbare haarverf / chemische haarbehandeling"
+      },
+      "pt_BR": {
+        "name": "Tintura / tratamento químico capilar com enxágue"
+      }
+    },
+    "lip-product": {
+      "fr": {
+        "name": "Produit pour les lèvres"
+      },
+      "de": {
+        "name": "Lippenprodukt"
+      },
+      "es": {
+        "name": "Producto para labios"
+      },
+      "it": {
+        "name": "Prodotto per labbra"
+      },
+      "nl": {
+        "name": "Lipproduct"
+      },
+      "pt_BR": {
+        "name": "Produto para os lábios"
+      }
+    },
+    "toothpaste-mouthwash": {
+      "fr": {
+        "name": "Dentifrice / bain de bouche"
+      },
+      "de": {
+        "name": "Zahnpasta / Mundspülung"
+      },
+      "es": {
+        "name": "Dentífrico / enjuague bucal"
+      },
+      "it": {
+        "name": "Dentifricio / collutorio"
+      },
+      "nl": {
+        "name": "Tandpasta / mondwater"
+      },
+      "pt_BR": {
+        "name": "Creme dental / enxaguante bucal"
+      }
+    },
+    "deodorant-antiperspirant": {
+      "fr": {
+        "name": "Déodorant / anti-transpirant"
+      },
+      "de": {
+        "name": "Deodorant / Antitranspirant"
+      },
+      "es": {
+        "name": "Desodorante / antitranspirante"
+      },
+      "it": {
+        "name": "Deodorante / antitraspirante"
+      },
+      "nl": {
+        "name": "Deodorant / antitranspirant"
+      },
+      "pt_BR": {
+        "name": "Desodorante / antitranspirante"
+      }
+    },
+    "body-mist-spray": {
+      "fr": {
+        "name": "Brume / spray corporel"
+      },
+      "de": {
+        "name": "Körpernebel / Körperspray"
+      },
+      "es": {
+        "name": "Bruma / spray corporal"
+      },
+      "it": {
+        "name": "Acqua profumata / spray corpo"
+      },
+      "nl": {
+        "name": "Lichaamsnevel / lichaamsspray"
+      },
+      "pt_BR": {
+        "name": "Bruma / spray corporal"
+      }
+    },
+    "fine-fragrance-solid-perfume": {
+      "fr": {
+        "name": "Parfum / parfum solide"
+      },
+      "de": {
+        "name": "Parfüm / festes Parfüm"
+      },
+      "es": {
+        "name": "Perfume / perfume sólido"
+      },
+      "it": {
+        "name": "Profumo / profumo solido"
+      },
+      "nl": {
+        "name": "Parfum / vast parfum"
+      },
+      "pt_BR": {
+        "name": "Perfume / perfume sólido"
+      }
+    },
+    "aftershave-splash": {
+      "fr": {
+        "name": "Lotion après-rasage"
+      },
+      "de": {
+        "name": "Flüssiges Aftershave"
+      },
+      "es": {
+        "name": "Loción para después del afeitado"
+      },
+      "it": {
+        "name": "Lozione dopobarba"
+      },
+      "nl": {
+        "name": "Aftershavelotion"
+      },
+      "pt_BR": {
+        "name": "Loção pós-barba"
+      }
+    },
+    "aftershave-cream-balm": {
+      "fr": {
+        "name": "Crème / baume après-rasage"
+      },
+      "de": {
+        "name": "Aftershave-Creme / Aftershave-Balsam"
+      },
+      "es": {
+        "name": "Crema / bálsamo para después del afeitado"
+      },
+      "it": {
+        "name": "Crema / balsamo dopobarba"
+      },
+      "nl": {
+        "name": "Aftershavecrème / balsem"
+      },
+      "pt_BR": {
+        "name": "Creme / bálsamo pós-barba"
+      }
+    },
+    "face-eye-makeup": {
+      "fr": {
+        "name": "Maquillage visage / yeux"
+      },
+      "de": {
+        "name": "Gesichts- und Augen-Make-up"
+      },
+      "es": {
+        "name": "Maquillaje facial / de ojos"
+      },
+      "it": {
+        "name": "Trucco viso / occhi"
+      },
+      "nl": {
+        "name": "Gezichts- en oogmake-up"
+      },
+      "pt_BR": {
+        "name": "Maquiagem facial / para os olhos"
+      }
+    },
+    "makeup-remover": {
+      "fr": {
+        "name": "Démaquillant"
+      },
+      "de": {
+        "name": "Make-up-Entferner"
+      },
+      "es": {
+        "name": "Desmaquillante"
+      },
+      "it": {
+        "name": "Struccante"
+      },
+      "nl": {
+        "name": "Make-upremover"
+      },
+      "pt_BR": {
+        "name": "Demaquilante"
+      }
+    },
+    "body-sun-self-tan-care": {
+      "fr": {
+        "name": "Soin solaire / autobronzant corps"
+      },
+      "de": {
+        "name": "Sonnenschutz / Selbstbräuner für den Körper"
+      },
+      "es": {
+        "name": "Protector solar / autobronceador corporal"
+      },
+      "it": {
+        "name": "Protezione solare / autoabbronzante corpo"
+      },
+      "nl": {
+        "name": "Zonbescherming / zelfbruiner voor het lichaam"
+      },
+      "pt_BR": {
+        "name": "Proteção solar / autobronzeador corporal"
+      }
+    },
+    "face-sun-self-tan-care": {
+      "fr": {
+        "name": "Soin solaire / autobronzant visage"
+      },
+      "de": {
+        "name": "Sonnenschutz / Selbstbräuner für das Gesicht"
+      },
+      "es": {
+        "name": "Protector solar / autobronceador facial"
+      },
+      "it": {
+        "name": "Protezione solare / autoabbronzante viso"
+      },
+      "nl": {
+        "name": "Zonbescherming / zelfbruiner voor het gezicht"
+      },
+      "pt_BR": {
+        "name": "Proteção solar / autobronzeador facial"
+      }
+    },
+    "other-cosmetics": {
+      "fr": {
+        "name": "Autre produit cosmétique"
+      },
+      "de": {
+        "name": "Sonstiges Kosmetikprodukt"
+      },
+      "es": {
+        "name": "Otro producto cosmético"
+      },
+      "it": {
+        "name": "Altro prodotto cosmetico"
+      },
+      "nl": {
+        "name": "Overig cosmeticaproduct"
+      },
+      "pt_BR": {
+        "name": "Outro produto cosmético"
+      }
+    },
+    "candle-wax-melt": {
+      "fr": {
+        "name": "Bougie / fondant parfumé"
+      },
+      "de": {
+        "name": "Kerze / Duftwachs"
+      },
+      "es": {
+        "name": "Vela / cera aromática"
+      },
+      "it": {
+        "name": "Candela / cera profumata"
+      },
+      "nl": {
+        "name": "Kaars / geurwas"
+      },
+      "pt_BR": {
+        "name": "Vela / cera aromática"
+      }
+    },
+    "reed-diffuser-refill": {
+      "fr": {
+        "name": "Diffuseur à bâtonnets / recharge liquide"
+      },
+      "de": {
+        "name": "Duftstäbchen-Diffusor / flüssige Nachfüllung"
+      },
+      "es": {
+        "name": "Difusor de varillas / recambio líquido"
+      },
+      "it": {
+        "name": "Diffusore a bastoncini / ricarica liquida"
+      },
+      "nl": {
+        "name": "Geurstokjes / vloeibare navulling"
+      },
+      "pt_BR": {
+        "name": "Difusor de varetas / refil líquido"
+      }
+    },
+    "room-air-freshener-spray": {
+      "fr": {
+        "name": "Spray d’ambiance / désodorisant"
+      },
+      "de": {
+        "name": "Raumspray / Lufterfrischer"
+      },
+      "es": {
+        "name": "Spray ambiental / ambientador"
+      },
+      "it": {
+        "name": "Spray per ambienti / deodorante per ambienti"
+      },
+      "nl": {
+        "name": "Kamerspray / luchtverfrisser"
+      },
+      "pt_BR": {
+        "name": "Spray para ambientes / aromatizador"
+      }
+    },
+    "pillow-spray": {
+      "fr": {
+        "name": "Brume d’oreiller"
+      },
+      "de": {
+        "name": "Kissenspray"
+      },
+      "es": {
+        "name": "Bruma para almohadas"
+      },
+      "it": {
+        "name": "Spray per cuscini"
+      },
+      "nl": {
+        "name": "Kussenspray"
+      },
+      "pt_BR": {
+        "name": "Spray para travesseiros"
+      }
+    },
+    "fabric-linen-spray": {
+      "fr": {
+        "name": "Brume textile / linge"
+      },
+      "de": {
+        "name": "Textil- und Wäschespray"
+      },
+      "es": {
+        "name": "Spray para tejidos / ropa"
+      },
+      "it": {
+        "name": "Spray per tessuti / biancheria"
+      },
+      "nl": {
+        "name": "Textiel- en linnenspray"
+      },
+      "pt_BR": {
+        "name": "Spray para tecidos / roupas"
+      }
+    },
+    "incense-passive-air-fragrance": {
+      "fr": {
+        "name": "Encens / parfum d’ambiance passif"
+      },
+      "de": {
+        "name": "Räucherwerk / passiver Raumduft"
+      },
+      "es": {
+        "name": "Incienso / fragancia ambiental pasiva"
+      },
+      "it": {
+        "name": "Incenso / profumazione passiva per ambienti"
+      },
+      "nl": {
+        "name": "Wierook / passieve luchtverfrisser"
+      },
+      "pt_BR": {
+        "name": "Incenso / fragrância ambiental passiva"
+      }
+    },
+    "hand-dishwashing-product": {
+      "fr": {
+        "name": "Savon / détergent pour vaisselle à la main"
+      },
+      "de": {
+        "name": "Seife / Spülmittel für Handgeschirrspülen"
+      },
+      "es": {
+        "name": "Jabón / detergente para lavado de vajilla a mano"
+      },
+      "it": {
+        "name": "Sapone / detergente per piatti a mano"
+      },
+      "nl": {
+        "name": "Zeep / afwasmiddel voor handafwas"
+      },
+      "pt_BR": {
+        "name": "Sabão / detergente para lavagem manual de louças"
+      }
+    },
+    "automatic-dishwasher-product": {
+      "fr": {
+        "name": "Produit pour lave-vaisselle"
+      },
+      "de": {
+        "name": "Geschirrspülmittel für Maschinen"
+      },
+      "es": {
+        "name": "Producto para lavavajillas"
+      },
+      "it": {
+        "name": "Prodotto per lavastoviglie"
+      },
+      "nl": {
+        "name": "Vaatwasmiddel voor machines"
+      },
+      "pt_BR": {
+        "name": "Produto para lava-louças"
+      }
+    },
+    "hand-wash-laundry-product": {
+      "fr": {
+        "name": "Savon / détergent pour lavage du linge à la main"
+      },
+      "de": {
+        "name": "Seife / Waschmittel für Handwäsche"
+      },
+      "es": {
+        "name": "Jabón / detergente para lavado de ropa a mano"
+      },
+      "it": {
+        "name": "Sapone / detersivo per bucato a mano"
+      },
+      "nl": {
+        "name": "Zeep / wasmiddel voor handwas"
+      },
+      "pt_BR": {
+        "name": "Sabão / detergente para lavagem manual de roupas"
+      }
+    },
+    "machine-laundry-detergent": {
+      "fr": {
+        "name": "Lessive liquide / en poudre"
+      },
+      "de": {
+        "name": "Flüssigwaschmittel / Waschpulver"
+      },
+      "es": {
+        "name": "Detergente líquido / en polvo para lavadora"
+      },
+      "it": {
+        "name": "Detersivo liquido / in polvere per lavatrice"
+      },
+      "nl": {
+        "name": "Vloeibaar wasmiddel / waspoeder voor machines"
+      },
+      "pt_BR": {
+        "name": "Detergente líquido / em pó para máquina de lavar"
+      }
+    },
+    "laundry-pre-treatment": {
+      "fr": {
+        "name": "Prétraitement / détachant pour le linge"
+      },
+      "de": {
+        "name": "Wäschevorbehandlung / Fleckenentferner"
+      },
+      "es": {
+        "name": "Pretratamiento / quitamanchas para ropa"
+      },
+      "it": {
+        "name": "Pretrattamento / smacchiatore per bucato"
+      },
+      "nl": {
+        "name": "Wasvoorbehandeling / vlekverwijderaar"
+      },
+      "pt_BR": {
+        "name": "Pré-tratamento / tira-manchas para roupas"
+      }
+    },
+    "fabric-softener": {
+      "fr": {
+        "name": "Assouplissant"
+      },
+      "de": {
+        "name": "Weichspüler"
+      },
+      "es": {
+        "name": "Suavizante para ropa"
+      },
+      "it": {
+        "name": "Ammorbidente"
+      },
+      "nl": {
+        "name": "Wasverzachter"
+      },
+      "pt_BR": {
+        "name": "Amaciante de roupas"
+      }
+    },
+    "dryer-sheet-scent-beads": {
+      "fr": {
+        "name": "Feuille sèche-linge / perles parfumées"
+      },
+      "de": {
+        "name": "Trocknertuch / Duftperlen"
+      },
+      "es": {
+        "name": "Toallita de secadora / perlas aromáticas"
+      },
+      "it": {
+        "name": "Fogli per asciugatrice / perle profumate"
+      },
+      "nl": {
+        "name": "Droogtrommeldoekje / geurparels"
+      },
+      "pt_BR": {
+        "name": "Folha para secadora / pérolas perfumadas"
+      }
+    },
+    "hard-surface-cleaner": {
+      "fr": {
+        "name": "Nettoyant pour surfaces dures"
+      },
+      "de": {
+        "name": "Reiniger für harte Oberflächen"
+      },
+      "es": {
+        "name": "Limpiador de superficies duras"
+      },
+      "it": {
+        "name": "Detergente per superfici dure"
+      },
+      "nl": {
+        "name": "Reiniger voor harde oppervlakken"
+      },
+      "pt_BR": {
+        "name": "Limpador de superfícies rígidas"
+      }
+    },
+    "toilet-gel-rim-block": {
+      "fr": {
+        "name": "Gel WC / bloc cuvette"
+      },
+      "de": {
+        "name": "WC-Gel / WC-Stein"
+      },
+      "es": {
+        "name": "Gel para inodoros / bloque para la taza"
+      },
+      "it": {
+        "name": "Gel WC / blocco per WC"
+      },
+      "nl": {
+        "name": "Toiletgel / toiletblok"
+      },
+      "pt_BR": {
+        "name": "Gel sanitário / bloco para vaso sanitário"
+      }
+    },
+    "other-home-product": {
+      "fr": {
+        "name": "Autre produit pour la maison"
+      },
+      "de": {
+        "name": "Sonstiges Haushaltsprodukt"
+      },
+      "es": {
+        "name": "Otro producto para el hogar"
+      },
+      "it": {
+        "name": "Altro prodotto per la casa"
+      },
+      "nl": {
+        "name": "Overig huishoudproduct"
+      },
+      "pt_BR": {
+        "name": "Outro produto para a casa"
+      }
+    }
+  }
+}

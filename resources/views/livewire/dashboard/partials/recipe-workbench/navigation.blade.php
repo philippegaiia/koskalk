@@ -3,14 +3,14 @@
     $isPublicCalculator = $isPublicCalculator ?? false;
     $hasSavedFormula = (bool) ($workbench['recipe']['has_saved_formula'] ?? false);
     $savedFormulaUrl = $workbench['recipe']['saved_formula_url'] ?? null;
-    $tabBaseClass = 'sk-workbench-tab inline-flex shrink-0 items-center whitespace-nowrap px-0 py-3 text-left text-base font-semibold';
+    $tabBaseClass = 'sk-workbench-tab inline-flex shrink-0 items-center whitespace-nowrap px-0 py-3 text-left text-sm @6xl/workbench:text-base font-semibold';
 @endphp
 
 <div class="sk-workbench-navigation border-b border-[var(--color-line)]">
-    {{-- Output actions sit beside the tabs when the workbench is wide enough, and wrap to their own row below it so the tabs keep their full width. --}}
-    <div class="flex min-w-0 flex-col gap-2 @6xl/workbench:flex-row @6xl/workbench:items-center">
+    {{-- Laptop-sized workbenches keep output actions beside compact, horizontally scrollable tabs. --}}
+    <div class="flex min-w-0 flex-col gap-2 @5xl/workbench:flex-row @5xl/workbench:items-center">
     <div class="{{ $isPublicCalculator && ! ($isGuestCalculator ?? false) ? 'w-full' : 'relative min-w-0 max-w-full overflow-hidden flex-1' }}">
-    <nav class="sk-workbench-tabs {{ $isPublicCalculator && ! ($isGuestCalculator ?? false) ? 'grid gap-2 sm:grid-cols-2' : 'flex min-w-0 max-w-full gap-7 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x [scrollbar-width:thin]' }}" role="tablist" aria-label="{{ __('workbench.tabs.aria_label') }}">
+    <nav class="sk-workbench-tabs {{ $isPublicCalculator && ! ($isGuestCalculator ?? false) ? 'grid gap-2 sm:grid-cols-2' : 'flex min-w-0 max-w-full gap-4 @6xl/workbench:gap-7 overflow-x-auto overflow-y-hidden overscroll-x-contain touch-pan-x [scrollbar-width:thin]' }}" role="tablist" aria-label="{{ __('workbench.tabs.aria_label') }}">
         <button
             id="tab-formula"
             role="tab"
@@ -75,7 +75,7 @@
             </button>
 
             @if ($hasSavedFormula && is_string($savedFormulaUrl))
-                <a href="{{ $savedFormulaUrl }}" class="sk-formula-sheet-link inline-flex shrink-0 items-center whitespace-nowrap py-3 text-base font-semibold text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink-strong)]">
+                <a href="{{ $savedFormulaUrl }}" class="sk-formula-sheet-link inline-flex shrink-0 items-center whitespace-nowrap py-3 text-sm @6xl/workbench:text-base font-semibold text-[var(--color-ink-soft)] transition hover:text-[var(--color-ink-strong)]">
                     {{ __('workbench.header.product_sheet') }}
                 </a>
             @endif

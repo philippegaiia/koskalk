@@ -16,6 +16,7 @@ return [
         'media' => ['*'],
         'media_library' => ['*'],
         'navigation' => ['*'],
+        'organization' => ['*'],
         'packaging' => ['*'],
         'plans' => ['*'],
         'products' => ['*'],

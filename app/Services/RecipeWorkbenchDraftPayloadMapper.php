@@ -44,6 +44,8 @@ class RecipeWorkbenchDraftPayloadMapper
     public function toSavePayload(array $draft): array
     {
         return [
+            ...(array_key_exists('brandId', $draft) ? ['brand_id' => $draft['brandId']] : []),
+            ...(array_key_exists('productCollectionId', $draft) ? ['product_collection_id' => $draft['productCollectionId']] : []),
             'name' => $draft['formulaName'] ?? 'Untitled Soap Formula',
             'oil_unit' => $draft['oilUnit'] ?? 'g',
             'oil_weight' => $draft['oilWeight'] ?? 0,

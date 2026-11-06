@@ -13,6 +13,7 @@
                 <p class="mt-3 max-w-4xl text-sm leading-7 text-[var(--color-ink-soft)]">{{ __('products.page.intro') }}</p>
             </div>
             <div class="flex flex-wrap gap-2">
+                <a href="{{ route('product-organization.index') }}" wire:navigate class="sk-btn sk-btn-outline">{{ __('organization.manage') }}</a>
                 @if ($canCreateRecipe)
                     <a href="{{ route('recipes.start') }}" wire:navigate class="sk-btn sk-btn-primary">
                         {{ __('products.actions.new_product') }}
@@ -27,6 +28,8 @@
             $selectedProductArea !== '' ? $productAreaOptions->get($selectedProductArea, $selectedProductArea) : null,
             $selectedProductCategory !== '' ? $productCategoryOptions->get($selectedProductCategory, $selectedProductCategory) : null,
             $selectedProductType !== '' ? $productTypeOptions->get($selectedProductType, $selectedProductType) : null,
+            $brandFilter !== '' ? $brandOptions->get($brandFilter, __('organization.brand')) : null,
+            $collectionFilter !== '' ? $collectionOptions->get($collectionFilter, __('organization.collection')) : null,
         ])->filter();
         $hasFilters = $searchTerm !== '' || $classificationFilters->isNotEmpty() || $archivedFilter !== 'active';
     @endphp
@@ -104,6 +107,24 @@
                 </div>
                 <div class="space-y-4">
                     <label class="block space-y-1.5">
+                        <span class="block text-xs font-medium text-[var(--color-ink-soft)]">{{ __('organization.brand') }}</span>
+                        <select wire:model.live="brandFilter" class="sk-input w-full">
+                            <option value="">{{ __('organization.all_brands') }}</option>
+                            @foreach ($brandOptions as $brandId => $brandName)
+                                <option value="{{ $brandId }}">{{ $brandName }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="block space-y-1.5">
+                        <span class="block text-xs font-medium text-[var(--color-ink-soft)]">{{ __('organization.collection') }}</span>
+                        <select wire:model.live="collectionFilter" class="sk-input w-full">
+                            <option value="">{{ __('organization.all_collections') }}</option>
+                            @foreach ($collectionOptions as $collectionId => $collectionName)
+                                <option value="{{ $collectionId }}">{{ $collectionName }}</option>
+                            @endforeach
+                        </select>
+                    </label>
+                    <label class="block space-y-1.5">
                         <span class="block text-xs font-medium text-[var(--color-ink-soft)]">{{ __('products.filters.area.label') }}</span>
                         <select wire:model.live="productAreaFilter" class="flex h-11 w-full min-w-0 items-center rounded-lg border border-[var(--color-field-outline)] bg-[var(--color-field)] pl-3 text-sm text-[var(--color-ink-strong)]">
                             <option value="">{{ __('products.filters.area.all') }}</option>
@@ -136,7 +157,8 @@
                 </div>
             </div>
 
-            <div data-product-filter-summary class="flex min-h-8 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--color-ink-soft)]">
+            <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-1" data-product-results-toolbar>
+                <div data-product-filter-summary class="flex min-h-8 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-[var(--color-ink-soft)]">
                 <p role="status" aria-live="polite" aria-atomic="true">
                     {{ trans_choice($hasFilters ? 'products.count.matching' : 'products.count.all', $recipeCount, ['count' => $recipeCount]) }}
                 </p>
@@ -148,7 +170,16 @@
                 @if ($hasFilters)
                     <button data-product-clear-filters type="button" wire:click="clearFilters" class="min-h-8 font-medium text-[var(--color-accent-strong)] underline underline-offset-2 focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)]">{{ __('products.actions.clear_filters') }}</button>
                 @endif
-                <span wire:loading.delay wire:target="search,archivedFilter,productAreaFilter,productCategoryFilter,productTypeFilter,clearFilters">{{ __('products.filters.updating') }}</span>
+                <span wire:loading.delay wire:target="search,archivedFilter,productAreaFilter,productCategoryFilter,productTypeFilter,brandFilter,collectionFilter,clearFilters">{{ __('products.filters.updating') }}</span>
+            </div>
+                <div class="flex shrink-0 justify-end gap-1" role="group" aria-label="{{ __('organization.product_view') }}">
+            @foreach (['cards' => 'squares-2x2', 'list' => 'list-bullet'] as $mode => $icon)
+                <button type="button" wire:click="setViewMode('{{ $mode }}')" aria-pressed="{{ $viewMode === $mode ? 'true' : 'false' }}" class="sk-btn min-h-11 gap-2 {{ $viewMode === $mode ? 'bg-[var(--color-field-muted)] text-[var(--color-ink-strong)]' : 'sk-btn-ghost' }}">
+                    <x-dynamic-component :component="'heroicon-o-'.$icon" class="size-4" aria-hidden="true" />
+                    {{ __('organization.'.$mode) }}
+                </button>
+            @endforeach
+        </div>
             </div>
         </section>
     @endif
@@ -171,7 +202,12 @@
             @endif
         </section>
     @else
-        <div class="grid gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+        <div @if ($viewMode === 'list') data-product-list @endif class="{{ $viewMode === 'list' ? 'space-y-2' : 'grid gap-6 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4' }}">
+            @if ($viewMode === 'list')
+                <div class="hidden grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_8rem] gap-3 px-4 pr-16 text-xs font-semibold text-[var(--color-ink-soft)] lg:grid" aria-hidden="true">
+                    <span>{{ __('organization.product') }}</span><span>{{ __('organization.brand') }}</span><span>{{ __('organization.collection') }}</span><span>{{ __('organization.product_type') }}</span><span>{{ __('organization.updated') }}</span>
+                </div>
+            @endif
             @foreach ($recipes as $recipe)
                 @php
                     $productFamilySlug = $recipe->productFamily?->slug ?? 'product';
@@ -189,7 +225,7 @@
                 @endphp
 
                 <article
-                    class="sk-card relative overflow-hidden transition hover:shadow-lg"
+                    class="sk-card relative transition hover:shadow-lg {{ $viewMode === 'list' ? 'min-h-20' : 'overflow-hidden' }}"
                     x-data="{ menuOpen: false, deleteOpen: false, archiveOpen: false, confirmText: '', productName: @js($recipe->name) }"
                 >
                     <a
@@ -199,7 +235,8 @@
                         class="absolute inset-0 z-10 rounded-[inherit] focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[var(--color-active)]"
                         aria-label="{{ __('products.actions.open_workbench') }}: {{ $recipe->name }}"
                     ></a>
-                    <div class="relative aspect-[4/3] {{ $thumbnailUrl ? '' : $fallbackThumbnailClasses }}">
+                    <div class="{{ $viewMode === 'list' ? 'absolute right-0 top-0 bottom-0 w-14' : 'relative aspect-[4/3] '.($thumbnailUrl ? '' : $fallbackThumbnailClasses) }}">
+                        @if ($viewMode !== 'list')
                         @if ($thumbnailUrl)
                             <img src="{{ $thumbnailUrl }}" alt="{{ $recipe->name }}" class="h-full w-full object-contain" />
                         @else
@@ -211,6 +248,7 @@
                             </div>
                         @endif
 
+                        @endif
                         <div class="absolute top-3 right-3 z-20" data-product-card-actions>
                             <button
                                 type="button"
@@ -300,6 +338,27 @@
                         </div>
                     </div>
 
+                    @if ($viewMode === 'list')
+                        <div class="grid gap-3 p-4 pr-16 text-sm lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)_8rem] lg:items-center">
+                            <div class="flex min-w-0 items-center gap-3">
+                                <span class="grid size-12 shrink-0 place-items-center overflow-hidden rounded-md {{ $thumbnailUrl ? 'bg-[var(--color-panel)]' : $fallbackThumbnailClasses }}">
+                                    <img src="{{ $thumbnailUrl ?? $illustrationUrl }}" alt="" loading="lazy" decoding="async" class="{{ $thumbnailUrl ? 'size-full object-contain' : 'size-8' }}" data-product-list-thumbnail />
+                                </span>
+                                <div class="min-w-0">
+                                <h4 class="font-semibold text-[var(--color-ink-strong)]">{{ $recipe->name }}</h4>
+                                @if ($isLocked)<span class="sk-badge sk-badge-neutral mt-1">{{ __('products.card.locked') }}</span>@endif
+                                @if ($recipe->archived_at !== null)<span class="sk-badge sk-badge-neutral mt-1">{{ __('products.filters.status.archived') }}</span>@endif
+                                @if ($hasProductionHistory)
+                                    <a href="{{ route('production-bench.production.index', ['recipe' => $recipe->public_id]) }}" wire:navigate class="relative z-20 mt-1 block text-xs text-[var(--color-accent-strong)] hover:underline">{{ trans_choice('products.card.production_count', $recipe->production_runs_count, ['count' => $recipe->production_runs_count]) }}</a>
+                                @endif
+                                </div>
+                            </div>
+                            <p class="break-words text-[var(--color-ink-soft)]"><span class="mr-1 font-medium lg:sr-only">{{ __('organization.brand') }}:</span>{{ $recipe->brand?->name ?? '—' }}</p>
+                            <p class="break-words text-[var(--color-ink-soft)]"><span class="mr-1 font-medium lg:sr-only">{{ __('organization.collection') }}:</span>{{ $recipe->productCollection?->name ?? '—' }}</p>
+                            <p class="text-[var(--color-ink-soft)]">{{ $categoryLabel }}</p>
+                            <p class="text-xs text-[var(--color-ink-soft)]">{{ $recipe->updated_at?->diffForHumans() ?? __('products.card.just_now') }}</p>
+                        </div>
+                    @else
                     <div class="p-4">
                         <span class="sk-badge sk-badge-neutral">{{ $categoryLabel }}</span>
                         @if ($isLocked)
@@ -307,6 +366,9 @@
                         @endif
                         @if ($recipe->archived_at !== null)
                             <span class="sk-badge sk-badge-neutral mt-2">{{ __('products.filters.status.archived') }}</span>
+                        @endif
+                        @if ($recipe->brand || $recipe->productCollection)
+                            <p class="mt-2 text-xs text-[var(--color-ink-soft)]">{{ collect([$recipe->brand?->name, $recipe->productCollection?->name])->filter()->implode(' · ') }}</p>
                         @endif
                         <h4 class="mt-2 line-clamp-2 text-lg font-semibold leading-snug text-[var(--color-ink-strong)]">{{ $recipe->name }}</h4>
                         <p class="mt-1.5 text-xs text-[var(--color-ink-soft)]">
@@ -319,6 +381,7 @@
                         @endif
                     </div>
 
+                    @endif
                     @if ($canUpdateRecipe)
                         <div x-show="archiveOpen" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" @click.self="archiveOpen = false" role="dialog" aria-modal="true" aria-labelledby="product-archive-heading-{{ $recipe->id }}">
                             <div class="sk-card w-full max-w-md p-6" @click.stop>
@@ -372,8 +435,8 @@
                 </article>
             @endforeach
         </div>
-        @if ($recipes->hasPages())
-            <x-table-pagination :paginator="$recipes" :show-per-page="false" />
+        @if ($recipes->hasPages() || $viewMode === 'list')
+            <x-table-pagination :paginator="$recipes" :show-per-page="$viewMode === 'list'" />
         @endif
     @endif
 </div>

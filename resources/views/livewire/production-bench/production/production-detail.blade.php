@@ -36,6 +36,9 @@
                         <div data-testid="production-title-row" class="mt-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:gap-x-8">
                             <div data-contextual-help-heading class="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
                                 <h1 class="break-words text-3xl font-semibold text-[var(--color-ink-strong)]">{{ $identity['product_name'] }}</h1>
+                                @if ($production->organizationLabel())
+                                    <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ $production->organizationLabel() }}</p>
+                                @endif
                                 <x-contextual-help.index-button :help="$contextualHelp" tab="production" />
                             </div>
                             <dl class="max-w-full" data-testid="production-main-identity">

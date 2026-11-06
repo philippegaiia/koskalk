@@ -217,10 +217,19 @@ class CreateProductionDraft
             $planningBatchNumber = $this->numbers->allocatePlanningReference($lockedWorkspace);
 
             $locationId = $this->locations->resolve($lockedWorkspace, $productionLocationId);
+            $brand = $lockedRecipe->brand()->where('workspace_id', $lockedWorkspace->id)->first();
+            $collection = $lockedRecipe->productCollection()
+                ->where('workspace_id', $lockedWorkspace->id)
+                ->where('brand_id', $brand?->id)
+                ->first();
             $production = ProductionRun::query()->create([
                 'production_location_id' => $locationId,
                 'workspace_id' => $lockedWorkspace->id,
                 'recipe_id' => $lockedRecipe->id,
+                'brand_id' => $brand?->id,
+                'product_collection_id' => $collection?->id,
+                'brand_name_snapshot' => $brand?->name,
+                'collection_name_snapshot' => $collection?->name,
                 'recipe_version_id' => $publishedVersion->id,
                 'production_output_type' => $outputSnapshot['production_output_type'],
                 'output_ingredient_id' => $outputSnapshot['output_ingredient_id'],

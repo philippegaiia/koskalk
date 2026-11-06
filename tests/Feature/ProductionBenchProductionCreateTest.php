@@ -9,8 +9,10 @@ use App\Enums\Visibility;
 use App\Livewire\ProductionBench\Production\ProductionCreate;
 use App\Livewire\ProductionBench\Production\ProductionDetail;
 use App\Livewire\ProductionBench\Production\ProductionIndex;
+use App\Models\Brand;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
+use App\Models\ProductCollection;
 use App\Models\ProductFamily;
 use App\Models\ProductionBatchPreset;
 use App\Models\ProductionRun;
@@ -29,12 +31,110 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceIngredientCode;
 use App\Models\WorkspaceProductionEntitlement;
+use App\Services\Production\ProductionRunPrintDataBuilder;
 use Filament\Forms\Components\DatePicker;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
+
+it('captures product organization when creating production and keeps the historical labels', function (): void {
+    $fixture = productionCreateFixture();
+    $brand = Brand::factory()->create(['workspace_id' => $fixture['workspace']->id, 'name' => 'Original umbrella']);
+    $collection = ProductCollection::factory()->create(['workspace_id' => $fixture['workspace']->id, 'brand_id' => $brand->id, 'name' => 'Original range']);
+    $fixture['recipe']->update(['brand_id' => $brand->id, 'product_collection_id' => $collection->id]);
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionCreate::class)
+        ->set('recipeId', (string) $fixture['recipe']->id)
+        ->set('basisInputValue', '5')
+        ->set('expectedUnits', '30')
+        ->call('saveDraft')
+        ->assertHasNoErrors();
+
+    $production = ProductionRun::query()->where('recipe_id', $fixture['recipe']->id)->sole();
+    expect($production->brand_id)->toBe($brand->id)
+        ->and($production->product_collection_id)->toBe($collection->id)
+        ->and($production->brand_name_snapshot)->toBe('Original umbrella')
+        ->and($production->collection_name_snapshot)->toBe('Original range');
+
+    $brand->update(['name' => 'Renamed umbrella']);
+    $collection->update(['name' => 'Renamed range']);
+    $fixture['recipe']->update(['brand_id' => null, 'product_collection_id' => null]);
+    $production->refresh();
+    expect($production->brand_name_snapshot)->toBe('Original umbrella')
+        ->and($production->collection_name_snapshot)->toBe('Original range');
+
+    $document = app(ProductionRunPrintDataBuilder::class)->build($production);
+    expect($document['organization'])->toBe('Original umbrella · Original range');
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->set('brandFilter', (string) $brand->id)
+        ->assertSee('Original umbrella')
+        ->assertSee('Original range');
+});
+
+it('distinguishes collection filters with the same name across brands', function (string $component): void {
+    $fixture = productionCreateFixture();
+    $firstBrand = Brand::factory()->create(['workspace_id' => $fixture['workspace']->id, 'name' => 'First umbrella']);
+    $secondBrand = Brand::factory()->create(['workspace_id' => $fixture['workspace']->id, 'name' => 'Second umbrella']);
+    ProductCollection::factory()->create(['workspace_id' => $fixture['workspace']->id, 'brand_id' => $firstBrand->id, 'name' => 'Classic']);
+    ProductCollection::factory()->create(['workspace_id' => $fixture['workspace']->id, 'brand_id' => $secondBrand->id, 'name' => 'Classic']);
+
+    Livewire::actingAs($fixture['owner'])->test($component)
+        ->assertSee('First umbrella · Classic')
+        ->assertSee('Second umbrella · Classic')
+        ->set('brandFilter', (string) $firstBrand->id)
+        ->assertSee('Classic')
+        ->assertDontSee('First umbrella · Classic')
+        ->assertDontSee('Second umbrella · Classic');
+})->with([
+    'production register' => ProductionIndex::class,
+    'product chooser' => ProductionCreate::class,
+]);
+
+it('filters production products by organization and clears a hidden product selection', function (): void {
+    $fixture = productionCreateFixture();
+    $brand = Brand::factory()->create(['workspace_id' => $fixture['workspace']->id, 'name' => 'Chosen umbrella']);
+    $collection = ProductCollection::factory()->create(['workspace_id' => $fixture['workspace']->id, 'brand_id' => $brand->id, 'name' => 'Chosen range']);
+    $fixture['recipe']->update(['brand_id' => $brand->id, 'product_collection_id' => $collection->id]);
+    productionCreateRecipe($fixture['workspace'], $fixture['family'], 'Another product');
+    $foreignBrand = Brand::factory()->create(['name' => 'Other workspace umbrella']);
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionCreate::class)
+        ->assertDontSee('Other workspace umbrella')
+        ->set('recipeId', (string) $fixture['recipe']->id)
+        ->set('brandFilter', (string) $brand->id)
+        ->assertSet('recipeId', '')
+        ->assertSee('Workshop soap')
+        ->assertDontSee('Another product')
+        ->set('collectionFilter', (string) $collection->id)
+        ->assertSee('Workshop soap')
+        ->set('brandFilter', (string) $foreignBrand->id)
+        ->assertSet('collectionFilter', '')
+        ->assertDontSee('Workshop soap');
+});
+
+it('filters the production register by captured organization rather than the current product', function (): void {
+    $fixture = productionCreateFixture();
+    $brand = Brand::factory()->create(['workspace_id' => $fixture['workspace']->id, 'name' => 'Historical umbrella']);
+    $collection = ProductCollection::factory()->create(['workspace_id' => $fixture['workspace']->id, 'brand_id' => $brand->id, 'name' => 'Historical range']);
+    $run = ProductionRun::factory()->create([
+        'workspace_id' => $fixture['workspace']->id, 'recipe_id' => $fixture['recipe']->id, 'recipe_version_id' => $fixture['version']->id,
+        'brand_id' => $brand->id, 'product_collection_id' => $collection->id,
+        'brand_name_snapshot' => 'Historical umbrella', 'collection_name_snapshot' => 'Historical range',
+        'recipe_name_snapshot' => 'Captured product',
+    ]);
+    ProductionRun::factory()->create(['workspace_id' => $fixture['workspace']->id, 'recipe_name_snapshot' => 'Unassigned product']);
+    $otherWorkspace = Workspace::factory()->create();
+    ProductionRun::factory()->create(['workspace_id' => $otherWorkspace->id, 'recipe_name_snapshot' => 'Foreign product']);
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionIndex::class)
+        ->set('collectionFilter', (string) $collection->id)
+        ->assertSee('Captured product')
+        ->assertDontSee('Unassigned product')
+        ->assertDontSee('Foreign product');
+});
 
 it('shows only published products and loads an optional default preset and task set', function (): void {
     $fixture = productionCreateFixture();

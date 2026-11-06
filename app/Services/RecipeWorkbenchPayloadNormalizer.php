@@ -494,6 +494,7 @@ class RecipeWorkbenchPayloadNormalizer
         }
 
         return [
+            ...collect($payload)->only(['brand_id', 'product_collection_id'])->all(),
             'production_output_type' => $outputType->value,
             'output_ingredient_id' => $outputIngredientId,
             'ready_delay_days' => $readyDelayDays === null ? null : (int) $readyDelayDays,

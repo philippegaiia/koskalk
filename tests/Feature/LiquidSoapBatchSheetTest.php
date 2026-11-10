@@ -8,9 +8,11 @@ use App\Models\IngredientSapProfile;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\Recipe;
+use App\Models\RecipeVersion;
 use App\Models\User;
 use App\Services\FormulaDocumentBuilder;
 use App\Services\RecipeCompositionExportDataBuilder;
+use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Symfony\Component\Process\Process;
@@ -297,4 +299,20 @@ it('keeps the first dilution liquids on a sheet whose neutralizer exceeds the fr
         ->and($steps['first_dilution']['instruction'])->toBe('Add 1259.4953 g water + 419.8317 g Rose Hydrosol to bring the paste to 35.0% anhydrous soap.')
         ->and($steps['final_dilution']['mass'])->toEqualWithDelta(4751.6879, 0.0001)
         ->and($steps['final_dilution']['instruction'])->not->toContain('Rose Hydrosol');
+});
+
+it('rescales KOH, the neutralizer and the batch with the oil quantity requested on the formula sheet', function () {
+    $saved = liquidSoapBatchSheet();
+    $recipe = Recipe::withoutGlobalScopes()->sole();
+    $version = RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->where('is_current', true)->sole();
+    $this->actingAs($recipe->ownerUser());
+
+    $doubled = app(RecipeVersionViewDataBuilder::class)->build($recipe, $version, 2000);
+
+    expect((float) data_get($doubled, 'snapshot.calculation.lye.selected.koh_to_weigh'))
+        ->toEqualWithDelta(2 * (float) data_get($saved, 'snapshot.calculation.lye.selected.koh_to_weigh'), 0.001)
+        ->and((float) data_get($doubled, 'snapshot.calculation.liquid_process.neutralizer.weight'))
+        ->toEqualWithDelta(2 * (float) data_get($saved, 'snapshot.calculation.liquid_process.neutralizer.weight'), 0.001)
+        ->and(collect($doubled['formulaDocument']['results'])->pluck('value', 'label')->get('Final batch'))
+        ->toEqualWithDelta(2 * 4760.0, 0.01);
 });

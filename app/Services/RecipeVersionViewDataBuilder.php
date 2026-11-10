@@ -49,9 +49,9 @@ class RecipeVersionViewDataBuilder
         );
 
         if (abs($selectedOilWeight - (float) ($snapshot['draft']['oilWeight'] ?? 0)) > 0.0001) {
-            $draft = $snapshot['draft'];
-            $draft['oilWeight'] = $selectedOilWeight;
-            $snapshot = $this->recipeWorkbenchService->snapshotFromPersistedWorkbenchDraft($draft);
+            $snapshot = $this->recipeWorkbenchService->snapshotFromPersistedWorkbenchDraft(
+                $this->rescaledDraft($snapshot['draft'], $selectedOilWeight),
+            );
         }
 
         $isCosmetic = $recipe->productFamily?->calculation_basis === 'total_formula';
@@ -160,6 +160,55 @@ class RecipeVersionViewDataBuilder
     private function stringValue(mixed $value): string
     {
         return trim((string) $value);
+    }
+
+    /**
+     * The saved draft at another oil quantity. The calculation prefers a
+     * row's saved weight over its percentage, so every saved weight scales
+     * with the oil quantity; otherwise lye, water and the liquid soap
+     * neutralizer would stay at the saved batch size.
+     *
+     * @param  array<string, mixed>  $draft
+     * @return array<string, mixed>
+     */
+    private function rescaledDraft(array $draft, float $selectedOilWeight): array
+    {
+        $savedOilWeight = $this->decimal($draft['oilWeight'] ?? 0);
+        $selectedWeight = $this->decimal($selectedOilWeight);
+        $draft['oilWeight'] = $selectedOilWeight;
+
+        $draft['phaseItems'] = collect(is_array($draft['phaseItems'] ?? null) ? $draft['phaseItems'] : [])
+            ->map(fn (mixed $rows): mixed => is_array($rows)
+                ? collect($rows)
+                    ->map(function (mixed $row) use ($savedOilWeight, $selectedWeight): mixed {
+                        if (! is_array($row) || ! is_numeric($row['weight'] ?? null) || (float) $row['weight'] <= 0) {
+                            return $row;
+                        }
+
+                        // Without a saved basis to scale from, the
+                        // calculation falls back to the row percentage.
+                        $row['weight'] = bccomp($savedOilWeight, '0', 18) > 0
+                            ? bcdiv(bcmul($this->decimal($row['weight']), $selectedWeight, 18), $savedOilWeight, 18)
+                            : 0;
+
+                        return $row;
+                    })
+                    ->all()
+                : $rows)
+            ->all();
+
+        return $draft;
+    }
+
+    private function decimal(mixed $value): string
+    {
+        $number = (float) $value;
+
+        if (! is_finite($number)) {
+            return '0';
+        }
+
+        return rtrim(rtrim(sprintf('%.18F', $number), '0'), '.') ?: '0';
     }
 
     private function requestedOilWeight(mixed $candidate, mixed $defaultWeight): float

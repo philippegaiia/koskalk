@@ -28,6 +28,7 @@ use App\Models\WorkspaceMember;
 use App\Services\FormulaDocumentOptions;
 use App\Services\MediaAssetUsageService;
 use App\Services\RecipeSopSnapshotService;
+use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
 use App\Support\RichContentAttachmentPaths;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -500,6 +501,21 @@ it('recalculates the saved formula view when a different oil quantity is request
         ->assertSuccessful()
         ->assertSee('value="1500"', false)
         ->assertSee('Recalculate');
+});
+
+it('rescales lye and water with the oil quantity requested on the formula sheet', function () {
+    [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
+    $this->actingAs($user);
+    $builder = app(RecipeVersionViewDataBuilder::class);
+
+    $saved = $builder->build($recipe, $publishedVersion);
+    $doubled = $builder->build($recipe, $publishedVersion, 2000);
+
+    expect((float) data_get($saved, 'snapshot.calculation.lye.selected.naoh_weight'))->toBeGreaterThan(0)
+        ->and((float) data_get($doubled, 'snapshot.calculation.lye.selected.naoh_weight'))
+        ->toEqualWithDelta(2 * (float) data_get($saved, 'snapshot.calculation.lye.selected.naoh_weight'), 0.001)
+        ->and((float) data_get($doubled, 'snapshot.calculation.lye.water.weight'))
+        ->toEqualWithDelta(2 * (float) data_get($saved, 'snapshot.calculation.lye.water.weight'), 0.001);
 });
 
 it('prints one working formula sheet with optional soap analysis', function () {

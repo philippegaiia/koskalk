@@ -6,6 +6,7 @@ return [
     'sources' => [
         'contextual_help' => ['*'],
         'account' => ['*'],
+        'batch_log' => ['*'],
         'calculators' => ['*'],
         'dashboard' => ['*'],
         'editing' => ['*'],

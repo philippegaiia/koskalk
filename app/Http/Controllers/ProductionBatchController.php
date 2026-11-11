@@ -49,7 +49,7 @@ class ProductionBatchController extends Controller
 
         return redirect()
             ->route('production-batches.show', $productionBatch)
-            ->with('status', 'Production recorded.');
+            ->with('status', __('batch_log.status.recorded'));
     }
 
     public function show(ProductionBatch $productionBatch): View
@@ -108,7 +108,7 @@ class ProductionBatchController extends Controller
 
         return redirect()
             ->route('production-batches.show', $productionBatch)
-            ->with('status', 'Production notes updated.');
+            ->with('status', __('batch_log.status.notes_updated'));
     }
 
     public function print(ProductionBatch $productionBatch): View
@@ -139,7 +139,7 @@ class ProductionBatchController extends Controller
             ? redirect()->route('recipes.saved', $recipe)
             : redirect()->route('recipes.index');
 
-        return $redirect->with('status', "Production batch {$batchLabel} deleted.");
+        return $redirect->with('status', __('batch_log.status.deleted', ['batch' => $batchLabel]));
     }
 
     private function lockBatch(ProductionBatch $batch): ProductionBatch

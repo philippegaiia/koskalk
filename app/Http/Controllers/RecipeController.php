@@ -325,9 +325,9 @@ class RecipeController extends Controller
                     return redirect()
                         ->route('recipes.saved', $recipe)
                         ->with('currentReplaceConfirmation', [
-                            'title' => 'Replace the current formula?',
-                            'body' => 'The current formula differs from this saved snapshot. Confirming will replace the formula with the saved snapshot data.',
-                            'action_label' => 'Replace formula',
+                            'title' => __('formula_documents.replace_confirmation.title'),
+                            'body' => __('formula_documents.replace_confirmation.body_snapshot'),
+                            'action_label' => __('formula_documents.replace_confirmation.action'),
                             'action_url' => route('recipes.saved.edit-current', $recipe),
                         ]);
                 }
@@ -604,9 +604,9 @@ class RecipeController extends Controller
                     return redirect()
                         ->route('recipes.saved', $recipe)
                         ->with('currentReplaceConfirmation', [
-                            'title' => 'Replace the current formula?',
-                            'body' => 'The current formula differs from this saved backup. Confirming will replace the formula with the selected saved state.',
-                            'action_label' => 'Replace formula',
+                            'title' => __('formula_documents.replace_confirmation.title'),
+                            'body' => __('formula_documents.replace_confirmation.body_backup'),
+                            'action_label' => __('formula_documents.replace_confirmation.action'),
                             'action_url' => route('recipes.use-version-as-current', ['recipe' => $recipe, 'version' => $version]),
                         ]);
                 }

@@ -3,6 +3,27 @@
 return [
     'title' => 'Formula Sheet',
     'intro' => 'Review the formula, scale the quantity, print a bench copy, or export the ingredient data.',
+    'replace_confirmation' => [
+        'eyebrow' => 'Formula confirmation',
+        'title' => 'Replace the current formula?',
+        'body' => 'Confirming this action will replace the current formula.',
+        'body_snapshot' => 'The current formula differs from this saved snapshot. Confirming will replace the formula with the saved snapshot data.',
+        'body_backup' => 'The current formula differs from this saved backup. Confirming will replace the formula with the selected saved state.',
+        'action' => 'Replace formula',
+        'keep' => 'Keep current formula',
+    ],
+    'packaging_plan' => [
+        'title' => 'Packaging plan',
+        'intro' => 'Selected packaging items for one finished unit. Edit the packaging on the workbench, then save a new version to refresh this list.',
+        'item' => 'Item',
+        'per_unit' => 'Per unit',
+        'per_unit_value' => ':count per unit',
+        'unit_cost' => 'Unit cost',
+        'notes' => 'Notes',
+        'not_priced' => 'Not priced',
+        'empty' => 'No packaging items in this formula\'s plan yet.',
+        'add' => 'Add packaging on the workbench',
+    ],
     'states' => [
         'current' => 'Current formula',
         'current_working_copy' => 'Current formula — working copy',

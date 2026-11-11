@@ -47,12 +47,12 @@
             <section class="rounded-xl border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)]/35 p-5">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div class="min-w-0">
-                        <p class="sk-eyebrow">Formula confirmation</p>
+                        <p class="sk-eyebrow">{{ __('formula_documents.replace_confirmation.eyebrow') }}</p>
                         <h2 class="mt-2 text-lg font-semibold text-[var(--color-ink-strong)]">
-                            {{ $currentReplaceConfirmation['title'] ?? 'Replace the current formula?' }}
+                            {{ $currentReplaceConfirmation['title'] ?? __('formula_documents.replace_confirmation.title') }}
                         </h2>
                         <p class="mt-2 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">
-                            {{ $currentReplaceConfirmation['body'] ?? 'Confirming this action will replace the current formula.' }}
+                            {{ $currentReplaceConfirmation['body'] ?? __('formula_documents.replace_confirmation.body') }}
                         </p>
                     </div>
 
@@ -62,11 +62,11 @@
                             <input type="hidden" name="expected_revision" value="{{ $recipe->edit_revision }}">
                             <input type="hidden" name="confirm_replace_current" value="1" />
                             <button type="submit" class="sk-btn sk-btn-primary min-h-11">
-                                {{ $currentReplaceConfirmation['action_label'] ?? 'Replace formula' }}
+                                {{ $currentReplaceConfirmation['action_label'] ?? __('formula_documents.replace_confirmation.action') }}
                             </button>
                         </form>
                         <a href="{{ route('recipes.saved', $recipe) }}" class="sk-btn sk-btn-outline min-h-11">
-                            Keep current formula
+                            {{ __('formula_documents.replace_confirmation.keep') }}
                         </a>
                     </div>
                 </div>
@@ -194,9 +194,9 @@
                     <input type="hidden" name="recipe_version_id" value="{{ $version->id }}" />
                     <input type="hidden" name="batch_basis" value="{{ old('batch_basis', $formatNumber($productionPreview['batch_basis_value'] ?? $batchContext['batch_basis'])) }}" />
 
-                    <p class="sk-eyebrow">Production</p>
-                    <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Record production</h2>
-                    <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Freeze the saved formula, current prices, packaging plan, and lot annotations into a production batch.</p>
+                    <p class="sk-eyebrow">{{ __('batch_log.record.eyebrow') }}</p>
+                    <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('batch_log.record.title') }}</h2>
+                    <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('batch_log.record.intro') }}</p>
 
                     @error('costing')
                         <p class="mt-3 rounded-lg border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)]/35 px-3 py-2 text-sm font-medium text-[var(--color-warning-strong)]">{{ $message }}</p>
@@ -204,13 +204,13 @@
 
                     @if ($productionPreview['has_unpriced_rows'] ?? false)
                         <p class="mt-3 rounded-lg border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)]/35 px-3 py-2 text-sm font-medium text-[var(--color-warning-strong)]">
-                            Some rows are unpriced. Add prices before recording production.
+                            {{ __('batch_log.record.unpriced') }}
                         </p>
                     @endif
 
                     <div class="mt-4 grid gap-3 sm:grid-cols-2">
                         <label class="block">
-                            <span class="text-sm font-medium text-[var(--color-ink-strong)]">Production batch number</span>
+                            <span class="text-sm font-medium text-[var(--color-ink-strong)]">{{ __('batch_log.fields.batch_number') }}</span>
                             <input name="production_batch_number" value="{{ old('production_batch_number', $batchContext['batch_number']) }}" type="text" class="mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
                             @error('production_batch_number')
                                 <span class="mt-1 block text-xs font-medium text-[var(--color-danger-strong)]">{{ $message }}</span>
@@ -218,7 +218,7 @@
                         </label>
 
                         <label class="block">
-                            <span class="text-sm font-medium text-[var(--color-ink-strong)]">Manufacture date</span>
+                            <span class="text-sm font-medium text-[var(--color-ink-strong)]">{{ __('batch_log.fields.manufacture_date') }}</span>
                             <input name="manufacture_date" value="{{ old('manufacture_date', $batchContext['manufacture_date']) }}" type="date" class="mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
                             @error('manufacture_date')
                                 <span class="mt-1 block text-xs font-medium text-[var(--color-danger-strong)]">{{ $message }}</span>
@@ -226,7 +226,7 @@
                         </label>
 
                         <div class="block">
-                            <span class="text-sm font-medium text-[var(--color-ink-strong)]">{{ $productionPreview['batch_basis_label'] ?? 'Oil quantity' }}</span>
+                            <span class="text-sm font-medium text-[var(--color-ink-strong)]">{{ $isCosmeticFormula ? __('formula_documents.scale.total_batch_quantity') : __('formula_documents.scale.oil_quantity') }}</span>
                             <p class="numeric mt-2 rounded-lg border border-[var(--color-line)] bg-[var(--color-panel-strong)] px-3 py-2 text-sm font-medium text-[var(--color-ink-strong)]">
                                 {{ old('batch_basis', $formatNumber($productionPreview['batch_basis_value'] ?? $batchContext['batch_basis'])) }}
                                 <span class="text-[var(--color-ink-soft)]">{{ $productionPreview['batch_basis_unit'] ?? 'g' }}</span>
@@ -237,7 +237,7 @@
                         </div>
 
                         <label class="block">
-                            <span class="text-sm font-medium text-[var(--color-ink-strong)]">Units produced</span>
+                            <span class="text-sm font-medium text-[var(--color-ink-strong)]">{{ __('batch_log.fields.units_produced') }}</span>
                             <input name="units_produced" value="{{ old('units_produced', $productionPreview['units_produced'] ?? $batchContext['units_produced']) }}" type="text" inputmode="numeric" class="numeric mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
                             @error('units_produced')
                                 <span class="mt-1 block text-xs font-medium text-[var(--color-danger-strong)]">{{ $message }}</span>
@@ -248,7 +248,7 @@
                     @if (($productionPreview['ingredient_rows'] ?? []) !== [])
                         <div class="mt-4 rounded-lg border border-[var(--color-line)] bg-white">
                             <div class="border-b border-[var(--color-line)] px-3 py-2">
-                                <h3 class="text-sm font-semibold text-[var(--color-ink-strong)]">Ingredient lot numbers</h3>
+                                <h3 class="text-sm font-semibold text-[var(--color-ink-strong)]">{{ __('batch_log.fields.lot_numbers') }}</h3>
                             </div>
                             <div class="divide-y divide-[var(--color-line)]">
                                 @foreach ($productionPreview['ingredient_rows'] as $ingredientRow)
@@ -257,7 +257,7 @@
                                             <span class="block text-sm font-medium text-[var(--color-ink-strong)]">{{ $ingredientRow['ingredient_name'] }}</span>
                                             <span class="numeric mt-1 block text-xs text-[var(--color-ink-soft)]">{{ $formatNumber($ingredientRow['quantity'], 2) }} {{ $ingredientRow['unit'] }}</span>
                                         </span>
-                                        <input name="ingredient_lot_numbers[{{ $ingredientRow['lot_key'] }}]" value="{{ old('ingredient_lot_numbers.'.$ingredientRow['lot_key']) }}" type="text" placeholder="Lot #" class="w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+                                        <input name="ingredient_lot_numbers[{{ $ingredientRow['lot_key'] }}]" value="{{ old('ingredient_lot_numbers.'.$ingredientRow['lot_key']) }}" type="text" placeholder="{{ __('batch_log.fields.lot_placeholder') }}" class="w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
                                     </label>
                                     @error('ingredient_lot_numbers.'.$ingredientRow['lot_key'])
                                         <span class="block px-3 pb-3 text-xs font-medium text-[var(--color-danger-strong)]">{{ $message }}</span>
@@ -268,8 +268,8 @@
                     @endif
 
                     <label class="mt-3 block">
-                        <span class="text-sm font-medium text-[var(--color-ink-strong)]">Production notes</span>
-                        <textarea name="production_notes" rows="2" class="mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" placeholder="Trace, pH, ambient conditions, deviations…">{{ old('production_notes') }}</textarea>
+                        <span class="text-sm font-medium text-[var(--color-ink-strong)]">{{ __('batch_log.fields.notes') }}</span>
+                        <textarea name="production_notes" rows="2" class="mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" placeholder="{{ __('batch_log.fields.notes_placeholder') }}">{{ old('production_notes') }}</textarea>
                         @error('production_notes')
                             <span class="mt-1 block text-xs font-medium text-[var(--color-danger-strong)]">{{ $message }}</span>
                         @enderror
@@ -278,36 +278,36 @@
                     <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
                         <dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-4">
                             <div>
-                                <dt class="text-xs text-[var(--color-ink-soft)]">Ingredient cost</dt>
+                                <dt class="text-xs text-[var(--color-ink-soft)]">{{ __('batch_log.costs.ingredient') }}</dt>
                                 <dd class="numeric font-semibold text-[var(--color-ink-strong)]">{{ $formatMoney($productionPreview['ingredient_total'] ?? 0, $productionPreview['currency'] ?? 'EUR') }}</dd>
                             </div>
                             <div>
-                                <dt class="text-xs text-[var(--color-ink-soft)]">Packaging cost</dt>
+                                <dt class="text-xs text-[var(--color-ink-soft)]">{{ __('batch_log.costs.packaging') }}</dt>
                                 <dd class="numeric font-semibold text-[var(--color-ink-strong)]">
                                     @if (($productionPreview['units_produced'] ?? null) !== null)
                                         {{ $formatMoney($productionPreview['packaging_total'] ?? 0, $productionPreview['currency'] ?? 'EUR') }}
                                     @else
-                                        <span class="text-[var(--color-ink-soft)]">Set units produced</span>
+                                        <span class="text-[var(--color-ink-soft)]">{{ __('batch_log.costs.set_units') }}</span>
                                     @endif
                                 </dd>
                             </div>
                             <div>
-                                <dt class="text-xs text-[var(--color-ink-soft)]">Total cost</dt>
+                                <dt class="text-xs text-[var(--color-ink-soft)]">{{ __('batch_log.costs.total') }}</dt>
                                 <dd class="numeric font-semibold text-[var(--color-ink-strong)]">{{ $formatMoney($productionPreview['total_cost'] ?? 0, $productionPreview['currency'] ?? 'EUR') }}</dd>
                             </div>
                             <div>
-                                <dt class="text-xs text-[var(--color-ink-soft)]">Cost per finished unit</dt>
+                                <dt class="text-xs text-[var(--color-ink-soft)]">{{ __('batch_log.costs.per_finished_unit') }}</dt>
                                 <dd class="numeric font-semibold text-[var(--color-ink-strong)]">
                                     @if (($productionPreview['cost_per_unit'] ?? null) !== null)
                                         {{ $formatMoney($productionPreview['cost_per_unit'], $productionPreview['currency'] ?? 'EUR') }}
                                     @else
-                                        <span class="text-[var(--color-ink-soft)]">Not set</span>
+                                        <span class="text-[var(--color-ink-soft)]">{{ __('batch_log.costs.not_set') }}</span>
                                     @endif
                                 </dd>
                             </div>
                         </dl>
                         <button type="submit" class="sk-btn sk-btn-primary min-h-11">
-                            Record production
+                            {{ __('batch_log.actions.record') }}
                         </button>
                     </div>
                 </form>
@@ -316,8 +316,8 @@
             @if ($productionBatches->isNotEmpty() || $canRecordProduction)
                 <article class="sk-card flex flex-col">
                     <div class="border-b border-[var(--color-line)] px-5 py-4">
-                        <p class="sk-eyebrow">History</p>
-                        <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Production history</h2>
+                        <p class="sk-eyebrow">{{ __('batch_log.history.eyebrow') }}</p>
+                        <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('batch_log.history.title') }}</h2>
                     </div>
 
                     @if ($productionBatches->isNotEmpty())
@@ -328,22 +328,22 @@
                                         <p class="text-sm font-medium text-[var(--color-ink-strong)]">
                                             <span class="numeric">{{ $productionBatch->manufacture_date?->format('Y-m-d') }}</span>
                                             <span class="text-[var(--color-ink-soft)]"> · </span>
-                                            {{ $productionBatch->production_batch_number ?: 'No batch number' }}
+                                            {{ $productionBatch->production_batch_number ?: __('batch_log.snapshot.no_batch_number') }}
                                         </p>
                                         <p class="numeric mt-0.5 text-xs text-[var(--color-ink-soft)]">
-                                            {{ $formatNumber($productionBatch->batch_basis_value) }} {{ $productionBatch->batch_basis_unit }} · {{ $productionBatch->units_produced }} units · {{ $formatMoney($productionBatch->cost_per_unit, $productionBatch->currency) }}/unit
+                                            {{ __('batch_log.history.summary', ['quantity' => $formatNumber($productionBatch->batch_basis_value).' '.$productionBatch->batch_basis_unit, 'units' => $productionBatch->units_produced, 'cost' => $formatMoney($productionBatch->cost_per_unit, $productionBatch->currency)]) }}
                                         </p>
                                     </div>
                                     <div class="flex gap-3 text-sm font-medium">
-                                        <a href="{{ route('production-batches.show', $productionBatch) }}" class="text-[var(--color-accent-strong)] transition hover:text-[var(--color-accent)]">View</a>
-                                        <a href="{{ route('production-batches.print', $productionBatch) }}" class="text-[var(--color-accent-strong)] transition hover:text-[var(--color-accent)]">Print</a>
+                                        <a href="{{ route('production-batches.show', $productionBatch) }}" class="text-[var(--color-accent-strong)] transition hover:text-[var(--color-accent)]">{{ __('batch_log.actions.view') }}</a>
+                                        <a href="{{ route('production-batches.print', $productionBatch) }}" class="text-[var(--color-accent-strong)] transition hover:text-[var(--color-accent)]">{{ __('batch_log.actions.print') }}</a>
                                         @can('delete', $productionBatch)
                                             <form method="POST" action="{{ route('production-batches.destroy', $productionBatch) }}" x-data="{ confirming: false }" @submit.prevent="confirming ? $el.submit() : (confirming = true)" class="inline">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" :class="confirming ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-soft)] hover:text-[var(--color-danger-strong)]'" class="transition">
-                                                    <span x-show="!confirming">Delete</span>
-                                                    <span x-show="confirming" x-cloak>Confirm?</span>
+                                                    <span x-show="!confirming">{{ __('batch_log.actions.delete') }}</span>
+                                                    <span x-show="confirming" x-cloak>{{ __('batch_log.actions.confirm') }}</span>
                                                 </button>
                                             </form>
                                         @endcan
@@ -353,18 +353,18 @@
                         </div>
                     @else
                         <div class="px-5 py-8 text-center text-sm text-[var(--color-ink-soft)]">
-                            No production batches recorded yet.
+                            {{ __('batch_log.history.empty') }}
                         </div>
                     @endif
                 </article>
             @else
                 <article class="sk-card p-5">
-                    <p class="sk-eyebrow">Production</p>
-                    <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Production</h2>
+                    <p class="sk-eyebrow">{{ __('batch_log.access.eyebrow') }}</p>
+                    <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('batch_log.access.title') }}</h2>
                     @if ($canUpdateRecipe)
-                        <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Your current plan does not include production batch records.</p>
+                        <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('batch_log.access.plan_excludes') }}</p>
                     @else
-                        <p class="mt-2 text-sm text-[var(--color-ink-soft)]">You can view this saved formula, but only the owner can record production batches for it.</p>
+                        <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('batch_log.access.owner_only') }}</p>
                     @endif
                 </article>
             @endif
@@ -372,9 +372,9 @@
 
         <section class="sk-card overflow-hidden">
             <div class="border-b border-[var(--color-line)] px-5 py-4">
-                <p class="sk-eyebrow">Packaging plan</p>
-                <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Packaging plan</h2>
-                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">Selected packaging items for one finished unit. Edit the packaging on the workbench, then save a new version to refresh this list.</p>
+                <p class="sk-eyebrow">{{ __('formula_documents.packaging_plan.title') }}</p>
+                <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('formula_documents.packaging_plan.title') }}</h2>
+                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('formula_documents.packaging_plan.intro') }}</p>
             </div>
 
             @if ($packagingPlanRows !== [])
@@ -382,22 +382,22 @@
                     <table class="w-full text-left text-sm">
                         <thead class="bg-[var(--color-panel)] text-xs uppercase tracking-[0.14em] text-[var(--color-ink-soft)]">
                             <tr>
-                                <th class="px-5 py-3">Item</th>
-                                <th class="numeric px-5 py-3">Per unit</th>
-                                <th class="numeric px-5 py-3">Unit cost</th>
-                                <th class="px-5 py-3">Notes</th>
+                                <th class="px-5 py-3">{{ __('formula_documents.packaging_plan.item') }}</th>
+                                <th class="numeric px-5 py-3">{{ __('formula_documents.packaging_plan.per_unit') }}</th>
+                                <th class="numeric px-5 py-3">{{ __('formula_documents.packaging_plan.unit_cost') }}</th>
+                                <th class="px-5 py-3">{{ __('formula_documents.packaging_plan.notes') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[var(--color-line)] bg-white">
                             @foreach ($packagingPlanRows as $packagingRow)
                                 <tr>
                                     <td class="px-5 py-3 font-medium text-[var(--color-ink-strong)]">{{ $packagingRow['name'] }}</td>
-                                    <td class="numeric px-5 py-3 text-[var(--color-ink-soft)]">{{ $formatNumber($packagingRow['components_per_unit'], 3) }} per unit</td>
+                                    <td class="numeric px-5 py-3 text-[var(--color-ink-soft)]">{{ __('formula_documents.packaging_plan.per_unit_value', ['count' => $formatNumber($packagingRow['components_per_unit'], 3)]) }}</td>
                                     <td class="numeric px-5 py-3 text-[var(--color-ink-soft)]">
                                         @if ($packagingRow['catalog_price'] !== null)
                                             {{ $packagingRow['currency'] }} {{ $formatNumber($packagingRow['catalog_price'], 4) }}
                                         @else
-                                            <span class="text-[var(--color-warning-strong)]">Not priced</span>
+                                            <span class="text-[var(--color-warning-strong)]">{{ __('formula_documents.packaging_plan.not_priced') }}</span>
                                         @endif
                                     </td>
                                     <td class="px-5 py-3 text-[var(--color-ink-soft)]">{{ $packagingRow['notes'] ?: '—' }}</td>
@@ -408,9 +408,9 @@
                 </div>
             @else
                 <div class="px-5 py-8 text-center">
-                    <p class="text-sm text-[var(--color-ink-soft)]">No packaging items in this formula's plan yet.</p>
+                    <p class="text-sm text-[var(--color-ink-soft)]">{{ __('formula_documents.packaging_plan.empty') }}</p>
                     <a href="{{ route('recipes.edit', $recipe) }}" class="mt-3 sk-btn sk-btn-outline min-h-11">
-                        Add packaging on the workbench
+                        {{ __('formula_documents.packaging_plan.add') }}
                     </a>
                 </div>
             @endif

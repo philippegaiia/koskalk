@@ -899,6 +899,846 @@
       }
     },
     {
+      "group": "batch_log",
+      "key": "access.eyebrow",
+      "text": {
+        "de": "Produktion",
+        "es": "Producción",
+        "fr": "Production",
+        "it": "Produzione",
+        "nl": "Productie",
+        "pt_BR": "Produção"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "access.owner_only",
+      "text": {
+        "de": "Sie können diese gespeicherte Rezeptur ansehen, aber nur der Eigentümer kann Produktionschargen dafür erfassen.",
+        "es": "Puedes ver esta fórmula guardada, pero solo el propietario puede registrar lotes de producción para ella.",
+        "fr": "Vous pouvez consulter cette formule enregistrée, mais seul son propriétaire peut y enregistrer des lots de production.",
+        "it": "Puoi visualizzare questa formula salvata, ma solo il proprietario può registrarne i lotti di produzione.",
+        "nl": "Je kunt deze opgeslagen formule bekijken, maar alleen de eigenaar kan er productiebatches voor vastleggen.",
+        "pt_BR": "Você pode ver esta fórmula salva, mas somente o proprietário pode registrar lotes de produção para ela."
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "access.plan_excludes",
+      "text": {
+        "de": "Ihr aktueller Tarif umfasst keine Erfassung von Produktionschargen.",
+        "es": "Tu plan actual no incluye el registro de lotes de producción.",
+        "fr": "Votre offre actuelle n’inclut pas l’enregistrement des lots de production.",
+        "it": "Il tuo piano attuale non include la registrazione dei lotti di produzione.",
+        "nl": "Je huidige abonnement omvat geen vastlegging van productiebatches.",
+        "pt_BR": "Seu plano atual não inclui o registro de lotes de produção."
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "access.title",
+      "text": {
+        "de": "Produktion",
+        "es": "Producción",
+        "fr": "Production",
+        "it": "Produzione",
+        "nl": "Productie",
+        "pt_BR": "Produção"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "actions.back",
+      "text": {
+        "de": "Zurück",
+        "es": "Volver",
+        "fr": "Retour",
+        "it": "Indietro",
+        "nl": "Terug",
+        "pt_BR": "Voltar"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "actions.back_to_formula",
+      "text": {
+        "de": "Zurück zur Rezeptur",
+        "es": "Volver a la fórmula",
+        "fr": "Retour à la formule",
+        "it": "Torna alla formula",
+        "nl": "Terug naar formule",
+        "pt_BR": "Voltar à fórmula"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "actions.confirm",
+      "text": {
+        "de": "Bestätigen?",
+        "es": "¿Confirmar?",
+        "fr": "Confirmer ?",
+        "it": "Confermare?",
+        "nl": "Bevestigen?",
+        "pt_BR": "Confirmar?"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "actions.confirm_again",
+      "text": {
+        "de": "Zum Bestätigen erneut klicken",
+        "es": "Haz clic de nuevo para confirmar",
+        "fr": "Cliquez à nouveau pour confirmer",
+        "it": "Fai di nuovo clic per confermare",
+        "nl": "Klik nogmaals om te bevestigen",
+        "pt_BR": "Clique novamente para confirmar"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "actions.delete",
+      "text": {
+        "de": "Löschen",
+        "es": "Eliminar",
+        "fr": "Supprimer",
+        "it": "Elimina",
+        "nl": "Verwijderen",
+        "pt_BR": "Excluir"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "actions.print",
+      "text": {
+        "de": "Drucken",
+        "es": "Imprimir",
+        "fr": "Imprimer",
+        "it": "Stampa",
+        "nl": "Afdrukken",
+        "pt_BR": "Imprimir"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "actions.record",
+      "text": {
+        "de": "Produktion erfassen",
+        "es": "Registrar producción",
+        "fr": "Enregistrer la production",
+        "it": "Registra produzione",
+        "nl": "Productie vastleggen",
+        "pt_BR": "Registrar produção"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "actions.save_notes",
+      "text": {
+        "de": "Notizen speichern",
+        "es": "Guardar notas",
+        "fr": "Enregistrer les notes",
+        "it": "Salva note",
+        "nl": "Notities opslaan",
+        "pt_BR": "Salvar notas"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "actions.view",
+      "text": {
+        "de": "Ansehen",
+        "es": "Ver",
+        "fr": "Voir",
+        "it": "Visualizza",
+        "nl": "Bekijken",
+        "pt_BR": "Ver"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "columns.batch_cost",
+      "text": {
+        "de": "Chargenkosten",
+        "es": "Coste del lote",
+        "fr": "Coût du lot",
+        "it": "Costo del lotto",
+        "nl": "Batchkosten",
+        "pt_BR": "Custo do lote"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "columns.batch_cost_currency",
+      "text": {
+        "de": "Chargenkosten - :currency",
+        "es": "Coste del lote - :currency",
+        "fr": "Coût du lot - :currency",
+        "it": "Costo del lotto - :currency",
+        "nl": "Batchkosten - :currency",
+        "pt_BR": "Custo do lote - :currency"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "columns.components_per_unit",
+      "text": {
+        "de": "Komponenten/Einheit",
+        "es": "Componentes/unidad",
+        "fr": "Composants/unité",
+        "it": "Componenti/unità",
+        "nl": "Componenten/eenheid",
+        "pt_BR": "Componentes/unidade"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "columns.cost",
+      "text": {
+        "de": "Kosten",
+        "es": "Coste",
+        "fr": "Coût",
+        "it": "Costo",
+        "nl": "Kosten",
+        "pt_BR": "Custo"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "columns.ingredient",
+      "text": {
+        "de": "Zutat",
+        "es": "Ingrediente",
+        "fr": "Ingrédient",
+        "it": "Ingrediente",
+        "nl": "Ingrediënt",
+        "pt_BR": "Ingrediente"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "columns.item",
+      "text": {
+        "de": "Artikel",
+        "es": "Artículo",
+        "fr": "Article",
+        "it": "Articolo",
+        "nl": "Artikel",
+        "pt_BR": "Item"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "columns.lot",
+      "text": {
+        "de": "Charge",
+        "es": "Lote",
+        "fr": "Lot",
+        "it": "Lotto",
+        "nl": "Lot",
+        "pt_BR": "Lote"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "columns.lot_number",
+      "text": {
+        "de": "Chargennummer der Zutat",
+        "es": "Número de lote del ingrediente",
+        "fr": "Numéro de lot de l’ingrédient",
+        "it": "Numero di lotto dell’ingrediente",
+        "nl": "Lotnummer van ingrediënt",
+        "pt_BR": "Número de lote do ingrediente"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "columns.phase",
+      "text": {
+        "de": "Phase",
+        "es": "Fase",
+        "fr": "Phase",
+        "it": "Fase",
+        "nl": "Fase",
+        "pt_BR": "Fase"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "columns.price_per_kg",
+      "text": {
+        "de": "Preis/kg",
+        "es": "Precio/kg",
+        "fr": "Prix/kg",
+        "it": "Prezzo/kg",
+        "nl": "Prijs/kg",
+        "pt_BR": "Preço/kg"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "columns.quantity",
+      "text": {
+        "de": "Menge",
+        "es": "Cantidad",
+        "fr": "Quantité",
+        "it": "Quantità",
+        "nl": "Hoeveelheid",
+        "pt_BR": "Quantidade"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "columns.unit_cost_currency",
+      "text": {
+        "de": "Stückkosten - :currency",
+        "es": "Coste unitario - :currency",
+        "fr": "Coût unitaire - :currency",
+        "it": "Costo unitario - :currency",
+        "nl": "Kosten per stuk - :currency",
+        "pt_BR": "Custo unitário - :currency"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "costs.ingredient",
+      "text": {
+        "de": "Zutatenkosten",
+        "es": "Coste de los ingredientes",
+        "fr": "Coût des ingrédients",
+        "it": "Costo degli ingredienti",
+        "nl": "Ingrediëntkosten",
+        "pt_BR": "Custo dos ingredientes"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "costs.not_set",
+      "text": {
+        "de": "Nicht festgelegt",
+        "es": "Sin definir",
+        "fr": "Non défini",
+        "it": "Non impostato",
+        "nl": "Niet ingesteld",
+        "pt_BR": "Não definido"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "costs.packaging",
+      "text": {
+        "de": "Verpackungskosten",
+        "es": "Coste del envasado",
+        "fr": "Coût du conditionnement",
+        "it": "Costo del confezionamento",
+        "nl": "Verpakkingskosten",
+        "pt_BR": "Custo das embalagens"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "costs.per_finished_unit",
+      "text": {
+        "de": "Kosten pro Endprodukt",
+        "es": "Coste por unidad terminada",
+        "fr": "Coût par unité finie",
+        "it": "Costo per unità finita",
+        "nl": "Kosten per eindproduct",
+        "pt_BR": "Custo por unidade acabada"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "costs.per_unit",
+      "text": {
+        "de": "Kosten pro Einheit",
+        "es": "Coste por unidad",
+        "fr": "Coût par unité",
+        "it": "Costo per unità",
+        "nl": "Kosten per eenheid",
+        "pt_BR": "Custo por unidade"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "costs.set_units",
+      "text": {
+        "de": "Hergestellte Einheiten angeben",
+        "es": "Indica las unidades producidas",
+        "fr": "Indiquez les unités produites",
+        "it": "Indica le unità prodotte",
+        "nl": "Vul de geproduceerde eenheden in",
+        "pt_BR": "Informe as unidades produzidas"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "costs.summary",
+      "text": {
+        "de": "Kostenübersicht",
+        "es": "Resumen de costes",
+        "fr": "Récapitulatif des coûts",
+        "it": "Riepilogo dei costi",
+        "nl": "Kostenoverzicht",
+        "pt_BR": "Resumo de custos"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "costs.total",
+      "text": {
+        "de": "Gesamtkosten",
+        "es": "Coste total",
+        "fr": "Coût total",
+        "it": "Costo totale",
+        "nl": "Totale kosten",
+        "pt_BR": "Custo total"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "costs.total_production",
+      "text": {
+        "de": "Gesamte Produktionskosten",
+        "es": "Coste total de producción",
+        "fr": "Coût total de production",
+        "it": "Costo totale di produzione",
+        "nl": "Totale productiekosten",
+        "pt_BR": "Custo total de produção"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "fields.batch_number",
+      "text": {
+        "de": "Produktionschargennummer",
+        "es": "Número de lote de producción",
+        "fr": "Numéro de lot de production",
+        "it": "Numero di lotto di produzione",
+        "nl": "Productiebatchnummer",
+        "pt_BR": "Número do lote de produção"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "fields.lot_numbers",
+      "text": {
+        "de": "Chargennummern der Zutaten",
+        "es": "Números de lote de los ingredientes",
+        "fr": "Numéros de lot des ingrédients",
+        "it": "Numeri di lotto degli ingredienti",
+        "nl": "Lotnummers van ingrediënten",
+        "pt_BR": "Números de lote dos ingredientes"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "fields.lot_placeholder",
+      "text": {
+        "de": "Charge Nr.",
+        "es": "Lote n.º",
+        "fr": "N° de lot",
+        "it": "Lotto n.",
+        "nl": "Lotnr.",
+        "pt_BR": "Lote nº"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "fields.manufacture_date",
+      "text": {
+        "de": "Herstellungsdatum",
+        "es": "Fecha de fabricación",
+        "fr": "Date de fabrication",
+        "it": "Data di produzione",
+        "nl": "Fabricagedatum",
+        "pt_BR": "Data de fabricação"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "fields.notes",
+      "text": {
+        "de": "Produktionsnotizen",
+        "es": "Notas de producción",
+        "fr": "Notes de production",
+        "it": "Note di produzione",
+        "nl": "Productienotities",
+        "pt_BR": "Notas de produção"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "fields.notes_placeholder",
+      "text": {
+        "de": "Trace, pH-Wert, Umgebungsbedingungen, Abweichungen…",
+        "es": "Traza, pH, condiciones ambientales, desviaciones…",
+        "fr": "Trace, pH, conditions ambiantes, écarts…",
+        "it": "Nastro, pH, condizioni ambientali, scostamenti…",
+        "nl": "Trace, pH, omgevingsomstandigheden, afwijkingen…",
+        "pt_BR": "Traço, pH, condições ambientes, desvios…"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "fields.units_produced",
+      "text": {
+        "de": "Hergestellte Einheiten",
+        "es": "Unidades producidas",
+        "fr": "Unités produites",
+        "it": "Unità prodotte",
+        "nl": "Geproduceerde eenheden",
+        "pt_BR": "Unidades produzidas"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "history.empty",
+      "text": {
+        "de": "Noch keine Produktionschargen erfasst.",
+        "es": "Aún no se ha registrado ningún lote de producción.",
+        "fr": "Aucun lot de production enregistré pour l’instant.",
+        "it": "Nessun lotto di produzione registrato finora.",
+        "nl": "Nog geen productiebatches vastgelegd.",
+        "pt_BR": "Nenhum lote de produção registrado ainda."
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "history.eyebrow",
+      "text": {
+        "de": "Verlauf",
+        "es": "Historial",
+        "fr": "Historique",
+        "it": "Cronologia",
+        "nl": "Geschiedenis",
+        "pt_BR": "Histórico"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "history.summary",
+      "text": {
+        "de": ":quantity · :units Einheiten · :cost/Einheit",
+        "es": ":quantity · :units unidades · :cost/unidad",
+        "fr": ":quantity · :units unités · :cost/unité",
+        "it": ":quantity · :units unità · :cost/unità",
+        "nl": ":quantity · :units eenheden · :cost/eenheid",
+        "pt_BR": ":quantity · :units unidades · :cost/unidade"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "history.title",
+      "text": {
+        "de": "Produktionsverlauf",
+        "es": "Historial de producción",
+        "fr": "Historique de production",
+        "it": "Cronologia della produzione",
+        "nl": "Productiegeschiedenis",
+        "pt_BR": "Histórico de produção"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "record.eyebrow",
+      "text": {
+        "de": "Produktion",
+        "es": "Producción",
+        "fr": "Production",
+        "it": "Produzione",
+        "nl": "Productie",
+        "pt_BR": "Produção"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "record.intro",
+      "text": {
+        "de": "Hält die gespeicherte Rezeptur, die aktuellen Preise, den Verpackungsplan und die Chargenangaben in einer Produktionscharge fest.",
+        "es": "Congela la fórmula guardada, los precios actuales, el plan de envasado y las anotaciones de lote en un lote de producción.",
+        "fr": "Fige la formule enregistrée, les prix actuels, le plan de conditionnement et les numéros de lot dans un lot de production.",
+        "it": "Fissa la formula salvata, i prezzi attuali, il piano di confezionamento e le annotazioni di lotto in un lotto di produzione.",
+        "nl": "Legt de opgeslagen formule, de huidige prijzen, het verpakkingsplan en de lotgegevens vast in een productiebatch.",
+        "pt_BR": "Congela a fórmula salva, os preços atuais, o plano de embalagens e as anotações de lote em um lote de produção."
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "record.title",
+      "text": {
+        "de": "Produktion erfassen",
+        "es": "Registrar producción",
+        "fr": "Enregistrer la production",
+        "it": "Registra produzione",
+        "nl": "Productie vastleggen",
+        "pt_BR": "Registrar produção"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "record.unpriced",
+      "text": {
+        "de": "Einige Zeilen haben keinen Preis. Ergänzen Sie die Preise, bevor Sie die Produktion erfassen.",
+        "es": "Algunas filas no tienen precio. Añade los precios antes de registrar la producción.",
+        "fr": "Certaines lignes n’ont pas de prix. Ajoutez les prix avant d’enregistrer la production.",
+        "it": "Alcune righe non hanno un prezzo. Aggiungi i prezzi prima di registrare la produzione.",
+        "nl": "Sommige regels hebben geen prijs. Voeg prijzen toe voordat je de productie vastlegt.",
+        "pt_BR": "Algumas linhas estão sem preço. Adicione os preços antes de registrar a produção."
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "snapshot.batch",
+      "text": {
+        "de": "Charge",
+        "es": "Lote",
+        "fr": "Lot",
+        "it": "Lotto",
+        "nl": "Batch",
+        "pt_BR": "Lote"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "snapshot.batch_basis",
+      "text": {
+        "de": "Chargenbasis",
+        "es": "Base del lote",
+        "fr": "Base du lot",
+        "it": "Base del lotto",
+        "nl": "Batchbasis",
+        "pt_BR": "Base do lote"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "snapshot.date_made",
+      "text": {
+        "de": "Hergestellt am",
+        "es": "Fecha de fabricación",
+        "fr": "Date de fabrication",
+        "it": "Data di produzione",
+        "nl": "Gemaakt op",
+        "pt_BR": "Data de fabricação"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "snapshot.date_not_recorded",
+      "text": {
+        "de": "Datum nicht erfasst",
+        "es": "Fecha no registrada",
+        "fr": "Date non enregistrée",
+        "it": "Data non registrata",
+        "nl": "Datum niet vastgelegd",
+        "pt_BR": "Data não registrada"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "snapshot.eyebrow",
+      "text": {
+        "de": "Produktions-Schnappschuss",
+        "es": "Instantánea de producción",
+        "fr": "Instantané de production",
+        "it": "Snapshot di produzione",
+        "nl": "Productiesnapshot",
+        "pt_BR": "Snapshot da produção"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "snapshot.ingredients",
+      "text": {
+        "de": "Zutaten",
+        "es": "Ingredientes",
+        "fr": "Ingrédients",
+        "it": "Ingredienti",
+        "nl": "Ingrediënten",
+        "pt_BR": "Ingredientes"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "snapshot.ingredients_title",
+      "text": {
+        "de": "Festgehaltene Zutatenzeilen",
+        "es": "Filas de ingredientes congeladas",
+        "fr": "Lignes d’ingrédients figées",
+        "it": "Righe di ingredienti fissate",
+        "nl": "Vastgelegde ingrediëntregels",
+        "pt_BR": "Linhas de ingredientes congeladas"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "snapshot.no_batch_number",
+      "text": {
+        "de": "Keine Chargennummer",
+        "es": "Sin número de lote",
+        "fr": "Pas de numéro de lot",
+        "it": "Nessun numero di lotto",
+        "nl": "Geen batchnummer",
+        "pt_BR": "Sem número de lote"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "snapshot.no_packaging",
+      "text": {
+        "de": "Für diesen Schnappschuss wurden keine Verpackungszeilen erfasst.",
+        "es": "No se registraron filas de envasado en esta instantánea.",
+        "fr": "Aucune ligne de conditionnement n’a été enregistrée pour cet instantané.",
+        "it": "Nessuna riga di confezionamento è stata registrata per questo snapshot.",
+        "nl": "Voor deze snapshot zijn geen verpakkingsregels vastgelegd.",
+        "pt_BR": "Nenhuma linha de embalagem foi registrada neste snapshot."
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "snapshot.no_packaging_print",
+      "text": {
+        "de": "Es wurden keine Verpackungszeilen erfasst.",
+        "es": "No se registraron filas de envasado.",
+        "fr": "Aucune ligne de conditionnement n’a été enregistrée.",
+        "it": "Nessuna riga di confezionamento è stata registrata.",
+        "nl": "Er zijn geen verpakkingsregels vastgelegd.",
+        "pt_BR": "Nenhuma linha de embalagem foi registrada."
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "snapshot.not_recorded",
+      "text": {
+        "de": "Nicht erfasst",
+        "es": "No registrada",
+        "fr": "Non enregistrée",
+        "it": "Non registrata",
+        "nl": "Niet vastgelegd",
+        "pt_BR": "Não registrada"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "snapshot.packaging",
+      "text": {
+        "de": "Verpackung",
+        "es": "Envasado",
+        "fr": "Conditionnement",
+        "it": "Confezionamento",
+        "nl": "Verpakking",
+        "pt_BR": "Embalagens"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "snapshot.packaging_title",
+      "text": {
+        "de": "Festgehaltene Verpackungszeilen",
+        "es": "Filas de envasado congeladas",
+        "fr": "Lignes de conditionnement figées",
+        "it": "Righe di confezionamento fissate",
+        "nl": "Vastgelegde verpakkingsregels",
+        "pt_BR": "Linhas de embalagens congeladas"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "snapshot.print_title",
+      "text": {
+        "de": "Produktions-Schnappschuss drucken",
+        "es": "Imprimir instantánea de producción",
+        "fr": "Impression de l’instantané de production",
+        "it": "Stampa dello snapshot di produzione",
+        "nl": "Productiesnapshot afdrukken",
+        "pt_BR": "Impressão do snapshot da produção"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "snapshot.saved_formula",
+      "text": {
+        "de": "Gespeicherte Rezeptur",
+        "es": "Fórmula guardada",
+        "fr": "Formule enregistrée",
+        "it": "Formula salvata",
+        "nl": "Opgeslagen formule",
+        "pt_BR": "Fórmula salva"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "snapshot.title",
+      "text": {
+        "de": "Produktions-Schnappschuss",
+        "es": "Instantánea de producción",
+        "fr": "Instantané de production",
+        "it": "Snapshot di produzione",
+        "nl": "Productiesnapshot",
+        "pt_BR": "Snapshot da produção"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "snapshot.units",
+      "text": {
+        "de": "Einheiten",
+        "es": "Unidades",
+        "fr": "Unités",
+        "it": "Unità",
+        "nl": "Eenheden",
+        "pt_BR": "Unidades"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "snapshot.version",
+      "text": {
+        "de": "Version :number",
+        "es": "Versión :number",
+        "fr": "Version :number",
+        "it": "Versione :number",
+        "nl": "Versie :number",
+        "pt_BR": "Versão :number"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "status.deleted",
+      "text": {
+        "de": "Produktionscharge :batch gelöscht.",
+        "es": "Lote de producción :batch eliminado.",
+        "fr": "Lot de production :batch supprimé.",
+        "it": "Lotto di produzione :batch eliminato.",
+        "nl": "Productiebatch :batch verwijderd.",
+        "pt_BR": "Lote de produção :batch excluído."
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "status.notes_updated",
+      "text": {
+        "de": "Produktionsnotizen aktualisiert.",
+        "es": "Notas de producción actualizadas.",
+        "fr": "Notes de production mises à jour.",
+        "it": "Note di produzione aggiornate.",
+        "nl": "Productienotities bijgewerkt.",
+        "pt_BR": "Notas de produção atualizadas."
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "status.recorded",
+      "text": {
+        "de": "Produktion erfasst.",
+        "es": "Producción registrada.",
+        "fr": "Production enregistrée.",
+        "it": "Produzione registrata.",
+        "nl": "Productie vastgelegd.",
+        "pt_BR": "Produção registrada."
+      }
+    },
+    {
       "group": "calculators",
       "key": "add_ingredient",
       "text": {
@@ -5304,6 +6144,126 @@
     },
     {
       "group": "formula_documents",
+      "key": "packaging_plan.add",
+      "text": {
+        "de": "Verpackung im Workbench hinzufügen",
+        "es": "Añadir envasado en el área de trabajo",
+        "fr": "Ajouter le conditionnement dans l’atelier",
+        "it": "Aggiungi il confezionamento nel banco di lavoro",
+        "nl": "Verpakking toevoegen in de werkbank",
+        "pt_BR": "Adicionar embalagens na bancada"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "packaging_plan.empty",
+      "text": {
+        "de": "Der Plan dieser Rezeptur enthält noch keine Verpackungsartikel.",
+        "es": "El plan de esta fórmula aún no tiene artículos de envasado.",
+        "fr": "Le plan de cette formule ne contient encore aucun article de conditionnement.",
+        "it": "Il piano di questa formula non contiene ancora articoli di confezionamento.",
+        "nl": "Het plan van deze formule bevat nog geen verpakkingsartikelen.",
+        "pt_BR": "O plano desta fórmula ainda não tem itens de embalagem."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "packaging_plan.intro",
+      "text": {
+        "de": "Ausgewählte Verpackungsartikel für eine fertige Einheit. Bearbeiten Sie die Verpackung im Workbench und speichern Sie dann eine neue Version, um diese Liste zu aktualisieren.",
+        "es": "Artículos de envasado seleccionados para una unidad terminada. Edita el envasado en el área de trabajo y guarda una nueva versión para actualizar esta lista.",
+        "fr": "Articles de conditionnement sélectionnés pour une unité finie. Modifiez le conditionnement dans l’atelier, puis enregistrez une nouvelle version pour actualiser cette liste.",
+        "it": "Articoli di confezionamento selezionati per un’unità finita. Modifica il confezionamento nel banco di lavoro, poi salva una nuova versione per aggiornare questo elenco.",
+        "nl": "Geselecteerde verpakkingsartikelen voor één eindproduct. Bewerk de verpakking in de werkbank en sla daarna een nieuwe versie op om deze lijst bij te werken.",
+        "pt_BR": "Itens de embalagem selecionados para uma unidade acabada. Edite as embalagens na bancada e salve uma nova versão para atualizar esta lista."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "packaging_plan.item",
+      "text": {
+        "de": "Artikel",
+        "es": "Artículo",
+        "fr": "Article",
+        "it": "Articolo",
+        "nl": "Artikel",
+        "pt_BR": "Item"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "packaging_plan.not_priced",
+      "text": {
+        "de": "Ohne Preis",
+        "es": "Sin precio",
+        "fr": "Sans prix",
+        "it": "Senza prezzo",
+        "nl": "Geen prijs",
+        "pt_BR": "Sem preço"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "packaging_plan.notes",
+      "text": {
+        "de": "Notizen",
+        "es": "Notas",
+        "fr": "Notes",
+        "it": "Note",
+        "nl": "Notities",
+        "pt_BR": "Notas"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "packaging_plan.per_unit",
+      "text": {
+        "de": "Pro Einheit",
+        "es": "Por unidad",
+        "fr": "Par unité",
+        "it": "Per unità",
+        "nl": "Per eenheid",
+        "pt_BR": "Por unidade"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "packaging_plan.per_unit_value",
+      "text": {
+        "de": ":count pro Einheit",
+        "es": ":count por unidad",
+        "fr": ":count par unité",
+        "it": ":count per unità",
+        "nl": ":count per eenheid",
+        "pt_BR": ":count por unidade"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "packaging_plan.title",
+      "text": {
+        "de": "Verpackungsplan",
+        "es": "Plan de envasado",
+        "fr": "Plan de conditionnement",
+        "it": "Piano di confezionamento",
+        "nl": "Verpakkingsplan",
+        "pt_BR": "Plano de embalagens"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "packaging_plan.unit_cost",
+      "text": {
+        "de": "Stückkosten",
+        "es": "Coste unitario",
+        "fr": "Coût unitaire",
+        "it": "Costo unitario",
+        "nl": "Kosten per stuk",
+        "pt_BR": "Custo unitário"
+      }
+    },
+    {
+      "group": "formula_documents",
       "key": "print.batch_number",
       "text": {
         "de": "Versuchs-/Chargennr.",
@@ -5516,6 +6476,90 @@
         "it": "Versione",
         "nl": "Versie",
         "pt_BR": "Versão"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "replace_confirmation.action",
+      "text": {
+        "de": "Rezeptur ersetzen",
+        "es": "Reemplazar fórmula",
+        "fr": "Remplacer la formule",
+        "it": "Sostituisci formula",
+        "nl": "Formule vervangen",
+        "pt_BR": "Substituir fórmula"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "replace_confirmation.body",
+      "text": {
+        "de": "Wenn Sie bestätigen, wird die aktuelle Rezeptur ersetzt.",
+        "es": "Si confirmas esta acción, se reemplazará la fórmula actual.",
+        "fr": "Confirmer cette action remplacera la formule actuelle.",
+        "it": "Confermando questa azione, la formula attuale verrà sostituita.",
+        "nl": "Als je deze actie bevestigt, wordt de huidige formule vervangen.",
+        "pt_BR": "Ao confirmar esta ação, a fórmula atual será substituída."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "replace_confirmation.body_backup",
+      "text": {
+        "de": "Die aktuelle Rezeptur weicht von dieser gespeicherten Sicherung ab. Wenn Sie bestätigen, wird die Rezeptur durch den ausgewählten gespeicherten Stand ersetzt.",
+        "es": "La fórmula actual difiere de esta copia guardada. Si confirmas, la fórmula se reemplazará con el estado guardado seleccionado.",
+        "fr": "La formule actuelle diffère de cette sauvegarde. Confirmer remplacera la formule par l’état enregistré sélectionné.",
+        "it": "La formula attuale è diversa da questo salvataggio. Confermando, la formula verrà sostituita con lo stato salvato selezionato.",
+        "nl": "De huidige formule wijkt af van deze opgeslagen back-up. Als je bevestigt, wordt de formule vervangen door de geselecteerde opgeslagen staat.",
+        "pt_BR": "A fórmula atual é diferente deste backup salvo. Ao confirmar, a fórmula será substituída pelo estado salvo selecionado."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "replace_confirmation.body_snapshot",
+      "text": {
+        "de": "Die aktuelle Rezeptur weicht von diesem gespeicherten Stand ab. Wenn Sie bestätigen, wird die Rezeptur durch die gespeicherten Daten ersetzt.",
+        "es": "La fórmula actual difiere de esta versión guardada. Si confirmas, la fórmula se reemplazará con los datos guardados.",
+        "fr": "La formule actuelle diffère de cette version enregistrée. Confirmer remplacera la formule par les données enregistrées.",
+        "it": "La formula attuale è diversa da questa versione salvata. Confermando, la formula verrà sostituita con i dati salvati.",
+        "nl": "De huidige formule wijkt af van deze opgeslagen versie. Als je bevestigt, wordt de formule vervangen door de opgeslagen gegevens.",
+        "pt_BR": "A fórmula atual é diferente desta versão salva. Ao confirmar, a fórmula será substituída pelos dados salvos."
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "replace_confirmation.eyebrow",
+      "text": {
+        "de": "Rezepturbestätigung",
+        "es": "Confirmación de la fórmula",
+        "fr": "Confirmation de la formule",
+        "it": "Conferma della formula",
+        "nl": "Formulebevestiging",
+        "pt_BR": "Confirmação da fórmula"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "replace_confirmation.keep",
+      "text": {
+        "de": "Aktuelle Rezeptur behalten",
+        "es": "Conservar la fórmula actual",
+        "fr": "Conserver la formule actuelle",
+        "it": "Mantieni la formula attuale",
+        "nl": "Huidige formule behouden",
+        "pt_BR": "Manter a fórmula atual"
+      }
+    },
+    {
+      "group": "formula_documents",
+      "key": "replace_confirmation.title",
+      "text": {
+        "de": "Aktuelle Rezeptur ersetzen?",
+        "es": "¿Reemplazar la fórmula actual?",
+        "fr": "Remplacer la formule actuelle ?",
+        "it": "Sostituire la formula attuale?",
+        "nl": "Huidige formule vervangen?",
+        "pt_BR": "Substituir a fórmula atual?"
       }
     },
     {

@@ -7,41 +7,41 @@
     $formatMoney = static fn (mixed $value, string $currency): string => $formatNumber($value, 2).' '.$currency;
     $formatQuantity = static fn (mixed $value, string $unit): string => $formatNumber($value, $unit === 'g' ? 0 : 2).' '.$unit;
     $versionLabel = $productionBatch->recipe_version_number
-        ? 'Version '.$productionBatch->recipe_version_number
-        : 'Saved formula';
+        ? __('batch_log.snapshot.version', ['number' => $productionBatch->recipe_version_number])
+        : __('batch_log.snapshot.saved_formula');
 @endphp
 
-@section('title', $productionBatch->recipe_name.' · Production Snapshot · '.config('app.name'))
-@section('page_heading', 'Production Snapshot')
+@section('title', $productionBatch->recipe_name.' · '.__('batch_log.snapshot.title').' · '.config('app.name'))
+@section('page_heading', __('batch_log.snapshot.title'))
 
 @section('content')
     <div class="mx-auto max-w-app space-y-6">
         <section class="sk-card p-5">
             <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div class="min-w-0">
-                    <p class="sk-eyebrow">Production snapshot</p>
+                    <p class="sk-eyebrow">{{ __('batch_log.snapshot.eyebrow') }}</p>
                     <h1 class="mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $productionBatch->recipe_name }}</h1>
                     <p class="mt-2 text-sm text-[var(--color-ink-soft)]">
-                        {{ $versionLabel }} · {{ $productionBatch->manufacture_date?->format('Y-m-d') ?? 'Date not recorded' }}
+                        {{ $versionLabel }} · {{ $productionBatch->manufacture_date?->format('Y-m-d') ?? __('batch_log.snapshot.date_not_recorded') }}
                     </p>
                 </div>
 
                 <div class="flex flex-wrap gap-2">
                     @if ($productionBatch->recipe !== null && auth()->user()->can('view', $productionBatch->recipe))
                         <a href="{{ route('recipes.saved', $productionBatch->recipe) }}" class="inline-flex rounded-full border border-[var(--color-line)] bg-white px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] transition hover:bg-[var(--color-panel)]">
-                            Back to formula
+                            {{ __('batch_log.actions.back_to_formula') }}
                         </a>
                     @endif
                     <a href="{{ route('production-batches.print', $productionBatch) }}" class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap">
-                        <x-action-icon name="printer" />Print
+                        <x-action-icon name="printer" />{{ __('batch_log.actions.print') }}
                     </a>
                     @can('delete', $productionBatch)
                         <form method="POST" action="{{ route('production-batches.destroy', $productionBatch) }}" x-data="{ confirming: false }" @submit.prevent="confirming ? $el.submit() : (confirming = true)" class="inline">
                             @csrf
                             @method('DELETE')
                             <button type="submit" :class="confirming ? 'bg-[var(--color-danger-strong)] text-white' : 'border border-[var(--color-line)] bg-white text-[var(--color-ink-soft)] hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger-strong)]'" class="inline-flex rounded-full px-4 py-2 text-sm font-medium transition">
-                                <span x-show="!confirming">Delete</span>
-                                <span x-show="confirming" x-cloak>Click again to confirm</span>
+                                <span x-show="!confirming">{{ __('batch_log.actions.delete') }}</span>
+                                <span x-show="confirming" x-cloak>{{ __('batch_log.actions.confirm_again') }}</span>
                             </button>
                         </form>
                     @endcan
@@ -51,24 +51,24 @@
 
         <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
             <article class="sk-card p-4">
-                <p class="sk-eyebrow">Batch</p>
-                <p class="mt-3 text-xl font-semibold text-[var(--color-ink-strong)]">{{ $productionBatch->production_batch_number ?: 'No batch number' }}</p>
+                <p class="sk-eyebrow">{{ __('batch_log.snapshot.batch') }}</p>
+                <p class="mt-3 text-xl font-semibold text-[var(--color-ink-strong)]">{{ $productionBatch->production_batch_number ?: __('batch_log.snapshot.no_batch_number') }}</p>
             </article>
 
             <article class="sk-card p-4">
-                <p class="sk-eyebrow">{{ $productionBatch->batch_basis_label }}</p>
+                <p class="sk-eyebrow">{{ $productionBatch->localizedBatchBasisLabel() }}</p>
                 <p class="numeric mt-3 text-xl font-semibold text-[var(--color-ink-strong)]">
                     {{ $formatQuantity($productionBatch->batch_basis_value, $productionBatch->batch_basis_unit) }}
                 </p>
             </article>
 
             <article class="sk-card p-4">
-                <p class="sk-eyebrow">Units produced</p>
+                <p class="sk-eyebrow">{{ __('batch_log.fields.units_produced') }}</p>
                 <p class="numeric mt-3 text-xl font-semibold text-[var(--color-ink-strong)]">{{ $productionBatch->units_produced }}</p>
             </article>
 
             <article class="sk-card p-4">
-                <p class="sk-eyebrow">Cost per unit</p>
+                <p class="sk-eyebrow">{{ __('batch_log.costs.per_unit') }}</p>
                 <p class="numeric mt-3 text-xl font-semibold text-[var(--color-ink-strong)]">{{ $formatMoney($productionBatch->cost_per_unit, $productionBatch->currency) }}</p>
             </article>
         </section>
@@ -79,10 +79,10 @@
             <fieldset @disabled(auth()->user()->cannot('update', $productionBatch)) class="space-y-6">
 
             <section class="sk-card p-5">
-                <p class="sk-eyebrow">Production notes</p>
+                <p class="sk-eyebrow">{{ __('batch_log.fields.notes') }}</p>
                 <div class="mt-4 grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
                     <label class="block">
-                        <span class="text-sm font-medium text-[var(--color-ink-strong)]">Production batch number</span>
+                        <span class="text-sm font-medium text-[var(--color-ink-strong)]">{{ __('batch_log.fields.batch_number') }}</span>
                         <input name="production_batch_number" value="{{ old('production_batch_number', $productionBatch->production_batch_number) }}" type="text" class="mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
                         @error('production_batch_number')
                             <span class="mt-1 block text-xs font-medium text-[var(--color-danger-strong)]">{{ $message }}</span>
@@ -90,7 +90,7 @@
                     </label>
 
                     <label class="block">
-                        <span class="text-sm font-medium text-[var(--color-ink-strong)]">Production notes</span>
+                        <span class="text-sm font-medium text-[var(--color-ink-strong)]">{{ __('batch_log.fields.notes') }}</span>
                         <textarea name="production_notes" rows="4" class="mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]">{{ old('production_notes', $productionBatch->production_notes) }}</textarea>
                         @error('production_notes')
                             <span class="mt-1 block text-xs font-medium text-[var(--color-danger-strong)]">{{ $message }}</span>
@@ -101,20 +101,20 @@
 
             <section class="sk-card overflow-hidden">
                 <div class="border-b border-[var(--color-line)] px-5 py-4">
-                    <p class="sk-eyebrow">Ingredients</p>
-                    <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Frozen ingredient rows</h2>
+                    <p class="sk-eyebrow">{{ __('batch_log.snapshot.ingredients') }}</p>
+                    <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('batch_log.snapshot.ingredients_title') }}</h2>
                 </div>
 
                 <div class="overflow-x-auto">
                     <table class="min-w-full text-left text-sm">
                         <thead class="border-b border-[var(--color-line)] bg-[var(--color-field-muted)] text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-soft)]">
                             <tr>
-                                <th class="px-5 py-3">Phase</th>
-                                <th class="px-5 py-3">Ingredient</th>
-                                <th class="px-5 py-3">Quantity</th>
-                                <th class="px-5 py-3">Price/kg</th>
-                                <th class="px-5 py-3">Cost</th>
-                                <th class="px-5 py-3">Ingredient lot number</th>
+                                <th class="px-5 py-3">{{ __('batch_log.columns.phase') }}</th>
+                                <th class="px-5 py-3">{{ __('batch_log.columns.ingredient') }}</th>
+                                <th class="px-5 py-3">{{ __('batch_log.columns.quantity') }}</th>
+                                <th class="px-5 py-3">{{ __('batch_log.columns.price_per_kg') }}</th>
+                                <th class="px-5 py-3">{{ __('batch_log.columns.cost') }}</th>
+                                <th class="px-5 py-3">{{ __('batch_log.columns.lot_number') }}</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-[var(--color-line)]">
@@ -144,8 +144,8 @@
 
             <section class="sk-card overflow-hidden">
                 <div class="border-b border-[var(--color-line)] px-5 py-4">
-                    <p class="sk-eyebrow">Packaging</p>
-                    <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Frozen packaging rows</h2>
+                    <p class="sk-eyebrow">{{ __('batch_log.snapshot.packaging') }}</p>
+                    <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('batch_log.snapshot.packaging_title') }}</h2>
                 </div>
 
                 @if ($productionBatch->packagingItems->isNotEmpty())
@@ -153,10 +153,10 @@
                         <table class="min-w-full text-left text-sm">
                             <thead class="border-b border-[var(--color-line)] bg-[var(--color-field-muted)] text-xs font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-soft)]">
                                 <tr>
-                                    <th class="px-5 py-3">Item</th>
-                                    <th class="px-5 py-3">Components/unit</th>
-                                    <th class="px-5 py-3">Unit cost - {{ $productionBatch->currency }}</th>
-                                    <th class="px-5 py-3">Batch cost - {{ $productionBatch->currency }}</th>
+                                    <th class="px-5 py-3">{{ __('batch_log.columns.item') }}</th>
+                                    <th class="px-5 py-3">{{ __('batch_log.columns.components_per_unit') }}</th>
+                                    <th class="px-5 py-3">{{ __('batch_log.columns.unit_cost_currency', ['currency' => $productionBatch->currency]) }}</th>
+                                    <th class="px-5 py-3">{{ __('batch_log.columns.batch_cost_currency', ['currency' => $productionBatch->currency]) }}</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-[var(--color-line)]">
@@ -173,7 +173,7 @@
                     </div>
                 @else
                     <div class="px-5 py-6 text-sm text-[var(--color-ink-soft)]">
-                        No packaging rows were recorded for this snapshot.
+                        {{ __('batch_log.snapshot.no_packaging') }}
                     </div>
                 @endif
             </section>
@@ -181,7 +181,7 @@
             @can('update', $productionBatch)
             <div class="flex justify-end">
                 <button type="submit" class="rounded-full bg-[var(--color-ink-strong)] px-4 py-2 text-sm font-medium text-white transition hover:bg-[var(--color-accent-strong)]">
-                    Save notes
+                    {{ __('batch_log.actions.save_notes') }}
                 </button>
             </div>
             @endcan

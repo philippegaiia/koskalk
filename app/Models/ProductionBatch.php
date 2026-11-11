@@ -70,6 +70,20 @@ class ProductionBatch extends Model
         return $this->hasMany(ProductionBatchPackagingItem::class)->orderBy('position');
     }
 
+    /**
+     * The batch basis label in the interface language. Batches store the
+     * English label they were recorded with; known labels are translated
+     * when shown and anything else is displayed as recorded.
+     */
+    public function localizedBatchBasisLabel(): string
+    {
+        return match ($this->batch_basis_label) {
+            'Oil quantity' => __('formula_documents.scale.oil_quantity'),
+            'Total batch quantity' => __('formula_documents.scale.total_batch_quantity'),
+            default => (string) $this->batch_basis_label,
+        };
+    }
+
     protected function casts(): array
     {
         return [

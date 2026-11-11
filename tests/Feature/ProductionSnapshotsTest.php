@@ -7,6 +7,7 @@ use App\Enums\Visibility;
 use App\Enums\WorkspaceMemberRole;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
+use App\Models\InterfaceTranslation;
 use App\Models\PackagingItem;
 use App\Models\Plan;
 use App\Models\PlanLimit;
@@ -35,6 +36,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -583,6 +585,50 @@ it('tells the owner their plan does not include production batches instead of bl
         ->assertSuccessful()
         ->assertSee('Your current plan does not include production batch records.')
         ->assertDontSee('only the owner can record production batches');
+});
+
+it('renders the saved formula batch log and production snapshot pages in the interface locale', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'production_batch_number' => 'B-2026-FR',
+        'manufacture_date' => '2026-06-10',
+        'batch_basis' => 1500,
+        'units_produced' => 12,
+        'production_notes' => null,
+        'ingredient_lot_numbers' => [],
+    ]);
+
+    collect(File::json(database_path('seeders/data/interface-translations.json'))['translations'])
+        ->whereIn('group', ['batch_log', 'formula_documents', 'workbench'])
+        ->each(fn (array $row): InterfaceTranslation => InterfaceTranslation::query()->create($row));
+    app()->setLocale('fr');
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', $recipe))
+        ->assertSuccessful()
+        ->assertSee(__('batch_log.record.title'))
+        ->assertSee(__('batch_log.history.title'))
+        ->assertSee(__('formula_documents.packaging_plan.title'))
+        ->assertDontSee('Record production')
+        ->assertDontSee('Production history')
+        ->assertDontSee('Packaging plan');
+
+    $this->actingAs($user)
+        ->get(route('production-batches.show', $batch))
+        ->assertSuccessful()
+        ->assertSee(__('batch_log.snapshot.ingredients_title'))
+        ->assertSee(__('formula_documents.scale.oil_quantity'))
+        ->assertDontSee('Frozen ingredient rows')
+        ->assertDontSee('Oil quantity');
+
+    $this->actingAs($user)
+        ->get(route('production-batches.print', $batch))
+        ->assertSuccessful()
+        ->assertSee(__('batch_log.costs.summary'))
+        ->assertDontSee('Cost summary');
+
+    expect(__('batch_log.record.title'))->not->toBe('Record production');
 });
 
 it('keeps existing production history visible when the plan production batch limit is reached', function (): void {

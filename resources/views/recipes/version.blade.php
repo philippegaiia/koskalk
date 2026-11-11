@@ -361,7 +361,11 @@
                 <article class="sk-card p-5">
                     <p class="sk-eyebrow">Production</p>
                     <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">Production</h2>
-                    <p class="mt-2 text-sm text-[var(--color-ink-soft)]">You can view this saved formula, but only the owner can record production batches for it.</p>
+                    @if ($canUpdateRecipe)
+                        <p class="mt-2 text-sm text-[var(--color-ink-soft)]">Your current plan does not include production batch records.</p>
+                    @else
+                        <p class="mt-2 text-sm text-[var(--color-ink-soft)]">You can view this saved formula, but only the owner can record production batches for it.</p>
+                    @endif
                 </article>
             @endif
         </section>

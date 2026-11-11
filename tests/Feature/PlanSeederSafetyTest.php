@@ -28,7 +28,7 @@ it('keeps an existing default plan when creating the legacy free beta plan', fun
             'media_assets' => 100,
             'media_labels' => 20,
             'private_ingredients' => 20,
-            'production_batches' => 0,
+            'production_batches' => 100,
             'saved_formula_history' => 0,
             'saved_recipes' => 15,
         ]);

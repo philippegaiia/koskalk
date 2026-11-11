@@ -174,7 +174,7 @@ it('preserves the beta baseline and inactive public offers in either seeder orde
             'media_assets' => 100,
             'media_labels' => 20,
             'private_ingredients' => 20,
-            'production_batches' => 0,
+            'production_batches' => 100,
             'saved_formula_history' => 0,
             'saved_recipes' => 15,
         ])

@@ -565,6 +565,26 @@ it('hides production recording controls when the plan production batch limit is 
         ->assertDontSee('Production batch number');
 });
 
+it('tells the owner their plan does not include production batches instead of blaming ownership', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    $plan = Plan::factory()
+        ->hasLimit('production_batches', 0)
+        ->create(['is_default' => true]);
+
+    $user->entitlements()->create([
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now(),
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', $recipe))
+        ->assertSuccessful()
+        ->assertSee('Your current plan does not include production batch records.')
+        ->assertDontSee('only the owner can record production batches');
+});
+
 it('keeps existing production history visible when the plan production batch limit is reached', function (): void {
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
     productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);

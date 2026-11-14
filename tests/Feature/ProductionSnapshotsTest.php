@@ -521,6 +521,48 @@ it('records a soap production snapshot and freezes current prices', function ():
         ->and($recordedBatch->packagingItems->first()->line_cost)->toBe('3.0000');
 });
 
+it('recalculates production costs on the formula sheet before recording', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    rememberIngredientPriceForWorkspace($user, $ingredient, '8.5');
+    $packagingItem = createPackagingItemForWorkspace([
+        'user_id' => $user->id,
+        'name' => 'Soap box',
+        'unit_cost' => 0.25,
+        'currency' => 'EUR',
+    ]);
+    $version->packagingItems()->create([
+        'packaging_item_id' => $packagingItem->id,
+        'name' => $packagingItem->name,
+        'components_per_unit' => 2,
+        'position' => 1,
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', ['recipe' => $recipe, 'oil_weight' => 1500, 'units_produced' => 12]))
+        ->assertOk()
+        ->assertSee('12.75 EUR')
+        ->assertSee('6 EUR')
+        ->assertSee('18.75 EUR')
+        ->assertSee('1.56 EUR')
+        ->assertSee('name="batch_basis" value="1500"', false);
+
+    $this->assertDatabaseCount('production_batches', 0);
+    $this->assertDatabaseCount('recipe_version_costings', 0);
+
+    $this->post(route('recipes.production-batches.store', $recipe), [
+        'recipe_version_id' => $version->id,
+        'manufacture_date' => '2026-06-10',
+        'batch_basis' => 1500,
+        'units_produced' => 12,
+    ])->assertSessionHas('status', __('batch_log.status.recorded'));
+
+    $batch = ProductionBatch::query()->sole();
+    expect($batch->ingredient_total)->toBe('12.7500')
+        ->and($batch->packaging_total)->toBe('6.0000')
+        ->and($batch->total_cost)->toBe('18.7500')
+        ->and($batch->cost_per_unit)->toBe('1.5625');
+});
+
 it('blocks recording a production snapshot when the plan production batch limit is reached', function (): void {
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
     productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
@@ -864,6 +906,57 @@ it('does not allow another user to view a production snapshot', function (): voi
     $this->actingAs(User::factory()->create())
         ->get(route('production-batches.show', $batch))
         ->assertForbidden();
+});
+
+it('searches older production history by its recorded product name or batch number', function (string $search): void {
+    [$user, $recipe, $version] = productionSnapshotSoapRecipe();
+    $batches = ProductionBatch::factory()->for($user)->for($recipe)->for($version, 'recipeVersion');
+    $olderBatch = $batches->create([
+        'workspace_id' => $recipe->workspace_id,
+        'recipe_name' => 'Original Castile',
+        'production_batch_number' => 'TRIAL-101',
+        'manufacture_date' => '2026-06-01',
+    ]);
+    $batches->count(8)->create([
+        'workspace_id' => $recipe->workspace_id,
+        'recipe_name' => 'Renamed Soap',
+        'manufacture_date' => '2026-06-12',
+    ]);
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', ['recipe' => $recipe, 'batch_search' => $search]))
+        ->assertOk()
+        ->assertSee('Original Castile')
+        ->assertSee('TRIAL-101')
+        ->assertSee(route('production-batches.show', $olderBatch), false)
+        ->assertDontSee('Renamed Soap');
+})->with(['product name' => 'castile', 'batch number' => 'trial-101']);
+
+it('lets a workspace editor delete their own mistaken batch and retry', function (): void {
+    [$owner, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    productionSnapshotAttachCosting($owner, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    UserEntitlement::factory()->create(['user_id' => $owner->id, 'plan_id' => $plan->id]);
+    $editor = User::factory()->create(['active_workspace_id' => $recipe->workspace_id]);
+    WorkspaceMember::factory()->create(['user_id' => $editor->id, 'workspace_id' => $recipe->workspace_id, 'role' => WorkspaceMemberRole::Editor]);
+    $input = ['manufacture_date' => '2026-09-27', 'batch_basis' => 1000, 'units_produced' => 10];
+    $service = app(ProductionSnapshotService::class);
+    $ownBatch = $service->record($recipe, $version, $editor, $input);
+    $otherBatch = $service->record($recipe, $version, $owner, $input);
+
+    $this->actingAs($editor)
+        ->get(route('recipes.saved', $recipe))
+        ->assertOk()
+        ->assertSee('action="'.route('production-batches.destroy', $ownBatch).'"', false)
+        ->assertDontSee('action="'.route('production-batches.destroy', $otherBatch).'"', false);
+
+    $this->delete(route('production-batches.destroy', $otherBatch))->assertForbidden();
+    $this->delete(route('production-batches.destroy', $ownBatch))->assertRedirect(route('recipes.saved', $recipe));
+    $this->assertModelMissing($ownBatch);
+    $this->assertModelExists($otherBatch);
+
+    $this->post(route('recipes.production-batches.store', $recipe), [...$input, 'recipe_version_id' => $version->id])
+        ->assertSessionHas('status', __('batch_log.status.recorded'));
 });
 
 it('allows the owner to delete a production snapshot and its rows', function (): void {

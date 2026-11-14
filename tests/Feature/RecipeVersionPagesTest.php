@@ -1164,6 +1164,7 @@ it('prefills production units and priced packaging cost on the saved formula pag
         ->assertSuccessful()
         ->assertSee('value="10"', false)
         ->assertSee('0.6 EUR')
+        ->assertSee(__('ingredients.alkalis.validation.canonical_missing', ['key' => 'CH1']))
         ->assertSee('name="batch_basis" value="1000"', false)
         ->assertDontSee('inputmode="decimal"', false);
 });

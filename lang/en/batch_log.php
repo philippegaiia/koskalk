@@ -42,6 +42,8 @@ return [
         'eyebrow' => 'History',
         'title' => 'Production history',
         'empty' => 'No production batches recorded yet.',
+        'no_matches' => 'No production batches match your search.',
+        'search' => 'Search by product name or batch number',
         'summary' => ':quantity · :units units · :cost/unit',
     ],
     'access' => [

@@ -8,18 +8,17 @@ use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
-use App\Models\RecipeVersionCosting;
 use App\Models\User;
 use App\Services\CurrentAppUserResolver;
 use App\Services\EntitlementService;
 use App\Services\FormulaDocumentOptions;
 use App\Services\MediaStorage;
 use App\Services\ProductCreationCatalog;
+use App\Services\ProductionSnapshotService;
 use App\Services\RecipeControlMutationGuard;
 use App\Services\RecipeCsvExporter;
 use App\Services\RecipeEditingService;
 use App\Services\RecipeExportDataBuilder;
-use App\Services\RecipeVersionCostPreviewBuilder;
 use App\Services\RecipeVersionDeletionService;
 use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
@@ -144,7 +143,7 @@ class RecipeController extends Controller
         CurrentAppUserResolver $currentAppUserResolver,
         EntitlementService $entitlementService,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
-        RecipeVersionCostPreviewBuilder $recipeVersionCostPreviewBuilder,
+        ProductionSnapshotService $productionSnapshotService,
     ): View {
         $user = $currentAppUserResolver->resolve();
         [$recipe, $currentFormula] = $this->accessibleCurrentVersion($recipe, $currentAppUserResolver);
@@ -156,7 +155,7 @@ class RecipeController extends Controller
             $user,
             $entitlementService,
             $recipeVersionViewDataBuilder,
-            $recipeVersionCostPreviewBuilder,
+            $productionSnapshotService,
             false,
         );
     }
@@ -168,7 +167,7 @@ class RecipeController extends Controller
         ?User $user,
         EntitlementService $entitlementService,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
-        RecipeVersionCostPreviewBuilder $recipeVersionCostPreviewBuilder,
+        ProductionSnapshotService $productionSnapshotService,
         bool $isHistorical,
     ): View {
         $viewData = $recipeVersionViewDataBuilder->build($recipe, $version, $request->query('oil_weight'), $request->query());
@@ -177,7 +176,9 @@ class RecipeController extends Controller
         $canRecordProduction = $canUpdateRecipe
             && $entitlementService->canCreateProductionBatch($user);
 
-        $productionBatches = collect();
+        $batchSearch = $request->query('batch_search');
+        $batchSearch = is_string($batchSearch) ? Str::limit(trim($batchSearch), 120, '') : '';
+        $productionBatches = null;
         if ($user !== null && $user->can('view', $recipe)) {
             $productionBatches = $recipe->productionBatches()
                 ->where(function (Builder $query) use ($recipe, $user): void {
@@ -193,10 +194,18 @@ class RecipeController extends Controller
                             ->where('user_id', $user->id);
                     });
                 })
-                ->limit(8)
-                ->get()
+                ->when($batchSearch !== '', fn (Builder $query): Builder => $query->where(
+                    fn (Builder $matches): Builder => $matches
+                        ->whereLike('recipe_name', "%{$batchSearch}%")
+                        ->orWhereLike('production_batch_number', "%{$batchSearch}%"),
+                ))
+                ->simplePaginate(8, pageName: 'batch_page')
+                ->withQueryString()
+                ->fragment('production-history');
+
+            $productionBatches->setCollection($productionBatches->getCollection()
                 ->filter(fn ($productionBatch): bool => $user->can('view', $productionBatch))
-                ->values();
+                ->values());
         }
 
         return view('recipes.version', [
@@ -209,10 +218,11 @@ class RecipeController extends Controller
             'canRestoreVersion' => $canUpdateRecipe,
             'canDuplicateRecipe' => $canDuplicateRecipe,
             'canRecordProduction' => $canRecordProduction,
-            'productionPreview' => $user !== null
-                ? $this->productionPreview($recipe, $version, $user, $viewData, $recipeVersionCostPreviewBuilder)
+            'productionPreview' => $canRecordProduction
+                ? $this->productionPreview($recipe, $version, $user, $request, $viewData, $productionSnapshotService)
                 : null,
             'productionBatches' => $productionBatches,
+            'batchSearch' => $batchSearch,
         ]);
     }
 
@@ -380,7 +390,7 @@ class RecipeController extends Controller
         CurrentAppUserResolver $currentAppUserResolver,
         EntitlementService $entitlementService,
         RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
-        RecipeVersionCostPreviewBuilder $recipeVersionCostPreviewBuilder,
+        ProductionSnapshotService $productionSnapshotService,
     ): View {
         $user = $currentAppUserResolver->resolve();
         [$recipe, $version] = $this->accessibleBackupVersion($recipe, $version, $currentAppUserResolver);
@@ -392,7 +402,7 @@ class RecipeController extends Controller
             $user,
             $entitlementService,
             $recipeVersionViewDataBuilder,
-            $recipeVersionCostPreviewBuilder,
+            $productionSnapshotService,
             true,
         );
     }
@@ -980,86 +990,30 @@ class RecipeController extends Controller
         Recipe $recipe,
         RecipeVersion $version,
         User $user,
+        Request $request,
         array $viewData,
-        RecipeVersionCostPreviewBuilder $recipeVersionCostPreviewBuilder,
+        ProductionSnapshotService $productionSnapshotService,
     ): array {
-        $batchContext = is_array($viewData['batchContext'] ?? null) ? $viewData['batchContext'] : [];
-        $basisValue = $this->positiveFloat($batchContext['batch_basis'] ?? null)
-            ?? $this->positiveFloat($viewData['selectedOilWeight'] ?? null)
-            ?? 0.0;
-        $requestedUnitsProduced = $this->positiveInt($batchContext['units_produced'] ?? null);
-        $basisLabel = $this->productionBatchBasisLabel($recipe);
-        $basisUnit = $version->batch_unit ?: 'g';
-        $existingCosting = RecipeVersionCosting::query()
-            ->with(['items.ingredient', 'packagingItems.packagingItem'])
-            ->where('recipe_version_id', $version->id)
-            ->first();
+        $savedCosting = $viewData['costingProjection'] ?? [];
+        $basis = $viewData['batchContext']['batch_basis'];
+        $basis = is_numeric($basis) && (float) $basis > 0 ? (float) $basis : $viewData['selectedOilWeight'];
+        $units = $request->old('units_produced', $request->query('units_produced', $savedCosting['units_produced'] ?? null));
+        $units = filter_var($units, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: null;
 
-        $unitsProduced = $requestedUnitsProduced
-            ?? ($existingCosting instanceof RecipeVersionCosting ? $this->positiveInt($existingCosting->units_produced) : null);
-
-        $batchBasis = [
-            'batch_basis_label' => $basisLabel,
-            'batch_basis_value' => $basisValue,
-            'batch_basis_unit' => $basisUnit,
-            'units_produced' => $unitsProduced,
-        ];
-
-        if ($existingCosting instanceof RecipeVersionCosting) {
+        try {
+            return $productionSnapshotService->preview($recipe, $version, $user, [
+                'batch_basis' => $basis,
+                'units_produced' => $units,
+            ]);
+        } catch (ValidationException $exception) {
             return [
-                ...$recipeVersionCostPreviewBuilder->buildFromCosting(
-                    recipe: $recipe,
-                    version: $version,
-                    costing: $existingCosting,
-                    batchBasisValue: $basisValue,
-                    unitsProduced: $unitsProduced,
-                    batchBasisUnit: $basisUnit,
-                ),
-                ...$batchBasis,
+                ...$savedCosting,
+                'batch_basis_value' => $basis,
+                'batch_basis_unit' => $version->batch_unit ?: 'g',
+                'units_produced' => $units,
+                'has_unpriced_rows' => true,
+                'calculation_error' => $exception->getMessage(),
             ];
         }
-
-        return [
-            'currency' => $user->defaultCurrency(),
-            'ingredient_rows' => [],
-            'packaging_rows' => [],
-            'ingredient_total' => 0.0,
-            'packaging_total' => 0.0,
-            'total_cost' => 0.0,
-            'cost_per_unit' => null,
-            'has_unpriced_rows' => true,
-            ...$batchBasis,
-        ];
-    }
-
-    private function productionBatchBasisLabel(Recipe $recipe): string
-    {
-        $recipe->loadMissing('productFamily');
-
-        return $recipe->productFamily?->calculation_basis === 'total_formula'
-            ? 'Total batch quantity'
-            : 'Oil quantity';
-    }
-
-    private function positiveFloat(mixed $value): ?float
-    {
-        if (! is_numeric($value)) {
-            return null;
-        }
-
-        $normalized = (float) $value;
-
-        return $normalized > 0 ? $normalized : null;
-    }
-
-    private function positiveInt(mixed $value): ?int
-    {
-        if (! is_numeric($value)) {
-            return null;
-        }
-
-        $normalized = (int) $value;
-
-        return $normalized > 0 ? $normalized : null;
     }
 }

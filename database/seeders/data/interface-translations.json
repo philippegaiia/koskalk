@@ -1416,6 +1416,30 @@
     },
     {
       "group": "batch_log",
+      "key": "history.no_matches",
+      "text": {
+        "de": "Keine Produktionschargen entsprechen Ihrer Suche.",
+        "es": "Ningún lote de producción coincide con la búsqueda.",
+        "fr": "Aucun lot de production ne correspond à votre recherche.",
+        "it": "Nessun lotto di produzione corrisponde alla ricerca.",
+        "nl": "Geen productiebatches komen overeen met je zoekopdracht.",
+        "pt_BR": "Nenhum lote de produção corresponde à sua busca."
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "history.search",
+      "text": {
+        "de": "Nach Produktname oder Chargennummer suchen",
+        "es": "Buscar por nombre de producto o número de lote",
+        "fr": "Rechercher par nom de produit ou numéro de lot",
+        "it": "Cerca per nome del prodotto o numero di lotto",
+        "nl": "Zoeken op productnaam of batchnummer",
+        "pt_BR": "Buscar pelo nome do produto ou número do lote"
+      }
+    },
+    {
+      "group": "batch_log",
       "key": "history.summary",
       "text": {
         "de": ":quantity · :units Einheiten · :cost/Einheit",

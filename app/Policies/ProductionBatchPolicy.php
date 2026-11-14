@@ -39,6 +39,7 @@ class ProductionBatchPolicy
     {
         return $productionBatch->workspace_id !== null
             ? $this->authorization->canManage($user, $productionBatch->workspace_id)
+                || ($productionBatch->user_id === $user->id && $this->authorization->canEdit($user, $productionBatch->workspace_id))
             : $productionBatch->user_id === $user->id;
     }
 

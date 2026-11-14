@@ -4,44 +4,54 @@
 @section('page_heading', __('formula_documents.title'))
 
 @section('content')
-    <div class="mx-auto max-w-app space-y-6">
+    @php
+        /** @var array<string, string>|null $currentReplaceConfirmation */
+        $currentReplaceConfirmation = session('currentReplaceConfirmation');
+        $printQuery = [
+            'recipe' => $recipe->public_id,
+            'oil_weight' => $selectedOilWeight,
+        ];
+
+        foreach (['batch_number', 'batch_basis', 'manufacture_date', 'units_produced'] as $batchQueryKey) {
+            if (filled($batchContext[$batchQueryKey] ?? null)) {
+                $printQuery[$batchQueryKey] = $batchContext[$batchQueryKey];
+            }
+        }
+
+        $canRecordProduction = (bool) ($canRecordProduction ?? false);
+        $canUpdateRecipe = (bool) ($canUpdateRecipe ?? false);
+        $canDuplicateRecipe = (bool) ($canDuplicateRecipe ?? false);
+        $canRestoreVersion = (bool) ($canRestoreVersion ?? false);
+        $isHistorical = (bool) ($isHistorical ?? false);
+        if ($isHistorical) {
+            $printQuery['version'] = $version->public_id;
+        }
+        $productionPreview = $productionPreview ?? null;
+        $productionBatches = $productionBatches ?? null;
+        $batchSearch = $batchSearch ?? '';
+        $otherSavedVersions = collect($recoverySnapshots ?? [])
+            ->reject(fn (array $savedVersion): bool => (bool) ($savedVersion['is_current'] ?? false));
+        $sheetRoute = $isHistorical
+            ? route('recipes.version', ['recipe' => $recipe, 'version' => $version])
+            : route('recipes.saved', ['recipe' => $recipe]);
+        $isCosmeticFormula = $recipe->productFamily?->calculation_basis === 'total_formula';
+        $formatNumber = fn (mixed $value, int $precision = 2): string => rtrim(rtrim(number_format((float) $value, $precision, '.', ''), '0'), '.');
+        $formatMoney = fn (mixed $value, string $currency): string => $formatNumber($value, 2).' '.$currency;
+        $initialUnitsProduced = old('units_produced', $productionPreview['units_produced'] ?? $batchContext['units_produced']);
+        $initialUnitsProduced = is_scalar($initialUnitsProduced) ? (string) $initialUnitsProduced : '';
+        $previewCurrency = $productionPreview['currency'] ?? 'EUR';
+        $productionCostPreview = [
+            'unitsProduced' => $initialUnitsProduced,
+            'ingredientCost' => $productionPreview['ingredient_total'] ?? 0,
+            'packagingCostPerUnit' => collect($productionPreview['packaging_rows'] ?? [])->sum('cost_per_finished_unit'),
+            'currency' => $previewCurrency,
+        ];
+    @endphp
+
+    <div class="mx-auto max-w-app space-y-6" x-data="productionCostPreview({{ Js::from($productionCostPreview) }})">
         @error('expected_revision')
             <p role="alert">{{ $message }}</p>
         @enderror
-        @php
-            /** @var array<string, string>|null $currentReplaceConfirmation */
-            $currentReplaceConfirmation = session('currentReplaceConfirmation');
-            $printQuery = [
-                'recipe' => $recipe->public_id,
-                'oil_weight' => $selectedOilWeight,
-            ];
-
-            foreach (['batch_number', 'batch_basis', 'manufacture_date', 'units_produced'] as $batchQueryKey) {
-                if (filled($batchContext[$batchQueryKey] ?? null)) {
-                    $printQuery[$batchQueryKey] = $batchContext[$batchQueryKey];
-                }
-            }
-
-            $canRecordProduction = (bool) ($canRecordProduction ?? false);
-            $canUpdateRecipe = (bool) ($canUpdateRecipe ?? false);
-            $canDuplicateRecipe = (bool) ($canDuplicateRecipe ?? false);
-            $canRestoreVersion = (bool) ($canRestoreVersion ?? false);
-            $isHistorical = (bool) ($isHistorical ?? false);
-            if ($isHistorical) {
-                $printQuery['version'] = $version->public_id;
-            }
-            $productionPreview = $productionPreview ?? null;
-            $productionBatches = $productionBatches ?? collect();
-            $otherSavedVersions = collect($recoverySnapshots ?? [])
-                ->reject(fn (array $savedVersion): bool => (bool) ($savedVersion['is_current'] ?? false));
-            $sheetRoute = $isHistorical
-                ? route('recipes.version', ['recipe' => $recipe, 'version' => $version])
-                : route('recipes.saved', ['recipe' => $recipe]);
-            $isCosmeticFormula = $recipe->productFamily?->calculation_basis === 'total_formula';
-            $formatNumber = fn (mixed $value, int $precision = 2): string => rtrim(rtrim(number_format((float) $value, $precision, '.', ''), '0'), '.');
-            $formatMoney = fn (mixed $value, string $currency): string => $formatNumber($value, 2).' '.$currency;
-
-        @endphp
 
         @if ($canUpdateRecipe && is_array($currentReplaceConfirmation))
             <section class="rounded-xl border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)]/35 p-5">
@@ -130,6 +140,15 @@
                 </div>
 
                 <form method="GET" action="{{ $sheetRoute }}" class="sk-inset p-4 lg:min-w-[16rem]">
+                    @foreach (collect($printQuery)->only(['batch_number', 'manufacture_date']) as $key => $value)
+                        <input type="hidden" name="{{ $key }}" value="{{ $value }}" />
+                    @endforeach
+                    @if ($canRecordProduction || filled($initialUnitsProduced))
+                        <input type="hidden" name="units_produced" value="{{ $initialUnitsProduced }}" x-bind:value="unitsProduced" />
+                    @endif
+                    @if ($batchSearch !== '')
+                        <input type="hidden" name="batch_search" value="{{ $batchSearch }}" />
+                    @endif
                     <p class="sk-eyebrow">{{ __('formula_documents.scale.title') }}</p>
                     <label class="mt-2 block text-sm font-medium text-[var(--color-ink-strong)]" for="oil_weight">{{ $isCosmeticFormula ? __('formula_documents.scale.total_batch_quantity') : __('formula_documents.scale.oil_quantity') }}</label>
                     <div class="mt-2 flex items-center gap-2">
@@ -204,7 +223,7 @@
 
                     @if ($productionPreview['has_unpriced_rows'] ?? false)
                         <p class="mt-3 rounded-lg border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)]/35 px-3 py-2 text-sm font-medium text-[var(--color-warning-strong)]">
-                            {{ __('batch_log.record.unpriced') }}
+                            {{ $productionPreview['calculation_error'] ?? __('batch_log.record.unpriced') }}
                         </p>
                     @endif
 
@@ -238,7 +257,7 @@
 
                         <label class="block">
                             <span class="text-sm font-medium text-[var(--color-ink-strong)]">{{ __('batch_log.fields.units_produced') }}</span>
-                            <input name="units_produced" value="{{ old('units_produced', $productionPreview['units_produced'] ?? $batchContext['units_produced']) }}" type="text" inputmode="numeric" class="numeric mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+                            <input name="units_produced" value="{{ $initialUnitsProduced }}" x-model="unitsProduced" type="text" inputmode="numeric" class="numeric mt-2 w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
                             @error('units_produced')
                                 <span class="mt-1 block text-xs font-medium text-[var(--color-danger-strong)]">{{ $message }}</span>
                             @enderror
@@ -276,14 +295,14 @@
                     </label>
 
                     <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
-                        <dl class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-4">
+                        <dl aria-live="polite" class="grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-4">
                             <div>
                                 <dt class="text-xs text-[var(--color-ink-soft)]">{{ __('batch_log.costs.ingredient') }}</dt>
                                 <dd class="numeric font-semibold text-[var(--color-ink-strong)]">{{ $formatMoney($productionPreview['ingredient_total'] ?? 0, $productionPreview['currency'] ?? 'EUR') }}</dd>
                             </div>
                             <div>
                                 <dt class="text-xs text-[var(--color-ink-soft)]">{{ __('batch_log.costs.packaging') }}</dt>
-                                <dd class="numeric font-semibold text-[var(--color-ink-strong)]">
+                                <dd x-text="unitCount === null ? {{ Js::from(__('batch_log.costs.set_units')) }} : money(packagingCost)" class="numeric font-semibold text-[var(--color-ink-strong)]">
                                     @if (($productionPreview['units_produced'] ?? null) !== null)
                                         {{ $formatMoney($productionPreview['packaging_total'] ?? 0, $productionPreview['currency'] ?? 'EUR') }}
                                     @else
@@ -293,11 +312,11 @@
                             </div>
                             <div>
                                 <dt class="text-xs text-[var(--color-ink-soft)]">{{ __('batch_log.costs.total') }}</dt>
-                                <dd class="numeric font-semibold text-[var(--color-ink-strong)]">{{ $formatMoney($productionPreview['total_cost'] ?? 0, $productionPreview['currency'] ?? 'EUR') }}</dd>
+                                <dd x-text="money(totalCost)" class="numeric font-semibold text-[var(--color-ink-strong)]">{{ $formatMoney($productionPreview['total_cost'] ?? 0, $previewCurrency) }}</dd>
                             </div>
                             <div>
                                 <dt class="text-xs text-[var(--color-ink-soft)]">{{ __('batch_log.costs.per_finished_unit') }}</dt>
-                                <dd class="numeric font-semibold text-[var(--color-ink-strong)]">
+                                <dd x-text="costPerUnit === null ? {{ Js::from(__('batch_log.costs.not_set')) }} : money(costPerUnit)" class="numeric font-semibold text-[var(--color-ink-strong)]">
                                     @if (($productionPreview['cost_per_unit'] ?? null) !== null)
                                         {{ $formatMoney($productionPreview['cost_per_unit'], $productionPreview['currency'] ?? 'EUR') }}
                                     @else
@@ -313,19 +332,33 @@
                 </form>
             @endif
 
-            @if ($productionBatches->isNotEmpty() || $canRecordProduction)
-                <article class="sk-card flex flex-col">
+            @if ($productionBatches?->isNotEmpty() || $productionBatches?->hasPages() || $batchSearch !== '' || $canRecordProduction)
+                <article id="production-history" class="sk-card flex flex-col">
                     <div class="border-b border-[var(--color-line)] px-5 py-4">
                         <p class="sk-eyebrow">{{ __('batch_log.history.eyebrow') }}</p>
                         <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('batch_log.history.title') }}</h2>
+                        <form method="GET" action="{{ $sheetRoute }}#production-history" class="mt-3 flex flex-wrap items-center gap-2">
+                            @foreach (collect($printQuery)->except(['recipe', 'version', 'units_produced']) as $key => $value)
+                                <input type="hidden" name="{{ $key }}" value="{{ $value }}" />
+                            @endforeach
+                            @if ($canRecordProduction || filled($initialUnitsProduced))
+                                <input type="hidden" name="units_produced" value="{{ $initialUnitsProduced }}" x-bind:value="unitsProduced" />
+                            @endif
+                            <label for="batch_search" class="sr-only">{{ __('batch_log.history.search') }}</label>
+                            <input id="batch_search" name="batch_search" type="search" value="{{ $batchSearch }}" maxlength="120" placeholder="{{ __('batch_log.history.search') }}" class="min-h-11 min-w-0 flex-1 rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] focus:outline-2 focus:outline-[var(--color-accent)]" />
+                            <button type="submit" class="sk-btn sk-btn-outline min-h-11">{{ __('products.filters.search.label') }}</button>
+                        </form>
                     </div>
 
-                    @if ($productionBatches->isNotEmpty())
+                    @if ($productionBatches?->isNotEmpty())
                         <div class="divide-y divide-[var(--color-line)]">
                             @foreach ($productionBatches as $productionBatch)
                                 <div class="flex flex-col gap-2 px-5 py-3 lg:flex-row lg:items-center lg:justify-between">
                                     <div class="min-w-0">
                                         <p class="text-sm font-medium text-[var(--color-ink-strong)]">
+                                            {{ $productionBatch->recipe_name }}
+                                        </p>
+                                        <p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">
                                             <span class="numeric">{{ $productionBatch->manufacture_date?->format('Y-m-d') }}</span>
                                             <span class="text-[var(--color-ink-soft)]"> · </span>
                                             {{ $productionBatch->production_batch_number ?: __('batch_log.snapshot.no_batch_number') }}
@@ -353,8 +386,19 @@
                         </div>
                     @else
                         <div class="px-5 py-8 text-center text-sm text-[var(--color-ink-soft)]">
-                            {{ __('batch_log.history.empty') }}
+                            {{ __($batchSearch === '' ? 'batch_log.history.empty' : 'batch_log.history.no_matches') }}
                         </div>
+                    @endif
+
+                    @if ($productionBatches?->hasPages())
+                        <nav class="flex justify-between gap-2 border-t border-[var(--color-line)] px-5 py-3" aria-label="{{ __('table.pagination.label') }}">
+                            @if ($productionBatches->previousPageUrl())
+                                <a href="{{ $productionBatches->previousPageUrl() }}" rel="prev" class="sk-btn sk-btn-outline min-h-11">{{ __('table.pagination.previous') }}</a>
+                            @endif
+                            @if ($productionBatches->nextPageUrl())
+                                <a href="{{ $productionBatches->nextPageUrl() }}" rel="next" class="sk-btn sk-btn-outline ms-auto min-h-11">{{ __('table.pagination.next') }}</a>
+                            @endif
+                        </nav>
                     @endif
                 </article>
             @else

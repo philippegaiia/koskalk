@@ -12,6 +12,7 @@
         "laravel-lang/common": "^6.8",
         "laravel/cashier-paddle": "^2.8",
         "laravel/framework": "^13.0",
+        "laravel/nightwatch": "^1.30",
         "laravel/tinker": "^3.0",
         "league/flysystem-aws-s3-v3": "^3.0",
         "spatie/laravel-medialibrary": "^11.23",

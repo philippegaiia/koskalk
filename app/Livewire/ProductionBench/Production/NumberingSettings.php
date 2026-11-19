@@ -3,12 +3,14 @@
 namespace App\Livewire\ProductionBench\Production;
 
 use App\Actions\Production\SaveProductionRunNumberSettings;
+use App\Enums\PackedLotSuffix;
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\ProductionRunNumberSetting;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\ContextualHelp\ProductionHelpTopics;
 use App\Services\Production\ProductionRunNumberService;
 use App\Services\ProductionBenchAccess;
 use Illuminate\Contracts\View\View;
@@ -29,6 +31,8 @@ class NumberingSettings extends Component
     public string $permanentPadding = '';
 
     public string $permanentSuffix = '';
+
+    public string $packedLotSuffix = 'letter';
 
     public string $nextPlanningSerial = '';
 
@@ -84,6 +88,7 @@ class NumberingSettings extends Component
                 suffix: $this->permanentSuffix,
                 padding: $this->permanentPadding,
                 nextPermanentSerial: $this->nextPermanentSerial,
+                packedLotSuffix: $this->packedLotSuffix,
             );
         } catch (ValidationException $exception) {
             $this->surfaceErrors($exception);
@@ -95,7 +100,7 @@ class NumberingSettings extends Component
         $this->showAppNotification(__('production_bench.settings.numbering_saved'));
     }
 
-    public function render(ProductionBenchAccess $access): View
+    public function render(ProductionBenchAccess $access, ProductionHelpTopics $helpTopics): View
     {
         $workspace = $this->workspace();
         $canConfigure = $access->canConfigure($this->user(), $workspace);
@@ -110,7 +115,13 @@ class NumberingSettings extends Component
         };
 
         return view('livewire.production-bench.production.numbering-settings', [
+            'contextualHelp' => $helpTopics->resolve('numbering', app()->getLocale()),
             'isEditable' => $canConfigure && $isBenchActive && ! $isReadOnly,
+            'packedLotExamples' => [
+                PackedLotSuffix::Letter->value => $this->example.'-A',
+                PackedLotSuffix::Content->value => $this->example.'-100ML',
+                PackedLotSuffix::Sku->value => $this->example.'-SOAP100',
+            ],
             'accessMessage' => $accessMessage,
         ]);
     }
@@ -121,8 +132,9 @@ class NumberingSettings extends Component
         $this->nextPermanentSerial = (string) $settings->next_permanent_serial;
         $this->permanentPadding = (string) $settings->permanent_padding;
         $this->permanentSuffix = $settings->permanent_suffix;
+        $this->packedLotSuffix = $settings->packed_lot_suffix->value;
         $this->nextPlanningSerial = (string) $settings->next_planning_serial;
-        $this->savedSettings = $this->only(['permanentPrefix', 'nextPermanentSerial', 'permanentPadding', 'permanentSuffix']);
+        $this->savedSettings = $this->only(['permanentPrefix', 'nextPermanentSerial', 'permanentPadding', 'permanentSuffix', 'packedLotSuffix']);
         $this->refreshExample($numbers);
     }
 
@@ -148,6 +160,7 @@ class NumberingSettings extends Component
                 'permanent_prefix' => 'permanentPrefix',
                 'permanent_suffix' => 'permanentSuffix',
                 'permanent_padding' => 'permanentPadding',
+                'packed_lot_suffix' => 'packedLotSuffix',
                 'next_permanent_serial', 'batch_number', 'production_bench' => 'nextPermanentSerial',
                 default => $field,
             };

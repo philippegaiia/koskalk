@@ -5,8 +5,8 @@ paths:
 
 # Models Services
 
-## One production batch produces one Product
-A finished production output is the current Product: one production batch produces one Product. Alternate sizes are separate Products created by duplication, and packaging remains Product-level. Do not introduce Product variants or split production outputs without revisiting this decision.
+## One Product, many Product sizes
+A Product owns one formula and any number of Product sizes (ProductSize). A size is a maker-declared content plus its own packaging lines; it never changes formula composition, INCI or compliance output. Do not duplicate a Product to offer another size; duplicate only for a different formula or brand. Packaging lines stay on the formula version (saved and carried forward with it) and point at a size. Declared content is the maker's own figure: never derive unit counts from it or validate it against batch mass. A basic batch record and a production run still record one size and one unit count; do not split a run across sizes without a deliberate multi-output design (one output lot per run is enforced in the schema).
 
 ## Separate finished-product type from calculation family
 Product Type is a finished-product classification; Product Family selects the calculation engine. A Product Type may support multiple families. Product Family is immutable after Product creation, and Product Type becomes immutable after the first Saved Formula.

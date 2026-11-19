@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\MassUnit;
+use App\Models\ProductSize;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
@@ -9,11 +11,14 @@ use App\Models\RecipeVersionPackagingItem;
 use App\Models\RegulatoryRegime;
 use App\Models\User;
 use App\SoapSap;
+use App\Support\NumberLocale;
 use Filament\Forms\Components\RichEditor\RichContentAttribute;
 use Filament\Forms\Components\RichEditor\RichContentRenderer;
 
 class RecipeVersionViewDataBuilder
 {
+    private const string MaximumScaleGrams = '1000000';
+
     public function __construct(
         private readonly RecipeWorkbenchService $recipeWorkbenchService,
         private readonly RecipeVersionCostPreviewBuilder $costPreviewBuilder,
@@ -21,6 +26,9 @@ class RecipeVersionViewDataBuilder
         private readonly FormulaDocumentBuilder $formulaDocumentBuilder,
         private readonly RecipeCompositionExportDataBuilder $compositionExportDataBuilder,
         private readonly RecipeRichContentAttachmentProvider $recipeRichContentAttachmentProvider,
+        private readonly ProductSizeResolver $productSizeResolver,
+        private readonly RecipeVersionCostingSynchronizer $costingSynchronizer,
+        private readonly RecipeWorkbenchVersionDataService $versionData,
     ) {}
 
     /**
@@ -34,18 +42,27 @@ class RecipeVersionViewDataBuilder
      *     contextRows: array<int, array<string, scalar|null>>,
      *     lyeRows: array<int, array<string, scalar|null>>,
      *     recoverySnapshots: array<int, array<string, mixed>>,
-     *     selectedOilWeight: float
+     *     selectedOilWeight: float,
+     *     maximumScaleQuantity: string
      * }
      */
     public function build(Recipe $recipe, RecipeVersion $version, mixed $requestedOilWeight = null, array $batchContext = []): array
     {
-        $snapshot = $this->recipeWorkbenchService->versionSnapshot($recipe, $version->id);
+        abort_unless((int) $version->recipe_id === (int) $recipe->id, 404);
+        $version->setRelation('recipe', $recipe);
+        $savedSnapshot = $this->versionData->snapshotFromVersion($version);
+        $version->packagingItems->loadMissing('packagingItem.currentPrice');
+        $snapshot = $savedSnapshot;
 
-        abort_if($snapshot === null, 404);
-
+        $displayUnit = MassUnit::fromInput($snapshot['draft']['oilUnit'] ?? 'g');
+        $scaleLimit = bcdiv(self::MaximumScaleGrams, $displayUnit->gramsPerUnit(), 9);
+        $maximumScaleQuantity = rtrim(rtrim(bcadd($scaleLimit, '0', 2), '0'), '.');
         $selectedOilWeight = $this->requestedOilWeight(
             $requestedOilWeight,
             $snapshot['draft']['oilWeight'] ?? $version->batch_size,
+            $displayUnit,
+            (float) $scaleLimit,
+            $maximumScaleQuantity,
         );
 
         if (abs($selectedOilWeight - (float) ($snapshot['draft']['oilWeight'] ?? 0)) > 0.0001) {
@@ -56,9 +73,14 @@ class RecipeVersionViewDataBuilder
 
         $isCosmetic = $recipe->productFamily?->calculation_basis === 'total_formula';
         $normalizedBatchContext = $this->batchContext($batchContext, $selectedOilWeight);
+        $costingSizes = $this->productSizeResolver->forVersion($version, costing: true);
+        $defaultCostingSize = $costingSizes->first();
+        $requestedSize = $batchContext['product_size'] ?? null;
+        $costingSize = (is_string($requestedSize) ? $costingSizes->firstWhere('public_id', $requestedSize) : null)
+            ?? $defaultCostingSize;
 
         $phaseSections = $this->phaseSections($snapshot['draft'], $isCosmetic);
-        $costingData = $this->costingData($recipe, $version, $selectedOilWeight, $normalizedBatchContext);
+        $costingData = $this->costingData($recipe, $version, $selectedOilWeight, $normalizedBatchContext, $costingSize, $defaultCostingSize, $savedSnapshot);
         $formulaDocument = $this->formulaDocumentBuilder->build($snapshot, [
             'name' => $recipe->name,
             'product_family' => $recipe->productFamily?->name,
@@ -98,8 +120,12 @@ class RecipeVersionViewDataBuilder
             'hasUnpricedRows' => $costingData['hasUnpricedRows'],
             'costingProjection' => $costingData['projection'],
             'costingExportData' => $costingExportData,
+            'costingSizes' => $costingSizes,
+            'costingSize' => $costingSize,
+            'productionUnits' => $costingData['productionUnits'] ?? null,
             'batchContext' => $normalizedBatchContext,
             'selectedOilWeight' => $selectedOilWeight,
+            'maximumScaleQuantity' => $maximumScaleQuantity,
         ];
     }
 
@@ -123,9 +149,7 @@ class RecipeVersionViewDataBuilder
      */
     private function packagingPlanRows(RecipeVersion $version): array
     {
-        return $version->packagingItems()
-            ->with('packagingItem')
-            ->get()
+        return $version->packagingItems
             ->map(fn (RecipeVersionPackagingItem $item): array => [
                 'name' => $item->name,
                 'components_per_unit' => (float) $item->components_per_unit,
@@ -211,13 +235,28 @@ class RecipeVersionViewDataBuilder
         return rtrim(rtrim(sprintf('%.18F', $number), '0'), '.') ?: '0';
     }
 
-    private function requestedOilWeight(mixed $candidate, mixed $defaultWeight): float
-    {
+    private function requestedOilWeight(
+        mixed $candidate,
+        mixed $defaultWeight,
+        MassUnit $displayUnit,
+        float $scaleLimit,
+        string $maximumScaleQuantity,
+    ): float {
         if (! is_numeric($candidate)) {
             return round((float) $defaultWeight, 4);
         }
 
-        $normalized = round((float) $candidate, 4);
+        $quantity = (float) $candidate;
+        abort_if(
+            $quantity > $scaleLimit,
+            422,
+            __('validation.max.numeric', [
+                'attribute' => __('formula_documents.scale.title'),
+                'max' => $maximumScaleQuantity.' '.$displayUnit->value,
+            ]),
+        );
+
+        $normalized = round($quantity, 4);
 
         return $normalized > 0 ? $normalized : round((float) $defaultWeight, 4);
     }
@@ -533,7 +572,7 @@ class RecipeVersionViewDataBuilder
     }
 
     /**
-     * @param  array<string, mixed>  $draft
+     * @param  array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>, restrictions: array<string, mixed>}  $savedSnapshot
      * @return array{
      *     summary: array<int, array{label: string, value: string}>,
      *     ingredientRows: array<int, array<string, mixed>>,
@@ -543,8 +582,15 @@ class RecipeVersionViewDataBuilder
      *     hasUnpricedRows: bool
      * }
      */
-    private function costingData(Recipe $recipe, RecipeVersion $version, float $selectedOilWeight, array $batchContext): array
-    {
+    private function costingData(
+        Recipe $recipe,
+        RecipeVersion $version,
+        float $selectedOilWeight,
+        array $batchContext,
+        ?ProductSize $size,
+        ?ProductSize $defaultSize,
+        array $savedSnapshot,
+    ): array {
         $user = $recipe->ownerUser();
 
         if (! $user instanceof User) {
@@ -575,8 +621,10 @@ class RecipeVersionViewDataBuilder
             ];
         }
 
+        $yields = $this->costingSynchronizer->sizeYieldValues($existingCosting, $defaultSize);
+        $defaultUnits = $defaultSize === null ? $existingCosting->units_produced : ($yields[$defaultSize->public_id] ?? null);
         $unitsProduced = $this->positiveInt($batchContext['units_produced'] ?? null)
-            ?? $existingCosting->units_produced;
+            ?? ($size === null ? $defaultUnits : ($yields[$size->public_id] ?? null));
         $preview = $this->costPreviewBuilder->buildFromCosting(
             recipe: $recipe,
             version: $version,
@@ -586,7 +634,11 @@ class RecipeVersionViewDataBuilder
             includeDerivedRows: true,
             requireCompletePackagingTotal: true,
             batchBasisUnit: $version->batch_unit ?: 'g',
+            productSizeId: $size?->id,
+            includeUnsizedPackaging: $size?->id === $defaultSize?->id,
+            savedSnapshot: $savedSnapshot,
         );
+        $preview['product_size_label'] = $size?->label(auth()->user()?->number_locale);
 
         $ingredientRows = collect($preview['ingredient_rows'])
             ->map(fn (array $row): array => [
@@ -624,12 +676,13 @@ class RecipeVersionViewDataBuilder
             'hasCostingData' => $ingredientRows !== [] || $packagingRows !== [],
             'hasUnpricedRows' => $preview['has_unpriced_rows'],
             'projection' => $preview,
+            'productionUnits' => $defaultUnits,
         ];
     }
 
     private function money(float $value, string $currency): string
     {
-        return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.').' '.$currency;
+        return NumberLocale::formatAdaptiveDecimal($value, 0, 2, auth()->user()?->number_locale).' '.$currency;
     }
 
     private function positiveFloat(mixed $value): ?float

@@ -268,7 +268,7 @@ it('keeps inventory mutation controls hidden from active viewers', function (): 
         ->and(StockLot::query()->count())->toBe(1);
 });
 
-it('offers two inventory sections for material positions and lot stock', function (): void {
+it('offers inventory sections for material positions, finished products and lot stock', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();
     app(ProductionBenchAccess::class)->activate($user, $workspace);
@@ -280,6 +280,7 @@ it('offers two inventory sections for material positions and lot stock', functio
         ->assertDontSee('Opening stock')
         ->assertSee('Add stock manually')
         ->assertSee('Physical')
+        ->assertSee('Finished products')
         ->assertSee('Stock by material');
 
     $this->get(route('production-bench.inventory'))
@@ -296,8 +297,6 @@ it('gives each inventory page a translated browser title of its own', function (
     $workspace = Workspace::factory()->for($user, 'owner')->create();
     app(ProductionBenchAccess::class)->activate($user, $workspace);
 
-    // Both pages share one Livewire component, so the browser title is the only
-    // thing that tells them apart in history and in a tab strip.
     $this->actingAs($user)
         ->get(route('production-bench.inventory'))
         ->assertOk()
@@ -306,6 +305,11 @@ it('gives each inventory page a translated browser title of its own', function (
     $this->get(route('production-bench.inventory.stock'))
         ->assertOk()
         ->assertSee('<title>'.__('production_bench.inventory.lot_register').' · '.config('app.name').'</title>', false);
+
+    $this->get(route('production-bench.inventory.finished-products'))
+        ->assertOk()
+        ->assertSee('<title>'.__('production_bench.inventory.finished_products').' · '.config('app.name').'</title>', false)
+        ->assertSee(__('production_bench.inventory.finished_products_empty'));
 });
 
 it('links every material identity to its accessible detail page', function (): void {

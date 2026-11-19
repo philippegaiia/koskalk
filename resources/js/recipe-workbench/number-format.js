@@ -8,18 +8,10 @@ function intlLocale(locale) {
     return normalizedLocale(locale).replace('_', '-');
 }
 
-export function parseDecimalInput(value) {
-    if (typeof value === 'number') {
-        return Number.isFinite(value) ? value : 0;
-    }
-
+function normalizedDecimalText(value) {
     let normalized = `${value ?? ''}`
         .trim()
         .replace(/[\s\u00a0\u202f]/g, '');
-
-    if (normalized === '') {
-        return 0;
-    }
 
     const commaIndex = normalized.lastIndexOf(',');
     const dotIndex = normalized.lastIndexOf('.');
@@ -42,9 +34,43 @@ export function parseDecimalInput(value) {
         normalized = `${parts.join('')}.${decimalPart}`;
     }
 
+    return normalized;
+}
+
+export function parseDecimalInput(value) {
+    if (typeof value === 'number') {
+        return Number.isFinite(value) ? value : 0;
+    }
+
+    const normalized = normalizedDecimalText(value);
+
+    if (normalized === '') {
+        return 0;
+    }
+
     const parsed = Number.parseFloat(normalized);
 
     return Number.isFinite(parsed) ? parsed : 0;
+}
+
+/**
+ * Parse input that must be a number and nothing else: "30 ml" or "abc" give
+ * null instead of the leading digits.
+ */
+export function parseStrictDecimalInput(value) {
+    if (typeof value === 'number') {
+        return Number.isFinite(value) ? value : null;
+    }
+
+    const normalized = normalizedDecimalText(value);
+
+    if (!/^[+-]?(\d+(\.\d*)?|\.\d+)$/.test(normalized)) {
+        return null;
+    }
+
+    const parsed = Number(normalized);
+
+    return Number.isFinite(parsed) ? parsed : null;
 }
 
 export function formatNumber(value, decimals = 2, locale = DEFAULT_NUMBER_LOCALE) {

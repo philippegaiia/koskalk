@@ -10,6 +10,7 @@ final class InventoryHelpTopics
     public function forSurface(string $surface, bool $usesStorageLocations): array
     {
         $index = match ($surface) {
+            'finished-products' => ['finished_products'],
             'materials' => ['overview', 'quantities', 'opening_stock', 'receiving_stock', 'reservations', 'buffer_stock'],
             'stock' => ['lots_and_status', 'quantities', 'opening_stock', 'receiving_stock', 'adjustments', 'reservations'],
             'detail' => ['quantities', 'lots_and_status', 'receiving_stock', 'adjustments', 'reservations', 'material_history'],
@@ -42,7 +43,7 @@ final class InventoryHelpTopics
     /** @return list<string> */
     public function locations(string $key): array
     {
-        return collect(['materials' => 'Stock by material', 'stock' => 'Lot Register', 'detail' => 'Material details'])
+        return collect(['materials' => 'Stock by material', 'stock' => 'Lot Register', 'finished-products' => 'Finished products', 'detail' => 'Material details'])
             ->filter(fn (string $label, string $surface): bool => in_array($key, $this->forSurface($surface, true)['keys'], true))
             ->map(fn (string $label): string => 'Inventory · '.$label)
             ->values()->all();

@@ -32,9 +32,9 @@ it('installs all English drafts and never replaces owner edits on repeat install
     expect($locale->fresh()->latest_revision_id)->toBe($draft->id)->and(HelpTopicRevision::count())->toBe($count + 1);
 })->with([
     ['contextual-help.en.json', 32],
-    ['contextual-help.inventory.en.json', 10],
+    ['contextual-help.inventory.en.json', 11],
     ['contextual-help.purchasing.en.json', 11],
-    ['contextual-help.production.en.json', 13],
+    ['contextual-help.production.en.json', 16],
     ['contextual-help.materials.en.json', 13],
     ['contextual-help.application.en.json', 9],
     ['contextual-help.collaboration.en.json', 5],

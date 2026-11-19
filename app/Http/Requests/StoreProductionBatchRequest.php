@@ -18,6 +18,7 @@ class StoreProductionBatchRequest extends FormRequest
     {
         return [
             'recipe_version_id' => ['required', 'integer'],
+            'product_size_key' => ['nullable', 'uuid'],
             'production_batch_number' => ['nullable', 'string', 'max:120'],
             'manufacture_date' => ['required', 'date'],
             'batch_basis' => ['required', 'numeric', 'gt:0'],

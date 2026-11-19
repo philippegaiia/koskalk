@@ -3,10 +3,10 @@
 namespace App\Services\Production;
 
 use App\Models\ProductionRun;
-use App\Models\ProductionRunNumberIssuance;
 use App\Models\ProductionRunNumberSetting;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Inventory\StockLotCodeAvailability;
 use App\Services\WorkspaceWriteLock;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -14,7 +14,10 @@ use Illuminate\Validation\ValidationException;
 
 class ProductionRunNumberService
 {
-    public function __construct(private readonly WorkspaceWriteLock $workspaceLock) {}
+    public function __construct(
+        private readonly WorkspaceWriteLock $workspaceLock,
+        private readonly StockLotCodeAvailability $lotCodes,
+    ) {}
 
     public function formatPermanentNumber(string $prefix, int $serial, string $suffix, int $padding): string
     {
@@ -68,20 +71,33 @@ class ProductionRunNumberService
     /**
      * @return array<int, string>
      */
-    public function permanentCandidates(ProductionRunNumberSetting $settings, int $count): array
+    public function permanentCandidates(ProductionRunNumberSetting $settings, int $count, ?int $startingSerial = null): array
     {
         $candidates = [];
+        $startingSerial ??= $settings->next_permanent_serial;
 
         for ($offset = 0; $offset < $count; $offset++) {
             $candidates[] = $this->formatPermanentNumber(
                 $settings->permanent_prefix,
-                $settings->next_permanent_serial + $offset,
+                $startingSerial + $offset,
                 $settings->permanent_suffix,
                 $settings->permanent_padding,
             );
         }
 
         return $candidates;
+    }
+
+    public function nextAvailablePermanentSerial(ProductionRunNumberSetting $settings, int $count): ?int
+    {
+        for ($serial = $settings->next_permanent_serial + 1; $serial <= PHP_INT_MAX - $count; $serial++) {
+            $candidates = $this->permanentCandidates($settings, $count, $serial);
+            if (! $this->permanentIdentityExists($settings->workspace_id, $candidates)) {
+                return $serial;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -102,16 +118,14 @@ class ProductionRunNumberService
      */
     public function identityExists(int $workspaceId, array $identities): bool
     {
-        return ProductionRun::query()
-            ->where('workspace_id', $workspaceId)
-            ->where(function ($query) use ($identities): void {
-                $query->whereIn('planning_batch_number', $identities)
-                    ->orWhereIn('batch_number', $identities);
-            })
-            ->exists()
-            || ProductionRunNumberIssuance::query()
-                ->where('workspace_id', $workspaceId)
-                ->whereIn('batch_number', $identities)
-                ->exists();
+        return ProductionRun::query()->where('workspace_id', $workspaceId)
+            ->whereIn('planning_batch_number', $identities)->exists()
+            || $this->lotCodes->hasIssuedBatchNumbers($workspaceId, $identities);
+    }
+
+    /** @param list<string> $identities */
+    public function permanentIdentityExists(int $workspaceId, array $identities): bool
+    {
+        return $this->identityExists($workspaceId, $identities) || $this->lotCodes->hasStockLots($workspaceId, $identities);
     }
 }

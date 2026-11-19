@@ -170,6 +170,7 @@ class GenerateFlashProductions
                     source: ProductionRunSource::Flash,
                     taskSet: $taskSet,
                     productionLocationId: $proposal['production_location_id'],
+                    productSizeKey: $line['product_size_key'],
                 );
                 $productions->push($production);
             }
@@ -223,6 +224,7 @@ class GenerateFlashProductions
     ): void {
         if (
             (int) $existing->recipe_id !== (int) $line['recipe_id']
+            || $existing->product_size_id !== $line['product_size_id']
             || bccomp((string) $existing->basis_input_value, (string) $line['basis_input_value'], 9) !== 0
             || $existing->basis_input_unit !== $line['basis_input_unit']
             || (int) $existing->expected_units !== (int) $line['expected_units_per_batch']

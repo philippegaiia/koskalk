@@ -3,14 +3,40 @@
 use App\Enums\IngredientCategory;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
+use App\Enums\WorkspaceMemberRole;
 use App\Models\Ingredient;
+use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
+use App\Models\UserEntitlement;
+use App\Models\Workspace;
+use App\Models\WorkspaceMember;
+use Dom\HTMLDocument;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
+
+it('shows the selected workspace role and offers product creation only to members who can create', function (WorkspaceMemberRole $role, bool $canCreate): void {
+    config(['workspaces.collaboration_enabled' => true]);
+    $workspace = Workspace::factory()->create();
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    UserEntitlement::factory()->for($workspace->owner)->for($plan)->create();
+    $member = User::factory()->create(['active_workspace_id' => $workspace->id]);
+    WorkspaceMember::factory()->for($workspace)->for($member)->create(['role' => $role]);
+
+    $response = $this->actingAs($member)->get(route('dashboard'))->assertOk();
+    $page = HTMLDocument::createFromString($response->getContent(), LIBXML_NOERROR);
+    $workspaceLink = $page->querySelector('a[href="'.route('workspace-selection.index').'"]');
+    $creationLink = $page->querySelector('main a[href="'.route('recipes.start').'"]');
+
+    expect($creationLink !== null)->toBe($canCreate);
+    expect($workspaceLink?->textContent)->toContain(__('workspaces.roles.'.$role->value));
+})->with([
+    'viewer' => [WorkspaceMemberRole::Viewer, false],
+    'editor' => [WorkspaceMemberRole::Editor, true],
+]);
 
 it('renders the simplified dashboard with creation buttons, stat cards, and user identity', function () {
     $user = User::factory()->create([

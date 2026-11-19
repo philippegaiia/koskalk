@@ -15,6 +15,7 @@ use App\Models\MediaAsset;
 use App\Models\PackagingItem;
 use App\Models\Plan;
 use App\Models\ProductFamily;
+use App\Models\ProductSize;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
@@ -99,6 +100,39 @@ it('keeps saved formula outputs read only with or without saved costing', functi
     'no saved costing' => false,
     'saved costing' => true,
 ]);
+
+it('loads the formula phases once on the saved sheet with costing and multiple sizes', function (): void {
+    [$user, $recipe, $version] = createSavedRecipeVersion();
+    $sizes = ProductSize::factory()->count(2)->for($recipe)->create();
+    $version->productSizes()->attach($sizes->modelKeys());
+    RecipeVersionCosting::query()->create([
+        'recipe_version_id' => $version->id,
+        'user_id' => $user->id,
+        'oil_weight_for_costing' => 1000,
+        'oil_unit_for_costing' => 'g',
+        'units_produced' => 10,
+        'currency' => 'EUR',
+    ]);
+
+    $this->actingAs($user);
+    DB::flushQueryLog();
+    DB::enableQueryLog();
+
+    try {
+        $this->get(route('recipes.saved', ['recipe' => $recipe]))
+            ->assertSuccessful()
+            ->assertViewHas('costingSizes', fn ($costingSizes): bool => $costingSizes->count() === 2);
+
+        $phaseQueries = collect(DB::getQueryLog())->filter(
+            fn (array $entry): bool => str_contains($entry['query'], 'from "recipe_phases"'),
+        );
+    } finally {
+        DB::disableQueryLog();
+        DB::flushQueryLog();
+    }
+
+    expect($phaseQueries)->toHaveCount(1);
+});
 
 it('renders the formula sheet around one aligned table', function () {
     [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();
@@ -280,8 +314,8 @@ it('renders an existing formula workbench within its initial query budget', func
 
     DB::disableQueryLog();
 
-    // Includes snapshot locks/revisions, fresh policy checks and the two organization catalogues with fresh workspace access; render reuses the mount result.
-    expect($queries->count() - $helpQueries->count())->toBeLessThanOrEqual(61)
+    // Includes snapshot locks/revisions, fresh policy checks, the two organization catalogues with fresh workspace access and one Product sizes lookup; render reuses the mount result.
+    expect($queries->count() - $helpQueries->count())->toBeLessThanOrEqual(62)
         ->and($helpQueries->count())->toBeLessThanOrEqual(2);
 });
 
@@ -502,6 +536,29 @@ it('recalculates the saved formula view when a different oil quantity is request
         ->assertSee('value="1500"', false)
         ->assertSee('Recalculate');
 });
+
+it('rejects a Formula Sheet scale above one million grams in the displayed unit', function (string $unit, string $limit, string $overLimit): void {
+    [$user, $recipe] = createSavedRecipeVersion();
+    RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->get()->each(
+        fn (RecipeVersion $version) => $version->update([
+            'calculation_context' => array_replace($version->calculation_context, ['oil_unit' => $unit]),
+        ]),
+    );
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', ['recipe' => $recipe, 'oil_weight' => $limit]))
+        ->assertOk()
+        ->assertViewHas('selectedOilWeight', (float) $limit)
+        ->assertSee('max="'.$limit.'"', false);
+
+    $this->getJson(route('recipes.saved', ['recipe' => $recipe, 'oil_weight' => $overLimit]))
+        ->assertUnprocessable();
+})->with([
+    'grams' => ['g', '1000000', '1000000.01'],
+    'kilograms' => ['kg', '1000', '1000.01'],
+    'ounces' => ['oz', '35273.96', '35273.97'],
+    'pounds' => ['lb', '2204.62', '2204.63'],
+]);
 
 it('rescales lye and water with the oil quantity requested on the formula sheet', function () {
     [$user, $recipe, $publishedVersion] = createSavedRecipeVersion();

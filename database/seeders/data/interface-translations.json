@@ -1044,6 +1044,18 @@
     },
     {
       "group": "batch_log",
+      "key": "actions.select_size",
+      "text": {
+        "de": "Größe für Charge übernehmen",
+        "es": "Aplicar formato al lote",
+        "fr": "Appliquer le format au lot",
+        "it": "Applica il formato al lotto",
+        "nl": "Formaat toepassen op batch",
+        "pt_BR": "Aplicar tamanho ao lote"
+      }
+    },
+    {
+      "group": "batch_log",
       "key": "actions.view",
       "text": {
         "de": "Ansehen",
@@ -1320,6 +1332,18 @@
     },
     {
       "group": "batch_log",
+      "key": "fields.choose_size",
+      "text": {
+        "de": "Größe wählen",
+        "es": "Elige un formato",
+        "fr": "Choisir un format",
+        "it": "Scegli un formato",
+        "nl": "Kies een formaat",
+        "pt_BR": "Escolha um tamanho"
+      }
+    },
+    {
+      "group": "batch_log",
       "key": "fields.lot_numbers",
       "text": {
         "de": "Chargennummern der Zutaten",
@@ -1376,6 +1400,18 @@
         "it": "Nastro, pH, condizioni ambientali, scostamenti…",
         "nl": "Trace, pH, omgevingsomstandigheden, afwijkingen…",
         "pt_BR": "Traço, pH, condições ambientes, desvios…"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "fields.product_size",
+      "text": {
+        "de": "Produktgröße",
+        "es": "Formato del producto",
+        "fr": "Format du produit",
+        "it": "Formato del prodotto",
+        "nl": "Productformaat",
+        "pt_BR": "Tamanho do produto"
       }
     },
     {
@@ -1484,6 +1520,18 @@
         "it": "Fissa la formula salvata, i prezzi attuali, il piano di confezionamento e le annotazioni di lotto in un lotto di produzione.",
         "nl": "Legt de opgeslagen formule, de huidige prijzen, het verpakkingsplan en de lotgegevens vast in een productiebatch.",
         "pt_BR": "Congela a fórmula salva, os preços atuais, o plano de embalagens e as anotações de lote em um lote de produção."
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "record.size_help",
+      "text": {
+        "de": "Übernimm die gewählte Größe, um ihre Verpackung für diese Charge zu laden.",
+        "es": "Aplica el formato seleccionado para cargar su embalaje para este lote.",
+        "fr": "Appliquez le format sélectionné pour charger son conditionnement pour ce lot.",
+        "it": "Applica il formato selezionato per caricare il suo confezionamento per questo lotto.",
+        "nl": "Pas het gekozen formaat toe om de bijbehorende verpakking voor deze batch te laden.",
+        "pt_BR": "Aplique o tamanho selecionado para carregar as embalagens deste lote."
       }
     },
     {
@@ -1760,6 +1808,30 @@
         "it": "Produzione registrata.",
         "nl": "Productie vastgelegd.",
         "pt_BR": "Produção registrada."
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "validation.invalid_size",
+      "text": {
+        "de": "Wähle eine für diese Formel verfügbare Größe.",
+        "es": "Elige un formato disponible para esta fórmula.",
+        "fr": "Choisissez un format disponible pour cette formule.",
+        "it": "Scegli un formato disponibile per questa formula.",
+        "nl": "Kies een formaat dat beschikbaar is voor deze formule.",
+        "pt_BR": "Escolha um tamanho disponível para esta fórmula."
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "validation.size_required",
+      "text": {
+        "de": "Wähle die Produktgröße für diese Charge.",
+        "es": "Elige el formato del producto para este lote.",
+        "fr": "Choisissez le format du produit pour ce lot.",
+        "it": "Scegli il formato del prodotto per questo lotto.",
+        "nl": "Kies het productformaat voor deze batch.",
+        "pt_BR": "Escolha o tamanho do produto para este lote."
       }
     },
     {
@@ -23532,6 +23604,18 @@
     },
     {
       "group": "navigation",
+      "key": "user.platform_admin",
+      "text": {
+        "de": "Plattformadministrator",
+        "es": "Administrador de la plataforma",
+        "fr": "Administrateur de la plateforme",
+        "it": "Amministratore della piattaforma",
+        "nl": "Platformbeheerder",
+        "pt_BR": "Administrador da plataforma"
+      }
+    },
+    {
+      "group": "navigation",
       "key": "user.signed_in",
       "text": {
         "de": "Angemeldet",
@@ -27026,24 +27110,24 @@
       "group": "production_bench",
       "key": "home.incoming",
       "text": {
-        "de": "Eingang",
-        "es": "Entrante",
-        "fr": "Entrant",
-        "it": "In arrivo",
-        "nl": "Inkomend",
-        "pt_BR": "Entradas"
+        "de": "Erwartete Bestellungen",
+        "es": "Pedidos de compra pendientes de recepción",
+        "fr": "Commandes d’achat à recevoir",
+        "it": "Ordini di acquisto in arrivo",
+        "nl": "Inkomende inkooporders",
+        "pt_BR": "Pedidos de compra a receber"
       }
     },
     {
       "group": "production_bench",
       "key": "home.quarantined",
       "text": {
-        "de": "In Quarantäne",
-        "es": "En cuarentena",
-        "fr": "En quarantaine",
-        "it": "In quarantena",
-        "nl": "In quarantaine",
-        "pt_BR": "Em quarentena"
+        "de": "Chargen in Quarantäne",
+        "es": "Lotes en cuarentena",
+        "fr": "Lots en quarantaine",
+        "it": "Lotti in quarantena",
+        "nl": "Partijen in quarantaine",
+        "pt_BR": "Lotes em quarentena"
       }
     },
     {
@@ -27212,6 +27296,42 @@
         "it": "Saldo iniziale",
         "nl": "Beginsaldo",
         "pt_BR": "Saldo inicial"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_type_packaging_consumption",
+      "text": {
+        "de": "Verpackungsverbrauch",
+        "es": "Consumo de envasado",
+        "fr": "Consommation de conditionnement",
+        "it": "Consumo di confezionamento",
+        "nl": "Verbruik bij verpakking",
+        "pt_BR": "Consumo de embalagem"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_type_packaging_output",
+      "text": {
+        "de": "Aus Verpackung",
+        "es": "Salida de envasado",
+        "fr": "Sortie de conditionnement",
+        "it": "Uscita dal confezionamento",
+        "nl": "Verpakte uitvoer",
+        "pt_BR": "Saída de embalagem"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.activity_type_packaging_reversal",
+      "text": {
+        "de": "Verpackungsstorno",
+        "es": "Reversión de envasado",
+        "fr": "Annulation de conditionnement",
+        "it": "Storno del confezionamento",
+        "nl": "Terugboeking verpakking",
+        "pt_BR": "Estorno de embalagem"
       }
     },
     {
@@ -28020,6 +28140,18 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.edit_sku",
+      "text": {
+        "de": "SKU bearbeiten",
+        "es": "Editar SKU",
+        "fr": "Modifier le SKU",
+        "it": "Modifica SKU",
+        "nl": "SKU bewerken",
+        "pt_BR": "Editar SKU"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.expires_on",
       "text": {
         "de": "Ablaufdatum",
@@ -28232,6 +28364,66 @@
         "it": "Filtri",
         "nl": "Filters",
         "pt_BR": "Filtros"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.finished_products",
+      "text": {
+        "de": "Fertigprodukte",
+        "es": "Productos terminados",
+        "fr": "Produits finis",
+        "it": "Prodotti finiti",
+        "nl": "Eindproducten",
+        "pt_BR": "Produtos acabados"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.finished_products_empty",
+      "text": {
+        "de": "Veröffentliche eine Rezeptur mit einer Produktgröße, damit sie hier erscheint.",
+        "es": "Publica una fórmula con un formato de producto para verla aquí.",
+        "fr": "Publiez une formule avec un format de produit pour la voir ici.",
+        "it": "Pubblica una formula con un formato di prodotto per vederla qui.",
+        "nl": "Publiceer een formule met een productformaat om die hier te zien.",
+        "pt_BR": "Publique uma fórmula com um tamanho de produto para vê-la aqui."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.finished_products_no_matches",
+      "text": {
+        "de": "Keine Fertigprodukte entsprechen diesen Filtern.",
+        "es": "Ningún producto terminado coincide con estos filtros.",
+        "fr": "Aucun produit fini ne correspond à ces filtres.",
+        "it": "Nessun prodotto finito corrisponde a questi filtri.",
+        "nl": "Geen eindproducten voldoen aan deze filters.",
+        "pt_BR": "Nenhum produto acabado corresponde a estes filtros."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.finished_products_search",
+      "text": {
+        "de": "Nach Produktname, Größe oder SKU suchen",
+        "es": "Buscar por nombre de producto, tamaño o SKU",
+        "fr": "Rechercher par nom de produit, format ou SKU",
+        "it": "Cerca per nome del prodotto, formato o SKU",
+        "nl": "Zoeken op productnaam, formaat of SKU",
+        "pt_BR": "Buscar por nome do produto, tamanho ou SKU"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.finished_stock_by_size",
+      "text": {
+        "de": "Fertigwarenbestand nach Größe",
+        "es": "Stock de productos terminados por formato",
+        "fr": "Stock de produits finis par format",
+        "it": "Scorte di prodotti finiti per formato",
+        "nl": "Voorraad eindproducten per formaat",
+        "pt_BR": "Estoque de produtos acabados por tamanho"
       }
     },
     {
@@ -29004,6 +29196,18 @@
     },
     {
       "group": "production_bench",
+      "key": "inventory.origin_packaging_output",
+      "text": {
+        "de": "Aus Verpackung",
+        "es": "Salida de envasado",
+        "fr": "Sortie de conditionnement",
+        "it": "Uscita dal confezionamento",
+        "nl": "Verpakte uitvoer",
+        "pt_BR": "Saída de embalagem"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "inventory.origin_production_output",
       "text": {
         "de": "Produktionsausgang",
@@ -29432,6 +29636,42 @@
         "it": "Cerca per materiale, fornitore, SKU o formato di acquisto…",
         "nl": "Zoek op materiaal, leverancier, SKU of inkoopformaat…",
         "pt_BR": "Busque por material, fornecedor, SKU ou formato de compra…"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.size_not_recorded",
+      "text": {
+        "de": "Größe nicht erfasst",
+        "es": "Formato sin registrar",
+        "fr": "Format non renseigné",
+        "it": "Formato non registrato",
+        "nl": "Formaat niet vastgelegd",
+        "pt_BR": "Tamanho não registrado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.sizes_per_page",
+      "text": {
+        "de": "Größen pro Seite",
+        "es": "Formatos por página",
+        "fr": "Formats par page",
+        "it": "Formati per pagina",
+        "nl": "Formaten per pagina",
+        "pt_BR": "Tamanhos por página"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.sku",
+      "text": {
+        "de": "SKU",
+        "es": "SKU",
+        "fr": "SKU",
+        "it": "SKU",
+        "nl": "SKU",
+        "pt_BR": "SKU"
       }
     },
     {
@@ -30008,6 +30248,18 @@
         "it": "Inserisci una quantità di buffer o svuota il campo.",
         "nl": "Voer een buffervoorraad in of maak het veld leeg.",
         "pt_BR": "Informe uma quantidade de buffer ou limpe o campo."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "inventory.validation.sku_taken",
+      "text": {
+        "de": "Diese SKU wird bereits für eine andere Größe in diesem Arbeitsbereich verwendet.",
+        "es": "Otro tamaño de este espacio de trabajo ya usa este SKU.",
+        "fr": "Ce SKU est déjà utilisé par un autre format dans cet espace de travail.",
+        "it": "Questo SKU è già usato da un altro formato in questo spazio di lavoro.",
+        "nl": "Deze SKU wordt al voor een ander formaat in deze werkruimte gebruikt.",
+        "pt_BR": "Este SKU já é usado por outro tamanho neste espaço de trabalho."
       }
     },
     {
@@ -31980,6 +32232,330 @@
     },
     {
       "group": "production_bench",
+      "key": "packaging.bulk_grams",
+      "text": {
+        "de": "Hergestellte Menge (g)",
+        "es": "Granel producido (g)",
+        "fr": "Vrac produit (g)",
+        "it": "Sfuso prodotto (g)",
+        "nl": "Geproduceerde bulk (g)",
+        "pt_BR": "Granel produzido (g)"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.bulk_output",
+      "text": {
+        "de": "Lose Ware zum Verpacken",
+        "es": "Granel para envasar",
+        "fr": "Vrac à conditionner",
+        "it": "Sfuso da confezionare",
+        "nl": "Bulk om te verpakken",
+        "pt_BR": "Granel para embalar"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.bulk_shortage",
+      "text": {
+        "de": "Die verbleibende Menge dieser Charge ist kleiner als die eingegebene Menge.",
+        "es": "Queda menos granel en este lote que la cantidad indicada.",
+        "fr": "Il reste moins de vrac dans ce lot que la quantité indiquée.",
+        "it": "Nel lotto rimane meno sfuso della quantità indicata.",
+        "nl": "Deze batch bevat minder bulk dan de ingevulde hoeveelheid.",
+        "pt_BR": "O lote tem menos granel restante do que a quantidade informada."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.bulk_unavailable",
+      "text": {
+        "de": "Für späteres Verpacken braucht das Fertigprodukt eine Größe in seiner veröffentlichten Rezeptur.",
+        "es": "Para envasar después, el producto terminado necesita un tamaño en su fórmula publicada.",
+        "fr": "Pour conditionner plus tard, le produit fini doit avoir un format dans sa formule publiée.",
+        "it": "Per confezionare più tardi, il prodotto finito deve avere un formato nella formula pubblicata.",
+        "nl": "Voor later verpakken moet het eindproduct een formaat in de gepubliceerde formule hebben.",
+        "pt_BR": "Para embalar depois, o produto acabado precisa de um tamanho na fórmula publicada."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.bulk_used",
+      "text": {
+        "de": "Verbrauchte lose Ware (g)",
+        "es": "Granel utilizado (g)",
+        "fr": "Vrac utilisé (g)",
+        "it": "Sfuso utilizzato (g)",
+        "nl": "Gebruikte bulk (g)",
+        "pt_BR": "Granel utilizado (g)"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.lot_code",
+      "text": {
+        "de": "Chargencode",
+        "es": "Código de lote",
+        "fr": "Code de lot",
+        "it": "Codice lotto",
+        "nl": "Partijcode",
+        "pt_BR": "Código do lote"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.lot_code_help",
+      "text": {
+        "de": "Vorgeschlagen aus Ihren Nummerierungseinstellungen. Sie können ihn ändern; jeder Chargencode muss eindeutig sein.",
+        "es": "Sugerido a partir de su configuración de numeración. Puede cambiarlo; cada código de lote debe ser único.",
+        "fr": "Proposé d’après vos réglages de numérotation. Vous pouvez le modifier ; chaque code de lot doit être unique.",
+        "it": "Suggerito in base alle impostazioni di numerazione. Puoi modificarlo; ogni codice lotto deve essere univoco.",
+        "nl": "Voorgesteld op basis van uw nummeringsinstellingen. U kunt deze wijzigen; elke partijcode moet uniek zijn.",
+        "pt_BR": "Sugerido a partir das suas configurações de numeração. Você pode alterá-lo; cada código de lote deve ser único."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.material_shortage",
+      "text": {
+        "de": "Für diese Größe ist nicht genug Verpackung verfügbar. Prüfen Sie Bestand und Vormerkungen.",
+        "es": "No hay suficiente material de envasado disponible para este tamaño. Revisa las existencias y las reservas.",
+        "fr": "Il manque des emballages disponibles pour ce format. Vérifiez le stock et les réservations.",
+        "it": "Gli imballaggi disponibili per questo formato sono insufficienti. Controlla le scorte e le prenotazioni.",
+        "nl": "Er is te weinig verpakkingsmateriaal beschikbaar voor dit formaat. Controleer de voorraad en reserveringen.",
+        "pt_BR": "Não há embalagem disponível suficiente para este tamanho. Verifique o estoque e as reservas."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.pack_bulk",
+      "text": {
+        "de": "Diese Charge verpacken",
+        "es": "Envasar este lote",
+        "fr": "Conditionner ce lot",
+        "it": "Confeziona questo lotto",
+        "nl": "Deze batch verpakken",
+        "pt_BR": "Embalar este lote"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.package_later",
+      "text": {
+        "de": "Später verpacken",
+        "es": "Envasar después",
+        "fr": "Conditionner plus tard",
+        "it": "Confeziona più tardi",
+        "nl": "Later verpakken",
+        "pt_BR": "Embalar depois"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.packed",
+      "text": {
+        "de": "Fertigware wurde erfasst.",
+        "es": "Se registró el producto terminado.",
+        "fr": "Le stock de produits finis a été enregistré.",
+        "it": "Scorte di prodotto finito registrate.",
+        "nl": "Voorraad eindproducten geregistreerd.",
+        "pt_BR": "Estoque de produtos acabados registrado."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.packed_units",
+      "text": {
+        "de": "Verpackte Einheiten",
+        "es": "Unidades envasadas",
+        "fr": "Unités conditionnées",
+        "it": "Unità confezionate",
+        "nl": "Verpakte eenheden",
+        "pt_BR": "Unidades embaladas"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.plan_help",
+      "text": {
+        "de": "Stellen Sie eine lose Charge her. Wählen Sie nach der Freigabe die Größen und erfassen Sie die Verpackung.",
+        "es": "Prepara un lote a granel. Elige los tamaños y registra el envasado tras liberar el lote.",
+        "fr": "Fabriquez un lot en vrac. Choisissez les formats et enregistrez le conditionnement après la libération du lot.",
+        "it": "Produci un lotto sfuso. Scegli i formati e registra il confezionamento dopo il rilascio.",
+        "nl": "Maak één bulkbatch. Kies de formaten en registreer de verpakking na vrijgave.",
+        "pt_BR": "Produza um lote a granel. Escolha os tamanhos e registre a embalagem após a liberação."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.record_packing",
+      "text": {
+        "de": "Verpackung erfassen",
+        "es": "Registrar envasado",
+        "fr": "Enregistrer le conditionnement",
+        "it": "Registra il confezionamento",
+        "nl": "Verpakking registreren",
+        "pt_BR": "Registrar embalagem"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.release_bulk",
+      "text": {
+        "de": "Geben Sie die lose Charge vor dem Verpacken frei.",
+        "es": "Libera el lote a granel antes de envasarlo.",
+        "fr": "Libérez le lot en vrac avant de le conditionner.",
+        "it": "Rilascia il lotto sfuso prima di confezionarlo.",
+        "nl": "Geef de bulkpartij vrij voordat je die verpakt.",
+        "pt_BR": "Libere o lote a granel antes de embalar."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.remaining_bulk",
+      "text": {
+        "de": ":quantity g lose Ware verbleibend",
+        "es": "Quedan :quantity g de granel",
+        "fr": ":quantity g de vrac restant",
+        "it": ":quantity g di sfuso rimanente",
+        "nl": ":quantity g bulk over",
+        "pt_BR": ":quantity g de granel restante"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.retired_size",
+      "text": {
+        "de": "Ausgemustert",
+        "es": "Retirado",
+        "fr": "Retiré",
+        "it": "Ritirato",
+        "nl": "Uit productie",
+        "pt_BR": "Descontinuado"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.undo",
+      "text": {
+        "de": "Verpackung rückgängig machen",
+        "es": "Deshacer envasado",
+        "fr": "Annuler le conditionnement",
+        "it": "Annulla il confezionamento",
+        "nl": "Verpakking ongedaan maken",
+        "pt_BR": "Desfazer embalagem"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.undo_confirm",
+      "text": {
+        "de": "Diese Verpackung rückgängig machen und lose Ware und Verpackungsmaterial in die ursprünglichen Lose zurückbuchen?",
+        "es": "¿Deshacer este envasado y devolver el granel y el material de envasado a sus lotes originales?",
+        "fr": "Annuler ce conditionnement et remettre le vrac et les emballages dans leurs lots d’origine ?",
+        "it": "Annullare il confezionamento e restituire sfuso e imballaggi ai lotti originali?",
+        "nl": "Deze verpakking ongedaan maken en bulk en verpakkingsmateriaal terugboeken naar hun oorspronkelijke partijen?",
+        "pt_BR": "Desfazer esta embalagem e devolver o granel e os materiais aos lotes originais?"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.undone",
+      "text": {
+        "de": "Verpackung rückgängig gemacht",
+        "es": "Envasado deshecho",
+        "fr": "Conditionnement annulé",
+        "it": "Confezionamento annullato",
+        "nl": "Verpakking ongedaan gemaakt",
+        "pt_BR": "Embalagem desfeita"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.units_remaining",
+      "text": {
+        "de": ":count Stück verbleibend",
+        "es": "Quedan :count unidades",
+        "fr": ":count unités restantes",
+        "it": ":count unità rimanenti",
+        "nl": ":count eenheden over",
+        "pt_BR": "Restam :count unidades"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.validation.link_missing",
+      "text": {
+        "de": "Verknüpfen Sie die Verpackungszeile „:line“ in der Rezeptur mit einem Lagerartikel.",
+        "es": "Vincula la línea de envasado «:line» a un artículo de inventario en la fórmula.",
+        "fr": "Associez la ligne d’emballage « :line » à un article en stock dans la formule.",
+        "it": "Collega la riga di imballaggio «:line» a un articolo di magazzino nella formula.",
+        "nl": "Koppel de verpakkingsregel ‘:line’ in de formule aan een voorraadartikel.",
+        "pt_BR": "Vincule a linha de embalagem “:line” a um item de estoque na fórmula."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.validation.lot_code_invalid",
+      "text": {
+        "de": "Verwenden Sie im Chargencode bis zu 64 Buchstaben, Ziffern, Bindestriche, Unterstriche, Punkte oder Schrägstriche.",
+        "es": "Use hasta 64 letras, números, guiones, guiones bajos, puntos o barras en el código de lote.",
+        "fr": "Utilisez jusqu’à 64 lettres, chiffres, tirets, tirets bas, points ou barres obliques dans le code de lot.",
+        "it": "Usa fino a 64 lettere, numeri, trattini, trattini bassi, punti o barre nel codice lotto.",
+        "nl": "Gebruik maximaal 64 letters, cijfers, koppeltekens, underscores, punten of schuine strepen in de partijcode.",
+        "pt_BR": "Use até 64 letras, números, hífens, sublinhados, pontos ou barras no código do lote."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.validation.lot_code_next_batch",
+      "text": {
+        "de": "„:batch“ ist die nächste Produktionschargennummer. Verwenden Sie „:suggestion“ oder geben Sie einen anderen Loscode ein.",
+        "es": "«:batch» es el siguiente número de lote de producción. Usa «:suggestion» o introduce otro código de lote.",
+        "fr": "« :batch » est le prochain numéro de lot de production. Utilisez « :suggestion » ou saisissez un autre code de lot.",
+        "it": "«:batch» è il prossimo numero di lotto di produzione. Usa «:suggestion» o inserisci un altro codice di lotto.",
+        "nl": "‘:batch’ is het volgende productiepartijnummer. Gebruik ‘:suggestion’ of voer een andere partijcode in.",
+        "pt_BR": "“:batch” é o próximo número de lote de produção. Use “:suggestion” ou informe outro código de lote."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.validation.lot_code_taken",
+      "text": {
+        "de": "Dieser Chargencode wird bereits verwendet. Wählen Sie einen anderen.",
+        "es": "Este código de lote ya está en uso. Elija otro.",
+        "fr": "Ce code de lot est déjà utilisé. Choisissez-en un autre.",
+        "it": "Questo codice lotto è già in uso. Scegline un altro.",
+        "nl": "Deze partijcode is al in gebruik. Kies een andere.",
+        "pt_BR": "Este código de lote já está em uso. Escolha outro."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.validation.undo_source_missing",
+      "text": {
+        "de": "Die ursprüngliche Buchung der losen Ware fehlt für diese Verpackung.",
+        "es": "Falta el movimiento original de granel de este envasado.",
+        "fr": "Le mouvement de vrac d’origine est introuvable pour ce conditionnement.",
+        "it": "Manca il movimento originale di sfuso per questo confezionamento.",
+        "nl": "De oorspronkelijke bulkbeweging voor deze verpakking ontbreekt.",
+        "pt_BR": "Falta o movimento original de granel desta embalagem."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "packaging.validation.undo_used",
+      "text": {
+        "de": "Nur eine unbenutzte verpackte Charge kann rückgängig gemacht werden.",
+        "es": "Solo se puede deshacer un lote envasado sin usar.",
+        "fr": "Seul un lot conditionné encore inutilisé peut être annulé.",
+        "it": "Si può annullare solo un lotto confezionato ancora inutilizzato.",
+        "nl": "Je kunt alleen een ongebruikte verpakte partij ongedaan maken.",
+        "pt_BR": "Só é possível desfazer um lote embalado que ainda não foi utilizado."
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "picking.access",
       "text": {
         "de": "Dein Zugriff hat sich geändert. Lade die Seite neu und versuche es erneut.",
@@ -33396,6 +33972,18 @@
     },
     {
       "group": "production_bench",
+      "key": "production.clear_size_filter",
+      "text": {
+        "de": "Alle Größen anzeigen",
+        "es": "Mostrar todos los tamaños",
+        "fr": "Afficher tous les formats",
+        "it": "Mostra tutti i formati",
+        "nl": "Alle formaten tonen",
+        "pt_BR": "Mostrar todos os tamanhos"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.complete",
       "text": {
         "de": "Produktion abschließen",
@@ -33452,6 +34040,18 @@
         "it": "Produzione completata.",
         "nl": "Productie afgerond.",
         "pt_BR": "Produção concluída."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.completed_runs",
+      "text": {
+        "de": "Abgeschlossene Produktionen",
+        "es": "Producciones completadas",
+        "fr": "Productions terminées",
+        "it": "Produzioni completate",
+        "nl": "Afgeronde producties",
+        "pt_BR": "Produções concluídas"
       }
     },
     {
@@ -33536,6 +34136,18 @@
         "it": "Pianifica produzione",
         "nl": "Productie plannen",
         "pt_BR": "Planejar produção"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.date_basis",
+      "text": {
+        "de": "Nach Datum filtern",
+        "es": "Filtrar por fecha",
+        "fr": "Filtrer par date",
+        "it": "Filtra per data",
+        "nl": "Filteren op datum",
+        "pt_BR": "Filtrar por data"
       }
     },
     {
@@ -34668,6 +35280,18 @@
     },
     {
       "group": "production_bench",
+      "key": "production.planned_date",
+      "text": {
+        "de": "Geplantes Datum",
+        "es": "Fecha prevista",
+        "fr": "Date prévue",
+        "it": "Data pianificata",
+        "nl": "Geplande datum",
+        "pt_BR": "Data planejada"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.planned_success",
       "text": {
         "de": "Produktion geplant.",
@@ -34824,6 +35448,18 @@
     },
     {
       "group": "production_bench",
+      "key": "production.production_history",
+      "text": {
+        "de": "Produktionsverlauf",
+        "es": "Historial de producción",
+        "fr": "Historique de production",
+        "it": "Storico di produzione",
+        "nl": "Productiegeschiedenis",
+        "pt_BR": "Histórico de produção"
+      }
+    },
+    {
+      "group": "production_bench",
       "key": "production.production_place",
       "text": {
         "de": "Produktionsort",
@@ -34832,6 +35468,18 @@
         "it": "Luogo di produzione",
         "nl": "Productieplaats",
         "pt_BR": "Local de produção"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.production_totals",
+      "text": {
+        "de": "Produzierte Stückzahl nach Größe",
+        "es": "Unidades producidas por tamaño",
+        "fr": "Unités produites par format",
+        "it": "Unità prodotte per formato",
+        "nl": "Geproduceerde eenheden per formaat",
+        "pt_BR": "Unidades produzidas por tamanho"
       }
     },
     {
@@ -35840,6 +36488,30 @@
         "it": "La base di produzione non corrisponde alla formula pubblicata.",
         "nl": "De productiebasis komt niet overeen met de gepubliceerde formule.",
         "pt_BR": "A base da produção não corresponde à fórmula publicada."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.batch_number_used_by_lot",
+      "text": {
+        "de": "Das Lagerlos „:lot“ verwendet bereits diese Chargennummer. Ändern Sie das Format unter Einstellungen → Nummerierung.",
+        "es": "El lote de inventario «:lot» ya usa este número de lote. Cambia el formato en Ajustes → Numeración.",
+        "fr": "Le lot de stock « :lot » utilise déjà ce numéro de lot. Modifiez le format dans Paramètres → Numérotation.",
+        "it": "Il lotto di magazzino «:lot» usa già questo numero. Modifica il formato in Impostazioni → Numerazione.",
+        "nl": "Voorraadpartij ‘:lot’ gebruikt dit partijnummer al. Pas de notatie aan in Instellingen → Nummering.",
+        "pt_BR": "O lote de estoque “:lot” já usa este número de lote. Altere o formato em Configurações → Numeração."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "production.validation.batch_number_used_by_lot_next",
+      "text": {
+        "de": "Das Lagerlos „:lot“ verwendet bereits diese Chargennummer. Setzen Sie die nächste Nummer unter Einstellungen → Nummerierung auf :serial.",
+        "es": "El lote de inventario «:lot» ya usa este número de lote. Configura el siguiente número en :serial en Ajustes → Numeración.",
+        "fr": "Le lot de stock « :lot » utilise déjà ce numéro de lot. Saisissez :serial comme prochain numéro dans Paramètres → Numérotation.",
+        "it": "Il lotto di magazzino «:lot» usa già questo numero. Imposta il prossimo numero su :serial in Impostazioni → Numerazione.",
+        "nl": "Voorraadpartij ‘:lot’ gebruikt dit partijnummer al. Stel Volgend nummer in op :serial in Instellingen → Nummering.",
+        "pt_BR": "O lote de estoque “:lot” já usa este número de lote. Defina o Próximo número como :serial em Configurações → Numeração."
       }
     },
     {
@@ -40556,6 +41228,90 @@
         "it": "I visualizzatori possono vedere la numerazione, ma non modificarla.",
         "nl": "Kijkers kunnen de nummering bekijken, maar niet wijzigen.",
         "pt_BR": "Visualizadores podem ver as configurações de numeração, mas não alterá-las."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "settings.packed_lot_suffix",
+      "text": {
+        "de": "Codes für verpackte Chargen",
+        "es": "Códigos de lotes envasados",
+        "fr": "Codes des lots conditionnés",
+        "it": "Codici dei lotti confezionati",
+        "nl": "Codes voor verpakte partijen",
+        "pt_BR": "Códigos dos lotes embalados"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "settings.packed_lot_suffix_fallback",
+      "text": {
+        "de": "Eine Größe ohne angegebenen Inhalt oder ohne SKU verwendet einen Buchstaben. Wird dieselbe Größe aus einer Charge erneut verpackt, wird eine Zahl angehängt, z. B. -2.",
+        "es": "Un formato sin contenido declarado o sin SKU usa una letra. Si envasa el mismo formato de nuevo desde un lote, se añade un número, como -2.",
+        "fr": "Un format sans contenu déclaré ou sans SKU utilise une lettre. Si vous conditionnez à nouveau le même format à partir d’un lot, un numéro est ajouté, par exemple -2.",
+        "it": "Un formato senza contenuto dichiarato o senza SKU usa una lettera. Se confezioni di nuovo lo stesso formato da un lotto, viene aggiunto un numero, ad esempio -2.",
+        "nl": "Een maat zonder opgegeven inhoud of SKU gebruikt een letter. Als u dezelfde maat opnieuw uit een partij verpakt, wordt een nummer toegevoegd, zoals -2.",
+        "pt_BR": "Um tamanho sem conteúdo declarado ou sem SKU usa uma letra. Ao embalar o mesmo tamanho novamente a partir de um lote, é adicionado um número, como -2."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "settings.packed_lot_suffix_help",
+      "text": {
+        "de": "Wenn Sie eine lose Charge verpacken, erhält jede verpackte Charge die Chargennummer gefolgt von diesem Zusatz. Sie können den Code beim Erfassen der Verpackung trotzdem ändern.",
+        "es": "Al envasar un lote a granel, cada lote envasado recibe el número de lote seguido de este sufijo. Puede cambiar el código al registrar el envasado.",
+        "fr": "Lorsque vous conditionnez un lot en vrac, chaque lot conditionné reçoit le numéro de lot suivi de ce suffixe. Vous pouvez toujours modifier le code lors de l’enregistrement du conditionnement.",
+        "it": "Quando confezioni un lotto sfuso, ogni lotto confezionato riceve il numero di lotto seguito da questo suffisso. Puoi comunque modificare il codice quando registri il confezionamento.",
+        "nl": "Wanneer u een bulkpartij verpakt, krijgt elke verpakte partij het partijnummer gevolgd door dit achtervoegsel. U kunt de code nog wijzigen wanneer u het verpakken vastlegt.",
+        "pt_BR": "Ao embalar um lote a granel, cada lote embalado recebe o número do lote seguido deste sufixo. Você ainda pode alterar o código ao registrar a embalagem."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "settings.packed_lot_suffix_invalid",
+      "text": {
+        "de": "Wählen Sie Buchstabe, Inhalt oder SKU für die Codes verpackter Chargen.",
+        "es": "Elija letra, contenido o SKU para los códigos de lotes envasados.",
+        "fr": "Choisissez lettre, contenu ou SKU pour les codes des lots conditionnés.",
+        "it": "Scegli lettera, contenuto o SKU per i codici dei lotti confezionati.",
+        "nl": "Kies letter, inhoud of SKU voor de codes van verpakte partijen.",
+        "pt_BR": "Escolha letra, conteúdo ou SKU para os códigos dos lotes embalados."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "settings.packed_lot_suffixes.content",
+      "text": {
+        "de": "Inhalt",
+        "es": "Contenido",
+        "fr": "Contenu",
+        "it": "Contenuto",
+        "nl": "Inhoud",
+        "pt_BR": "Conteúdo"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "settings.packed_lot_suffixes.letter",
+      "text": {
+        "de": "Buchstabe",
+        "es": "Letra",
+        "fr": "Lettre",
+        "it": "Lettera",
+        "nl": "Letter",
+        "pt_BR": "Letra"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "settings.packed_lot_suffixes.sku",
+      "text": {
+        "de": "SKU",
+        "es": "SKU",
+        "fr": "SKU",
+        "it": "SKU",
+        "nl": "SKU",
+        "pt_BR": "SKU"
       }
     },
     {
@@ -46694,12 +47450,12 @@
       "group": "workbench",
       "key": "costing.packaging.empty_help",
       "text": {
-        "de": "Füge unter Verpackung Bestandteile hinzu und speichere das Produkt, um sie hier zu bepreisen.",
-        "es": "Añade el envase en la pestaña Envasado y guarda el producto para indicar aquí sus precios.",
-        "fr": "Ajoutez le conditionnement dans l’onglet Conditionnement, puis enregistrez le produit pour renseigner ses prix ici.",
-        "it": "Aggiungi i componenti nella scheda Confezionamento, quindi salva il prodotto per inserirne qui i prezzi.",
-        "nl": "Voeg verpakking toe op het tabblad Verpakking en sla het product op om hier prijzen in te vullen.",
-        "pt_BR": "Adicione embalagens na aba Embalagem e depois salve o produto para calcular o preço aqui."
+        "de": "Füge unter Größen & Verpackung einer Größe Bestandteile hinzu und speichere das Produkt, um sie hier zu bepreisen.",
+        "es": "Añade el envase a un formato en la pestaña Formatos y envasado y guarda el producto para indicar aquí sus precios.",
+        "fr": "Ajoutez le conditionnement à un format dans l’onglet Formats et conditionnement, puis enregistrez le produit pour renseigner ses prix ici.",
+        "it": "Aggiungi i componenti a un formato nella scheda Formati e confezionamento, quindi salva il prodotto per inserirne qui i prezzi.",
+        "nl": "Voeg verpakking toe aan een formaat op het tabblad Formaten en verpakking en sla het product op om hier prijzen in te vullen.",
+        "pt_BR": "Adicione embalagens a um tamanho na aba Tamanhos e embalagem e depois salve o produto para calcular o preço aqui."
       }
     },
     {
@@ -46736,6 +47492,42 @@
         "it": "Quantità per unità",
         "nl": "Aantal per eenheid",
         "pt_BR": "Quantidade por unidade"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "costing.packaging.size",
+      "text": {
+        "de": "Größe: :size",
+        "es": "Formato: :size",
+        "fr": "Format : :size",
+        "it": "Formato: :size",
+        "nl": "Formaat: :size",
+        "pt_BR": "Tamanho: :size"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "costing.packaging.size_group",
+      "text": {
+        "de": "Zu kalkulierende Größe",
+        "es": "Formato a calcular",
+        "fr": "Format à chiffrer",
+        "it": "Formato da calcolare",
+        "nl": "Te berekenen formaat",
+        "pt_BR": "Tamanho a calcular"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "costing.packaging.size_help",
+      "text": {
+        "de": "Die Kosten pro Einheit enthalten nur die Verpackung dieser Größe.",
+        "es": "El coste por unidad incluye solo el envase de este formato.",
+        "fr": "Le coût unitaire inclut uniquement le conditionnement de ce format.",
+        "it": "Il costo per unità include solo il confezionamento di questo formato.",
+        "nl": "De kosten per eenheid omvatten alleen de verpakking van dit formaat.",
+        "pt_BR": "O custo por unidade inclui apenas a embalagem deste tamanho."
       }
     },
     {
@@ -47036,6 +47828,18 @@
         "it": "Questo prodotto è bloccato. Esplora i costi senza modificare la formula o il calcolo dei costi salvati.",
         "nl": "Dit product is vergrendeld. Verken de kosten zonder de opgeslagen formule of kostprijsberekening te wijzigen.",
         "pt_BR": "Este produto está bloqueado. Explore os custos sem alterar a fórmula ou o cálculo de custos salvos."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "costing.settings.size_yield_invalid",
+      "text": {
+        "de": "Gib für eine gespeicherte Größe eine ganze Zahl von 1 bis 1.000.000 ein oder lass das Feld leer.",
+        "es": "Introduce un número entero entre 1 y 1.000.000 para un formato guardado o deja el campo vacío.",
+        "fr": "Pour un format enregistré, saisissez un nombre entier compris entre 1 et 1 000 000 ou laissez le champ vide.",
+        "it": "Per un formato salvato, inserisci un numero intero da 1 a 1.000.000 oppure lascia il campo vuoto.",
+        "nl": "Voer voor een opgeslagen formaat een geheel getal van 1 tot 1.000.000 in of laat het veld leeg.",
+        "pt_BR": "Para um tamanho salvo, informe um número inteiro de 1 a 1.000.000 ou deixe o campo em branco."
       }
     },
     {
@@ -50726,12 +51530,12 @@
       "group": "workbench",
       "key": "packaging.plan.help",
       "text": {
-        "de": "Füge die Verpackungsbestandteile für ein fertiges Produkt hinzu. Die Preise trägst du unter Kosten ein.",
-        "es": "Añade los componentes de envasado necesarios para una unidad terminada. Indica sus precios en la pestaña Costes.",
-        "fr": "Ajoutez les éléments de conditionnement nécessaires à une unité finie. Renseignez leurs prix dans l’onglet Coûts.",
-        "it": "Aggiungi i componenti di confezionamento necessari per un’unità finita. Inserisci i prezzi nella scheda Costi.",
-        "nl": "Voeg de verpakkingsonderdelen voor één eindproduct toe. Vul de prijzen in op het tabblad Kosten.",
-        "pt_BR": "Adicione os componentes de embalagem usados por uma unidade acabada. Informe os preços em Custos."
+        "de": "Füge die Verpackungsbestandteile für ein fertiges Produkt dieser Größe hinzu. Die Preise trägst du unter Kosten ein.",
+        "es": "Añade los componentes de envasado necesarios para una unidad terminada de este formato. Indica sus precios en la pestaña Costes.",
+        "fr": "Ajoutez les éléments de conditionnement nécessaires à une unité finie de ce format. Renseignez leurs prix dans l’onglet Coûts.",
+        "it": "Aggiungi i componenti di confezionamento necessari per un’unità finita di questo formato. Inserisci i prezzi nella scheda Costi.",
+        "nl": "Voeg de verpakkingsonderdelen voor één eindproduct van dit formaat toe. Vul de prijzen in op het tabblad Kosten.",
+        "pt_BR": "Adicione os componentes de embalagem usados por uma unidade acabada deste tamanho. Informe os preços em Custos."
       }
     },
     {
@@ -50832,9 +51636,381 @@
     },
     {
       "group": "workbench",
+      "key": "packaging.sizes.add",
+      "text": {
+        "de": "Größe hinzufügen",
+        "es": "Añadir formato",
+        "fr": "Ajouter un format",
+        "it": "Aggiungi formato",
+        "nl": "Formaat toevoegen",
+        "pt_BR": "Adicionar tamanho"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.declared_content",
+      "text": {
+        "de": "Deklarierter Inhalt",
+        "es": "Contenido declarado",
+        "fr": "Contenu déclaré",
+        "it": "Contenuto dichiarato",
+        "nl": "Opgegeven inhoud",
+        "pt_BR": "Conteúdo declarado"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.declared_content_help",
+      "text": {
+        "de": "Das Gewicht oder Volumen, das du für eine Einheit angibst. Koskalk prüft es nicht gegen die Charge.",
+        "es": "El peso o volumen que declaras para una unidad. Koskalk no lo comprueba con el lote.",
+        "fr": "Le poids ou le volume que vous déclarez pour une unité. Koskalk ne le vérifie pas par rapport au lot.",
+        "it": "Il peso o il volume che dichiari per un’unità. Koskalk non lo verifica rispetto al lotto.",
+        "nl": "Het gewicht of volume dat je voor één eenheid opgeeft. Koskalk controleert het niet tegen de batch.",
+        "pt_BR": "O peso ou volume que você declara para uma unidade. O Koskalk não o confere com o lote."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.details",
+      "text": {
+        "de": "Größendetails",
+        "es": "Detalles del formato",
+        "fr": "Détails du format",
+        "it": "Dettagli del formato",
+        "nl": "Formaatgegevens",
+        "pt_BR": "Detalhes do tamanho"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.empty",
+      "text": {
+        "de": "Noch keine Größen.",
+        "es": "Aún no hay formatos.",
+        "fr": "Aucun format pour l’instant.",
+        "it": "Nessun formato per ora.",
+        "nl": "Nog geen formaten.",
+        "pt_BR": "Nenhum tamanho ainda."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.empty_help",
+      "text": {
+        "de": "Füge eine Größe hinzu, etwa ein 100-g-Stück oder einen 30-ml-Tiegel, und dann die Verpackung dafür. Du kannst die Formel auch ohne Größen speichern und drucken.",
+        "es": "Añade un formato, como una pastilla de 100 g o un tarro de 30 ml, y después el envase que utiliza. Puedes guardar e imprimir la fórmula sin formatos.",
+        "fr": "Ajoutez un format, comme un pain de 100 g ou un pot de 30 ml, puis le conditionnement qu’il utilise. Vous pouvez enregistrer et imprimer la formule sans format.",
+        "it": "Aggiungi un formato, come una saponetta da 100 g o un vasetto da 30 ml, poi il confezionamento che usa. Puoi salvare e stampare la formula anche senza formati.",
+        "nl": "Voeg een formaat toe, zoals een stuk van 100 g of een pot van 30 ml, en daarna de verpakking die het gebruikt. Je kunt de formule ook zonder formaten opslaan en afdrukken.",
+        "pt_BR": "Adicione um tamanho, como uma barra de 100 g ou um pote de 30 ml, e depois a embalagem que ele usa. Você pode salvar e imprimir a fórmula sem tamanhos."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.group_label",
+      "text": {
+        "de": "Produktgrößen",
+        "es": "Formatos del producto",
+        "fr": "Formats du produit",
+        "it": "Formati del prodotto",
+        "nl": "Productformaten",
+        "pt_BR": "Tamanhos do produto"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.heading",
+      "text": {
+        "de": "Größen und Verpackung",
+        "es": "Formatos y envasado",
+        "fr": "Formats et conditionnement",
+        "it": "Formati e confezionamento",
+        "nl": "Formaten en verpakking",
+        "pt_BR": "Tamanhos e embalagem"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.help",
+      "text": {
+        "de": "Alle Größen teilen diese Formel. Jede Größe hat ihren eigenen deklarierten Inhalt und ihre eigene Verpackung.",
+        "es": "Todos los formatos comparten esta fórmula. Cada formato tiene su propio contenido declarado y su propio envase.",
+        "fr": "Tous les formats partagent cette formule. Chaque format a son propre contenu déclaré et son propre conditionnement.",
+        "it": "Tutti i formati condividono questa formula. Ogni formato ha il proprio contenuto dichiarato e il proprio confezionamento.",
+        "nl": "Alle formaten delen deze formule. Elk formaat heeft een eigen opgegeven inhoud en eigen verpakking.",
+        "pt_BR": "Todos os tamanhos compartilham esta fórmula. Cada tamanho tem seu próprio conteúdo declarado e sua própria embalagem."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.limit_reached",
+      "text": {
+        "de": "Ein Produkt kann bis zu :max Größen haben.",
+        "es": "Un producto puede tener hasta :max formatos.",
+        "fr": "Un produit peut avoir jusqu’à :max formats.",
+        "it": "Un prodotto può avere fino a :max formati.",
+        "nl": "Een product kan maximaal :max formaten hebben.",
+        "pt_BR": "Um produto pode ter até :max tamanhos."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.name",
+      "text": {
+        "de": "Name",
+        "es": "Nombre",
+        "fr": "Nom",
+        "it": "Nome",
+        "nl": "Naam",
+        "pt_BR": "Nome"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.name_placeholder",
+      "text": {
+        "de": "Zum Beispiel 100-g-Stück",
+        "es": "Por ejemplo, pastilla de 100 g",
+        "fr": "Par exemple, pain de 100 g",
+        "it": "Per esempio, saponetta da 100 g",
+        "nl": "Bijvoorbeeld stuk van 100 g",
+        "pt_BR": "Por exemplo, barra de 100 g"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.packaging_count",
+      "text": {
+        "de": "Verpackungsbestandteile: :count",
+        "es": "Componentes de envasado: :count",
+        "fr": "Éléments de conditionnement : :count",
+        "it": "Componenti di confezionamento: :count",
+        "nl": "Verpakkingsonderdelen: :count",
+        "pt_BR": "Itens de embalagem: :count"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.packaging_heading",
+      "text": {
+        "de": "Verpackung für diese Größe",
+        "es": "Envase de este formato",
+        "fr": "Conditionnement de ce format",
+        "it": "Confezionamento di questo formato",
+        "nl": "Verpakking voor dit formaat",
+        "pt_BR": "Embalagem deste tamanho"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.remove",
+      "text": {
+        "de": "Größe entfernen",
+        "es": "Eliminar formato",
+        "fr": "Supprimer le format",
+        "it": "Rimuovi formato",
+        "nl": "Formaat verwijderen",
+        "pt_BR": "Remover tamanho"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.remove_label",
+      "text": {
+        "de": "Größe :size und ihre Verpackung entfernen",
+        "es": "Eliminar el formato :size y su envase",
+        "fr": "Supprimer le format :size et son conditionnement",
+        "it": "Rimuovi il formato :size e il suo confezionamento",
+        "nl": "Formaat :size en de verpakking ervan verwijderen",
+        "pt_BR": "Remover o tamanho :size e sua embalagem"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.title",
+      "text": {
+        "de": "Größen",
+        "es": "Formatos",
+        "fr": "Formats",
+        "it": "Formati",
+        "nl": "Formaten",
+        "pt_BR": "Tamanhos"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.unit_group",
+      "text": {
+        "de": "Einheit des deklarierten Inhalts",
+        "es": "Unidad del contenido declarado",
+        "fr": "Unité du contenu déclaré",
+        "it": "Unità del contenuto dichiarato",
+        "nl": "Eenheid van de opgegeven inhoud",
+        "pt_BR": "Unidade do conteúdo declarado"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.units.fl_oz",
+      "text": {
+        "de": "fl oz",
+        "es": "fl oz",
+        "fr": "fl oz",
+        "it": "fl oz",
+        "nl": "fl oz",
+        "pt_BR": "fl oz"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.units.g",
+      "text": {
+        "de": "g",
+        "es": "g",
+        "fr": "g",
+        "it": "g",
+        "nl": "g",
+        "pt_BR": "g"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.units.kg",
+      "text": {
+        "de": "kg",
+        "es": "kg",
+        "fr": "kg",
+        "it": "kg",
+        "nl": "kg",
+        "pt_BR": "kg"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.units.l",
+      "text": {
+        "de": "l",
+        "es": "l",
+        "fr": "l",
+        "it": "l",
+        "nl": "l",
+        "pt_BR": "l"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.units.lb",
+      "text": {
+        "de": "lb",
+        "es": "lb",
+        "fr": "lb",
+        "it": "lb",
+        "nl": "lb",
+        "pt_BR": "lb"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.units.ml",
+      "text": {
+        "de": "ml",
+        "es": "ml",
+        "fr": "ml",
+        "it": "ml",
+        "nl": "ml",
+        "pt_BR": "ml"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.units.oz",
+      "text": {
+        "de": "oz",
+        "es": "oz",
+        "fr": "oz",
+        "it": "oz",
+        "nl": "oz",
+        "pt_BR": "oz"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.unnamed",
+      "text": {
+        "de": "Größe :number",
+        "es": "Formato :number",
+        "fr": "Format :number",
+        "it": "Formato :number",
+        "nl": "Formaat :number",
+        "pt_BR": "Tamanho :number"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.validation.declared_content_number",
+      "text": {
+        "de": "Gib den deklarierten Inhalt nur als Zahl ein; wähle die Einheit mit den Schaltflächen.",
+        "es": "Introduce el contenido declarado solo como número; elige la unidad con los botones.",
+        "fr": "Saisissez le contenu déclaré en chiffres uniquement ; choisissez l’unité avec les boutons.",
+        "it": "Inserisci il contenuto dichiarato solo come numero; scegli l’unità con i pulsanti.",
+        "nl": "Vul de opgegeven inhoud alleen als getal in; kies de eenheid met de knoppen.",
+        "pt_BR": "Informe o conteúdo declarado apenas como número; escolha a unidade nos botões."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.validation.declared_content_range",
+      "text": {
+        "de": "Der deklarierte Inhalt muss zwischen :min und :max liegen.",
+        "es": "El contenido declarado debe estar entre :min y :max.",
+        "fr": "Le contenu déclaré doit être compris entre :min et :max.",
+        "it": "Il contenuto dichiarato deve essere compreso tra :min e :max.",
+        "nl": "De opgegeven inhoud moet tussen :min en :max liggen.",
+        "pt_BR": "O conteúdo declarado deve estar entre :min e :max."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.validation.in_use_content",
+      "text": {
+        "de": "Diese Größe wird bereits in der Produktion oder im Bestand verwendet. Lege für das neue Gewicht oder Volumen eine neue Größe an.",
+        "es": "Este formato ya se usa en producción o en el inventario. Añade un formato para el nuevo peso o volumen.",
+        "fr": "Ce format est déjà utilisé en production ou en stock. Ajoutez un format pour le nouveau poids ou volume.",
+        "it": "Questo formato è già in uso in produzione o a magazzino. Aggiungi un formato per il nuovo peso o volume.",
+        "nl": "Dit formaat wordt al gebruikt in productie of voorraad. Voeg een formaat toe voor het nieuwe gewicht of volume.",
+        "pt_BR": "Este tamanho já é usado na produção ou no estoque. Adicione um tamanho para o novo peso ou volume."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.validation.too_many",
+      "text": {
+        "de": "Ein Produkt kann bis zu :max Größen haben. Entferne eine Größe und speichere erneut.",
+        "es": "Un producto puede tener hasta :max formatos. Elimina un formato y vuelve a guardar.",
+        "fr": "Un produit peut avoir jusqu’à :max formats. Supprimez un format, puis enregistrez à nouveau.",
+        "it": "Un prodotto può avere fino a :max formati. Rimuovi un formato, quindi salva di nuovo.",
+        "nl": "Een product kan maximaal :max formaten hebben. Verwijder een formaat en sla opnieuw op.",
+        "pt_BR": "Um produto pode ter até :max tamanhos. Remova um tamanho e salve novamente."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.validation.unknown_size",
+      "text": {
+        "de": "Ein Verpackungsbestandteil gehört zu einer Größe, die es nicht mehr gibt. Lade die Formel neu und speichere erneut.",
+        "es": "Una línea de envasado pertenece a un formato que ya no existe. Vuelve a cargar la fórmula y guarda de nuevo.",
+        "fr": "Une ligne de conditionnement appartient à un format qui n’existe plus. Rechargez la formule, puis enregistrez à nouveau.",
+        "it": "Una riga di confezionamento appartiene a un formato che non esiste più. Ricarica la formula, quindi salva di nuovo.",
+        "nl": "Een verpakkingsregel hoort bij een formaat dat niet meer bestaat. Laad de formule opnieuw en sla opnieuw op.",
+        "pt_BR": "Uma linha de embalagem pertence a um tamanho que não existe mais. Recarregue a fórmula e salve novamente."
+      }
+    },
+    {
+      "group": "workbench",
       "key": "page.heading",
       "text": {
-        "de": "Rezeptwerkbank",
+        "de": "Formulierungswerkbank",
         "es": "Banco de formulación",
         "fr": "Atelier de formulation",
         "it": "Banco di formulazione",
@@ -53342,12 +54518,12 @@
       "group": "workbench",
       "key": "tabs.packaging",
       "text": {
-        "de": "Verpackung",
-        "es": "Envasado",
-        "fr": "Conditionnement",
-        "it": "Confezionamento",
-        "nl": "Verpakking",
-        "pt_BR": "Embalagem"
+        "de": "Größen & Verpackung",
+        "es": "Formatos y envasado",
+        "fr": "Formats et conditionnement",
+        "it": "Formati e confezionamento",
+        "nl": "Formaten en verpakking",
+        "pt_BR": "Tamanhos e embalagem"
       }
     },
     {

@@ -5,8 +5,12 @@ Koskalk is a professional formulation and production domain for soap and cosmeti
 ## Products and formulation
 
 **Product**:
-The complete saved item, including its formula, presentation, label, packaging, and production records.
+The complete saved item, including its formula, presentation, label, sizes, and production records.
 _Avoid_: Recipe
+
+**Product size**:
+One sellable presentation of a product: a maker-declared content, such as 100 g or 30 ml, with its own packaging. Every size of a product shares the product's formula; a different formula or brand is a different product.
+_Avoid_: Variant, variation, format, SKU
 
 **Formula**:
 The phase-aware quantitative composition of a product.

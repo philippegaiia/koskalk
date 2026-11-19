@@ -850,8 +850,9 @@ it('renders saved cosmetic formula sheet with selected ingredients only', functi
         ]),
     );
 
-    $this->actingAs($user)
-        ->get(route('recipes.saved', Recipe::withoutGlobalScopes()->findOrFail($savedVersion->recipe_id)))
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($savedVersion->recipe_id);
+    $response = $this->actingAs($user)
+        ->get(route('recipes.saved', ['recipe' => $recipe, 'oil_weight' => 1000]))
         ->assertSuccessful()
         ->assertSee('% of formula')
         ->assertSee('Phase A')
@@ -866,6 +867,12 @@ it('renders saved cosmetic formula sheet with selected ingredients only', functi
         ->assertSee('Label text')
         ->assertSee('Packaging plan')
         ->assertSee('Record production');
+
+    expect(array_column($response->viewData('phaseSections'), 'total_weight'))->toBe([700.0, 300.0]);
+
+    $scaled = $this->get(route('recipes.saved', ['recipe' => $recipe, 'oil_weight' => 2000]))->assertOk();
+    expect(array_column($scaled->viewData('phaseSections'), 'total_weight'))->toBe([1400.0, 600.0]);
+    expect(array_sum(array_column($scaled->viewData('phaseSections'), 'total_percentage')))->toBe(100.0);
 });
 
 it('downloads the saved cosmetic formula as a one-sheet excel workbook', function () {

@@ -5,16 +5,23 @@ return [
         'eyebrow' => 'Production',
         'title' => 'Record production',
         'intro' => 'Freeze the saved formula, current prices, packaging plan, and lot annotations into a production batch.',
+        'size_help' => 'Apply the selected size to load its packaging for this batch.',
         'unpriced' => 'Some rows are unpriced. Add prices before recording production.',
     ],
     'fields' => [
         'batch_number' => 'Production batch number',
         'manufacture_date' => 'Manufacture date',
         'units_produced' => 'Units produced',
+        'product_size' => 'Product size',
+        'choose_size' => 'Choose a size',
         'lot_numbers' => 'Ingredient lot numbers',
         'lot_placeholder' => 'Lot #',
         'notes' => 'Production notes',
         'notes_placeholder' => 'Trace, pH, ambient conditions, deviations…',
+    ],
+    'validation' => [
+        'size_required' => 'Choose the Product size for this batch.',
+        'invalid_size' => 'Choose a size available for this formula.',
     ],
     'costs' => [
         'ingredient' => 'Ingredient cost',
@@ -29,6 +36,7 @@ return [
     ],
     'actions' => [
         'record' => 'Record production',
+        'select_size' => 'Apply size to batch',
         'view' => 'View',
         'print' => 'Print',
         'delete' => 'Delete',

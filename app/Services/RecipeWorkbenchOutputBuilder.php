@@ -151,6 +151,7 @@ class RecipeWorkbenchOutputBuilder
             $currentFormula = $this->currentCostingFormula($snapshotDraft, $formulaDocument, $calculation, $ingredients, $payload['costing']);
             $currentCosting = $this->currentCostingPayload($payload['costing'], $snapshotDraft);
             $costingProjection = $this->costPreviewBuilder->buildFromTransientRows($currentFormula, $currentCosting);
+            $costingProjection['product_size_label'] = $payload['costing']['product_size_label'] ?? null;
             $costingExportData = $this->costingExportDataBuilder->build($formulaDocument, $costingProjection);
         }
 
@@ -240,6 +241,7 @@ class RecipeWorkbenchOutputBuilder
             'basis_unit' => $basisUnit,
             'phases' => $phases,
             'packaging_items' => collect($snapshotDraft['packagingItems'] ?? [])
+                ->filter(fn (array $row): bool => $this->isCostedSize($row, $costing))
                 ->values()
                 ->map(fn (array $row, int $index): array => [
                     'packaging_item_id' => isset($row['packaging_item_id']) ? (int) $row['packaging_item_id'] : null,
@@ -334,6 +336,20 @@ class RecipeWorkbenchOutputBuilder
         }
 
         return $rows;
+    }
+
+    /**
+     * Costing covers one size: with a size chosen in Costing, only that size's
+     * packaging is costed, matching the rows the workbench shows.
+     *
+     * @param  array<string, mixed>  $row
+     * @param  array<string, mixed>  $costing
+     */
+    private function isCostedSize(array $row, array $costing): bool
+    {
+        $costedSizeKey = $costing['product_size_key'] ?? null;
+
+        return ! is_string($costedSizeKey) || $costedSizeKey === '' || ($row['product_size_key'] ?? null) === $costedSizeKey;
     }
 
     /** @param array<string, mixed> $costing
@@ -829,6 +845,7 @@ class RecipeWorkbenchOutputBuilder
                     $capturedName = trim((string) ($row['name'] ?? ''));
 
                     return [
+                        'product_size_key' => is_string($row['product_size_key'] ?? null) ? $row['product_size_key'] : null,
                         'packaging_item_id' => $item?->id,
                         'name' => $capturedName !== '' ? $capturedName : ($item?->name ?? ''),
                         'material_code' => $item?->material_code,

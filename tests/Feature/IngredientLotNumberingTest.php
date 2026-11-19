@@ -91,7 +91,7 @@ it('accepts a manual number without requiring an ingredient code or consuming th
 it('rejects duplicate manual numbers in the workspace and allows them in another workspace', function (): void {
     $fixture = ingredientNumberingFixture();
     numberedOpeningLot($fixture, 'one', 'MY-LOT');
-    expect(fn () => numberedOpeningLot($fixture, 'two', 'MY-LOT'))->toThrow(ValidationException::class);
+    expect(fn () => numberedOpeningLot($fixture, 'two', 'my-lot'))->toThrow(ValidationException::class);
     expect(numberedOpeningLot(ingredientNumberingFixture(), 'other', 'MY-LOT')->internal_lot_code)->toBe('MY-LOT');
 });
 
@@ -121,7 +121,7 @@ it('keeps packaging numbering valid after custom and five digit ingredient lot n
     $this->travelTo(now()->setDate(2026, 9, 23));
     $fixture = ingredientNumberingFixture();
     numberedOpeningLot($fixture, 'high', 'SK-260923-9999');
-    numberedOpeningLot($fixture, 'higher', 'SK-260923-10000');
+    numberedOpeningLot($fixture, 'higher', 'sk-260923-10000');
     numberedOpeningLot($fixture, 'custom', 'SK-260923-Z');
     $packaging = PackagingItem::factory()->for($fixture['workspace'])->create();
     $fixture['listing'] = SupplierListing::factory()->for($fixture['workspace'])->create([

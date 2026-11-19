@@ -159,6 +159,8 @@ it('renders a locale-aware budget and display-unit requirements in Flash', funct
         ->set('lines.0.expected_units_per_batch', '100')
         ->call('previewDates')
         ->assertSee('12,50 kg')
+        ->assertSee('1,00 EUR / Unit')
+        ->assertDontSee('production_bench.common.unit')
         ->assertSee('125,00 EUR')
         ->assertSee('225,00 EUR')
         ->assertSee('Make');

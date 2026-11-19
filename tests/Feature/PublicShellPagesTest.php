@@ -89,6 +89,15 @@ it('redirects guests from the application root to login', function () {
         ->assertRedirect(route('login'));
 });
 
+it('offers a link to the public calculator index on the sign-in page', function (): void {
+    $page = $this->get(route('login'))->assertOk();
+    $document = HTMLDocument::createFromString($page->getContent(), LIBXML_NOERROR);
+    $links = collect($document->querySelectorAll('a'))
+        ->filter(fn (Element $link): bool => $link->getAttribute('href') === route('calculators.index'));
+
+    expect($links->contains(fn (Element $link): bool => trim($link->textContent) === __('calculators.all_calculators')))->toBeTrue();
+});
+
 it('redirects authenticated homepage visitors to the overview', function () {
     $user = User::factory()->create();
 

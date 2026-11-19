@@ -4,6 +4,7 @@ namespace App\Actions\Production;
 
 use App\Enums\MassUnit;
 use App\Enums\ProductionBasisKind;
+use App\Enums\ProductionOutputType;
 use App\Enums\ProductionRunSource;
 use App\Enums\ProductionRunStatus;
 use App\Models\ProductionRun;
@@ -20,8 +21,10 @@ use App\Services\Production\ProductionReadyDateService;
 use App\Services\Production\ProductionRequirementBuilder;
 use App\Services\Production\ProductionRequirementMaterialCodeSnapshotter;
 use App\Services\Production\ProductionRunNumberService;
+use App\Services\Production\ProductionSizeSelection;
 use App\Services\Production\ProductionWorkingCalendar;
 use App\Services\ProductionBenchAccess;
+use App\Services\ProductSizeResolver;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -41,6 +44,7 @@ class CreateProductionDraft
         private readonly ProductionRunNumberService $numbers,
         private readonly ProductionWorkingCalendar $calendar,
         private readonly ProductionLocationSelection $locations,
+        private readonly ProductSizeResolver $productSizes,
     ) {}
 
     public function handle(
@@ -57,6 +61,8 @@ class CreateProductionDraft
         ProductionRunStatus $status = ProductionRunStatus::Draft,
         ?ProductionTaskSet $taskSet = null,
         ?int $productionLocationId = null,
+        ?string $productSizeKey = null,
+        bool $packageLater = false,
     ): ProductionRun {
         $this->access->assertWritable($actor, $workspace);
 
@@ -81,6 +87,8 @@ class CreateProductionDraft
         return DB::transaction(function () use (
             $actor,
             $productionLocationId,
+            $productSizeKey,
+            $packageLater,
             $basisInputValue,
             $basisInputUnit,
             $basisQuantityGrams,
@@ -106,7 +114,17 @@ class CreateProductionDraft
                 ->first();
 
             if ($existing instanceof ProductionRun) {
-                if ($existing->recipe_id !== $recipe->id) {
+                $version = $existing->recipeVersion;
+                $replayedSizeId = $existing->product_size_id;
+                if (blank($productSizeKey) && $replayedSizeId !== null && $version instanceof RecipeVersion) {
+                    $sizes = $this->productSizes->forVersion($version, preferPackaged: true);
+                    $replayedSizeId = $sizes->count() === 1 ? $sizes->first()->id : null;
+                }
+
+                if ($existing->recipe_id !== $recipe->id
+                    || (bool) $existing->package_later !== $packageLater
+                    || $replayedSizeId !== $existing->product_size_id
+                    || (filled($productSizeKey) && $existing->productSize?->public_id !== strtolower($productSizeKey))) {
                     throw ValidationException::withMessages([
                         'idempotency_key' => __('production_bench.production.validation.create_idempotency_conflict'),
                     ]);
@@ -192,12 +210,26 @@ class CreateProductionDraft
             }
 
             $basisKind = $this->basisKind($lockedRecipe);
+            if ($packageLater && ($source !== ProductionRunSource::Direct
+                || $lockedRecipe->production_output_type === ProductionOutputType::ManufacturedIngredient
+                || $this->productSizes->forVersion($publishedVersion, preferPackaged: true)->isEmpty())) {
+                throw ValidationException::withMessages(['packageLater' => __('production_bench.packaging.bulk_unavailable')]);
+            }
+
+            if ($packageLater) {
+                $this->requirementBuilder->linkedBulkPackaging($publishedVersion);
+            }
+
+            $sizeSelection = $packageLater
+                ? new ProductionSizeSelection(null, false)
+                : $this->productSizes->selectForProduction($publishedVersion, $productSizeKey);
             $requirements = $this->requirementBuilder->build(
                 version: $publishedVersion,
                 basisKind: $basisKind,
                 basisQuantityGrams: $basisQuantityGrams,
                 expectedUnits: $expectedUnits,
                 recipe: $lockedRecipe,
+                sizeSelection: $sizeSelection,
             );
             $formulaSnapshot = $this->formulaSnapshotBuilder->build(
                 recipe: $lockedRecipe,
@@ -231,6 +263,11 @@ class CreateProductionDraft
                 'brand_name_snapshot' => $brand?->name,
                 'collection_name_snapshot' => $collection?->name,
                 'recipe_version_id' => $publishedVersion->id,
+                'package_later' => $packageLater,
+                'product_size_id' => $sizeSelection->size?->id,
+                'product_size_label_snapshot' => $sizeSelection->size?->label($actor->number_locale),
+                'product_size_content_value_snapshot' => $sizeSelection->size?->declared_content_value,
+                'product_size_content_unit_snapshot' => $sizeSelection->size?->declared_content_unit?->value,
                 'production_output_type' => $outputSnapshot['production_output_type'],
                 'output_ingredient_id' => $outputSnapshot['output_ingredient_id'],
                 'output_ready_delay_days' => $outputSnapshot['output_ready_delay_days'],

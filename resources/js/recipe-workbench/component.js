@@ -23,7 +23,7 @@ import {
     draftStateFromDraft as buildDraftStateFromDraft,
     snapshotStateFromSnapshot as buildSnapshotStateFromSnapshot,
 } from './snapshot';
-import { humanizeKey as humanizeText, roundTo } from './utils';
+import { humanizeKey as humanizeText, productSizesFromPayload, roundTo } from './utils';
 import { draftSignature } from './draft-signature';
 import { formatDecimalInput, resolveNumberLocale } from './number-format';
 import { MASS_UNITS, convertMass } from './mass';
@@ -297,8 +297,12 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         costingAlkaliIngredients: payload.costing?.alkali_ingredients ?? {},
         costingWaterIngredient: payload.costing?.water_ingredient ?? null,
         costingPriceByRowId: {},
+        productSizes: productSizesFromPayload(payload.productSizes),
+        selectedProductSizeKey: productSizesFromPayload(payload.productSizes)[0]?.key ?? null,
+        costingProductSizeKey: productSizesFromPayload(payload.productSizes)[0]?.key ?? null,
         packagingPlanRows: (payload.packagingItems ?? []).map((row) => ({
             id: row.id ?? `packaging-plan-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+            product_size_key: row.product_size_key ?? null,
             packaging_item_id: row.packaging_item_id ?? null,
             name: row.name ?? '',
             material_code: row.material_code ?? null,

@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\PackedLotSuffix;
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\ProductionBench\Production\NumberingSettings;
 use App\Models\Plan;
@@ -64,6 +65,27 @@ it('lets owners and admins save number settings and emits the standard notificat
         ->permanent_suffix->toBe('-FR')
         ->permanent_padding->toBe(6)
         ->next_permanent_serial->toBe(42);
+});
+
+it('saves the packed lot suffix with batch numbering and rejects an unknown one', function (): void {
+    $fixture = productionNumberSettingsFixture();
+
+    Livewire::actingAs($fixture['owner'])
+        ->test(NumberingSettings::class)
+        ->assertSet('packedLotSuffix', 'letter')
+        ->assertSee('B-00001-A')
+        ->assertSee('B-00001-100ML')
+        ->set('packedLotSuffix', 'content')
+        ->assertSee(__('lot_numbering.unsaved'))
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertSeeHtml('aria-checked="true"')
+        ->set('packedLotSuffix', 'colour')
+        ->call('save')
+        ->assertHasErrors('packedLotSuffix');
+
+    expect(ProductionRunNumberSetting::query()->whereBelongsTo($fixture['workspace'])->sole()->packed_lot_suffix)
+        ->toBe(PackedLotSuffix::Content);
 });
 
 it('shows a live rendered example and validation errors with accessible field descriptions', function (): void {

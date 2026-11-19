@@ -21,9 +21,11 @@ use App\Models\ProductionFormulaLine;
 use App\Models\ProductionJournalEntry;
 use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
+use App\Models\ProductSize;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\StockLot;
+use App\Models\StockMovement;
 use App\Models\User;
 use App\Models\UserEntitlement;
 use App\Models\Workspace;
@@ -36,6 +38,33 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 
 uses(RefreshDatabase::class);
+
+it('rolls back production size columns without changing SQLite guards', function (): void {
+    $recipe = Recipe::factory()->create();
+    $published = RecipeVersion::factory()->for($recipe)->create(['is_current' => false, 'saved_at' => '2026-11-10']);
+    $olderSize = ProductSize::factory()->for($recipe)->create(['created_at' => '2026-11-09', 'archived_at' => '2026-11-11']);
+    ProductSize::factory()->for($recipe)->create(['created_at' => '2026-11-12']);
+
+    $definitions = fn () => DB::table('sqlite_master')
+        ->whereIn('tbl_name', ['production_runs', 'production_batches'])
+        ->where(fn ($query) => $query->where('type', 'trigger')
+            ->orWhere(fn ($query) => $query->where('type', 'index')->where('sql', 'like', '% where %')))
+        ->orderBy('name')->pluck('sql', 'name')->all();
+    $before = $definitions();
+    $migration = require database_path('migrations/2026_11_15_132005_add_product_size_snapshots_to_production_records.php');
+
+    $migration->down();
+    expect($definitions())->toBe($before)
+        ->and(Schema::hasTable('recipe_version_product_sizes'))->toBeFalse()
+        ->and(Schema::hasColumn('production_runs', 'product_size_id'))->toBeFalse()
+        ->and(Schema::hasColumn('production_batches', 'product_size_label_snapshot'))->toBeFalse();
+
+    $migration->up();
+    expect($definitions())->toBe($before)
+        ->and(Schema::hasColumn('production_runs', 'product_size_id'))->toBeTrue()
+        ->and(Schema::hasColumn('production_batches', 'product_size_label_snapshot'))->toBeTrue()
+        ->and($published->productSizes()->pluck('product_sizes.id')->all())->toBe([$olderSize->id]);
+})->skip(fn (): bool => DB::getDriverName() !== 'sqlite', 'Uses SQLite schema definitions.');
 
 it('creates the production planning tables with their durable snapshot columns', function (): void {
     expect(Schema::hasColumns('production_runs', [
@@ -75,6 +104,57 @@ it('creates the production planning tables with their durable snapshot columns',
             'unit_snapshot',
             'sort_order',
         ]))->toBeTrue();
+});
+
+it('backfills finished lot sizes from their runs and preserves stock history across migration', function (): void {
+    $run = ProductionRun::factory()->create();
+    $size = ProductSize::factory()->for($run->recipe)->create(['name' => 'Current label']);
+    $run->update(['product_size_id' => $size->id, 'product_size_label_snapshot' => 'Recorded label']);
+    $legacyRun = ProductionRun::factory()->for($run->recipe)->create([
+        'workspace_id' => $run->workspace_id,
+        'recipe_version_id' => $run->recipe_version_id,
+    ]);
+    $lot = StockLot::factory()->forRecipe()->create([
+        'workspace_id' => $run->workspace_id,
+        'recipe_id' => $run->recipe_id,
+        'production_run_id' => $run->id,
+        'origin' => StockLotOrigin::ProductionOutput,
+    ]);
+    $legacyLot = StockLot::factory()->forRecipe()->create([
+        'workspace_id' => $legacyRun->workspace_id,
+        'recipe_id' => $legacyRun->recipe_id,
+        'production_run_id' => $legacyRun->id,
+        'origin' => StockLotOrigin::ProductionOutput,
+    ]);
+    $movement = StockMovement::factory()->for($lot)->create(['workspace_id' => $lot->workspace_id, 'quantity_delta' => '48']);
+    $migration = require database_path('migrations/2026_11_15_181604_add_finished_stock_by_product_size.php');
+    $sqliteDefinitions = fn () => DB::table('sqlite_master')
+        ->where('tbl_name', 'stock_lots')
+        ->whereNotIn('name', ['stock_lots_product_size_insert', 'stock_lots_product_size_update'])
+        ->where(fn ($query) => $query->where('type', 'trigger')
+            ->orWhere(fn ($query) => $query->where('type', 'index')->where('sql', 'like', '% where %')))
+        ->orderBy('name')->pluck('sql', 'name')->all();
+    $before = DB::getDriverName() === 'sqlite' ? $sqliteDefinitions() : null;
+
+    $migration->down();
+    expect(Schema::hasColumn('stock_lots', 'product_size_id'))->toBeFalse();
+    $migration->up();
+
+    expect($lot->fresh()->product_size_id)->toBe($size->id)
+        ->and($lot->fresh()->product_size_label_snapshot)->toBe('Recorded label')
+        ->and($lot->fresh()->product_size_content_value_snapshot)->toBeNull()
+        ->and($legacyLot->fresh()->product_size_id)->toBeNull()
+        ->and($movement->fresh()->stock_lot_id)->toBe($lot->id);
+
+    if ($before !== null) {
+        expect($sqliteDefinitions())->toBe($before);
+    }
+
+    $otherSize = ProductSize::factory()->create();
+    expect(fn () => DB::transaction(fn () => $lot->update(['product_size_id' => $otherSize->id])))
+        ->toThrow(QueryException::class);
+    expect(fn () => DB::transaction(fn () => $size->delete()))
+        ->toThrow(QueryException::class);
 });
 
 it('stores production output configuration, readiness estimates, and output settings', function (): void {

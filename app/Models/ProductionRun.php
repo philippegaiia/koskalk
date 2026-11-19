@@ -7,6 +7,7 @@ use App\Enums\ProductionBasisKind;
 use App\Enums\ProductionOutputType;
 use App\Enums\ProductionRunSource;
 use App\Enums\ProductionRunStatus;
+use App\Enums\StockLotOrigin;
 use App\Models\Concerns\HasPublicId;
 use Database\Factories\ProductionRunFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -26,6 +27,11 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
     'brand_name_snapshot',
     'collection_name_snapshot',
     'recipe_version_id',
+    'package_later',
+    'product_size_id',
+    'product_size_label_snapshot',
+    'product_size_content_value_snapshot',
+    'product_size_content_unit_snapshot',
     'production_output_type',
     'output_ingredient_id',
     'output_ready_delay_days',
@@ -90,6 +96,11 @@ class ProductionRun extends Model
     public function recipe(): BelongsTo
     {
         return $this->belongsTo(Recipe::class)->withoutGlobalScopes();
+    }
+
+    public function productSize(): BelongsTo
+    {
+        return $this->belongsTo(ProductSize::class);
     }
 
     public function recipeVersion(): BelongsTo
@@ -176,9 +187,14 @@ class ProductionRun extends Model
             ->orderBy('id');
     }
 
+    public function packagedLots(): HasMany
+    {
+        return $this->hasMany(StockLot::class)->where('origin', StockLotOrigin::PackagingOutput);
+    }
+
     public function outputLot(): HasOne
     {
-        return $this->hasOne(StockLot::class, 'production_run_id');
+        return $this->hasOne(StockLot::class, 'production_run_id')->where('origin', StockLotOrigin::ProductionOutput);
     }
 
     public function documents(): MorphMany
@@ -194,6 +210,7 @@ class ProductionRun extends Model
     protected function casts(): array
     {
         return [
+            'product_size_content_value_snapshot' => 'decimal:4',
             'edit_revision' => 'integer',
             'status' => ProductionRunStatus::class,
             'source' => ProductionRunSource::class,
@@ -215,6 +232,7 @@ class ProductionRun extends Model
             'completed_at' => 'datetime',
             'aborted_at' => 'datetime',
             'manufacture_date' => 'date',
+            'package_later' => 'boolean',
             'actual_output_units' => 'integer',
             'actual_output_mass_grams' => 'decimal:9',
             'actual_ingredient_total' => 'decimal:9',

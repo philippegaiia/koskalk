@@ -527,11 +527,14 @@ it('rejects recording a production batch when the production batch plan limit is
         'starts_at' => now(),
     ]);
 
+    $entitlements = app(EntitlementService::class);
+    expect($entitlements->canCreateProductionBatch($user))->toBeTrue();
+
     ProductionBatch::factory()->create([
         'user_id' => $user->id,
     ]);
 
-    $usage = app(EntitlementService::class)->usageFor($user);
+    $usage = $entitlements->usageFor($user);
 
     expect($usage['production_batches'])
         ->toMatchArray([
@@ -541,7 +544,8 @@ it('rejects recording a production batch when the production batch plan limit is
             'allowed' => false,
         ]);
 
-    expect(fn () => app(EntitlementService::class)->assertCanCreateProductionBatch($user))
+    expect($entitlements->canCreateProductionBatch($user))->toBeFalse();
+    expect(fn () => $entitlements->assertCanCreateProductionBatch($user))
         ->toThrow(ValidationException::class, '1 saved production batches');
 });
 
@@ -559,7 +563,7 @@ it('seeds the initial free registered plan limits', function () {
             'saved_recipes' => 15,
             'private_ingredients' => 20,
             'formula_items_per_recipe' => 30,
-            'production_batches' => 0,
+            'production_batches' => 100,
             'saved_formula_history' => 0,
         ]);
 });

@@ -1,4 +1,17 @@
-import { number } from './utils';
+import { number, productSizesFromPayload, retainedProductSizeKey } from './utils';
+
+/** Sizes travel with the draft; a draft without them keeps the current sizes. */
+function productSizeState(draft, currentState) {
+    const productSizes = Array.isArray(draft.productSizes)
+        ? productSizesFromPayload(draft.productSizes)
+        : (currentState.productSizes ?? []);
+
+    return {
+        productSizes,
+        selectedProductSizeKey: retainedProductSizeKey(productSizes, currentState.selectedProductSizeKey),
+        costingProductSizeKey: retainedProductSizeKey(productSizes, currentState.costingProductSizeKey),
+    };
+}
 
 function phaseItemsFromDraft(draft, phaseOrder) {
     const draftPhaseItems = draft.phaseItems ?? {};
@@ -81,9 +94,11 @@ export function draftStateFromDraft(draft, currentState) {
         finalPlainIngredientListBasisHash: draft.finalPlainIngredientListBasisHash ?? currentState.finalPlainIngredientListBasisHash ?? '',
         phaseOrder,
         phaseItems: phaseItemsFromDraft(draft, phaseOrder),
+        ...productSizeState(draft, currentState),
         packagingPlanRows: Array.isArray(draft.packagingItems)
             ? draft.packagingItems.map((row) => ({
                 id: row.id ?? `packaging-plan-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+                product_size_key: row.product_size_key ?? null,
                 packaging_item_id: row.packaging_item_id ?? null,
                 name: row.name ?? '',
                 material_code: row.material_code ?? null,

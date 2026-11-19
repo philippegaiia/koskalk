@@ -11,6 +11,7 @@ use App\Models\ProductFamily;
 use App\Models\ProductionRun;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
+use App\Models\StockLot;
 use App\Models\User;
 use App\Models\UserEntitlement;
 use App\Models\Workspace;
@@ -149,6 +150,28 @@ it('surfaces permanent counter exhaustion on the assignment page', function (): 
         ->assertHasErrors('selectedProductionIds');
 
     expect($fixture['production']->fresh()->batch_number)->toBeNull();
+});
+
+it('rejects permanent batch numbers already used by a stock lot', function (): void {
+    $fixture = productionBatchAssignmentFixture();
+    StockLot::factory()->for($fixture['workspace'])->create(['internal_lot_code' => 'b-00001']);
+    StockLot::factory()->for($fixture['workspace'])->create(['internal_lot_code' => 'B-00002']);
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionDetail::class, ['productionId' => $fixture['production']->id])
+        ->call('beginEditing')->call('assignBatchNumber')->assertHasErrors('production_bench')
+        ->assertSee(__('production_bench.production.validation.batch_number_used_by_lot_next', ['lot' => 'b-00001', 'serial' => 3]))
+        ->call('finishEditing');
+
+    expect($fixture['production']->fresh()->batch_number)->toBeNull()
+        ->and($fixture['workspace']->productionRunNumberSetting()->sole()->next_permanent_serial)->toBe(1);
+
+    $second = productionBatchAssignmentRun($fixture, '2026-08-14');
+    StockLot::factory()->for($fixture['workspace'])->create(['internal_lot_code' => 'B-00004']);
+    Livewire::test(ProductionIndex::class)
+        ->set('selectedProductionIds', [$fixture['production']->id, $second->id])
+        ->call('assignSelectedBatchNumbers')
+        ->assertHasErrors('selectedProductionIds')
+        ->assertSee(__('production_bench.production.validation.batch_number_used_by_lot_next', ['lot' => 'b-00001', 'serial' => 5]));
 });
 
 it('searches by both planning and permanent batch identifiers and keeps selection usable for stock preparation', function (): void {

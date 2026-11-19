@@ -9,6 +9,7 @@ use App\Models\ProductFamily;
 use App\Models\ProductionBatchPreset;
 use App\Models\ProductionLocation;
 use App\Models\ProductionRun;
+use App\Models\ProductSize;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
@@ -23,10 +24,15 @@ uses(RefreshDatabase::class);
 
 it('renders the flash planner, simulates a line, and previews dates without creating productions', function (): void {
     $fixture = flashPlannerFixture();
+    $large = ProductSize::factory()->for($fixture['recipe'])->create(['name' => 'Large jar']);
+    $size = ProductSize::factory()->for($fixture['recipe'])->create(['name' => 'Small jar']);
+    $fixture['version']->productSizes()->attach([$large->id, $size->id]);
 
     $page = Livewire::actingAs($fixture['owner'])->test(FlashPlanner::class)
         ->assertSee(__('production_bench.flash.title'))
         ->set('lines.0.recipe_id', (string) $fixture['recipe']->id)
+        ->assertSee('Small jar')
+        ->set('lines.0.product_size_key', $size->public_id)
         ->assertSet('lines.0.batch_mode', (string) $fixture['preset']->id)
         ->assertSet('lines.0.basis_input_value', '12')
         ->assertSet('lines.0.expected_units_per_batch', '100')
@@ -38,9 +44,11 @@ it('renders the flash planner, simulates a line, and previews dates without crea
         ->assertHasNoErrors()
         ->assertSet('showDatePreview', true)
         ->assertSee('Flash product')
+        ->assertSee('Small jar')
         ->assertSee('batch 1 of 1');
 
     expect($page->get('datePreview'))->toHaveCount(1)
+        ->and($page->get('datePreview.0.product_size_label'))->toBe('Small jar')
         ->and($fixture['workspace']->productionRuns()->count())->toBe(0);
 
     $page->call('generate')
@@ -49,7 +57,7 @@ it('renders the flash planner, simulates a line, and previews dates without crea
         ->assertDontSee(__('production_bench.flash.generated_success', ['count' => 1]))
         ->assertSee(__('production_bench.flash.celebration_title'));
 
-    expect($fixture['workspace']->productionRuns()->count())->toBe(1);
+    expect($fixture['workspace']->productionRuns()->sole()->product_size_id)->toBe($size->id);
 });
 
 it('keeps custom quantity fields available when a product has no saved batch size', function (): void {
@@ -181,7 +189,7 @@ function flashPlannerFixture(): array
         'visibility' => Visibility::Private,
         'name' => 'Flash product',
     ]);
-    RecipeVersion::factory()->for($recipe)->create([
+    $version = RecipeVersion::factory()->for($recipe)->create([
         'owner_type' => OwnerType::Workspace,
         'owner_id' => $workspace->id,
         'workspace_id' => $workspace->id,
@@ -198,7 +206,7 @@ function flashPlannerFixture(): array
     ]);
     $preset->recipes()->attach($recipe->id, ['is_default' => true]);
 
-    return compact('owner', 'workspace', 'recipe', 'preset');
+    return compact('owner', 'workspace', 'recipe', 'preset', 'version');
 }
 
 it('refreshes a stale preview and requires another create click', function (): void {

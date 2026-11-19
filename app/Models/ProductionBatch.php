@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'workspace_id',
     'recipe_id',
     'recipe_version_id',
+    'product_size_id',
+    'product_size_label_snapshot',
     'recipe_name',
     'recipe_version_number',
     'product_family_slug',
@@ -51,6 +53,11 @@ class ProductionBatch extends Model
     public function recipe(): BelongsTo
     {
         return $this->belongsTo(Recipe::class);
+    }
+
+    public function productSize(): BelongsTo
+    {
+        return $this->belongsTo(ProductSize::class);
     }
 
     public function recipeVersion(): BelongsTo

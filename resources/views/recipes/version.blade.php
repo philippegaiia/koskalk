@@ -17,6 +17,9 @@
                 $printQuery[$batchQueryKey] = $batchContext[$batchQueryKey];
             }
         }
+        if ($costingSize !== null) {
+            $printQuery['product_size'] = $costingSize->public_id;
+        }
 
         $canRecordProduction = (bool) ($canRecordProduction ?? false);
         $canUpdateRecipe = (bool) ($canUpdateRecipe ?? false);
@@ -37,7 +40,7 @@
         $isCosmeticFormula = $recipe->productFamily?->calculation_basis === 'total_formula';
         $formatNumber = fn (mixed $value, int $precision = 2): string => rtrim(rtrim(number_format((float) $value, $precision, '.', ''), '0'), '.');
         $formatMoney = fn (mixed $value, string $currency): string => $formatNumber($value, 2).' '.$currency;
-        $initialUnitsProduced = old('units_produced', $productionPreview['units_produced'] ?? $batchContext['units_produced']);
+        $initialUnitsProduced = old('units_produced', is_array($productionPreview) ? ($productionPreview['units_produced'] ?? null) : $batchContext['units_produced']);
         $initialUnitsProduced = is_scalar($initialUnitsProduced) ? (string) $initialUnitsProduced : '';
         $previewCurrency = $productionPreview['currency'] ?? 'EUR';
         $productionCostPreview = [
@@ -115,9 +118,7 @@
                             </form>
                         @endif
                         @if ($canShareFormula ?? false)
-                            @can('share', $recipe)
-                                <a href="{{ route('formula-shares.create', $recipe) }}" class="sk-btn sk-btn-outline min-h-11">{{ __('sharing.share') }}</a>
-                            @endcan
+                            <a href="{{ route('formula-shares.create', $recipe) }}" class="sk-btn sk-btn-outline min-h-11">{{ __('sharing.share') }}</a>
                         @endif
                         <form method="GET" action="{{ route('recipes.print.recipe', ['recipe' => $recipe]) }}" class="flex flex-wrap items-center gap-2">
                             @foreach (collect($printQuery)->except('recipe') as $key => $value)
@@ -136,6 +137,11 @@
                                 <a x-ref="savedCsvExport" role="menuitem" href="{{ route('recipes.export.csv', $printQuery) }}" @keydown.arrow-down.prevent="$refs.savedExcelExport.focus()" @keydown.arrow-up.prevent="$refs.savedExcelExport.focus()" class="block min-h-11 rounded-lg px-3 py-2 text-sm font-medium text-[var(--color-ink-strong)] hover:bg-[var(--color-panel-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]">{{ __('formula_documents.actions.export_csv_option') }}</a>
                             </div>
                         </div>
+                        @if ($costingExportData !== null)
+                            <a href="{{ route('recipes.export.xlsx', $printQuery + ['kind' => 'costing']) }}" class="sk-btn sk-btn-outline min-h-11 gap-2 whitespace-nowrap">
+                                <x-action-icon name="download" />{{ __('formula_documents.actions.export_costing') }}
+                            </a>
+                        @endif
                     </div>
                 </div>
 
@@ -143,16 +149,28 @@
                     @foreach (collect($printQuery)->only(['batch_number', 'manufacture_date']) as $key => $value)
                         <input type="hidden" name="{{ $key }}" value="{{ $value }}" />
                     @endforeach
-                    @if ($canRecordProduction || filled($initialUnitsProduced))
+                    @if ($costingSize === null && ($canRecordProduction || filled($initialUnitsProduced)))
                         <input type="hidden" name="units_produced" value="{{ $initialUnitsProduced }}" x-bind:value="unitsProduced" />
+                    @endif
+                    @if (filled($productionPreview['product_size_key'] ?? null))
+                        <input type="hidden" name="batch_product_size" value="{{ $productionPreview['product_size_key'] }}" />
+                        <input type="hidden" name="batch_units_produced" value="{{ $initialUnitsProduced }}" x-bind:value="unitsProduced" />
                     @endif
                     @if ($batchSearch !== '')
                         <input type="hidden" name="batch_search" value="{{ $batchSearch }}" />
                     @endif
+                    @if ($costingSize !== null)
+                        <label for="saved-costing-size" class="block text-sm font-medium text-[var(--color-ink-strong)]">{{ __('workbench.costing.packaging.size_group') }}</label>
+                        <select id="saved-costing-size" name="product_size" class="mt-2 w-full rounded-lg border border-[var(--color-field-outline)] bg-[var(--color-field)] px-3 py-2 text-sm">
+                            @foreach ($costingSizes as $size)
+                                <option value="{{ $size->public_id }}" @selected($size->is($costingSize))>{{ $size->label(auth()->user()?->number_locale) }}</option>
+                            @endforeach
+                        </select>
+                    @endif
                     <p class="sk-eyebrow">{{ __('formula_documents.scale.title') }}</p>
                     <label class="mt-2 block text-sm font-medium text-[var(--color-ink-strong)]" for="oil_weight">{{ $isCosmeticFormula ? __('formula_documents.scale.total_batch_quantity') : __('formula_documents.scale.oil_quantity') }}</label>
                     <div class="mt-2 flex items-center gap-2">
-                        <input id="oil_weight" name="oil_weight" type="number" min="0.01" step="0.01" value="{{ rtrim(rtrim(number_format($selectedOilWeight, 2, '.', ''), '0'), '.') }}" class="numeric w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
+                        <input id="oil_weight" name="oil_weight" type="number" min="0.01" max="{{ $maximumScaleQuantity }}" step="0.01" value="{{ rtrim(rtrim(number_format($selectedOilWeight, 2, '.', ''), '0'), '.') }}" class="numeric w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
                         <span class="numeric rounded-full border border-[var(--color-line)] bg-white px-3 py-1.5 text-xs font-medium text-[var(--color-ink-soft)]">{{ $snapshot['draft']['oilUnit'] ?? 'g' }}</span>
                     </div>
                     <div class="mt-3 flex gap-2">
@@ -206,16 +224,54 @@
             'compositionExportUrl' => route('recipes.export.composition', $printQuery),
         ])
 
+        @if ($costingSize !== null && $hasCostingData)
+            <section class="sk-card p-5" aria-labelledby="saved-size-costing">
+                <h2 id="saved-size-costing" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('formula_documents.section_options.costing') }}</h2>
+                <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('workbench.costing.packaging.size', ['size' => $costingSize->label(auth()->user()?->number_locale)]) }}</p>
+                <dl class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                    @foreach ($costingSummary as $cost)
+                        <div class="sk-inset p-3">
+                            <dt class="text-sm text-[var(--color-ink-soft)]">{{ $cost['label'] }}</dt>
+                            <dd class="numeric mt-1 font-semibold text-[var(--color-ink-strong)]">{{ $cost['value'] }}</dd>
+                        </div>
+                    @endforeach
+                </dl>
+            </section>
+        @endif
+
         <section class="grid gap-4 lg:grid-cols-2">
             @if ($canRecordProduction && is_array($productionPreview))
+                <div class="space-y-4">
+                @if ($productionSizes->count() > 1 || ($productionSizes->isNotEmpty() && ($productionPreview['size_selection_required'] ?? false)))
+                    <form method="GET" action="{{ $sheetRoute }}#record-production" class="sk-card space-y-3 p-5">
+                        @foreach (collect($printQuery)->except(['recipe', 'version', 'units_produced']) as $key => $value)
+                            <input type="hidden" name="{{ $key }}" value="{{ $value }}" />
+                        @endforeach
+                        <label for="batch-product-size" class="block text-sm font-medium">{{ __('batch_log.fields.product_size') }}</label>
+                        <select id="batch-product-size" name="batch_product_size" aria-describedby="batch-product-size-help" required class="sk-input w-full">
+                            <option value="">{{ __('batch_log.fields.choose_size') }}</option>
+                            @foreach ($productionSizes as $size)
+                                <option value="{{ $size->public_id }}" @selected(($productionPreview['product_size_key'] ?? null) === $size->public_id)>{{ $size->label(auth()->user()?->number_locale) }}</option>
+                            @endforeach
+                        </select>
+                        <p id="batch-product-size-help" class="text-sm text-[var(--color-ink-soft)]">{{ __('batch_log.record.size_help') }}</p>
+                        <button type="submit" class="sk-btn sk-btn-primary min-h-11">{{ __('batch_log.actions.select_size') }}</button>
+                    </form>
+                @endif
                 <form method="POST" action="{{ route('recipes.production-batches.store', ['recipe' => $recipe]) }}" class="sk-card p-5">
                     @csrf
                     <input type="hidden" name="recipe_version_id" value="{{ $version->id }}" />
+                    @if (filled($productionPreview['product_size_key'] ?? null))
+                        <input type="hidden" name="product_size_key" value="{{ $productionPreview['product_size_key'] }}" />
+                    @endif
                     <input type="hidden" name="batch_basis" value="{{ old('batch_basis', $formatNumber($productionPreview['batch_basis_value'] ?? $batchContext['batch_basis'])) }}" />
 
                     <p class="sk-eyebrow">{{ __('batch_log.record.eyebrow') }}</p>
-                    <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('batch_log.record.title') }}</h2>
+                    <h2 id="record-production" class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('batch_log.record.title') }}</h2>
                     <p class="mt-1 text-sm text-[var(--color-ink-soft)]">{{ __('batch_log.record.intro') }}</p>
+                    @if (filled($productionPreview['product_size_label_snapshot'] ?? null))
+                        <p class="mt-2 text-sm">{{ __('workbench.costing.packaging.size', ['size' => $productionPreview['product_size_label_snapshot']]) }}</p>
+                    @endif
 
                     @error('costing')
                         <p class="mt-3 rounded-lg border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)]/35 px-3 py-2 text-sm font-medium text-[var(--color-warning-strong)]">{{ $message }}</p>
@@ -227,6 +283,7 @@
                         </p>
                     @endif
 
+                    @unless ($productionPreview['size_selection_required'] ?? false)
                     <div class="mt-4 grid gap-3 sm:grid-cols-2">
                         <label class="block">
                             <span class="text-sm font-medium text-[var(--color-ink-strong)]">{{ __('batch_log.fields.batch_number') }}</span>
@@ -329,7 +386,9 @@
                             {{ __('batch_log.actions.record') }}
                         </button>
                     </div>
+                    @endunless
                 </form>
+                </div>
             @endif
 
             @if ($productionBatches?->isNotEmpty() || $productionBatches?->hasPages() || $batchSearch !== '' || $canRecordProduction)
@@ -341,8 +400,11 @@
                             @foreach (collect($printQuery)->except(['recipe', 'version', 'units_produced']) as $key => $value)
                                 <input type="hidden" name="{{ $key }}" value="{{ $value }}" />
                             @endforeach
+                            @if (filled($productionPreview['product_size_key'] ?? null))
+                                <input type="hidden" name="batch_product_size" value="{{ $productionPreview['product_size_key'] }}" />
+                            @endif
                             @if ($canRecordProduction || filled($initialUnitsProduced))
-                                <input type="hidden" name="units_produced" value="{{ $initialUnitsProduced }}" x-bind:value="unitsProduced" />
+                                <input type="hidden" name="{{ filled($productionPreview['product_size_key'] ?? null) ? 'batch_units_produced' : 'units_produced' }}" value="{{ $initialUnitsProduced }}" x-bind:value="unitsProduced" />
                             @endif
                             <label for="batch_search" class="sr-only">{{ __('batch_log.history.search') }}</label>
                             <input id="batch_search" name="batch_search" type="search" value="{{ $batchSearch }}" maxlength="120" placeholder="{{ __('batch_log.history.search') }}" class="min-h-11 min-w-0 flex-1 rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] focus:outline-2 focus:outline-[var(--color-accent)]" />
@@ -357,6 +419,9 @@
                                     <div class="min-w-0">
                                         <p class="text-sm font-medium text-[var(--color-ink-strong)]">
                                             {{ $productionBatch->recipe_name }}
+                                            @if (filled($productionBatch->product_size_label_snapshot))
+                                                <span class="font-normal"> · {{ $productionBatch->product_size_label_snapshot }}</span>
+                                            @endif
                                         </p>
                                         <p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">
                                             <span class="numeric">{{ $productionBatch->manufacture_date?->format('Y-m-d') }}</span>
@@ -370,7 +435,7 @@
                                     <div class="flex gap-3 text-sm font-medium">
                                         <a href="{{ route('production-batches.show', $productionBatch) }}" class="text-[var(--color-accent-strong)] transition hover:text-[var(--color-accent)]">{{ __('batch_log.actions.view') }}</a>
                                         <a href="{{ route('production-batches.print', $productionBatch) }}" class="text-[var(--color-accent-strong)] transition hover:text-[var(--color-accent)]">{{ __('batch_log.actions.print') }}</a>
-                                        @can('delete', $productionBatch)
+                                        @if ($batchDeletePermissions[$productionBatch->id] ?? false)
                                             <form method="POST" action="{{ route('production-batches.destroy', $productionBatch) }}" x-data="{ confirming: false }" @submit.prevent="confirming ? $el.submit() : (confirming = true)" class="inline">
                                                 @csrf
                                                 @method('DELETE')
@@ -379,7 +444,7 @@
                                                     <span x-show="confirming" x-cloak>{{ __('batch_log.actions.confirm') }}</span>
                                                 </button>
                                             </form>
-                                        @endcan
+                                        @endif
                                     </div>
                                 </div>
                             @endforeach

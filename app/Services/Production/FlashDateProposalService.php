@@ -95,6 +95,7 @@ class FlashDateProposalService
                     'line_index' => (int) $line['line_index'],
                     'recipe_id' => (int) $line['recipe_id'],
                     'recipe_name' => (string) ($line['recipe_name'] ?? $line['recipe']->name ?? ''),
+                    'product_size_label' => $line['product_size_label'] ?? null,
                     'batch_number' => $batch,
                     'batch_total' => $batchTotal,
                     'production_location_id' => $locationId,

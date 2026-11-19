@@ -8,6 +8,7 @@ use App\Enums\Visibility;
 use App\Enums\WorkspaceMemberRole;
 use App\Models\Ingredient;
 use App\Models\IngredientSapProfile;
+use App\Models\PackagingItem;
 use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\ProductionLocation;
@@ -16,6 +17,7 @@ use App\Models\ProductionRunNumberSetting;
 use App\Models\ProductionTaskSet;
 use App\Models\ProductionTaskSetItem;
 use App\Models\ProductionTaskType;
+use App\Models\ProductSize;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
@@ -33,6 +35,41 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 
 uses(RefreshDatabase::class);
+
+it('keeps the selected size through flash preview, generation, and retry', function (): void {
+    $fixture = generateFlashFixture();
+    $box = PackagingItem::factory()->for($fixture['workspace'])->create();
+    $large = ProductSize::factory()->for($fixture['recipe'])->create(['name' => 'Large']);
+    $small = ProductSize::factory()->for($fixture['recipe'])->create(['name' => 'Small']);
+    foreach ([$large, $small] as $position => $size) {
+        $fixture['version']->packagingItems()->create([
+            'product_size_id' => $size->id,
+            'packaging_item_id' => $box->id,
+            'name' => $size->name,
+            'components_per_unit' => $position + 1,
+            'position' => $position + 1,
+        ]);
+    }
+    $line = [
+        'recipe_id' => $fixture['recipe']->id,
+        'product_size_key' => $small->public_id,
+        'desired_units' => '30',
+        'expected_units_per_batch' => '20',
+        'basis_input_value' => '12',
+        'basis_input_unit' => 'kg',
+    ];
+    $simulated = app(FlashProductionSimulator::class)->simulate($fixture['workspace'], [$line]);
+    expect($simulated['lines'][0]['product_size_id'])->toBe($small->id)
+        ->and((int) collect($simulated['requirements'])->firstWhere('packaging_item_id', $box->id)['required'])->toBe(80);
+
+    $generate = fn (array $input) => app(GenerateFlashProductions::class)
+        ->handle($fixture['owner'], $fixture['workspace'], [$input], '2026-08-10', 2, 'flash-sized');
+    $runs = $generate($line);
+    expect($runs->pluck('product_size_id')->all())->toBe([$small->id, $small->id])
+        ->and($runs->first()->requirements()->where('kind', 'packaging')->sole()->required_units)->toBe(40)
+        ->and($generate($line)->pluck('id')->all())->toBe($runs->pluck('id')->all())
+        ->and(fn () => $generate([...$line, 'product_size_key' => $large->public_id]))->toThrow(ValidationException::class);
+});
 
 it('creates one planned production per flash batch with tasks and is idempotent', function (): void {
     $fixture = generateFlashFixture();

@@ -34,19 +34,28 @@ function batchWorkspaceFixture(WorkspaceMemberRole $role = WorkspaceMemberRole::
     return compact('owner', 'workspace', 'plan', 'member', 'recipe', 'version', 'batch');
 }
 
-it('uses company authority rather than batch authorship', function (WorkspaceMemberRole $role, bool $edit, bool $delete): void {
+it('uses workspace role and authorship to authorize batch deletion', function (WorkspaceMemberRole $role, bool $edit, bool $deleteOwn, bool $deleteOther): void {
     extract(batchWorkspaceFixture($role));
+    $otherBatch = ProductionBatch::factory()->create([
+        'workspace_id' => $workspace->id,
+        'user_id' => $owner->id,
+        'recipe_id' => $recipe->id,
+        'recipe_version_id' => $version->id,
+    ]);
+
     expect(Gate::forUser($member)->allows('view', $batch))->toBeTrue()
         ->and(Gate::forUser($member)->allows('update', $batch))->toBe($edit)
-        ->and(Gate::forUser($member)->allows('delete', $batch))->toBe($delete)
+        ->and(Gate::forUser($member)->allows('delete', $batch))->toBe($deleteOwn)
+        ->and(Gate::forUser($member)->allows('delete', $otherBatch))->toBe($deleteOther)
         ->and(Gate::forUser($owner)->allows('delete', $batch))->toBeTrue();
 
     WorkspaceMember::withoutGlobalScopes()->where('workspace_id', $workspace->id)->where('user_id', $member->id)->delete();
-    expect(Gate::forUser($member)->allows('view', $batch))->toBeFalse();
+    expect(Gate::forUser($member)->allows('view', $batch))->toBeFalse()
+        ->and(Gate::forUser($member)->allows('delete', $batch))->toBeFalse();
 })->with([
-    'admin' => [WorkspaceMemberRole::Admin, true, true],
-    'editor' => [WorkspaceMemberRole::Editor, true, false],
-    'viewer' => [WorkspaceMemberRole::Viewer, false, false],
+    'admin' => [WorkspaceMemberRole::Admin, true, true, true],
+    'editor' => [WorkspaceMemberRole::Editor, true, true, false],
+    'viewer' => [WorkspaceMemberRole::Viewer, false, false, false],
 ]);
 
 it('allows viewer printing but refuses annotation and deletion endpoints', function (): void {
@@ -56,6 +65,58 @@ it('allows viewer printing but refuses annotation and deletion endpoints', funct
     $this->patch(route('production-batches.update', $batch), ['production_notes' => 'Forbidden'])->assertForbidden();
     $this->delete(route('production-batches.destroy', $batch))->assertForbidden();
     expect($batch->fresh()->production_notes)->toBeNull();
+});
+
+it('renders batch history permissions without adding workspace lookups for each row', function (): void {
+    extract(batchWorkspaceFixture());
+    $route = route('recipes.saved', $recipe);
+    $this->actingAs($member);
+
+    $workspaceQueries = function () use ($route): array {
+        DB::flushQueryLog();
+        DB::enableQueryLog();
+
+        try {
+            $response = $this->get($route)->assertOk();
+            $queries = collect(DB::getQueryLog())->filter(
+                fn (array $entry): bool => str_contains($entry['query'], 'from "workspaces" where ("owner_user_id"'),
+            );
+
+            return [$response, $queries->count()];
+        } finally {
+            DB::disableQueryLog();
+            DB::flushQueryLog();
+        }
+    };
+
+    [, $singleRowQueries] = $workspaceQueries();
+    $otherBatch = ProductionBatch::factory()->create([
+        'recipe_id' => $recipe->id,
+        'recipe_version_id' => $version->id,
+        'workspace_id' => $workspace->id,
+        'user_id' => $owner->id,
+    ]);
+    $ownLegacyBatch = ProductionBatch::factory()->create([
+        'recipe_id' => $recipe->id,
+        'workspace_id' => null,
+        'user_id' => $member->id,
+    ]);
+    $otherLegacyBatch = ProductionBatch::factory()->create([
+        'recipe_id' => $recipe->id,
+        'workspace_id' => null,
+        'user_id' => $owner->id,
+    ]);
+
+    [$response, $multipleRowQueries] = $workspaceQueries();
+    $response
+        ->assertSee('action="'.route('production-batches.destroy', $batch).'"', false)
+        ->assertSee('href="'.route('production-batches.show', $otherBatch).'"', false)
+        ->assertDontSee('action="'.route('production-batches.destroy', $otherBatch).'"', false)
+        ->assertSee('action="'.route('production-batches.destroy', $ownLegacyBatch).'"', false)
+        ->assertDontSee('href="'.route('production-batches.show', $otherLegacyBatch).'"', false);
+
+    expect($singleRowQueries)->toBeGreaterThan(0)
+        ->and($multipleRowQueries)->toBeLessThanOrEqual($singleRowQueries);
 });
 
 it('preserves shared snapshots and usage after the author account is deleted', function (): void {

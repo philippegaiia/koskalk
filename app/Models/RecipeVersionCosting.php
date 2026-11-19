@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 
@@ -73,6 +74,12 @@ class RecipeVersionCosting extends Model
     public function packagingItems(): HasMany
     {
         return $this->hasMany(RecipeVersionCostingPackagingItem::class)->orderBy('id');
+    }
+
+    public function sizeYields(): BelongsToMany
+    {
+        return $this->belongsToMany(ProductSize::class, 'recipe_version_costing_size_yields')
+            ->withPivot('units_produced');
     }
 
     protected function casts(): array

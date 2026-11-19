@@ -18,6 +18,7 @@ use App\Services\Production\FlashPlanFingerprint;
 use App\Services\Production\FlashProductionSimulator;
 use App\Services\Production\ProductionLocationSelection;
 use App\Services\ProductionBenchAccess;
+use App\Services\ProductSizeResolver;
 use App\Support\NumberLocale;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
@@ -204,6 +205,7 @@ class FlashPlanner extends Component implements HasActions, HasForms
         ProductionHelpTopics $helpTopics,
         FlashProductionSimulator $simulator,
         ProductionBenchAccess $access,
+        ProductSizeResolver $productSizes,
     ): View {
         $workspace = $this->workspace();
         $simulation = null;
@@ -216,18 +218,24 @@ class FlashPlanner extends Component implements HasActions, HasForms
             }
         }
 
+        $recipes = Recipe::query()
+            ->where('workspace_id', $workspace->id)
+            ->whereNull('archived_at')
+            ->whereHas('publishedVersions')
+            ->orderBy('name')
+            ->get();
+        $selectedRecipeIds = collect($this->lines)->pluck('recipe_id')->filter()->unique();
+
         return view('livewire.production-bench.production.flash-planner', [
             'contextualHelp' => $helpTopics->resolve('flash', app()->getLocale()),
             'workspace' => $workspace,
             'productionLocations' => $workspace->uses_production_locations ? ProductionLocation::query()->where('workspace_id', $workspace->id)->where('is_active', true)->orderBy('name')->get() : collect(),
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
-            'recipes' => Recipe::query()
-                ->where('workspace_id', $workspace->id)
-                ->whereNull('archived_at')
-                ->whereHas('publishedVersions')
-                ->orderBy('name')
-                ->get(),
+            'recipes' => $recipes,
+            'productSizesByRecipe' => $recipes->whereIn('id', $selectedRecipeIds)->mapWithKeys(fn (Recipe $recipe): array => [
+                $recipe->id => $productSizes->forLatestPublishedVersion($recipe),
+            ]),
             'presets' => ProductionBatchPreset::query()
                 ->where('workspace_id', $workspace->id)
                 ->where('is_active', true)
@@ -255,6 +263,7 @@ class FlashPlanner extends Component implements HasActions, HasForms
     {
         return [
             'recipe_id' => '',
+            'product_size_key' => '',
             'production_location_id' => '',
             'preset_id' => '',
             'batch_mode' => 'custom',
@@ -272,6 +281,7 @@ class FlashPlanner extends Component implements HasActions, HasForms
 
         if ($recipeId < 1) {
             $this->lines[$index]['production_location_id'] = '';
+            $this->lines[$index]['product_size_key'] = '';
 
             return;
         }
@@ -284,6 +294,8 @@ class FlashPlanner extends Component implements HasActions, HasForms
                 'productionBatchPresets' => fn ($query) => $query->where('is_active', true),
             ])
             ->find($recipeId);
+        $sizes = app(ProductSizeResolver::class)->forLatestPublishedVersion($recipe);
+        $this->lines[$index]['product_size_key'] = $sizes->count() === 1 ? $sizes->first()->public_id : '';
         $this->lines[$index]['production_location_id'] = $recipe instanceof Recipe ? (string) (app(ProductionLocationSelection::class)->defaultFor($this->workspace(), $recipe) ?? '') : '';
         $presets = $recipe instanceof Recipe ? $recipe->productionBatchPresets : collect();
         $preset = $presets->first(fn (ProductionBatchPreset $candidate): bool => (bool) $candidate->pivot?->is_default);

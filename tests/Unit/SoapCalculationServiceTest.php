@@ -191,6 +191,21 @@ it('accepts professional-scale koh sap values in calculations', function () {
         ->and($result['lye']['naoh']['adjusted'])->toBe(165.9507);
 });
 
+it('adjusts the reference soap batch for potassium hydroxide at ninety percent purity', function (): void {
+    $result = (new SoapCalculationService)->calculate([
+        ['weight' => 500, 'koh_sap_value' => 0.188],
+        ['weight' => 500, 'koh_sap_value' => 0.257],
+    ], [
+        'superfat' => 5,
+        'lye_type' => 'koh',
+        'koh_purity_percentage' => 90,
+        'water_mode' => 'percent_of_oils',
+        'water_value' => 38,
+    ]);
+
+    expect($result['lye']['selected']['koh_to_weigh'])->toEqualWithDelta(234.861111, 0.00005);
+});
+
 it('supports dual lye selection and koh purity adjustments', function () {
     $service = new SoapCalculationService;
 

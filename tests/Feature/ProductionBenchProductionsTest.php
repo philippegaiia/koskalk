@@ -16,6 +16,7 @@ use App\Models\ProductionRequirement;
 use App\Models\ProductionRun;
 use App\Models\ProductionRunNumberIssuance;
 use App\Models\ProductionTask;
+use App\Models\ProductSize;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\StockLot;
@@ -89,6 +90,67 @@ it('exposes the production list, create, and detail pages inside the bench', fun
         ->assertOk()
         ->assertSee('Production details')
         ->assertSee('Olive soap');
+});
+
+it('shows completed production by manufacture date and totals actual units by exact size', function (): void {
+    $fixture = productionListFixture();
+    $large = ProductSize::factory()->for($fixture['recipe'])->create(['name' => '100 g bar']);
+    $small = ProductSize::factory()->for($fixture['recipe'])->create(['name' => '50 g bar']);
+    $runs = ProductionRun::factory()->for($fixture['workspace'])->for($fixture['recipe'])->for($fixture['version'], 'recipeVersion');
+    $completed = $runs->state([
+        'recipe_name_snapshot' => 'Olive soap',
+        'status' => ProductionRunStatus::Completed,
+        'planned_for' => '2026-08-01',
+        'manufacture_date' => '2026-08-10',
+        'completed_at' => '2026-08-12 12:00:00',
+        'completed_by_user_id' => $fixture['owner']->id,
+        'cost_currency' => 'EUR',
+        'actual_ingredient_total' => '12',
+        'actual_packaging_total' => '2',
+        'actual_total_cost' => '14',
+        'actual_cost_per_unit' => '1',
+    ]);
+    $largeRun = $completed->create([
+        'product_size_id' => $large->id,
+        'product_size_label_snapshot' => '100 g bar',
+        'actual_output_units' => 23,
+    ]);
+    $secondLargeRun = $completed->create([
+        'manufacture_date' => '2026-08-11',
+        'product_size_id' => $large->id,
+        'product_size_label_snapshot' => '100 g bar',
+        'actual_output_units' => 7,
+    ]);
+    $smallRun = $completed->create([
+        'product_size_id' => $small->id,
+        'product_size_label_snapshot' => '50 g bar',
+        'actual_output_units' => 12,
+    ]);
+    $outside = $completed->create([
+        'planned_for' => '2026-08-10',
+        'manufacture_date' => '2026-08-09',
+        'product_size_id' => $large->id,
+        'product_size_label_snapshot' => '100 g bar',
+        'actual_output_units' => 80,
+    ]);
+    $filters = ['date_basis' => 'manufactured', 'size' => $large->public_id, 'from' => '2026-08-10', 'to' => '2026-08-11'];
+
+    $this->actingAs($fixture['owner'])->get(route('production-bench.production.index', $filters))
+        ->assertOk()
+        ->assertSee('Production history')
+        ->assertSee(route('production-bench.production.show', $largeRun))
+        ->assertDontSee($smallRun->displayIdentifier());
+
+    $page = Livewire::withQueryParams($filters)->test(ProductionIndex::class)
+        ->assertSeeInOrder([$secondLargeRun->displayIdentifier(), $largeRun->displayIdentifier()])
+        ->assertDontSee($outside->displayIdentifier())
+        ->assertDontSee($fixture['production']->displayIdentifier());
+    expect((int) $page->viewData('historyTotals')->sole()->units)->toBe(30);
+
+    $page->call('clearProductSizeFilter')->assertSee($smallRun->displayIdentifier());
+    expect($page->viewData('historyTotals')->pluck('units', 'product_size_id')->map(fn ($units): int => (int) $units)->all())
+        ->toEqual([$large->id => 30, $small->id => 12]);
+    $page->set('productSizeFilter', 'invalid-size')->assertSee(__('production_bench.production.no_productions'));
 });
 
 it('shows immutable planning snapshots, requirements, tasks, and employee assignments', function (): void {

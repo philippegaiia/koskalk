@@ -32,6 +32,9 @@ class RecipeCostingExportDataBuilder
             ['label' => __('formula_documents.exports.unit'), 'value' => $projection['basis_unit'] ?? ($document['unit'] ?? 'g'), 'type' => 'string'],
             ['label' => __('formula_documents.exports.units_produced'), 'value' => $projection['units_produced'] ?? null, 'type' => 'number'],
         ];
+        if (filled($projection['product_size_label'] ?? null)) {
+            $context[] = ['label' => __('workbench.costing.packaging.size_group'), 'value' => $projection['product_size_label'], 'type' => 'string'];
+        }
 
         return [
             'document' => $document,

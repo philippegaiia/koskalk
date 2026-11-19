@@ -1,7 +1,9 @@
 <x-production-bench.page active="production">
     <div x-data="productionRegister()" data-failure-message="{{ __('production_bench.editing.command_failed') }}" class="space-y-6">
     <p x-cloak x-show="message" x-text="message" role="alert" class="rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)]"></p>
-    <button type="button" @click="run('refreshProductionRegister')" x-bind:disabled="busy" class="sk-btn sk-btn-ghost">{{ __('production_bench.editing.refresh_register') }}</button>
+    @unless ($showHistory)
+        <button type="button" @click="run('refreshProductionRegister')" x-bind:disabled="busy" class="sk-btn sk-btn-ghost">{{ __('production_bench.editing.refresh_register') }}</button>
+    @endunless
     @if (! $isBenchActive && ! $isReadOnly)
         <section class="sk-card p-8 text-center">
             <h1 class="text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.common.inactive') }}</h1>
@@ -16,12 +18,14 @@
             <div class="min-w-0 flex-1">
                 <p class="sk-eyebrow">{{ __('production_bench.navigation.production_workflow') }}</p>
                 <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.index_title') }}</h1>
+                    <h1 class="mt-2 text-3xl font-semibold text-[var(--color-ink-strong)]">{{ __($showHistory ? 'production_bench.production.production_history' : 'production_bench.production.index_title') }}</h1>
                     <x-contextual-help.index-button :help="$contextualHelp" tab="production" />
                 </div>
-                <p class="mt-2 max-w-2xl text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.index_intro') }}</p>
+                @unless ($showHistory)
+                    <p class="mt-2 max-w-2xl text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.index_intro') }}</p>
+                @endunless
             </div>
-            @if ($isBenchActive)
+            @if ($isBenchActive && ! $showHistory)
                 <div class="flex flex-wrap gap-2">
                     <a href="{{ route('production-bench.production.create') }}" wire:navigate class="sk-btn sk-btn-primary">{{ __('production_bench.production.new') }}</a>
                 </div>
@@ -35,14 +39,23 @@
                 <input autocomplete="off" wire:model.live.debounce.300ms="search" class="sk-input w-full" placeholder="{{ __('production_bench.production.search_placeholder') }}">
             </label>
             <label class="space-y-2">
-                <span class="text-sm font-medium">{{ __('production_bench.production.status_filter') }}</span>
-                <select wire:model.live="status" class="sk-input w-full">
-                    <option value="">{{ __('production_bench.production.all_statuses') }}</option>
-                    @foreach (\App\Enums\ProductionRunStatus::cases() as $statusOption)
-                        <option value="{{ $statusOption->value }}">{{ $statusOption->label() }}</option>
-                    @endforeach
+                <span class="text-sm font-medium">{{ __('production_bench.production.date_basis') }}</span>
+                <select wire:model.live="dateBasis" class="sk-input w-full">
+                    <option value="planned">{{ __('production_bench.production.planned_date') }}</option>
+                    <option value="manufactured">{{ __('production_bench.production.manufacture_date') }}</option>
                 </select>
             </label>
+            @unless ($showHistory)
+                <label class="space-y-2">
+                    <span class="text-sm font-medium">{{ __('production_bench.production.status_filter') }}</span>
+                    <select wire:model.live="status" class="sk-input w-full">
+                        <option value="">{{ __('production_bench.production.all_statuses') }}</option>
+                        @foreach (\App\Enums\ProductionRunStatus::cases() as $statusOption)
+                            <option value="{{ $statusOption->value }}">{{ $statusOption->label() }}</option>
+                        @endforeach
+                    </select>
+                </label>
+            @endunless
             @include('livewire.production-bench.production.organization-filters')
             {{ $this->filterDatesForm->getComponent('dateFrom') }}
             {{ $this->filterDatesForm->getComponent('dateTo') }}
@@ -79,6 +92,9 @@
             </div>
         @endif
 
+        @if ($showHistory)
+            @include('livewire.production-bench.production.completed-history')
+        @else
         <section aria-labelledby="production-list-heading" class="sk-card overflow-hidden">
             <h2 id="production-list-heading" class="sr-only">{{ __('production_bench.production.index_title') }}</h2>
 
@@ -177,7 +193,7 @@
                                     @endif
                                     <td data-production-cell class="px-5 py-3 align-top">
                                         <p class="whitespace-nowrap font-mono tabular-nums text-sm text-[var(--color-ink-strong)]">{{ \App\Support\NumberLocale::formatAdaptiveDecimal($production->basis_input_value, 0, 3, $numberLocale) }} {{ $production->basis_input_unit->value }}</p>
-                                        <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.production.expected_units_short', ['count' => \App\Support\NumberLocale::formatDecimal($production->expected_units, 0, $numberLocale)]) }}</p>
+                                        <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ $production->package_later ? __('production_bench.packaging.bulk_output') : __('production_bench.production.expected_units_short', ['count' => \App\Support\NumberLocale::formatDecimal($production->expected_units, 0, $numberLocale)]) }}</p>
                                     </td>
                                     <td data-production-cell class="px-5 py-3 align-top">
                                         <span class="inline-block rounded-full px-2.5 py-1 text-xs font-medium {{ $statusColorMap[$production->status->value] ?? 'bg-[var(--color-ink-muted)]/10 text-[var(--color-ink-muted)]' }}">{{ $production->status->label() }}</span>
@@ -272,7 +288,7 @@
                                             <dt class="text-xs uppercase tracking-wide text-[var(--color-ink-muted)]">{{ __('production_bench.production.quantity') }}</dt>
                                             <dd class="mt-1">
                                                 <span class="font-mono tabular-nums text-[var(--color-ink-strong)]">{{ \App\Support\NumberLocale::formatAdaptiveDecimal($production->basis_input_value, 0, 3, $numberLocale) }} {{ $production->basis_input_unit->value }}</span>
-                                                <span class="mt-1 block text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.production.expected_units_short', ['count' => \App\Support\NumberLocale::formatDecimal($production->expected_units, 0, $numberLocale)]) }}</span>
+                                                <span class="mt-1 block text-xs text-[var(--color-ink-soft)]">{{ $production->package_later ? __('production_bench.packaging.bulk_output') : __('production_bench.production.expected_units_short', ['count' => \App\Support\NumberLocale::formatDecimal($production->expected_units, 0, $numberLocale)]) }}</span>
                                             </dd>
                                         </div>
                                     </dl>
@@ -302,6 +318,7 @@
 
             <x-table-pagination :paginator="$productions" :per-page-label="__('production_bench.production.per_page')" />
         </section>
+        @endif
     @endif
     <x-filament-actions::modals />
     </div>

@@ -6,6 +6,8 @@ use App\Actions\Production\AssignProductionBatchNumbers;
 use App\Actions\Production\DeleteProductionRun;
 use App\Actions\Production\ScheduleProduction;
 use App\Enums\ProductionRunStatus;
+use App\Enums\StockLotOrigin;
+use App\Enums\StockMovementType;
 use App\Enums\StockReservationStatus;
 use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
@@ -15,6 +17,7 @@ use App\Models\Brand;
 use App\Models\ProductCollection;
 use App\Models\ProductionLocation;
 use App\Models\ProductionRun;
+use App\Models\ProductSize;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
@@ -33,6 +36,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
@@ -64,9 +68,17 @@ class ProductionIndex extends Component implements HasActions, HasForms
 
     public string $status = '';
 
+    #[Url(as: 'from', except: '')]
     public string $dateFrom = '';
 
+    #[Url(as: 'to', except: '')]
     public string $dateTo = '';
+
+    #[Url(as: 'date_basis', except: 'planned')]
+    public string $dateBasis = 'planned';
+
+    #[Url(as: 'size', except: '')]
+    public string $productSizeFilter = '';
 
     public int $perPage = 25;
 
@@ -91,9 +103,7 @@ class ProductionIndex extends Component implements HasActions, HasForms
 
     public function updatedSearch(): void
     {
-        $this->clearSelection();
-        $this->displayedProductionRevisions = [];
-        $this->resetPage();
+        $this->updatedRecipeFilter();
     }
 
     public function updatedStatus(): void
@@ -105,18 +115,31 @@ class ProductionIndex extends Component implements HasActions, HasForms
 
     public function updatedDateFrom(): void
     {
-        $this->dateFrom = $this->normalizeDatePickerState($this->dateFrom);
-        $this->clearSelection();
-        $this->displayedProductionRevisions = [];
-        $this->resetPage();
+        $this->dateFrom = $this->validDate($this->dateFrom);
+        $this->updatedRecipeFilter();
     }
 
     public function updatedDateTo(): void
     {
-        $this->dateTo = $this->normalizeDatePickerState($this->dateTo);
-        $this->clearSelection();
-        $this->displayedProductionRevisions = [];
-        $this->resetPage();
+        $this->dateTo = $this->validDate($this->dateTo);
+        $this->updatedRecipeFilter();
+    }
+
+    public function updatedDateBasis(): void
+    {
+        if ($this->dateBasis !== 'manufactured') {
+            $this->dateBasis = 'planned';
+            $this->productSizeFilter = '';
+        }
+
+        $this->updatedRecipeFilter();
+    }
+
+    public function clearProductSizeFilter(): void
+    {
+        $this->productSizeFilter = '';
+        $this->dateBasis = 'manufactured';
+        $this->updatedRecipeFilter();
     }
 
     public function updatedRecipeFilter(): void
@@ -124,6 +147,9 @@ class ProductionIndex extends Component implements HasActions, HasForms
         $this->clearSelection();
         $this->displayedProductionRevisions = [];
         $this->resetPage();
+        if ($this->showsHistory() || array_key_exists('production-totals', $this->paginators)) {
+            $this->resetPage('production-totals');
+        }
     }
 
     public function updatedBrandFilter(): void
@@ -155,17 +181,13 @@ class ProductionIndex extends Component implements HasActions, HasForms
 
     public function updatedLocationFilter(): void
     {
-        $this->clearSelection();
-        $this->displayedProductionRevisions = [];
-        $this->resetPage();
+        $this->updatedRecipeFilter();
     }
 
     public function updatedPerPage(): void
     {
         $this->perPage = $this->normalizedPerPage();
-        $this->clearSelection();
-        $this->displayedProductionRevisions = [];
-        $this->resetPage();
+        $this->updatedRecipeFilter();
     }
 
     public function updatedPaginators(): void
@@ -182,9 +204,7 @@ class ProductionIndex extends Component implements HasActions, HasForms
     public function clearRecipeFilter(): void
     {
         $this->recipeFilter = '';
-        $this->clearSelection();
-        $this->displayedProductionRevisions = [];
-        $this->resetPage();
+        $this->updatedRecipeFilter();
     }
 
     public function deleteProduction(int $productionId, DeleteProductionRun $deleteProductionRun): void
@@ -283,15 +303,32 @@ class ProductionIndex extends Component implements HasActions, HasForms
                 WorkspaceMemberRole::Admin,
                 WorkspaceMemberRole::Editor,
             ], true);
-        $productions = $this->productionQuery($workspace, $locationFilterId, $filteredRecipe?->id)
-            ->paginate($this->normalizedPerPage());
+        $showHistory = $this->showsHistory();
+        $filteredSize = $showHistory ? $this->filteredSize($workspace) : null;
+        $query = $this->productionQuery($workspace, $locationFilterId, $filteredRecipe?->id, $showHistory, $filteredSize?->id);
+        $historyTotals = $showHistory
+            ? (clone $query)->toBase()
+                ->reorder()
+                ->select(['recipe_id'])
+                ->selectRaw('COALESCE(packed_size_id, product_size_id) AS product_size_id')
+                ->selectRaw('SUM(COALESCE(packed_units, actual_output_units)) AS units, MAX(recipe_name_snapshot) AS product_name, MAX(COALESCE(packed_size_label, product_size_label_snapshot)) AS size_label')
+                ->groupBy('recipe_id')
+                ->groupByRaw('COALESCE(packed_size_id, product_size_id)')
+                ->groupByRaw('CASE WHEN recipe_id IS NULL THEN recipe_name_snapshot END')
+                ->orderBy('product_name')
+                ->orderBy('size_label')
+                ->orderBy('recipe_id')
+                ->orderBy('product_size_id')
+                ->paginate($this->normalizedPerPage(), pageName: 'production-totals')
+            : null;
+        $productions = $query->paginate($this->normalizedPerPage());
 
-        if ($this->displayedProductionRevisions === []) {
+        if (! $showHistory && $this->displayedProductionRevisions === []) {
             $this->displayedProductionRevisions = $productions->getCollection()->mapWithKeys(fn (ProductionRun $run): array => [$run->id => $run->edit_revision])->all();
         }
 
         return view('livewire.production-bench.production.production-index', [
-            'contextualHelp' => $helpTopics->resolve('index', app()->getLocale()),
+            'contextualHelp' => $helpTopics->resolve($showHistory ? 'history' : 'index', app()->getLocale()),
             'workspace' => $workspace,
             'brandOptions' => Brand::query()->where('workspace_id', $workspace->id)->orderBy('name')->get(),
             'collectionOptions' => ProductCollection::query()->where('workspace_id', $workspace->id)
@@ -303,20 +340,53 @@ class ProductionIndex extends Component implements HasActions, HasForms
             'canMutate' => $canMutate,
             'canDeleteRecords' => $canMutate && in_array($role, [WorkspaceMemberRole::Owner, WorkspaceMemberRole::Admin], true),
             'productions' => $productions,
+            'showHistory' => $showHistory,
+            'historyTotals' => $historyTotals,
+            'filteredSizeLabel' => ! $showHistory || $this->productSizeFilter === ''
+                ? null
+                : ($filteredSize
+                    ? $filteredSize->recipe->name.' · '.$filteredSize->label($this->user()->number_locale)
+                    : __('production_bench.inventory.size_not_recorded')),
             'productionLocations' => $productionLocations,
-            'partiallyReservedIds' => $this->partiallyReservedIds($productions->getCollection()),
-            'visibleSelectedProductionIds' => $this->visibleSelectedProductionIds($productions->getCollection()),
+            'partiallyReservedIds' => $showHistory ? [] : $this->partiallyReservedIds($productions->getCollection()),
+            'visibleSelectedProductionIds' => $showHistory ? [] : $this->visibleSelectedProductionIds($productions->getCollection()),
             'filteredRecipeName' => $this->recipeFilter === ''
                 ? null
                 : ($filteredRecipe?->name ?? __('production_bench.production.unknown_product')),
         ]);
     }
 
-    private function productionQuery(Workspace $workspace, ?int $locationFilterId, ?int $recipeId): Builder
+    private function productionQuery(Workspace $workspace, ?int $locationFilterId, ?int $recipeId, bool $showHistory = false, ?int $sizeId = null): Builder
     {
+        $dateColumn = $showHistory ? 'manufacture_date' : 'planned_for';
+        $from = $this->validDate($this->dateFrom);
+        $to = $this->validDate($this->dateTo);
+
         return ProductionRun::query()
             ->where('workspace_id', $workspace->id)
-            ->with(['requirements.reservations'])
+            ->when($showHistory, function (Builder $query) use ($workspace): void {
+                $packed = DB::table('stock_lots as lots')
+                    ->join('stock_movements as movement', 'movement.stock_lot_id', '=', 'lots.id')
+                    ->where('lots.workspace_id', $workspace->id)
+                    ->where('movement.workspace_id', $workspace->id)
+                    ->where('lots.origin', StockLotOrigin::PackagingOutput)
+                    ->where('movement.type', StockMovementType::PackagingOutput)
+                    ->whereNotExists(fn ($reversal) => $reversal->from('stock_movements as reversal')
+                        ->whereColumn('reversal.reversal_of_stock_movement_id', 'movement.id')
+                        ->where('reversal.type', StockMovementType::PackagingReversal))
+                    ->select([
+                        'lots.id as packed_lot_id',
+                        'lots.production_run_id as packed_run_id',
+                        'lots.product_size_id as packed_size_id',
+                        'lots.product_size_label_snapshot as packed_size_label',
+                        'lots.internal_lot_code as packed_lot_code',
+                        'movement.quantity_delta as packed_units',
+                    ]);
+
+                $query->leftJoinSub($packed, 'packed', 'packed_run_id', '=', 'production_runs.id')
+                    ->select('production_runs.*', 'packed.*');
+            })
+            ->when(! $showHistory, fn (Builder $query): Builder => $query->with('requirements.reservations'))
             ->when(
                 $workspace->uses_production_locations,
                 fn (Builder $query): Builder => $query->with('productionLocation'),
@@ -326,25 +396,63 @@ class ProductionIndex extends Component implements HasActions, HasForms
                 $query->where(function (Builder $nested) use ($search): void {
                     $nested
                         ->where('recipe_name_snapshot', 'like', "%{$search}%")
-                        ->orWhere('public_id', 'like', "%{$search}%")
+                        ->orWhereRaw('CAST(public_id AS TEXT) LIKE ?', ["%{$search}%"])
                         ->orWhere('planning_batch_number', 'like', "%{$search}%")
                         ->orWhere('batch_number', 'like', "%{$search}%");
                 });
             })
             ->when($this->brandFilter !== '', fn (Builder $query): Builder => $query->where('brand_id', ctype_digit($this->brandFilter) ? (int) $this->brandFilter : 0))
             ->when($this->collectionFilter !== '', fn (Builder $query): Builder => $query->where('product_collection_id', ctype_digit($this->collectionFilter) ? (int) $this->collectionFilter : 0))
-            ->when($this->status !== '', fn (Builder $query): Builder => $query->where('status', $this->status))
+            ->when($showHistory, fn (Builder $query): Builder => $query
+                ->where('status', ProductionRunStatus::Completed)
+                ->whereNotNull('manufacture_date')
+                ->where(fn (Builder $output): Builder => $output->whereNotNull('actual_output_units')->orWhereNotNull('packed_lot_id')))
+            ->when($showHistory && $this->productSizeFilter !== '', fn (Builder $query): Builder => $sizeId === null
+                ? $query->whereRaw('0 = 1')
+                : $query->whereRaw('COALESCE(packed_size_id, product_size_id) = ?', [$sizeId]))
+            ->when(! $showHistory && $this->status !== '', fn (Builder $query): Builder => $query->where('status', $this->status))
             ->when($this->recipeFilter !== '', function (Builder $query) use ($recipeId): void {
                 $recipeId === null
                     ? $query->whereRaw('0 = 1')
                     : $query->where('recipe_id', $recipeId);
             })
             ->when($locationFilterId !== null, fn (Builder $query): Builder => $query->where('production_location_id', $locationFilterId))
-            ->when($this->dateFrom !== '', fn (Builder $query): Builder => $query->whereDate('planned_for', '>=', $this->dateFrom))
-            ->when($this->dateTo !== '', fn (Builder $query): Builder => $query->whereDate('planned_for', '<=', $this->dateTo))
-            ->orderByRaw('planned_for is null')
-            ->orderBy('planned_for')
+            ->when($from !== '', fn (Builder $query): Builder => $query->whereDate($dateColumn, '>=', $from))
+            ->when($to !== '', fn (Builder $query): Builder => $query->whereDate($dateColumn, '<=', $to))
+            ->when($showHistory, fn (Builder $query): Builder => $query->orderByDesc('manufacture_date')->orderByDesc('packed_lot_id')->orderByDesc('id'),
+                fn (Builder $query): Builder => $query->orderByRaw('planned_for is null')->orderBy('planned_for'))
             ->orderByDesc('id');
+    }
+
+    private function showsHistory(): bool
+    {
+        return $this->dateBasis === 'manufactured';
+    }
+
+    private function validDate(string $value): string
+    {
+        $date = $this->normalizeDatePickerState($value);
+        if ($date === '') {
+            return '';
+        }
+
+        [$year, $month, $day] = explode('-', $date);
+
+        return checkdate((int) $month, (int) $day, (int) $year) ? $date : '';
+    }
+
+    private function filteredSize(Workspace $workspace): ?ProductSize
+    {
+        if (! Str::isUuid($this->productSizeFilter)) {
+            return null;
+        }
+
+        return ProductSize::query()
+            ->withWhereHas('recipe', function (Builder|BelongsTo $query) use ($workspace): void {
+                $query->withoutGlobalScopes()->where('workspace_id', $workspace->id);
+            })
+            ->where('public_id', $this->productSizeFilter)
+            ->first();
     }
 
     private function filteredRecipe(Workspace $workspace): ?Recipe
@@ -387,6 +495,12 @@ class ProductionIndex extends Component implements HasActions, HasForms
 
     private function constrainSelectionToCurrentPage(): void
     {
+        if ($this->showsHistory()) {
+            $this->clearSelection();
+
+            return;
+        }
+
         $workspace = $this->workspace();
         $locationFilterId = $this->locationFilterId($workspace);
         $filteredRecipe = $this->filteredRecipe($workspace);

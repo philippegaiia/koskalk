@@ -81,7 +81,17 @@ export function serializeDraft(state) {
             name: phase.name,
         })),
         phase_items: phaseItems,
+        product_sizes: (state.productSizes ?? []).map((size, index) => ({
+            key: size.key,
+            name: size.name?.trim() || null,
+            declared_content_value: size.declared_content_input ?? size.declared_content_value ?? null,
+            declared_content_unit: (size.declared_content_input ?? size.declared_content_value ?? null) === null
+                ? null
+                : size.declared_content_unit,
+            position: index + 1,
+        })),
         packaging_items: (state.packagingPlanRows ?? []).map((row, index) => ({
+            product_size_key: row.product_size_key ?? null,
             packaging_item_id: row.packaging_item_id ?? null,
             name: row.name ?? '',
             components_per_unit: nonNegativeNumber(row.components_per_unit),
@@ -116,6 +126,12 @@ export function serializeCosting(state) {
         oil_weight_for_costing: state.costingOilWeight,
         oil_unit_for_costing: state.costingOilUnit,
         units_produced: state.costingUnitsProduced,
+        ...((state.costingSizeKeys ?? []).length > 0 ? {
+            units_produced_by_size: Object.fromEntries((state.productSizes ?? [])
+                .map((size) => size.key)
+                .filter((key) => state.costingSizeKeys.includes(key) && Object.hasOwn(state.costingUnitsProducedBySize, key))
+                .map((key) => [key, state.costingUnitsProducedBySize[key]])),
+        } : {}),
         currency: state.costingCurrency,
         items: state.costingFormulaRows.map((row) => ({
             ingredient_id: row.ingredient_id,
@@ -124,6 +140,7 @@ export function serializeCosting(state) {
             price_per_kg: state.canonicalPricePerKg(row),
         })),
         packaging_items: state.packagingCostRows.map((row) => ({
+            product_size_key: typeof state.packagingRowSizeKey === 'function' ? state.packagingRowSizeKey(row) : (row.product_size_key ?? null),
             packaging_item_id: row.packaging_item_id ?? null,
             name: row.name,
             unit_cost: nonNegativeNumber(row.unit_cost),

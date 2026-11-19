@@ -21,6 +21,13 @@ use InvalidArgumentException;
 
 class RecipeWorkbenchPayloadNormalizer
 {
+    public const MaxProductSizes = 50;
+
+    /** Bounds of product_sizes.declared_content_value, a numeric(12,4) column. */
+    private const MinDeclaredContent = '0.0001';
+
+    private const MaxDeclaredContent = '99999999.9999';
+
     public function __construct(
         private readonly RecipeNormalizationService $recipeNormalizationService,
         private readonly RecipeWorkbenchPhaseBlueprints $recipeWorkbenchPhaseBlueprints,
@@ -53,6 +60,7 @@ class RecipeWorkbenchPayloadNormalizer
      *     water_settings: array{mode: string, value: float},
      *     calculation_context: array<string, mixed>,
      *     phases: array<int, array<string, mixed>>,
+     *     product_sizes: array<int, array<string, mixed>>|null,
      *     packaging_items: array<int, array<string, mixed>>,
      *     production_output_type: string,
      *     output_ingredient_id: int|null,
@@ -217,7 +225,7 @@ class RecipeWorkbenchPayloadNormalizer
                         ->all(),
                 ];
             }, $normalizedRecipe['phases']),
-            'packaging_items' => $this->normalizePackagingItems($payload['packaging_items'] ?? []),
+            ...$this->normalizeSizesAndPackaging($payload),
             ...$this->normalizeOutputConfiguration($payload),
         ];
     }
@@ -242,6 +250,7 @@ class RecipeWorkbenchPayloadNormalizer
      *     water_settings: array<string, mixed>,
      *     calculation_context: array<string, mixed>,
      *     phases: array<int, array<string, mixed>>,
+     *     product_sizes: array<int, array<string, mixed>>|null,
      *     packaging_items: array<int, array<string, mixed>>,
      *     production_output_type: string,
      *     output_ingredient_id: int|null,
@@ -368,7 +377,7 @@ class RecipeWorkbenchPayloadNormalizer
                 'calculation_basis' => 'total_formula',
             ],
             'phases' => $normalizedPhases,
-            'packaging_items' => $this->normalizePackagingItems($payload['packaging_items'] ?? []),
+            ...$this->normalizeSizesAndPackaging($payload),
             ...$this->normalizeOutputConfiguration($payload),
         ];
     }
@@ -507,7 +516,123 @@ class RecipeWorkbenchPayloadNormalizer
     }
 
     /**
+     * Sizes are synchronized only when the payload carries them; a payload
+     * without the key leaves the Product's sizes untouched.
+     *
+     * @param  array<string, mixed>  $payload
      * @return array<int, array{
+     *     key: string,
+     *     name: string|null,
+     *     declared_content_value: string|null,
+     *     declared_content_unit: string|null,
+     *     position: int
+     * }>|null
+     */
+    private function normalizeProductSizes(array $payload): ?array
+    {
+        if (! array_key_exists('product_sizes', $payload) || ! is_array($payload['product_sizes'])) {
+            return null;
+        }
+
+        $rows = collect($payload['product_sizes'])
+            ->filter(fn (mixed $row): bool => is_array($row)
+                && is_string($row['key'] ?? null)
+                && trim($row['key']) !== ''
+                && mb_strlen(trim($row['key'])) <= 64)
+            ->unique(fn (array $row): string => trim($row['key']))
+            ->values();
+
+        if ($rows->count() > self::MaxProductSizes) {
+            throw ValidationException::withMessages([
+                'product_sizes' => __('workbench.packaging.sizes.validation.too_many', ['max' => self::MaxProductSizes]),
+            ]);
+        }
+
+        return $rows
+            ->map(function (array $row, int $index): array {
+                $name = trim((string) ($row['name'] ?? ''));
+                $value = $this->declaredContentValue($row['declared_content_value'] ?? null, $index);
+                $unit = NominalContentUnit::tryFrom((string) ($row['declared_content_unit'] ?? ''));
+
+                return [
+                    'key' => trim($row['key']),
+                    'name' => $name === '' ? null : Str::limit($name, 120, ''),
+                    'declared_content_value' => $value,
+                    'declared_content_unit' => $value === null ? null : ($unit ?? NominalContentUnit::Gram)->value,
+                    'position' => $index + 1,
+                ];
+            })
+            ->all();
+    }
+
+    /**
+     * The value as stored (four decimals), checked after rounding so it always
+     * fits the column and never rounds down to zero.
+     */
+    private function declaredContentValue(mixed $value, int $index): ?string
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $isDecimal = is_string($value)
+            ? preg_match('/\A[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)\z/', trim($value)) === 1
+            : is_numeric($value);
+
+        if (! $isDecimal || ! is_finite((float) $value)) {
+            throw ValidationException::withMessages([
+                "product_sizes.{$index}.declared_content_value" => __('workbench.packaging.sizes.validation.declared_content_number'),
+            ]);
+        }
+
+        $canonical = number_format((float) $value, 4, '.', '');
+
+        if (bccomp($canonical, self::MinDeclaredContent, 4) < 0
+            || bccomp($canonical, self::MaxDeclaredContent, 4) > 0) {
+            throw ValidationException::withMessages([
+                "product_sizes.{$index}.declared_content_value" => __('workbench.packaging.sizes.validation.declared_content_range', [
+                    'min' => self::MinDeclaredContent,
+                    'max' => self::MaxDeclaredContent,
+                ]),
+            ]);
+        }
+
+        return $canonical;
+    }
+
+    /**
+     * Sizes and their packaging lines are checked together: a line that names a
+     * size the payload does not carry is an error, never moved to another size.
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array{product_sizes: array<int, array<string, mixed>>|null, packaging_items: array<int, array<string, mixed>>}
+     */
+    private function normalizeSizesAndPackaging(array $payload): array
+    {
+        $productSizes = $this->normalizeProductSizes($payload);
+        $packagingItems = $this->normalizePackagingItems($payload['packaging_items'] ?? []);
+
+        if ($productSizes !== null) {
+            $knownKeys = array_column($productSizes, 'key');
+            $hasUnknownKey = collect($packagingItems)->contains(fn (array $row): bool => $row['product_size_key'] !== null
+                && ! in_array($row['product_size_key'], $knownKeys, true));
+
+            if ($hasUnknownKey) {
+                throw ValidationException::withMessages([
+                    'packaging_items' => __('workbench.packaging.sizes.validation.unknown_size'),
+                ]);
+            }
+        }
+
+        return [
+            'product_sizes' => $productSizes,
+            'packaging_items' => $packagingItems,
+        ];
+    }
+
+    /**
+     * @return array<int, array{
+     *     product_size_key: string|null,
      *     packaging_item_id: int|null,
      *     name: string,
      *     components_per_unit: float,
@@ -521,6 +646,9 @@ class RecipeWorkbenchPayloadNormalizer
             ->filter(fn (mixed $row): bool => is_array($row))
             ->map(function (array $row): array {
                 return [
+                    'product_size_key' => is_string($row['product_size_key'] ?? null) && trim($row['product_size_key']) !== ''
+                        ? trim($row['product_size_key'])
+                        : null,
                     'packaging_item_id' => isset($row['packaging_item_id']) && is_numeric($row['packaging_item_id'])
                         ? (int) $row['packaging_item_id']
                         : null,

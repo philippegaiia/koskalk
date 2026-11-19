@@ -38,10 +38,7 @@ class EntitlementService
                 limit: $limits['saved_recipes'] ?? null,
             ),
             'private_ingredients' => $this->privateIngredientUsage($subscriber, $workspace, $limits),
-            'production_batches' => $this->usageLine(
-                used: $this->productionBatchCount($subscriber, $workspace),
-                limit: $limits['production_batches'] ?? null,
-            ),
+            'production_batches' => $this->productionBatchUsage($subscriber, $workspace, $limits),
             'media_assets' => $this->mediaAssetUsage($workspace, $limits),
             'media_labels' => $this->mediaLabelUsage($workspace, $limits),
         ];
@@ -110,7 +107,10 @@ class EntitlementService
 
     public function canCreateProductionBatch(User $user): bool
     {
-        return $this->usageFor($user)['production_batches']['allowed'];
+        $workspace = $this->companyWorkspaceFor($user);
+        $subscriber = $workspace?->owner ?? $user;
+
+        return $this->productionBatchUsage($subscriber, $workspace, $this->limitsFor($subscriber))['allowed'];
     }
 
     public function planFor(User $user): ?Plan
@@ -482,6 +482,18 @@ class EntitlementService
     private function companyWorkspaceFor(User $user): ?Workspace
     {
         return $user->company();
+    }
+
+    /**
+     * @param  array<string, int|null>  $limits
+     * @return array{used: int, limit: int|null, remaining: int|null, allowed: bool}
+     */
+    private function productionBatchUsage(User $subscriber, ?Workspace $workspace, array $limits): array
+    {
+        return $this->usageLine(
+            used: $this->productionBatchCount($subscriber, $workspace),
+            limit: $limits['production_batches'] ?? null,
+        );
     }
 
     private function productionBatchCount(User $subscriber, ?Workspace $workspace): int

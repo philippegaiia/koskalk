@@ -5,6 +5,7 @@
 
 @section('content')
 <div class="mx-auto w-full max-w-app space-y-8">
+	@can('create', \App\Models\Recipe::class)
 	<section class="sk-card p-6">
 		<div class="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
 			<div class="min-w-0">
@@ -18,6 +19,7 @@
 			</div>
 		</div>
 	</section>
+	@endcan
 
 	<section aria-labelledby="product-library-heading" class="space-y-4">
 		<h3 id="product-library-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('dashboard.library.heading') }}</h3>

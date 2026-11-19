@@ -177,6 +177,12 @@ class RecipeWorkbenchVersionDataService
             : null;
     }
 
+    /** @return array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>, restrictions: array<string, mixed>} */
+    public function snapshotFromVersion(RecipeVersion $version): array
+    {
+        return $this->snapshotForVersion($version->loadMissing($this->versionWorkbenchRelations()));
+    }
+
     /**
      * @return array<string, mixed>
      */

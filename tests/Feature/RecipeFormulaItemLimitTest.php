@@ -218,6 +218,7 @@ const source = fs
     .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
     .replace(/^import[\s\S]*?;\n/gm, '')
     .replace(/export function /g, 'function ');
+const productSizesFromPayload = (rows) => rows ?? [];
 
 const createFormulaSection = () => ({
     get isCosmeticFormula() {

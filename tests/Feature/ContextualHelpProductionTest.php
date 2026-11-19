@@ -4,9 +4,11 @@ use App\Enums\HelpTopicDomain;
 use App\Enums\ProductionRunStatus;
 use App\Filament\Resources\HelpTopics\Pages\EditHelpTopic;
 use App\Filament\Resources\HelpTopics\Pages\ListHelpTopics;
+use App\Livewire\ProductionBench\InventoryIndex;
 use App\Livewire\ProductionBench\Production\BatchSizeForm;
 use App\Livewire\ProductionBench\Production\BatchSizeIndex;
 use App\Livewire\ProductionBench\Production\FlashPlanner;
+use App\Livewire\ProductionBench\Production\NumberingSettings;
 use App\Livewire\ProductionBench\Production\ProductionCalendar;
 use App\Livewire\ProductionBench\Production\ProductionCreate;
 use App\Livewire\ProductionBench\Production\ProductionDetail;
@@ -41,7 +43,7 @@ function publishedProductionHelp(string $key): HelpTopicLocale
 
 it('keeps production menus short while retaining specific inline help', function (): void {
     $topics = app(ProductionHelpTopics::class);
-    foreach (['index', 'create', 'detail', 'stock', 'calendar', 'flash', 'tasks', 'presets', 'task_sets'] as $surface) {
+    foreach (['index', 'create', 'detail', 'history', 'numbering', 'stock', 'calendar', 'flash', 'tasks', 'presets', 'task_sets'] as $surface) {
         $scope = $topics->forSurface($surface);
         expect(count($scope['index']))->toBeLessThanOrEqual(6)->toBeGreaterThan(0);
         expect(array_diff($scope['index'], $scope['keys']))->toBe([]);
@@ -68,7 +70,11 @@ it('renders published help on production pages without exposing newer drafts', f
 })->with([
     'batch register' => [fn (Workspace $workspace): array => [ProductionIndex::class, []], 'production.planning'],
     'plan batch' => [fn (Workspace $workspace): array => [ProductionCreate::class, []], 'production.planning'],
+    'package later planning' => [fn (Workspace $workspace): array => [ProductionCreate::class, []], 'production.package_later'],
     'batch detail' => [fn (Workspace $workspace): array => [ProductionDetail::class, ['productionId' => ProductionRun::factory()->for($workspace)->create()->public_id]], 'production.planning'],
+    'package later on the run' => [fn (Workspace $workspace): array => [ProductionDetail::class, ['productionId' => ProductionRun::factory()->for($workspace)->create()->public_id]], 'production.package_later'],
+    'production history' => [fn (Workspace $workspace): array => [ProductionIndex::class, ['dateBasis' => 'manufactured']], 'production.history'],
+    'numbering' => [fn (Workspace $workspace): array => [NumberingSettings::class, []], 'production.numbering'],
     'stock preparation' => [fn (Workspace $workspace): array => [StockPreparation::class, ['productionRun' => ProductionRun::factory()->for($workspace)->create(['status' => ProductionRunStatus::Scheduled])->public_id]], 'production.stock_preparation'],
     'calendar' => [fn (Workspace $workspace): array => [ProductionCalendar::class, []], 'production.scheduling'],
     'flash planner' => [fn (Workspace $workspace): array => [FlashPlanner::class, []], 'production.flash_planning'],
@@ -78,6 +84,21 @@ it('renders published help on production pages without exposing newer drafts', f
     'task sets' => [fn (Workspace $workspace): array => [TaskSetIndex::class, []], 'production.task_sets'],
     'task set editor' => [fn (Workspace $workspace): array => [TaskSetForm::class, []], 'production.task_sets'],
 ]);
+
+it('shows finished products help in the catalogue', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    app(ProductionBenchAccess::class)->activate($user, $workspace);
+    $topic = HelpTopic::factory()->create(['key' => 'inventory.finished_products', 'domain' => HelpTopicDomain::ProductionInventory]);
+    $locale = HelpTopicLocale::factory()->for($topic, 'topic')->create();
+    $revision = HelpTopicRevision::factory()->for($locale, 'topicLocale')->create(['title' => 'Published finished products guidance']);
+    $locale->update(['latest_revision_id' => $revision->id, 'published_revision_id' => $revision->id]);
+
+    Livewire::actingAs($user)->test(InventoryIndex::class, ['mode' => 'finished-products'])
+        ->assertSee('data-help-index', false)
+        ->assertSee('Published finished products guidance')
+        ->assertViewHas('contextualHelp', fn (array $help): bool => $help['tabs']['inventory'] === ['inventory.finished_products']);
+});
 
 it('keeps read-only help available and hides unpublished or disabled topics', function (): void {
     $user = User::factory()->create();

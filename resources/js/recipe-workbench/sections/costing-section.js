@@ -3,8 +3,8 @@ import {
     persistCosting,
     persistPackagingCatalogItem,
 } from '../bridge';
-import { nonNegativeNumber, number, parseDecimalInput, roundTo } from '../utils';
-import { formatDecimalInput } from '../number-format';
+import { nonNegativeNumber, number, parseDecimalInput, retainedProductSizeKey, roundTo } from '../utils';
+import { formatDecimalInput, parseStrictDecimalInput } from '../number-format';
 import { MASS_UNITS, convertMass, convertMassPrice } from '../mass';
 
 const SYSTEM_PHASE_TRANSLATION_KEYS = {
@@ -108,12 +108,15 @@ export function createCostingSection(payload) {
             this.costingOilWeight = costingPayload?.settings?.oilWeightForCosting ?? this.costingOilWeight ?? null;
             this.costingOilUnit = costingPayload?.settings?.oilUnitForCosting ?? this.costingOilUnit ?? this.oilUnit;
             this.costingUnitsProduced = costingPayload?.settings?.unitsProduced ?? this.costingUnitsProduced ?? null;
+            this.costingUnitsProducedBySize = { ...(costingPayload?.settings?.unitsProducedBySize ?? {}) };
+            this.costingSizeKeys = costingPayload?.settings?.sizeKeys ?? [];
             this.costingCurrency = costingPayload?.settings?.currency ?? this.costingCurrency ?? this.defaultCurrency ?? 'EUR';
             this.persistedCostingItemPrices = costingPayload?.item_prices ?? [];
             this.costingAlkaliIngredients = costingPayload?.alkali_ingredients ?? {};
             this.costingWaterIngredient = costingPayload?.water_ingredient ?? null;
             this.packagingCostRows = (costingPayload?.packaging_items ?? []).map((row) => ({
                 id: row.id ?? this.makeLocalPackagingRowId(),
+                product_size_key: row.product_size_key ?? null,
                 packaging_item_id: row.packaging_item_id ?? null,
                 name: row.name ?? '',
                 material_code: row.material_code ?? null,
@@ -127,6 +130,7 @@ export function createCostingSection(payload) {
                 costingOilWeight: this.costingOilWeight,
                 costingOilUnit: this.costingOilUnit,
                 costingUnitsProduced: this.costingUnitsProduced,
+                costingUnitsProducedBySize: { ...this.costingUnitsProducedBySize },
                 costingCurrency: this.costingCurrency,
                 costingPriceByRowId: { ...this.costingPriceByRowId },
                 packagingCostRows: this.packagingCostRows.map((row) => ({ ...row })),
@@ -140,6 +144,7 @@ export function createCostingSection(payload) {
 
             Object.assign(this, savedCostingState, {
                 costingPriceByRowId: { ...savedCostingState.costingPriceByRowId },
+                costingUnitsProducedBySize: { ...savedCostingState.costingUnitsProducedBySize },
                 packagingCostRows: savedCostingState.packagingCostRows.map((row) => ({ ...row })),
             });
             this.costingSaveStatus = null;
@@ -611,12 +616,19 @@ export function createCostingSection(payload) {
             return this.hasUnpricedIngredientRows || this.hasUnpricedPackagingRows;
         },
 
+        /**
+         * A cost row keeps its price only within its own size; a row saved before
+         * prices recorded their size may match any size.
+         */
         reconcilePackagingCosts() {
             const remaining = [...this.packagingCostRows];
             const planIds = new Set((this.packagingPlanRows ?? []).map((row) => row.id));
+            const sizeKeyOf = (row) => (typeof this.packagingRowSizeKey === 'function' ? this.packagingRowSizeKey(row) : (row?.product_size_key ?? null));
+            const sameSize = (row, plan) => (row.product_size_key ?? null) === null || sizeKeyOf(row) === sizeKeyOf(plan);
             this.packagingCostRows = (this.packagingPlanRows ?? []).map((plan) => {
                 const matchingPlanIndex = remaining.findIndex((row) => row.planRowId === plan.id);
                 const index = matchingPlanIndex >= 0 ? matchingPlanIndex : remaining.findIndex((row) => !planIds.has(row.planRowId)
+                    && sameSize(row, plan)
                     && (row.packaging_item_id ?? null) === (plan.packaging_item_id ?? null) && row.name === plan.name);
                 const row = index < 0
                     ? { id: this.makeLocalPackagingRowId(), unit_cost: null }
@@ -624,6 +636,7 @@ export function createCostingSection(payload) {
 
                 Object.assign(row, {
                     planRowId: plan.id,
+                    product_size_key: plan.product_size_key ?? null,
                     packaging_item_id: plan.packaging_item_id ?? null,
                     name: plan.name ?? '',
                     material_code: plan.material_code ?? null,
@@ -634,8 +647,62 @@ export function createCostingSection(payload) {
             });
         },
 
+        /**
+         * Cost per unit covers one size: the bulk costs the same per gram in any
+         * size, but each size has its own packaging. Every cost row is still
+         * saved; only the chosen size's rows are shown and summed.
+         */
         get displayedPackagingCostRows() {
-            return this.packagingCostRows;
+            if ((this.productSizes ?? []).length === 0) {
+                return this.packagingCostRows;
+            }
+
+            const sizeKey = this.costingProductSize?.key ?? null;
+
+            return this.packagingCostRows.filter((row) => this.packagingRowSizeKey(row) === sizeKey);
+        },
+
+        /** The chosen size, or the first size when none is chosen yet. */
+        get costingProductSize() {
+            const sizeKey = retainedProductSizeKey(this.productSizes ?? [], this.costingProductSizeKey);
+
+            return (this.productSizes ?? []).find((size) => size.key === sizeKey) ?? null;
+        },
+
+        selectCostingProductSize(sizeKey) {
+            if ((this.productSizes ?? []).some((size) => size.key === sizeKey)) {
+                this.costingProductSizeKey = sizeKey;
+            }
+        },
+
+        get costingSelectedUnitsProduced() {
+            const size = this.costingProductSize;
+
+            return size ? (this.costingUnitsProducedBySize?.[size.key] ?? null) : this.costingUnitsProduced;
+        },
+
+        get canEditCostingSizeYield() {
+            const size = this.costingProductSize;
+
+            return !size || (this.costingSizeKeys ?? []).includes(size.key);
+        },
+
+        updateCostingUnitsProduced(value) {
+            if (!this.canEditCostingSizeYield) {
+                return;
+            }
+
+            const text = `${value ?? ''}`.trim();
+            const size = this.costingProductSize;
+            if (size) {
+                this.costingUnitsProducedBySize = {
+                    ...this.costingUnitsProducedBySize,
+                    [size.key]: text === '' ? null : (parseStrictDecimalInput(text) ?? text),
+                };
+            } else {
+                this.costingUnitsProduced = text === '' ? null : parseDecimalInput(text);
+            }
+            this.scheduleCostingSave();
         },
 
         makeLocalPackagingRowId() {
@@ -643,7 +710,7 @@ export function createCostingSection(payload) {
         },
 
         get packagingCostPerFinishedUnitTotal() {
-            return this.packagingCostRows.reduce((total, row) => {
+            return this.displayedPackagingCostRows.reduce((total, row) => {
                 return total + (nonNegativeNumber(row.unit_cost) * nonNegativeNumber(row.quantity));
             }, 0);
         },
@@ -657,7 +724,13 @@ export function createCostingSection(payload) {
         },
 
         get costingUnitsProducedValue() {
-            const unitsProduced = parseDecimalInput(this.costingUnitsProduced);
+            const unitsProduced = this.costingProductSize
+                ? parseStrictDecimalInput(this.costingSelectedUnitsProduced)
+                : parseDecimalInput(this.costingUnitsProduced);
+
+            if (this.costingProductSize && (!Number.isInteger(unitsProduced) || unitsProduced > 1_000_000)) {
+                return 0;
+            }
 
             return Number.isFinite(unitsProduced) && unitsProduced > 0 ? unitsProduced : 0;
         },

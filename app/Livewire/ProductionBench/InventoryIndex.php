@@ -5,6 +5,7 @@ namespace App\Livewire\ProductionBench;
 use App\Actions\Inventory\CreateOpeningStockLot;
 use App\Actions\Inventory\QuarantineStockLot;
 use App\Actions\Inventory\ReleaseStockLot;
+use App\Actions\Inventory\SaveProductSizeSku;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientSubcategory;
 use App\Enums\StockLotOrigin;
@@ -14,8 +15,11 @@ use App\Livewire\Concerns\InteractsWithAppNotifications;
 use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Livewire\Concerns\InteractsWithStockAdjustments;
 use App\Livewire\Concerns\InteractsWithStockLotLocations;
+use App\Models\Brand;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
+use App\Models\ProductCollection;
+use App\Models\ProductSize;
 use App\Models\StockLot;
 use App\Models\StorageLocation;
 use App\Models\Supplier;
@@ -51,11 +55,13 @@ use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -74,12 +80,7 @@ class InventoryIndex extends Component implements HasActions, HasForms
 
     private const int OPTION_LIMIT = 30;
 
-    /**
-     * The two grains the module exposes: materials and the lots that hold them.
-     * The material view carries both planned demand and listed-only materials,
-     * which is what the earlier requirement/stock/overview split could not do.
-     */
-    private const array MODES = ['materials', 'stock'];
+    private const array MODES = ['materials', 'stock', 'finished-products'];
 
     private CreateOpeningStockLot $createOpeningStockLot;
 
@@ -93,6 +94,12 @@ class InventoryIndex extends Component implements HasActions, HasForms
 
     #[Url(as: 'q', except: '')]
     public string $search = '';
+
+    #[Url(as: 'brand', except: '')]
+    public string $brandFilter = '';
+
+    #[Url(as: 'collection', except: '')]
+    public string $collectionFilter = '';
 
     #[Url(as: 'type', except: 'all')]
     public string $materialType = 'all';
@@ -151,7 +158,10 @@ class InventoryIndex extends Component implements HasActions, HasForms
     #[Url(as: 'storage_location', except: 'all')]
     public string $lotStorageLocation = 'all';
 
+    #[Locked]
     public string $mode = 'materials';
+
+    public int $finishedPerPage = 25;
 
     /** @var array<string, mixed> */
     public array $lotFilters = [];
@@ -464,7 +474,24 @@ class InventoryIndex extends Component implements HasActions, HasForms
 
     public function updatedSearch(): void
     {
+        if ($this->mode === 'finished-products') {
+            $this->resetPage('finished-stock');
+
+            return;
+        }
+
         $this->resetInventoryPages();
+    }
+
+    public function updatedBrandFilter(): void
+    {
+        $this->collectionFilter = '';
+        $this->resetPage('finished-stock');
+    }
+
+    public function updatedCollectionFilter(): void
+    {
+        $this->resetPage('finished-stock');
     }
 
     public function updatedMaterialType(): void
@@ -722,6 +749,44 @@ class InventoryIndex extends Component implements HasActions, HasForms
         $this->resetPage('stock-lots');
     }
 
+    public function updatedFinishedPerPage(): void
+    {
+        $this->finishedPerPage = in_array($this->finishedPerPage, [10, 25, 50, 100], true) ? $this->finishedPerPage : 25;
+        $this->resetPage('finished-stock');
+    }
+
+    public function editSkuAction(): Action
+    {
+        return Action::make('editSku')
+            ->label(__('production_bench.inventory.edit_sku'))
+            ->modalHeading(__('production_bench.inventory.edit_sku'))
+            ->visible(fn (): bool => $this->mode === 'finished-products' && $this->canAddStock())
+            ->fillForm(function (array $arguments): array {
+                $workspaceId = $this->workspace()->id;
+                $size = ProductSize::query()
+                    ->whereHas('recipe', fn (Builder $query): Builder => $query->withoutGlobalScopes()->where('workspace_id', $workspaceId))
+                    ->findOrFail((int) ($arguments['sizeId'] ?? 0));
+
+                return ['sku' => $size->sku];
+            })
+            ->schema([
+                TextInput::make('sku')->label(__('production_bench.inventory.sku'))->maxLength(64),
+            ])
+            ->action(function (array $data, array $arguments, Schema $schema, SaveProductSizeSku $save): void {
+                try {
+                    $save->handle($this->user(), $this->workspace(), (int) ($arguments['sizeId'] ?? 0), $data['sku'] ?? null);
+                } catch (ValidationException $exception) {
+                    $errors = $exception->errors();
+                    if (isset($errors['sku'])) {
+                        $errors[$schema->getStatePath().'.sku'] = $errors['sku'];
+                        unset($errors['sku']);
+                    }
+
+                    throw ValidationException::withMessages($errors);
+                }
+            });
+    }
+
     public function addStockAction(): Action
     {
         return Action::make('addStock')
@@ -884,6 +949,29 @@ class InventoryIndex extends Component implements HasActions, HasForms
         WorkspaceStockLotQuery $stockLotQuery,
     ): View {
         $workspace = $this->workspace();
+        if ($this->mode === 'finished-products') {
+            ['isActive' => $isActive, 'isReadOnly' => $isReadOnly, 'canWrite' => $canWrite] = $access->viewState($this->user(), $workspace);
+
+            return view('livewire.production-bench.inventory-finished-products', [
+                'contextualHelp' => $helpTopics->resolve('finished-products', $workspace->uses_storage_locations, app()->getLocale()),
+                'isActive' => $isActive,
+                'isReadOnly' => $isReadOnly,
+                'canEditSku' => $canWrite,
+                'brandOptions' => Brand::query()->where('workspace_id', $workspace->id)->orderBy('name')->get(),
+                'collectionOptions' => ProductCollection::query()->where('workspace_id', $workspace->id)
+                    ->with(['brand' => fn (BelongsTo $relation): BelongsTo => $relation->where('workspace_id', $workspace->id)])
+                    ->when($this->brandFilter !== '', fn (Builder $query): Builder => $query->where('brand_id', ctype_digit($this->brandFilter) ? (int) $this->brandFilter : 0))
+                    ->orderBy('name')->get(),
+                'finishedStock' => $isActive || $isReadOnly
+                    ? $stockLotQuery->paginateFinishedBySize($this->user(), $workspace, $this->finishedPerPage, includePublished: true, filters: [
+                        'search' => $this->search,
+                        'brand' => $this->brandFilter,
+                        'collection' => $this->collectionFilter,
+                    ])
+                    : null,
+            ]);
+        }
+
         $displayUnit = $workspace->mass_display_system->priceUnit()->value;
         $materialFilters = $this->materialFilters();
         $materialPage = $this->mode === 'materials'
@@ -902,6 +990,9 @@ class InventoryIndex extends Component implements HasActions, HasForms
             'lots' => $this->mode === 'stock'
                 ? $this->stockLots($workspace, $positions, $displayUnit, $stockLotQuery)
                 : collect(),
+            'finishedStock' => $this->mode === 'stock'
+                ? $stockLotQuery->paginateFinishedBySize($this->user(), $workspace, $this->finishedPerPage)
+                : null,
             'materials' => $materialPage,
             'inventorySummary' => $this->mode === 'materials'
                 ? $inventoryQuery->summary($this->user(), $workspace, $materialFilters)

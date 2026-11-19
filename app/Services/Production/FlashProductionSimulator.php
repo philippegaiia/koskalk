@@ -14,6 +14,7 @@ use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\Workspace;
 use App\Services\MassConverter;
+use App\Services\ProductSizeResolver;
 use App\Support\NumberLocale;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -41,6 +42,7 @@ class FlashProductionSimulator
         private readonly ProductionTaskLimits $taskLimits,
         private readonly ProductionReadyDateService $readyDates,
         private readonly ProductionLocationSelection $locationSelection,
+        private readonly ProductSizeResolver $productSizes,
     ) {}
 
     /**
@@ -87,12 +89,14 @@ class FlashProductionSimulator
             $this->limits->assertWithinLimit($totalWholeBatches);
             $expectedUnits = $wholeBatches * $line['expected_units_per_batch'];
             $extraUnits = $expectedUnits - $line['desired_units'];
+            $sizeSelection = $this->productSizes->selectForProduction($version, $line['product_size_key']);
             $batchRequirements = $this->requirementBuilder->build(
                 version: $version,
                 basisKind: $basisKind,
                 basisQuantityGrams: $basisQuantityGrams,
                 expectedUnits: $line['expected_units_per_batch'],
                 recipe: $recipe,
+                sizeSelection: $sizeSelection,
             );
 
             if ($recipe->productFamily?->usesLiquidSoapPasteBench()) {
@@ -151,6 +155,9 @@ class FlashProductionSimulator
                 'recipe' => $recipe,
                 'production_location_id' => $line['production_location_id'],
                 'recipe_version_id' => $version->id,
+                'product_size_id' => $sizeSelection->size?->id,
+                'product_size_key' => $sizeSelection->size?->public_id,
+                'product_size_label' => $sizeSelection->size?->label(),
                 'desired_units' => $line['desired_units'],
                 'expected_units_per_batch' => $line['expected_units_per_batch'],
                 'whole_batches' => $wholeBatches,
@@ -268,7 +275,7 @@ class FlashProductionSimulator
 
     /**
      * @param  array<string, mixed>  $input
-     * @return array{recipe_id: int, desired_units: int, expected_units_per_batch: int, basis_input_value: string, basis_input_unit: MassUnit, task_set_id: ?int}
+     * @return array{recipe_id: int, product_size_key: mixed, desired_units: int, expected_units_per_batch: int, basis_input_value: string, basis_input_unit: MassUnit, task_set_id: ?int, production_location_id: ?int}
      */
     private function normalizeLine(Workspace $workspace, array $input, int $index): array
     {
@@ -328,6 +335,7 @@ class FlashProductionSimulator
         return [
             'production_location_id' => $this->locationSelection->resolve($workspace, $input['production_location_id'] ?? null),
             'recipe_id' => $recipeId,
+            'product_size_key' => $input['product_size_key'] ?? null,
             'desired_units' => $desiredUnits,
             'expected_units_per_batch' => $expectedUnits,
             'basis_input_value' => $basisValue,

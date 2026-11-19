@@ -53,6 +53,7 @@
                     <article wire:key="flash-line-{{ $index }}" class="rounded-2xl border border-[var(--color-line)] bg-[var(--color-panel-muted)] p-4 sm:p-5">
                         @php
                             $applicablePresets = $presets->filter(fn ($preset): bool => $preset->recipes->contains('id', (int) ($line['recipe_id'] ?? 0)));
+                            $sizeOptions = $productSizesByRecipe->get((int) ($line['recipe_id'] ?? 0), collect());
                             $batchMode = (string) ($line['batch_mode'] ?? 'custom');
                         @endphp
                         <div class="mb-4 flex items-center justify-between gap-3">
@@ -72,6 +73,20 @@
                                     @endforeach
                                 </select>
                             </label>
+
+                            @if ($sizeOptions->isNotEmpty())
+                                <label class="space-y-2 xl:col-span-3" wire:key="flash-size-{{ $index }}-{{ $line['recipe_id'] }}">
+                                    <span class="text-sm font-medium">{{ __('batch_log.fields.product_size') }}</span>
+                                    <select wire:model.live="lines.{{ $index }}.product_size_key" @disabled($isReadOnly) class="sk-input w-full">
+                                        @if ($sizeOptions->count() > 1)
+                                            <option value="" disabled>{{ __('batch_log.fields.choose_size') }}</option>
+                                        @endif
+                                        @foreach ($sizeOptions as $size)
+                                            <option value="{{ $size->public_id }}">{{ $size->label(auth()->user()?->number_locale) }}</option>
+                                        @endforeach
+                                    </select>
+                                </label>
+                            @endif
 
                             @if (filled($line['recipe_id'] ?? null) && $applicablePresets->isNotEmpty())
                                 <label class="space-y-2 md:col-span-2 xl:col-span-4">
@@ -213,7 +228,7 @@
                                     <td class="px-4 py-4 text-right font-mono tabular-nums">{{ \App\Support\NumberLocale::formatAdaptiveDecimal($requirement['required_display'], 2, 3, $numberLocale) }} {{ $requirement['display_unit'] }}</td>
                                     <td class="px-4 py-4 text-right font-mono tabular-nums">
                                         @if ($requirement['display_unit_price'] !== null)
-                                            {{ \App\Support\NumberLocale::formatAdaptiveDecimal($requirement['display_unit_price'], 2, 3, $numberLocale) }} {{ $requirement['price_currency'] }} / {{ $requirement['display_unit'] === 'unit' ? __('production_bench.common.unit') : $requirement['display_unit'] }}
+                                            {{ \App\Support\NumberLocale::formatAdaptiveDecimal($requirement['display_unit_price'], 2, 3, $numberLocale) }} {{ $requirement['price_currency'] }} / {{ $requirement['display_unit'] === 'unit' ? __('production_bench.inventory.unit') : $requirement['display_unit'] }}
                                         @else
                                             {{ __('production_bench.flash.price_missing') }}
                                         @endif
@@ -250,7 +265,7 @@
                         </div>
                     @foreach ($dayProposals as $proposal)
                         <div class="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                            <span class="font-medium text-[var(--color-ink-strong)]">{{ $proposal['recipe_name'] }} · {{ __('production_bench.flash.batch_label', ['number' => $proposal['batch_number'], 'total' => $proposal['batch_total']]) }}</span>
+                            <span class="font-medium text-[var(--color-ink-strong)]">{{ $proposal['recipe_name'] }}@if (filled($proposal['product_size_label'] ?? null)) · {{ $proposal['product_size_label'] }}@endif · {{ __('production_bench.flash.batch_label', ['number' => $proposal['batch_number'], 'total' => $proposal['batch_total']]) }}</span>
                             <span class="font-mono text-sm text-[var(--color-ink-soft)]">{{ $proposal['production_date'] }} → {{ $proposal['estimated_ready_on'] }}</span>
                         </div>
                         @if ($workspace->uses_production_locations && filled($proposal['production_location_id'] ?? null))

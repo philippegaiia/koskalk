@@ -70,6 +70,7 @@ class RecipeWorkbenchDraftPayloadMapper
             'final_plain_ingredient_list_basis_hash' => $draft['finalPlainIngredientListBasisHash'] ?? null,
             'phases' => $draft['phases'] ?? $this->phasesFromItems($draft['phaseItems'] ?? []),
             'phase_items' => $draft['phaseItems'] ?? [],
+            ...(array_key_exists('productSizes', $draft) ? ['product_sizes' => $draft['productSizes']] : []),
             'packaging_items' => $draft['packagingItems'] ?? [],
             'production_output_type' => $draft['productionOutputType'] ?? null,
             'output_ingredient_id' => $draft['outputIngredientId'] ?? null,

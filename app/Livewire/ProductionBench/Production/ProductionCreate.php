@@ -5,6 +5,7 @@ namespace App\Livewire\ProductionBench\Production;
 use App\Actions\Production\CreateProductionDraft;
 use App\Actions\Production\PlanProduction;
 use App\Actions\Production\SaveProductProductionLocation;
+use App\Enums\ProductionOutputType;
 use App\Enums\ProductionRunSource;
 use App\Enums\ProductionRunStatus;
 use App\Livewire\Concerns\InteractsWithAppNotifications;
@@ -22,6 +23,7 @@ use App\Services\Production\ProductionAvailabilityPreview;
 use App\Services\Production\ProductionDailyOccupancy;
 use App\Services\Production\ProductionLocationSelection;
 use App\Services\ProductionBenchAccess;
+use App\Services\ProductSizeResolver;
 use App\Support\NumberLocale;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
@@ -52,6 +54,10 @@ class ProductionCreate extends Component implements HasActions, HasForms
     public string $collectionFilter = '';
 
     public string $recipeId = '';
+
+    public string $productSizeKey = '';
+
+    public bool $packageLater = false;
 
     public string $presetId = '';
 
@@ -102,12 +108,19 @@ class ProductionCreate extends Component implements HasActions, HasForms
     public function updatedRecipeId(): void
     {
         $this->resetValidation();
+        $this->productSizeKey = '';
+        $this->packageLater = false;
         $recipe = $this->selectedRecipe();
 
         if (! $recipe instanceof Recipe) {
             $this->reset(['presetId', 'taskSetId', 'basisInputValue', 'expectedUnits', 'productionLocationId']);
 
             return;
+        }
+
+        $sizes = app(ProductSizeResolver::class)->forLatestPublishedVersion($recipe);
+        if ($sizes->count() === 1) {
+            $this->productSizeKey = $sizes->first()->public_id;
         }
 
         $this->productionLocationId = $this->workspace()->uses_production_locations
@@ -196,7 +209,7 @@ class ProductionCreate extends Component implements HasActions, HasForms
             'recipeId' => ['required', 'integer'],
             'basisInputValue' => ['required', 'numeric', 'gt:0'],
             'basisInputUnit' => ['required', 'in:g,kg,oz,lb'],
-            'expectedUnits' => ['required', 'integer', 'min:1'],
+            'expectedUnits' => [$this->packageLater ? 'nullable' : 'required', 'integer', 'min:1'],
             'plannedFor' => ['required', 'date_format:Y-m-d'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
@@ -216,13 +229,15 @@ class ProductionCreate extends Component implements HasActions, HasForms
                 recipe: $recipe,
                 basisInputValue: $this->basisInputValue,
                 basisInputUnit: $this->basisInputUnit,
-                expectedUnits: $this->expectedUnits,
+                expectedUnits: $this->packageLater ? '1' : $this->expectedUnits,
                 idempotencyKey: $this->idempotencyKey,
                 plannedFor: $this->plannedFor ?? '',
                 notes: filled($this->notes) ? $this->notes : null,
                 source: ProductionRunSource::Direct,
                 taskSet: $this->selectedTaskSet(),
                 productionLocationId: $this->selectedProductionLocationId(),
+                productSizeKey: $this->packageLater ? null : $this->productSizeKey,
+                packageLater: $this->packageLater,
             );
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
@@ -251,7 +266,7 @@ class ProductionCreate extends Component implements HasActions, HasForms
             'recipeId' => ['required', 'integer'],
             'basisInputValue' => ['required', 'numeric', 'gt:0'],
             'basisInputUnit' => ['required', 'in:g,kg,oz,lb'],
-            'expectedUnits' => ['required', 'integer', 'min:1'],
+            'expectedUnits' => [$this->packageLater ? 'nullable' : 'required', 'integer', 'min:1'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
 
@@ -270,7 +285,7 @@ class ProductionCreate extends Component implements HasActions, HasForms
                 recipe: $recipe,
                 basisInputValue: $this->basisInputValue,
                 basisInputUnit: $this->basisInputUnit,
-                expectedUnits: $this->expectedUnits,
+                expectedUnits: $this->packageLater ? '1' : $this->expectedUnits,
                 idempotencyKey: $this->idempotencyKey,
                 plannedFor: null,
                 notes: filled($this->notes) ? $this->notes : null,
@@ -278,6 +293,8 @@ class ProductionCreate extends Component implements HasActions, HasForms
                 status: ProductionRunStatus::Draft,
                 taskSet: $this->selectedTaskSet(),
                 productionLocationId: $this->selectedProductionLocationId(),
+                productSizeKey: $this->packageLater ? null : $this->productSizeKey,
+                packageLater: $this->packageLater,
             );
         } catch (ValidationException $exception) {
             foreach ($exception->errors() as $field => $messages) {
@@ -299,6 +316,7 @@ class ProductionCreate extends Component implements HasActions, HasForms
         ProductionBenchAccess $access,
         ProductionAvailabilityPreview $availabilityPreview,
         ProductionDailyOccupancy $occupancy,
+        ProductSizeResolver $productSizes,
     ): View {
         $workspace = $this->workspace();
         $recipe = $this->selectedRecipe();
@@ -322,6 +340,7 @@ class ProductionCreate extends Component implements HasActions, HasForms
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
             'productionLocations' => $productionLocations,
+            'productSizes' => $productSizes->forLatestPublishedVersion($recipe),
             'capacityWarnings' => $this->capacityWarnings(
                 workspace: $workspace,
                 plannedFor: $this->plannedFor ?? '',
@@ -350,14 +369,17 @@ class ProductionCreate extends Component implements HasActions, HasForms
                     ->with('items.taskType')
                     ->get()
                 : collect(),
+            'canPlanBulk' => $recipe instanceof Recipe && $recipe->production_output_type !== ProductionOutputType::ManufacturedIngredient,
             'preview' => $availabilityPreview->for(
                 workspace: $workspace,
                 recipe: $recipe,
                 basisInputValue: $this->basisInputValue,
                 basisInputUnit: $this->basisInputUnit,
-                expectedUnits: $this->expectedUnits,
+                expectedUnits: $this->packageLater ? '1' : $this->expectedUnits,
                 taskSet: $taskSet,
                 plannedFor: $this->plannedFor ?? '',
+                productSizeKey: $this->packageLater ? null : $this->productSizeKey,
+                packageLater: $this->packageLater,
             ),
         ]);
     }

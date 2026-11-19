@@ -147,6 +147,11 @@ class Recipe extends Model implements HasRichContent
         return $this->hasMany(RecipeVersion::class);
     }
 
+    public function productSizes(): HasMany
+    {
+        return $this->hasMany(ProductSize::class)->whereNull('archived_at')->orderBy('position')->orderBy('id');
+    }
+
     public function publishedVersions(): HasMany
     {
         return $this->hasMany(RecipeVersion::class)

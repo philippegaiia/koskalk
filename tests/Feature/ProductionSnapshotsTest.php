@@ -15,6 +15,7 @@ use App\Models\ProductFamily;
 use App\Models\ProductionBatch;
 use App\Models\ProductionBatchIngredient;
 use App\Models\ProductionBatchPackagingItem;
+use App\Models\ProductSize;
 use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
@@ -32,6 +33,7 @@ use App\Services\ProductionSnapshotService;
 use App\Services\RecipeVersionCostPreviewBuilder;
 use App\Services\RecipeVersionViewDataBuilder;
 use App\Services\RecipeWorkbenchService;
+use Dom\HTMLDocument;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -1185,6 +1187,79 @@ it('redirects back with validation errors when recording unpriced production row
         ->assertSessionHasErrors(['costing']);
 
     expect(ProductionBatch::query()->count())->toBe(0);
+});
+
+it('records only the chosen size and freezes its label on a basic batch', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    $version->update(['is_current' => false]);
+    ['packaging_item' => $packagingItem] = productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    $large = ProductSize::factory()->for($recipe)->create(['name' => 'Large bar']);
+    $small = ProductSize::factory()->for($recipe)->create(['name' => 'Small bar', 'position' => 2]);
+    $version->packagingItems()->update(['product_size_id' => $large->id]);
+    $version->packagingItems()->create([
+        'product_size_id' => $small->id,
+        'packaging_item_id' => $packagingItem->id,
+        'name' => 'Small box',
+        'components_per_unit' => 1,
+        'position' => 2,
+    ]);
+    $service = app(ProductionSnapshotService::class);
+    $input = ['manufacture_date' => '2026-06-12', 'batch_basis' => 1000, 'units_produced' => 10];
+    $message = __('batch_log.validation.size_required');
+
+    expect(fn () => $service->preview($recipe, $version, $user, $input))->toThrow(ValidationException::class, $message);
+
+    $this->actingAs($user)->get(route('recipes.version', [
+        'recipe' => $recipe,
+        'version' => $version,
+        'batch_product_size' => $small->public_id,
+        'units_produced' => 20,
+    ]))
+        ->assertOk()
+        ->assertSee('Apply size to batch')
+        ->assertSee(__('batch_log.record.size_help'))
+        ->assertSee('name="product_size_key" value="'.$small->public_id.'"', false)
+        ->assertSee('name="units_produced" value="" x-model="unitsProduced"', false);
+    $this->get(route('recipes.version', [
+        'recipe' => $recipe,
+        'version' => $version,
+        'batch_product_size' => $small->public_id,
+        'batch_units_produced' => 10,
+        'units_produced' => 20,
+    ]))
+        ->assertOk()
+        ->assertSee('name="batch_units_produced" value="10"', false);
+
+    $this->from(route('recipes.saved', $recipe))
+        ->post(route('recipes.production-batches.store', $recipe), [...$input, 'recipe_version_id' => $version->id])
+        ->assertRedirect(route('recipes.saved', $recipe))
+        ->assertSessionHasErrors(['packaging' => $message]);
+
+    expect(ProductionBatch::query()->count())->toBe(0);
+
+    $response = $this->post(route('recipes.production-batches.store', $recipe), [
+        ...$input,
+        'recipe_version_id' => $version->id,
+        'product_size_key' => $small->public_id,
+    ]);
+    $batch = ProductionBatch::query()->sole();
+    $response->assertRedirect(route('production-batches.show', $batch));
+    $small->update(['name' => 'Renamed bar']);
+
+    foreach (['show' => 'packaging_title', 'print' => 'packaging'] as $page => $headingKey) {
+        $snapshot = $this->get(route('production-batches.'.$page, $batch))->assertOk()->assertDontSee('Renamed bar');
+        $document = HTMLDocument::createFromString($snapshot->getContent(), LIBXML_NOERROR);
+        $pageHeadings = array_map(fn ($heading): string => trim($heading->textContent), iterator_to_array($document->querySelectorAll('h1')));
+        $sectionHeadings = array_map(fn ($heading): string => trim($heading->textContent), iterator_to_array($document->querySelectorAll('h2')));
+
+        expect($pageHeadings)->toContain($batch->recipe_name.' · Small bar')
+            ->and($sectionHeadings)->toContain(__("batch_log.snapshot.{$headingKey}").' · Small bar');
+    }
+
+    expect($batch->product_size_id)->toBe($small->id)
+        ->and($batch->product_size_label_snapshot)->toBe('Small bar')
+        ->and($batch->units_produced)->toBe(10)
+        ->and($batch->packagingItems->pluck('name')->all())->toBe(['Small box']);
 });
 
 it('records a cosmetic production snapshot using total batch quantity language', function (): void {

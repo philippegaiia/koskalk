@@ -9,6 +9,7 @@ use Illuminate\Support\Carbon;
 
 #[Fillable([
     'recipe_version_costing_id',
+    'product_size_id',
     'packaging_item_id',
     'name',
     'unit_cost',
@@ -23,6 +24,7 @@ use Illuminate\Support\Carbon;
  *
  * @property int $id
  * @property int $recipe_version_costing_id
+ * @property int|null $product_size_id
  * @property int|null $packaging_item_id
  * @property string $name
  * @property string $unit_cost
@@ -31,6 +33,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read RecipeVersionCosting $costing
  * @property-read PackagingItem|null $packagingItem
+ * @property-read ProductSize|null $productSize
  */
 class RecipeVersionCostingPackagingItem extends Model
 {
@@ -38,6 +41,12 @@ class RecipeVersionCostingPackagingItem extends Model
     public function costing(): BelongsTo
     {
         return $this->belongsTo(RecipeVersionCosting::class, 'recipe_version_costing_id');
+    }
+
+    /** The Product size this price belongs to; two sizes keep separate prices. */
+    public function productSize(): BelongsTo
+    {
+        return $this->belongsTo(ProductSize::class);
     }
 
     /** The reusable catalog item this row was sourced from, if any. */

@@ -5,10 +5,12 @@ namespace App\Http\Controllers;
 use App\Http\Requests\ExpectedRecipeRevisionRequest;
 use App\Http\Requests\ReleaseRecipeEditingRequest;
 use App\Models\ProductFamily;
+use App\Models\ProductionBatch;
 use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\User;
+use App\Policies\ProductionBatchPolicy;
 use App\Services\CurrentAppUserResolver;
 use App\Services\EntitlementService;
 use App\Services\FormulaDocumentOptions;
@@ -179,6 +181,7 @@ class RecipeController extends Controller
         $batchSearch = $request->query('batch_search');
         $batchSearch = is_string($batchSearch) ? Str::limit(trim($batchSearch), 120, '') : '';
         $productionBatches = null;
+        $batchDeletePermissions = [];
         if ($user !== null && $user->can('view', $recipe)) {
             $productionBatches = $recipe->productionBatches()
                 ->where(function (Builder $query) use ($recipe, $user): void {
@@ -203,8 +206,10 @@ class RecipeController extends Controller
                 ->withQueryString()
                 ->fragment('production-history');
 
+            $batchDeletePermissions = app(ProductionBatchPolicy::class)
+                ->historyPermissions($user, $productionBatches->getCollection());
             $productionBatches->setCollection($productionBatches->getCollection()
-                ->filter(fn ($productionBatch): bool => $user->can('view', $productionBatch))
+                ->filter(fn (ProductionBatch $batch): bool => isset($batchDeletePermissions[$batch->id]))
                 ->values());
         }
 
@@ -218,10 +223,12 @@ class RecipeController extends Controller
             'canRestoreVersion' => $canUpdateRecipe,
             'canDuplicateRecipe' => $canDuplicateRecipe,
             'canRecordProduction' => $canRecordProduction,
+            'productionSizes' => $canRecordProduction ? $viewData['costingSizes'] : collect(),
             'productionPreview' => $canRecordProduction
                 ? $this->productionPreview($recipe, $version, $user, $request, $viewData, $productionSnapshotService)
                 : null,
             'productionBatches' => $productionBatches,
+            'batchDeletePermissions' => $batchDeletePermissions,
             'batchSearch' => $batchSearch,
         ]);
     }
@@ -515,8 +522,20 @@ class RecipeController extends Controller
         CurrentAppUserResolver $currentAppUserResolver,
         RecipeExportDataBuilder $recipeExportDataBuilder,
         RecipeWorkbookExporter $recipeWorkbookExporter,
+        RecipeVersionViewDataBuilder $recipeVersionViewDataBuilder,
     ): StreamedResponse {
         [$recipe, $savedFormula] = $this->accessibleSheetVersion($recipe, $request, $currentAppUserResolver);
+        if ($request->query('kind') === 'costing') {
+            $exportData = $recipeVersionViewDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query())['costingExportData'];
+            abort_unless(is_array($exportData), 404);
+
+            return response()->streamDownload(
+                fn (): int => print $recipeWorkbookExporter->exportCosting($exportData),
+                $this->exportFilename($recipe, 'xlsx'),
+                ['Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'],
+            );
+        }
+
         $exportData = $recipeExportDataBuilder->build($recipe, $savedFormula, $request->query('oil_weight'), $request->query());
         $filename = $this->exportFilename($recipe, 'xlsx');
 
@@ -997,13 +1016,20 @@ class RecipeController extends Controller
         $savedCosting = $viewData['costingProjection'] ?? [];
         $basis = $viewData['batchContext']['batch_basis'];
         $basis = is_numeric($basis) && (float) $basis > 0 ? (float) $basis : $viewData['selectedOilWeight'];
-        $units = $request->old('units_produced', $request->query('units_produced', $savedCosting['units_produced'] ?? null));
+        $requestedSize = $request->old('product_size_key', $request->query('batch_product_size'));
+        $units = $request->old('units_produced', $request->query(
+            'batch_units_produced',
+            blank($requestedSize) && $viewData['costingSize'] === null
+                ? $request->query('units_produced', $viewData['productionUnits'])
+                : null,
+        ));
         $units = filter_var($units, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]) ?: null;
 
         try {
             return $productionSnapshotService->preview($recipe, $version, $user, [
                 'batch_basis' => $basis,
                 'units_produced' => $units,
+                'product_size_key' => $requestedSize,
             ]);
         } catch (ValidationException $exception) {
             return [
@@ -1013,6 +1039,7 @@ class RecipeController extends Controller
                 'units_produced' => $units,
                 'has_unpriced_rows' => true,
                 'calculation_error' => $exception->getMessage(),
+                'size_selection_required' => array_key_exists('packaging', $exception->errors()),
             ];
         }
     }

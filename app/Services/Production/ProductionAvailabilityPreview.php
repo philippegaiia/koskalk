@@ -11,6 +11,7 @@ use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\Workspace;
 use App\Services\MassConverter;
+use App\Services\ProductSizeResolver;
 use App\Services\StockPositionService;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -25,6 +26,7 @@ class ProductionAvailabilityPreview
         private readonly ProductionRequirementMaterialCodeSnapshotter $materialCodeSnapshots,
         private readonly ProductionWorkingCalendar $calendar,
         private readonly StockPositionService $stockPositions,
+        private readonly ProductSizeResolver $productSizes,
     ) {}
 
     /**
@@ -38,6 +40,8 @@ class ProductionAvailabilityPreview
         string $expectedUnits,
         ?ProductionTaskSet $taskSet,
         ?string $plannedFor,
+        ?string $productSizeKey = null,
+        bool $packageLater = false,
     ): array {
         $displayUnit = $workspace->mass_display_system->priceUnit();
         $preview = [
@@ -76,11 +80,18 @@ class ProductionAvailabilityPreview
             $basisKind = $recipe->productFamily?->calculation_basis === 'total_formula'
                 ? ProductionBasisKind::TotalFormulaMass
                 : ProductionBasisKind::OilMass;
+            if ($packageLater) {
+                $this->requirementBuilder->linkedBulkPackaging($version);
+            }
+
             $requirements = $this->requirementBuilder->build(
                 version: $version,
                 basisKind: $basisKind,
                 basisQuantityGrams: $basisQuantityGrams,
                 expectedUnits: (int) $expectedUnits,
+                sizeSelection: $packageLater
+                    ? new ProductionSizeSelection(null, false)
+                    : $this->productSizes->selectForProduction($version, $productSizeKey),
             );
             $formulaSnapshot = $this->formulaSnapshotBuilder->build(
                 recipe: $recipe,
@@ -94,7 +105,7 @@ class ProductionAvailabilityPreview
                     formulaLines: $formulaSnapshot['lines'],
                     startingSortOrder: ((int) $requirements->max('sort_order')) + 1,
                 ),
-            )->values();
+            )->sortBy(fn (array $requirement): bool => $requirement['kind'] === 'packaging')->values();
             $requirements = $this->materialCodeSnapshots->apply($workspace, $requirements);
         } catch (ValidationException $exception) {
             $preview['error'] = (string) collect($exception->errors())->flatten()->first();

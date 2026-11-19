@@ -198,6 +198,13 @@ it('refuses a platform blend whose component was deleted without disturbing othe
     $this->get('/calculators/solid-soap')->assertOk()->assertSee('Guest Olive Oil')->assertDontSee('Guest Orphaned Blend');
 });
 
+it('keeps the public help drawer outside the page content it disables on mobile', function (): void {
+    $response = $this->get('/calculators/solid-soap')->assertOk();
+    $page = HTMLDocument::createFromString($response->getContent(), LIBXML_NOERROR);
+
+    expect($page->querySelector('body > [data-contextual-help-panel] [data-help-close]'))->not->toBeNull();
+});
+
 it('renders three calculator entry points and their focused guest pages', function (): void {
     guestCalculatorOil();
     $this->get('/calculators')->assertOk()->assertSeeText('Solid soap calculator')->assertSeeText('Liquid soap calculator')->assertSeeText('Cosmetic formula calculator');

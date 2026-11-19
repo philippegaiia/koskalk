@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\MassUnit;
 use App\Enums\ProductionOutputType;
+use App\Models\ProductSize;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
@@ -13,7 +14,10 @@ use App\SoapSap;
 
 class RecipeWorkbenchVersionPayloadMapper
 {
-    public function __construct(private readonly MassConverter $massConverter) {}
+    public function __construct(
+        private readonly MassConverter $massConverter,
+        private readonly ProductSizeResolver $productSizeResolver,
+    ) {}
 
     /**
      * @param  array<int, array<string, mixed>>  $phaseBlueprints
@@ -27,6 +31,7 @@ class RecipeWorkbenchVersionPayloadMapper
         array $catalogReview,
         array $ingredientCatalogById = [],
     ): array {
+        $productSizes = $this->productSizeResolver->forVersion($version)->keyBy('id');
         $phaseRows = collect($phaseBlueprints)
             ->keyBy('key')
             ->map(fn (array $phase): array => [$phase['key'] => []])
@@ -119,10 +124,20 @@ class RecipeWorkbenchVersionPayloadMapper
             'finalPlainIngredientListBasisHash' => $version->final_plain_ingredient_list_basis_hash,
             'phases' => array_values($phases),
             'phaseItems' => $phaseRows,
+            'productSizes' => $productSizes
+                ->map(fn (ProductSize $size): array => [
+                    'key' => $size->public_id,
+                    'name' => $size->name,
+                    'declared_content_value' => $size->declared_content_value === null ? null : (float) $size->declared_content_value,
+                    'declared_content_unit' => $size->declared_content_unit?->value,
+                ])
+                ->values()
+                ->all(),
             'packagingItems' => $version->packagingItems
                 ->sortBy('position')
                 ->map(fn (RecipeVersionPackagingItem $item): array => [
                     'id' => 'saved-packaging-'.$item->id,
+                    'product_size_key' => $productSizes->get($item->product_size_id)?->public_id,
                     'packaging_item_id' => $item->packaging_item_id,
                     'name' => $item->name,
                     'material_code' => $item->packagingItem?->material_code,

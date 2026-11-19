@@ -8,6 +8,7 @@ use App\Models\IngredientLotNumberSetting;
 use App\Models\StockLot;
 use App\Models\Workspace;
 use App\Services\WorkspaceIngredientCodeService;
+use App\Services\WorkspaceWriteLock;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -16,7 +17,11 @@ class IngredientLotNumberService
 {
     public const int MaximumSerial = 999999999999;
 
-    public function __construct(private readonly WorkspaceIngredientCodeService $materialCodes) {}
+    public function __construct(
+        private readonly WorkspaceIngredientCodeService $materialCodes,
+        private readonly StockLotCodeAvailability $lotCodes,
+        private readonly WorkspaceWriteLock $workspaceLock,
+    ) {}
 
     public function settings(Workspace $workspace): IngredientLotNumberSetting
     {
@@ -62,9 +67,9 @@ class IngredientLotNumberService
 
         $prefix = 'SK-'.$date->format('ymd').'-';
         $highest = StockLot::query()->where('workspace_id', $workspace->id)
-            ->where('internal_lot_code', 'like', $prefix.'%')
+            ->whereRaw('LOWER(internal_lot_code) LIKE ?', [strtolower($prefix).'%'])
             ->pluck('internal_lot_code')
-            ->map(fn (string $code): int => preg_match('/^'.preg_quote($prefix, '/').'(\d+)$/', $code, $matches) === 1
+            ->map(fn (string $code): int => preg_match('/^'.preg_quote($prefix, '/').'(\d+)$/i', $code, $matches) === 1
                 ? min((int) $matches[1], self::MaximumSerial) : 0)
             ->max() ?? 0;
 
@@ -75,13 +80,13 @@ class IngredientLotNumberService
     public function allocate(Workspace $workspace, Ingredient $ingredient, string $stockedAt, ?string $manualNumber = null): string
     {
         return DB::transaction(function () use ($workspace, $ingredient, $stockedAt, $manualNumber): string {
-            $workspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
+            $workspace = $this->workspaceLock->acquire($workspace->id);
             $manualNumber = trim($manualNumber ?? '');
 
             if ($manualNumber !== '') {
                 $this->validateNumber($manualNumber);
 
-                if ($this->exists($workspace, $manualNumber)) {
+                if ($this->lotCodes->isTaken($workspace->id, $manualNumber)) {
                     throw ValidationException::withMessages(['internal_lot_code' => __('lot_numbering.validation.duplicate')]);
                 }
 
@@ -113,7 +118,7 @@ class IngredientLotNumberService
                 $number = $this->format($settings, $date, $serial, $materialCode);
                 $this->validateNumber($number);
                 $serial++;
-            } while ($this->exists($workspace, $number));
+            } while ($this->lotCodes->isTaken($workspace->id, $number));
 
             IngredientLotNumberCounter::query()->updateOrCreate([
                 'workspace_id' => $workspace->id,
@@ -129,10 +134,5 @@ class IngredientLotNumberService
         if (strlen($number) > 64 || preg_match('/\A[A-Za-z0-9._\/-]+\z/', $number) !== 1) {
             throw ValidationException::withMessages(['internal_lot_code' => __('lot_numbering.validation.number_format')]);
         }
-    }
-
-    private function exists(Workspace $workspace, string $number): bool
-    {
-        return StockLot::query()->where('workspace_id', $workspace->id)->where('internal_lot_code', $number)->exists();
     }
 }

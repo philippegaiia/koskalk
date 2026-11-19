@@ -8,7 +8,9 @@ use App\Models\PackagingItem;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipeVersion;
+use App\Models\RecipeVersionPackagingItem;
 use App\Services\MassConverter;
+use App\Services\ProductSizeResolver;
 use App\Services\RecipeWorkbenchPhaseBlueprints;
 use Illuminate\Support\Collection;
 use Illuminate\Validation\ValidationException;
@@ -19,7 +21,10 @@ class ProductionRequirementBuilder
 
     private const int StorageScale = 9;
 
-    public function __construct(private readonly MassConverter $massConverter) {}
+    public function __construct(
+        private readonly MassConverter $massConverter,
+        private readonly ProductSizeResolver $productSizes,
+    ) {}
 
     /**
      * @return Collection<int, array<string, mixed>>
@@ -30,6 +35,7 @@ class ProductionRequirementBuilder
         string $basisQuantityGrams,
         int $expectedUnits,
         ?Recipe $recipe = null,
+        ?ProductionSizeSelection $sizeSelection = null,
     ): Collection {
         if (bccomp($basisQuantityGrams, '0', self::GuardScale) <= 0 || $expectedUnits < 1) {
             throw ValidationException::withMessages([
@@ -124,7 +130,8 @@ class ProductionRequirementBuilder
             }
         }
 
-        foreach ($version->packagingItems as $packagingPlan) {
+        $sizeSelection ??= $this->productSizes->selectForProduction($version);
+        foreach ($version->packagingItems->filter(fn ($item): bool => $sizeSelection->includesPackaging($item->product_size_id)) as $packagingPlan) {
             $packagingItem = $packagingPlan->packagingItem;
 
             if (! $packagingItem instanceof PackagingItem) {
@@ -224,6 +231,31 @@ class ProductionRequirementBuilder
             $referenceBasisGrams,
             self::GuardScale,
         );
+    }
+
+    /** @return Collection<int, RecipeVersionPackagingItem> */
+    public function linkedBulkPackaging(
+        RecipeVersion $version,
+        ?ProductionSizeSelection $selection = null,
+        string $errorField = 'packaging',
+    ): Collection {
+        $lines = $version->packagingItems()
+            ->with(['packagingItem' => fn ($query) => $query->withoutGlobalScopes()])
+            ->get();
+        if ($selection !== null) {
+            $lines = $lines->filter(fn (RecipeVersionPackagingItem $line): bool => $selection->includesPackaging($line->product_size_id));
+        }
+
+        foreach ($lines as $line) {
+            if ($line->packagingItem === null) {
+                throw ValidationException::withMessages([
+                    $errorField => __('production_bench.packaging.validation.link_missing', ['line' => $line->name]),
+                ]);
+            }
+            $this->assertMaterialWorkspace($line->packagingItem, (int) $version->workspace_id, $errorField);
+        }
+
+        return $lines;
     }
 
     private function assertMaterialWorkspace(

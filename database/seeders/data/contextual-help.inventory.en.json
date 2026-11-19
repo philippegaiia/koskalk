@@ -322,7 +322,39 @@
           "translation_requests": []
         }
       ]
+    },
+    {
+      "public_id": "0908fa11-9db7-427a-a868-cb539725a0d0",
+      "key": "inventory.finished_products",
+      "domain": "production_inventory",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "d5e50e6b-41fb-4d70-ae32-9b19c2d4f6f9",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "d5e50e6b-41fb-4d70-ae32-9b19c2d4f6f9",
+              "revision_number": 1,
+              "title": "Find finished products and stock by size",
+              "summary": "Find published sizes, manage their SKUs, and check finished stock and production history.",
+              "body_markdown": "Open **Production Bench → Inventory → Finished products**. Search by product name, size, or SKU, or filter by **Brand** and **Collection**.\n\nPublished sizes can appear before their first run, with zero stock. **Available** shows released stock and **Quarantined** shows stock still held for release. Older finished lots can appear under **Size not recorded**.\n\nSelect **Edit SKU** on the size row. The SKU is optional, stored in uppercase, and unique in your workspace.\n\nSelect a size to open its **Production history**. Set **From** and **To** to see the units made during that period. Select **Production history** at the top of the catalogue to see totals for all sizes.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-11-17T14:06:13+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
     }
   ],
-  "digest": "47563de99663bbaaedda459af9ef6f6043ead105f9e523ac3bd7d781aa9c119b"
+  "digest": "f783247cd88ece602fb4f1b81cc8e76ba3fb3b079bc175c86093e3c4afb05cbc"
 }

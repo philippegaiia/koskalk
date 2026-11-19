@@ -15,6 +15,7 @@ use App\Models\PackagingItem;
 use App\Models\ProductFamily;
 use App\Models\ProductionFormulaLine;
 use App\Models\ProductionRun;
+use App\Models\ProductSize;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
@@ -23,6 +24,7 @@ use App\Models\RecipeVersionPackagingItem;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceProductionEntitlement;
+use App\Services\Production\ProductionAvailabilityPreview;
 use App\Services\Production\ProductionFormulaSnapshotBuilder;
 use App\Services\Production\ProductionRequirementBuilder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -57,6 +59,32 @@ it('stores nullable actual mass for calculated formula lines at canonical precis
     ]);
 
     expect($line->actual_mass_grams)->toBe('283.125000000');
+});
+
+it('lists packaging after calculated alkali in the material preview', function (): void {
+    $fixture = productionFormulaSnapshotFixture();
+    addSoapFormula($fixture);
+    $packaging = PackagingItem::factory()->for($fixture['workspace'])->create(['name' => 'Soap bottle']);
+    $fixture['version']->packagingItems()->create([
+        'packaging_item_id' => $packaging->id,
+        'name' => 'Soap bottle',
+        'components_per_unit' => '1.000',
+        'position' => 1,
+    ]);
+
+    $preview = app(ProductionAvailabilityPreview::class)->for(
+        $fixture['workspace'],
+        $fixture['recipe'],
+        '14',
+        'kg',
+        '20',
+        null,
+        null,
+    );
+
+    $requirements = collect($preview['requirements']);
+    expect($requirements->pluck('subject_name')->implode(', '))->toContain('Sodium hydroxide')
+        ->and($requirements->last()['subject_name'])->toBe('Soap bottle');
 });
 
 it('builds a complete NaOH soap formula snapshot scaled to the production basis', function (): void {
@@ -278,6 +306,64 @@ it('copies packaging plan notes into packaging requirement snapshots', function 
 
     expect($requirements->where('kind', 'packaging')->first()['note_snapshot'])
         ->toBe('Folded inserts ship flat');
+});
+
+it('refuses to plan a run whose packaging covers more than one product size', function (): void {
+    $fixture = productionFormulaSnapshotFixture('naoh');
+    addSoapFormula($fixture);
+    $packaging = PackagingItem::factory()->for($fixture['workspace'])->create(['name' => 'Box']);
+    $sizes = [];
+
+    foreach (['Large box', 'Small box'] as $position => $name) {
+        $size = ProductSize::factory()->create(['recipe_id' => $fixture['recipe']->id, 'position' => $position + 1]);
+        $sizes[] = $size;
+        RecipeVersionPackagingItem::query()->create([
+            'recipe_version_id' => $fixture['version']->id,
+            'product_size_id' => $size->id,
+            'packaging_item_id' => $packaging->id,
+            'name' => $name,
+            'components_per_unit' => '1.000',
+            'position' => $position + 1,
+        ]);
+    }
+
+    try {
+        app(ProductionRequirementBuilder::class)->build(
+            version: $fixture['version'],
+            basisKind: ProductionBasisKind::OilMass,
+            basisQuantityGrams: '14000.000000000',
+            expectedUnits: 20,
+            recipe: $fixture['recipe'],
+        );
+        $this->fail('A run with packaging for two sizes was planned.');
+    } catch (ValidationException $exception) {
+        expect(array_keys($exception->errors()))->toBe(['packaging']);
+    }
+
+    $run = app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14000',
+        basisInputUnit: 'g',
+        expectedUnits: 20,
+        idempotencyKey: 'one-size-production',
+        productSizeKey: $sizes[1]->public_id,
+    );
+    expect($run->product_size_id)->toBe($sizes[1]->id)
+        ->and($run->expected_units)->toBe(20)
+        ->and($run->requirements->where('kind', 'packaging')->pluck('subject_name_snapshot')->all())->toBe(['Small box'])
+        ->and($run->requirements->firstWhere('kind', 'packaging')->required_units)->toBe(20);
+
+    expect(fn () => app(CreateProductionDraft::class)->handle(
+        actor: $fixture['owner'],
+        workspace: $fixture['workspace'],
+        recipe: $fixture['recipe'],
+        basisInputValue: '14000',
+        basisInputUnit: 'g',
+        expectedUnits: 20,
+        idempotencyKey: 'one-size-production',
+    ))->toThrow(ValidationException::class, __('production_bench.production.validation.create_idempotency_conflict'));
 });
 
 it('rejects a soap formula whose calculation cannot be rebuilt', function (): void {

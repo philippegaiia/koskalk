@@ -9,16 +9,18 @@
     $versionLabel = $productionBatch->recipe_version_number
         ? __('batch_log.snapshot.version', ['number' => $productionBatch->recipe_version_number])
         : __('batch_log.snapshot.saved_formula');
+    $sizeSuffix = filled($productionBatch->product_size_label_snapshot) ? ' · '.$productionBatch->product_size_label_snapshot : '';
+    $batchTitle = $productionBatch->recipe_name.$sizeSuffix;
 @endphp
 
-@section('title', $productionBatch->recipe_name.' · '.__('batch_log.snapshot.print_title').' · '.config('app.name'))
+@section('title', $batchTitle.' · '.__('batch_log.snapshot.print_title').' · '.config('app.name'))
 
 @section('content')
     <div class="space-y-4 text-[13px] leading-5 text-slate-950">
         <div class="print-hidden flex flex-col gap-3 border border-slate-300 bg-white p-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">{{ __('batch_log.snapshot.eyebrow') }}</p>
-                <p class="mt-1 text-sm text-slate-600">{{ $productionBatch->recipe_name }}</p>
+                <p class="mt-1 text-sm text-slate-600">{{ $batchTitle }}</p>
             </div>
 
             <div class="flex flex-wrap gap-2">
@@ -36,7 +38,7 @@
                 <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_17rem]">
                     <div>
                         <p class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">{{ __('batch_log.snapshot.eyebrow') }}</p>
-                        <h1 class="mt-1 text-2xl font-semibold text-slate-950">{{ $productionBatch->recipe_name }}</h1>
+                        <h1 class="mt-1 text-2xl font-semibold text-slate-950">{{ $batchTitle }}</h1>
                         <p class="mt-1 text-xs text-slate-600">{{ $versionLabel }}</p>
                     </div>
 
@@ -81,7 +83,7 @@
             </section>
 
             <section class="mt-4">
-                <h2 class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('batch_log.snapshot.packaging') }}</h2>
+                <h2 class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('batch_log.snapshot.packaging').$sizeSuffix }}</h2>
                 @if ($productionBatch->packagingItems->isNotEmpty())
                     <table class="mt-2 w-full border-collapse text-sm">
                         <thead>

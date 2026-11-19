@@ -42,6 +42,35 @@
                         @error('recipeId') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
                     </label>
 
+                    @if ($canPlanBulk && $productSizes->isNotEmpty())
+                        <div class="space-y-2">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <label class="flex items-center gap-2 text-sm font-medium">
+                                    <input wire:model.live="packageLater" type="checkbox" @disabled($isReadOnly)>
+                                    {{ __('production_bench.packaging.package_later') }}
+                                </label>
+                                <x-contextual-help.trigger topic="production.package_later" :topics="$contextualHelp['topics']" />
+                            </div>
+                            <p class="text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.packaging.plan_help') }}</p>
+                            @if ($packageLater)
+                                @error('packaging') <p class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
+                            @endif
+                            @error('packageLater') <p class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</p> @enderror
+                        </div>
+                    @endif
+                    @if (! $packageLater && $productSizes->isNotEmpty())
+                        <label class="space-y-2" wire:key="production-size-{{ $recipeId }}">
+                            <span class="text-sm font-medium">{{ __('batch_log.fields.product_size') }}</span>
+                            <select wire:model.live="productSizeKey" @disabled($isReadOnly) class="sk-input w-full">
+                                <option value="" disabled>{{ __('batch_log.fields.choose_size') }}</option>
+                                @foreach ($productSizes as $size)
+                                    <option value="{{ $size->public_id }}">{{ $size->label(auth()->user()?->number_locale) }}</option>
+                                @endforeach
+                            </select>
+                            @error('packaging') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
+                        </label>
+                    @endif
+
                     @if ($workspace->uses_production_locations)
                         <div class="space-y-2">
                             <label class="block text-sm font-medium" for="production-location">{{ __('locations.production_location') }}</label>
@@ -86,12 +115,15 @@
                         @error('basisInputValue') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
                     </label>
 
+                    @unless ($packageLater)
                     <label class="space-y-2">
                         <span class="text-sm font-medium">{{ __('production_bench.settings.expected_units') }}</span>
                         <input wire:model.live="expectedUnits" type="number" min="1" step="1" inputmode="numeric" required @disabled($isReadOnly) class="sk-input w-full font-mono" placeholder="100">
                         <span class="block text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.production.expected_units_help') }}</span>
                         @error('expectedUnits') <span class="text-xs text-[var(--color-danger-strong)]">{{ $message }}</span> @enderror
                     </label>
+
+                    @endunless
 
                     <div>{{ $this->planningDateForm }}</div>
 
@@ -134,6 +166,7 @@
                 @if ($preview['error'])
                     <p role="alert" class="m-5 rounded-xl bg-[var(--color-danger-soft)] px-4 py-3 text-sm text-[var(--color-danger-strong)] sm:m-6">{{ $preview['error'] }}</p>
                 @elseif ($preview['requirements'])
+                    @php($numberLocale = auth()->user()?->number_locale)
                     <x-sticky-table-scroll>
                         <table class="w-full min-w-[760px] text-left text-sm">
                             <thead wire:ignore.self data-sticky-table-header class="relative z-20 whitespace-nowrap bg-[var(--color-panel-muted)] text-xs uppercase tracking-wide text-[var(--color-ink-soft)] shadow-[0_1px_0_0_var(--color-line)]">
@@ -150,7 +183,7 @@
                                 @foreach ($preview['requirements'] as $requirement)
                                     <tr>
                                         <td class="px-5 py-4"><p class="font-medium text-[var(--color-ink-strong)]">{{ $requirement['subject_name'] }}</p>@if ($requirement['material_code'])<p class="mt-1 font-mono text-xs font-medium text-[var(--color-ink-soft)]">{{ $requirement['material_code'] }}</p>@endif</td>
-                                        <td class="px-4 py-4 font-mono tabular-nums">{{ $requirement['percentage'] ? $requirement['percentage'].'%' : '—' }}</td>
+                                        <td class="px-4 py-4 font-mono tabular-nums">{{ $requirement['percentage'] === null ? '—' : \App\Support\NumberLocale::formatAdaptiveDecimal($requirement['percentage'], 2, 2, $numberLocale).'%' }}</td>
                                         <td class="px-4 py-4 text-right font-mono tabular-nums">{{ $requirement['required'] }} {{ $requirement['unit'] }}</td>
                                         <td class="px-4 py-4 text-right font-mono tabular-nums">{{ $requirement['available'] }} {{ $requirement['unit'] }}</td>
                                         <td class="px-4 py-4 text-right font-mono tabular-nums">{{ $requirement['incoming'] }} {{ $requirement['unit'] }}</td>

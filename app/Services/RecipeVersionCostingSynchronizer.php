@@ -11,6 +11,7 @@ use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
 use App\Models\ProductFamily;
+use App\Models\ProductSize;
 use App\Models\Recipe;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
@@ -51,6 +52,8 @@ class RecipeVersionCostingSynchronizer
         private readonly PackagingItemAuthoringService $packagingItemAuthoringService,
         private readonly MassConverter $massConverter,
         private readonly CanonicalSoapAlkaliResolver $alkaliResolver,
+        private readonly ProductSizeSynchronizer $productSizeSynchronizer,
+        private readonly ProductSizeResolver $productSizeResolver,
     ) {}
 
     /**
@@ -91,7 +94,7 @@ class RecipeVersionCostingSynchronizer
         }
 
         $costing = RecipeVersionCosting::query()
-            ->with(['items', 'packagingItems.packagingItem'])
+            ->with(['items', 'packagingItems.packagingItem', 'packagingItems.productSize', 'sizeYields'])
             ->where('recipe_version_id', $currentVersion->id)
             ->first();
 
@@ -100,6 +103,7 @@ class RecipeVersionCostingSynchronizer
         }
 
         $workspace = Workspace::withoutGlobalScopes()->findOrFail($currentVersion->workspace_id);
+        $sizes = $this->productSizeResolver->forVersion($currentVersion, costing: true);
 
         return [
             'settings' => [
@@ -107,6 +111,8 @@ class RecipeVersionCostingSynchronizer
                 'oilWeightForCosting' => $this->costingDisplayMass($costing),
                 'oilUnitForCosting' => $costing->oil_unit_for_costing,
                 'unitsProduced' => $costing->units_produced,
+                'unitsProducedBySize' => $this->sizeYieldValues($costing, $sizes->first()),
+                'sizeKeys' => $sizes->pluck('public_id')->all(),
                 'currency' => $workspace->default_currency,
             ],
             'item_prices' => $costing->items
@@ -123,6 +129,7 @@ class RecipeVersionCostingSynchronizer
             'packaging_items' => $costing->packagingItems
                 ->map(fn (RecipeVersionCostingPackagingItem $item): array => [
                     'id' => $item->id,
+                    'product_size_key' => $item->productSize?->public_id,
                     'packaging_item_id' => $item->packaging_item_id,
                     'name' => $item->name,
                     'material_code' => $item->packagingItem?->material_code,
@@ -163,10 +170,20 @@ class RecipeVersionCostingSynchronizer
                 'oil_mass_grams_for_costing' => $oilWeight === null
                     ? null
                     : $this->massConverter->toGrams($payload['oil_weight_for_costing'], $oilUnit),
-                'units_produced' => $this->nullableInt($payload['units_produced'] ?? null),
+                'units_produced' => array_key_exists('units_produced_by_size', $payload)
+                    ? $costing->units_produced
+                    : $this->nullableInt($payload['units_produced'] ?? null),
                 'currency' => $workspace->default_currency,
             ]);
             $costing->save();
+            if (array_key_exists('units_produced_by_size', $payload)) {
+                $this->saveSizeYields($costing, $recipeVersion, $payload['units_produced_by_size']);
+            } elseif (array_key_exists('units_produced', $payload)) {
+                $defaultSize = $this->productSizeResolver->forVersion($recipeVersion, costing: true)->first();
+                if ($defaultSize !== null) {
+                    $costing->sizeYields()->syncWithoutDetaching([$defaultSize->id => ['units_produced' => $costing->units_produced]]);
+                }
+            }
 
             $this->syncFormulaItems($costing);
             $this->applyItemPrices($costing, $user, $payload['items'] ?? []);
@@ -195,7 +212,7 @@ class RecipeVersionCostingSynchronizer
         Gate::forUser($user)->authorize('view', $sourceVersion);
 
         $sourceCosting = RecipeVersionCosting::query()
-            ->with(['items', 'packagingItems'])
+            ->with(['items', 'packagingItems', 'sizeYields'])
             ->where('recipe_version_id', $sourceVersion->id)
             ->first();
 
@@ -205,7 +222,9 @@ class RecipeVersionCostingSynchronizer
 
         $targetWorkspace = Workspace::withoutGlobalScopes()->findOrFail($targetVersion->workspace_id);
 
-        DB::transaction(function () use ($sourceCosting, $targetVersion, $user, $targetWorkspace): void {
+        $targetSizeIds = $this->targetSizeIds($sourceCosting, $sourceVersion, $targetVersion);
+
+        DB::transaction(function () use ($sourceCosting, $targetVersion, $user, $targetWorkspace, $targetSizeIds): void {
             $targetCosting = RecipeVersionCosting::query()->firstOrNew([
                 'recipe_version_id' => $targetVersion->id,
             ], [
@@ -221,6 +240,12 @@ class RecipeVersionCostingSynchronizer
                 'currency' => $targetWorkspace->default_currency,
             ]);
             $targetCosting->save();
+            $targetCosting->sizeYields()->sync(
+                $sourceCosting->sizeYields->filter(fn (ProductSize $size): bool => isset($targetSizeIds[$size->id]))
+                    ->mapWithKeys(fn (ProductSize $size): array => [
+                        $targetSizeIds[$size->id] => ['units_produced' => $size->pivot->units_produced],
+                    ])->all(),
+            );
 
             $this->syncFormulaItems($targetCosting);
 
@@ -246,8 +271,9 @@ class RecipeVersionCostingSynchronizer
 
             $targetCosting->packagingItems()->delete();
 
-            $sourceCosting->packagingItems->each(function (RecipeVersionCostingPackagingItem $item) use ($targetCosting): void {
+            $sourceCosting->packagingItems->each(function (RecipeVersionCostingPackagingItem $item) use ($targetCosting, $targetSizeIds): void {
                 $targetCosting->packagingItems()->create([
+                    'product_size_id' => $item->product_size_id === null ? null : ($targetSizeIds[$item->product_size_id] ?? null),
                     'packaging_item_id' => $item->packaging_item_id,
                     'name' => $item->name,
                     'unit_cost' => $item->unit_cost,
@@ -257,6 +283,66 @@ class RecipeVersionCostingSynchronizer
 
             $this->addMissingPlanPackagingRows($targetCosting);
         });
+    }
+
+    /**
+     * Map each priced source size to the target Product's matching size.
+     *
+     * Versions of one Product share its sizes. A duplicated Product has its
+     * own sizes, so prices move to the copies; a price whose size has no copy
+     * is kept unsized and still matches by packaging row.
+     *
+     * @return array<int, int>
+     */
+    private function targetSizeIds(RecipeVersionCosting $sourceCosting, RecipeVersion $sourceVersion, RecipeVersion $targetVersion): array
+    {
+        $sourceSizeIds = $sourceCosting->packagingItems->pluck('product_size_id')
+            ->concat($sourceCosting->sizeYields->modelKeys())->filter()->unique()->values()->all();
+
+        if ((int) $sourceVersion->recipe_id === (int) $targetVersion->recipe_id) {
+            return array_combine($sourceSizeIds, $sourceSizeIds);
+        }
+
+        return $this->productSizeSynchronizer->copiedSizeIds((int) $targetVersion->recipe_id, $sourceSizeIds);
+    }
+
+    /** @return array<string, int|null> */
+    public function sizeYieldValues(RecipeVersionCosting $costing, ?ProductSize $defaultSize): array
+    {
+        $costing->loadMissing('sizeYields');
+        if ($costing->sizeYields->isEmpty() && $defaultSize !== null && $costing->units_produced !== null) {
+            return [$defaultSize->public_id => $costing->units_produced];
+        }
+
+        return $costing->sizeYields->mapWithKeys(fn (ProductSize $size): array => [
+            $size->public_id => $size->pivot->units_produced === null ? null : (int) $size->pivot->units_produced,
+        ])->all();
+    }
+
+    private function saveSizeYields(RecipeVersionCosting $costing, RecipeVersion $version, mixed $submitted): void
+    {
+        $sizes = $this->productSizeResolver->forVersion($version, costing: true);
+        $sizesByKey = $sizes->keyBy('public_id');
+        $values = $this->sizeYieldValues($costing, $sizes->first());
+        if (! is_array($submitted) || count($submitted) > RecipeWorkbenchPayloadNormalizer::MaxProductSizes) {
+            throw ValidationException::withMessages(['units_produced_by_size' => __('workbench.costing.settings.size_yield_invalid')]);
+        }
+
+        foreach ($submitted as $key => $value) {
+            $units = $value === null || $value === '' ? null : filter_var($value, FILTER_VALIDATE_INT, [
+                'options' => ['min_range' => 1, 'max_range' => 1_000_000],
+            ]);
+            if (is_bool($value) || $units === false || ! $sizesByKey->has($key)) {
+                throw ValidationException::withMessages(['units_produced_by_size' => __('workbench.costing.settings.size_yield_invalid')]);
+            }
+            $values[$key] = $units;
+        }
+
+        $costing->sizeYields()->syncWithoutDetaching(collect($values)
+            ->filter(fn (mixed $units, string $key): bool => $sizesByKey->has($key))
+            ->mapWithKeys(fn (?int $units, string $key): array => [
+                $sizesByKey->get($key)->id => ['units_produced' => $units],
+            ])->all());
     }
 
     /**
@@ -282,11 +368,7 @@ class RecipeVersionCostingSynchronizer
         $occurrences = [];
 
         $planItems->each(function (RecipeVersionPackagingItem $item) use ($targetCosting, $existingRowsByKey, &$occurrences): void {
-            $key = $this->packagingKey(
-                $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
-                $item->name,
-            );
-            $existingRow = $this->nextPackagingCostingRow($existingRowsByKey, $key, $occurrences);
+            $existingRow = $this->matchingPackagingCostingRow($existingRowsByKey, $item, $occurrences);
 
             if ($existingRow instanceof RecipeVersionCostingPackagingItem) {
                 return;
@@ -295,6 +377,7 @@ class RecipeVersionCostingSynchronizer
             $catalogItem = $item->packagingItem;
 
             $targetCosting->packagingItems()->create([
+                'product_size_id' => $item->product_size_id,
                 'packaging_item_id' => $item->packaging_item_id,
                 'name' => $item->name,
                 'unit_cost' => $catalogItem?->unit_cost ?? 0,
@@ -782,14 +865,11 @@ class RecipeVersionCostingSynchronizer
         return $recipeVersion->packagingItems
             ->sortBy('position')
             ->map(function (RecipeVersionPackagingItem $item) use (&$existingRowOccurrences, $existingRowsByKey): RecipeVersionCostingPackagingItem {
-                $key = $this->packagingKey(
-                    $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
-                    $item->name,
-                );
-                $existingRow = $this->nextPackagingCostingRow($existingRowsByKey, $key, $existingRowOccurrences);
+                $existingRow = $this->matchingPackagingCostingRow($existingRowsByKey, $item, $existingRowOccurrences);
                 $catalogItem = $item->packagingItem;
 
                 return (new RecipeVersionCostingPackagingItem([
+                    'product_size_id' => $item->product_size_id,
                     'packaging_item_id' => $item->packaging_item_id,
                     'name' => $item->name,
                     'unit_cost' => $existingRow instanceof RecipeVersionCostingPackagingItem
@@ -873,16 +953,23 @@ class RecipeVersionCostingSynchronizer
             ->get()
             ->keyBy('id');
 
+        $productSizeIdsByKey = ProductSize::query()
+            ->where('recipe_id', $costing->recipeVersion->recipe_id)
+            ->pluck('id', 'public_id');
+
         $costing->packagingItems()->delete();
 
         $submittedItems
-            ->each(function (array $row) use ($costing, $linkedPackagingItems, $user, $workspace): void {
+            ->each(function (array $row) use ($costing, $linkedPackagingItems, $productSizeIdsByKey, $user, $workspace): void {
                 $linkedPackagingItemId = isset($row['packaging_item_id']) && is_numeric($row['packaging_item_id'])
                     ? (int) $row['packaging_item_id']
                     : null;
                 $unitCost = (float) ($row['unit_cost'] ?? 0);
 
                 $costing->packagingItems()->create([
+                    'product_size_id' => is_string($row['product_size_key'] ?? null)
+                        ? $productSizeIdsByKey->get($row['product_size_key'])
+                        : null,
                     'packaging_item_id' => $linkedPackagingItemId,
                     'name' => trim((string) $row['name']),
                     'unit_cost' => $unitCost,
@@ -914,9 +1001,29 @@ class RecipeVersionCostingSynchronizer
         return implode(':', [$ingredientId, $phaseKey, $position]);
     }
 
-    private function packagingKey(?int $packagingItemId, string $name): string
+    private function packagingKey(?int $productSizeId, ?int $packagingItemId, string $name): string
     {
-        return ($packagingItemId ?? 'unlinked').':'.mb_strtolower($name);
+        return ($productSizeId ?? 'unsized').':'.($packagingItemId ?? 'unlinked').':'.mb_strtolower($name);
+    }
+
+    /**
+     * The saved price for a packaging line: the same size's row first, then a
+     * row saved before prices recorded their size.
+     *
+     * @param  Collection<string, Collection<int, RecipeVersionCostingPackagingItem>>  $rowsByKey
+     * @param  array<string, int>  $occurrences
+     */
+    private function matchingPackagingCostingRow(Collection $rowsByKey, RecipeVersionPackagingItem $item, array &$occurrences): ?RecipeVersionCostingPackagingItem
+    {
+        $packagingItemId = $item->packaging_item_id === null ? null : (int) $item->packaging_item_id;
+        $productSizeId = $item->product_size_id === null ? null : (int) $item->product_size_id;
+
+        $sizedRow = $productSizeId === null
+            ? null
+            : $this->nextPackagingCostingRow($rowsByKey, $this->packagingKey($productSizeId, $packagingItemId, $item->name), $occurrences);
+
+        return $sizedRow
+            ?? $this->nextPackagingCostingRow($rowsByKey, $this->packagingKey(null, $packagingItemId, $item->name), $occurrences);
     }
 
     /**
@@ -927,6 +1034,7 @@ class RecipeVersionCostingSynchronizer
     {
         return $items
             ->groupBy(fn (RecipeVersionCostingPackagingItem $item): string => $this->packagingKey(
+                $item->product_size_id === null ? null : (int) $item->product_size_id,
                 $item->packaging_item_id === null ? null : (int) $item->packaging_item_id,
                 $item->name,
             ))

@@ -7,6 +7,7 @@ use App\Models\ProductionRun;
 use App\Models\ProductionRunNumberIssuance;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\Inventory\StockLotCodeAvailability;
 use App\Services\Production\ProductionEditingContext;
 use App\Services\Production\ProductionMutationResult;
 use App\Services\Production\ProductionMutationScope;
@@ -21,6 +22,7 @@ class AssignProductionBatchNumbers
     public function __construct(private readonly ProductionMutationGuard $guard,
         private readonly ProductionBenchAccess $access,
         private readonly ProductionRunNumberService $numbers,
+        private readonly StockLotCodeAvailability $lotCodes,
     ) {}
 
     /**
@@ -63,6 +65,16 @@ class AssignProductionBatchNumbers
             }
 
             $candidates = $this->numbers->permanentCandidates($settings, $eligible->count());
+
+            $conflictingLot = $this->lotCodes->conflictingStockLotCode($lockedWorkspace->id, $candidates);
+            if ($conflictingLot !== null) {
+                $serial = $this->numbers->nextAvailablePermanentSerial($settings, $eligible->count());
+
+                throw ValidationException::withMessages(['batch_number' => $serial === null
+                    ? __('production_bench.production.validation.batch_number_used_by_lot', ['lot' => $conflictingLot])
+                    : __('production_bench.production.validation.batch_number_used_by_lot_next', ['lot' => $conflictingLot, 'serial' => $serial]),
+                ]);
+            }
 
             if ($this->numbers->identityExists($lockedWorkspace->id, $candidates)) {
                 throw ValidationException::withMessages([

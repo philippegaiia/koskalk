@@ -60,14 +60,11 @@ final class ProductionBenchNavigation
                 'end' => false,
                 'divider' => false,
                 'children' => [
-                    // Two entries, not three. Materials carries every material
-                    // the workspace tracks — demanded or merely listed — so the
-                    // separate requirements page had nothing left to say and
-                    // its route now redirects here.
                     self::leaf('materials', 'production-bench.inventory', 'production_bench.inventory.stock_by_material', 'materials', null, [
                         'production-bench.inventory.material.ingredient',
                         'production-bench.inventory.material.packaging',
                     ]),
+                    self::leaf('finished-products', 'production-bench.inventory.finished-products', 'production_bench.inventory.finished_products', 'finished-products'),
                     self::leaf('stock', 'production-bench.inventory.stock', 'production_bench.inventory.lot_register', 'stock'),
                 ],
             ],

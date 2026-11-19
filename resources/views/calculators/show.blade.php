@@ -12,6 +12,10 @@
     @filamentScripts
 @endpush
 
+@section('overlays')
+    <x-contextual-help.panel class="z-[55]" data-user-shell />
+@endsection
+
 @section('content')
     <div data-user-shell class="min-h-full bg-[var(--color-surface)] px-4 pt-24 pb-10 text-[var(--color-ink)] sm:px-6 lg:px-8" style="--app-sidebar-width: 0rem">
         <div class="mx-auto mb-4 flex max-w-app items-center justify-between gap-3 text-sm">
@@ -19,6 +23,5 @@
             <div id="contextual-help-topbar"></div>
         </div>
         @include('livewire.dashboard.recipe-workbench', ['canEditRecipe' => true])
-        <x-contextual-help.panel />
     </div>
 @endsection

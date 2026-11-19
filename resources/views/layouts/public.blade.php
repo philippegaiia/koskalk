@@ -82,6 +82,7 @@
                 </div>
             </div>
         </footer>
+        @yield('overlays')
         @stack('scripts')
     </body>
 </html>

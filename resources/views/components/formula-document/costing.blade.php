@@ -2,6 +2,9 @@
 
 <section data-formula-section="costing" @if (! $isSelected) hidden @endif class="mt-5 border-t border-slate-300 pt-4">
     <h2 class="text-xl font-semibold">{{ __('formula_documents.section_options.costing') }}</h2>
+    @if (filled($projection['product_size_label'] ?? null))
+        <p class="mt-1 text-sm">{{ __('workbench.costing.packaging.size', ['size' => $projection['product_size_label']]) }}</p>
+    @endif
     <dl class="mt-3 grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
         <div>
             <dt class="font-semibold text-slate-600">{{ __('formula_documents.exports.costing_basis') }}</dt>

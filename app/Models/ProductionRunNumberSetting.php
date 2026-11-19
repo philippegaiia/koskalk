@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\PackedLotSuffix;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'permanent_suffix',
     'permanent_padding',
     'next_permanent_serial',
+    'packed_lot_suffix',
 ])]
 class ProductionRunNumberSetting extends Model
 {
@@ -22,6 +24,7 @@ class ProductionRunNumberSetting extends Model
         'permanent_suffix' => '',
         'permanent_padding' => 5,
         'next_permanent_serial' => 1,
+        'packed_lot_suffix' => 'letter',
     ];
 
     public function workspace(): BelongsTo
@@ -35,6 +38,7 @@ class ProductionRunNumberSetting extends Model
             'next_planning_serial' => 'integer',
             'permanent_padding' => 'integer',
             'next_permanent_serial' => 'integer',
+            'packed_lot_suffix' => PackedLotSuffix::class,
         ];
     }
 }

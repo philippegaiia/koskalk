@@ -63,7 +63,7 @@ class IssueFinishedGoods
         }
         $this->access->assertWritable($actor, $workspace);
         $lotReference = StockLot::withoutGlobalScopes()->where('workspace_id', $workspace->id)->findOrFail($outputLot->id);
-        if ($lotReference->origin !== StockLotOrigin::ProductionOutput) {
+        if (! in_array($lotReference->origin, [StockLotOrigin::ProductionOutput, StockLotOrigin::PackagingOutput], true)) {
             throw ValidationException::withMessages([
                 'lot' => __('production_bench.production.validation.issue_output_lot_required'),
             ]);
@@ -90,10 +90,14 @@ class IssueFinishedGoods
                 ]);
             }
 
-            if ($lockedLot->origin !== StockLotOrigin::ProductionOutput) {
+            if (! in_array($lockedLot->origin, [StockLotOrigin::ProductionOutput, StockLotOrigin::PackagingOutput], true)) {
                 throw ValidationException::withMessages([
                     'lot' => __('production_bench.production.validation.issue_output_lot_required'),
                 ]);
+            }
+
+            if ($productions[$parentId]->package_later && $lockedLot->origin === StockLotOrigin::ProductionOutput && $kind === StockMovementType::Shipment) {
+                throw ValidationException::withMessages(['kind' => __('production_bench.packaging.pack_bulk')]);
             }
 
             if ($lockedLot->status !== StockLotStatus::Released) {

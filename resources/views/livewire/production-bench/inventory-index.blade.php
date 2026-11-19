@@ -21,6 +21,10 @@
 
         </header>
 
+        @if ($finishedStock?->total())
+            @include('livewire.production-bench.inventory-finished-stock-table', ['showStockHeading' => true])
+        @endif
+
         @if ($mode === 'materials')
             <section x-data="listOutputDownload()"
                 data-export-url="{{ route('production-bench.inventory.materials.export') }}"
@@ -410,6 +414,9 @@
                                         @endif
                                             <span class="min-w-0">
                                                 <span class="block font-medium text-[var(--color-ink-strong)] group-hover:text-[var(--color-accent-strong)]">{{ $lot->subjectName() }}</span>
+                                                @if ($lot->recipe_id !== null)
+                                                    <span class="block text-xs text-[var(--color-ink-soft)]">{{ $lot->product_size_label_snapshot ?? __('production_bench.inventory.size_not_recorded') }}</span>
+                                                @endif
                                                 @if ($materialCode)<span class="mt-0.5 block font-mono text-xs text-[var(--color-ink-soft)]">{{ $materialCode }}</span>@endif
                                                 <span class="mt-0.5 block font-mono text-xs text-[var(--color-ink-soft)]">{{ $lot->internal_lot_code }}@if($lot->supplier_batch_number) · {{ $lot->supplier_batch_number }}@endif</span>
                                                 @if($lot->expires_at)<span class="mt-1 block text-xs text-[var(--color-ink-soft)]">{{ __('production_bench.inventory.expires_on') }}: {{ $lot->expires_at->format('Y-m-d') }}</span>@endif

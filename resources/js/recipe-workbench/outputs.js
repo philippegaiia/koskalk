@@ -19,7 +19,9 @@ function serializeOutputCosting(state) {
     return {
         oil_weight_for_costing: nullableNumber(state.costingOilWeight),
         oil_unit_for_costing: state.costingOilUnit ?? null,
-        units_produced: nullableNumber(state.costingUnitsProduced),
+        units_produced: state.costingProductSize
+            ? (state.costingUnitsProducedValue || null)
+            : nullableNumber(state.costingUnitsProduced),
         currency: state.costingCurrency ?? null,
         items: (state.costingFormulaRows ?? []).map((row) => ({
             id: row.id ?? row.rowId ?? null,
@@ -28,7 +30,11 @@ function serializeOutputCosting(state) {
             position: row.position ?? null,
             price_per_kg: nullableNumber(state.canonicalPricePerKg?.(row)),
         })),
-        packaging_items: (state.packagingCostRows ?? []).map((row) => ({
+        product_size_key: state.costingProductSize?.key ?? null,
+        ...(state.costingProductSize && typeof state.productSizeLabel === 'function'
+            ? { product_size_label: state.productSizeLabel(state.costingProductSize) }
+            : {}),
+        packaging_items: (state.displayedPackagingCostRows ?? state.packagingCostRows ?? []).map((row) => ({
             packaging_item_id: row.packaging_item_id ?? null,
             name: row.name ?? '',
             unit_cost: nullableNumber(row.unit_cost),
@@ -43,6 +49,13 @@ export async function captureRecipeWorkbenchOutput(state, config, options = {}) 
     }
 
     const draft = serializeDraft(state);
+
+    // Lines without a known size belong to the first size, so the server can
+    // pick the costed size's packaging by key alone.
+    if (Array.isArray(draft.packaging_items) && typeof state.packagingRowSizeKey === 'function') {
+        draft.packaging_items = draft.packaging_items.map((row) => ({ ...row, product_size_key: state.packagingRowSizeKey(row) }));
+    }
+
     const measuredPasteWeight = state.liquidProcess?.measuredPasteWeight;
 
     // A weighed paste belongs to the batch being printed, not to the formula.

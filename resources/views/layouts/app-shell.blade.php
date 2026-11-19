@@ -35,6 +35,7 @@
         @php($appShellAdminPanel = \Filament\Facades\Filament::getPanel('admin'))
         @php($appShellCompanySwitcherEnabled = config('workspaces.collaboration_enabled', false) && $appShellUser instanceof \App\Models\User)
         @php($appShellCurrentCompany = $appShellCompanySwitcherEnabled ? app(\App\Services\WorkspaceAuthorization::class)->selectedWorkspace($appShellUser) : null)
+        @php($appShellCurrentRole = $appShellCurrentCompany?->roleFor($appShellUser))
 
         <div
             data-app-shell
@@ -105,7 +106,7 @@
                     <div class="mt-1.5 flex flex-wrap gap-2">
                         <span class="rounded-full bg-[var(--color-field-muted)] px-2.5 py-1 text-xs font-medium text-[var(--color-ink-sidebar-soft)]">{{ __('navigation.user.free_account') }}</span>
                         @if ($appShellUser?->is_admin)
-                            <span class="rounded-full bg-[var(--color-accent-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-accent-strong)]">Admin</span>
+                            <span class="rounded-full bg-[var(--color-accent-soft)] px-2.5 py-1 text-xs font-medium text-[var(--color-accent-strong)]">{{ __('navigation.user.platform_admin') }}</span>
                         @endif
                     </div>
                 </section>
@@ -149,10 +150,14 @@
                                     href="{{ route('workspace-selection.index') }}"
                                     title="{{ $appShellCurrentCompany?->name ?? __('workspaces.selection.choose_workspace') }}"
                                     aria-label="{{ __('workspaces.selection.change_company', ['company' => $appShellCurrentCompany?->name ?? __('workspaces.selection.choose_workspace')]) }}"
+                                    @if ($appShellCurrentRole) aria-describedby="current-workspace-role" @endif
                                     class="max-w-36 shrink-0 rounded-lg px-2 py-1.5 text-[var(--color-ink-soft)] transition hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-active)] md:max-w-52"
                                 >
                                     <span class="block text-[10px] font-semibold uppercase tracking-wide">{{ __('workspaces.selection.current_company') }}</span>
                                     <span class="block truncate text-xs font-medium">{{ $appShellCurrentCompany?->name ?? __('workspaces.selection.choose_workspace') }}</span>
+                                    @if ($appShellCurrentRole)
+                                        <span id="current-workspace-role" class="block text-xs">{{ __('workspaces.roles.'.$appShellCurrentRole->value) }}</span>
+                                    @endif
                                 </a>
                             @endif
                             <x-language-selector id="app" class="text-[var(--color-ink-soft)]" />

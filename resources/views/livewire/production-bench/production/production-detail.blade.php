@@ -86,9 +86,15 @@
                         <dd class="mt-1 break-words font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $identity['basis'] }}</dd>
                     </div>
                     <div class="min-w-0">
-                        <dt class="text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.settings.expected_units') }}</dt>
-                        <dd class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $identity['expected_units'] }}</dd>
+                        <dt class="text-sm text-[var(--color-ink-soft)]">{{ __($production->package_later ? 'production_bench.production.output_kind' : 'production_bench.settings.expected_units') }}</dt>
+                        <dd class="mt-1 font-mono tabular-nums text-[var(--color-ink-strong)]">{{ $production->package_later ? __('production_bench.packaging.bulk_output') : $identity['expected_units'] }}</dd>
                     </div>
+                    @if (filled($production->product_size_label_snapshot))
+                        <div class="min-w-0">
+                            <dt class="text-sm text-[var(--color-ink-soft)]">{{ __('batch_log.fields.product_size') }}</dt>
+                            <dd class="mt-1 break-words text-[var(--color-ink-strong)]">{{ $production->product_size_label_snapshot }}</dd>
+                        </div>
+                    @endif
                     @if ($production->batch_number && filled($production->planning_batch_number))
                         <div class="min-w-0" data-testid="production-planning-reference">
                             <dt class="text-sm text-[var(--color-ink-soft)]">{{ __('production_bench.production.planning_reference') }}</dt>
@@ -302,7 +308,7 @@
 
             @if ($production->status === \App\Enums\ProductionRunStatus::InProduction)
                 <section aria-labelledby="readiness-heading" class="sk-card overflow-hidden">
-                    <div class="border-b border-[var(--color-line)] p-5 sm:p-6"><h2 id="readiness-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.readiness_title') }} <x-contextual-help.trigger topic="production.completion" :topics="$contextualHelp['topics']" /></h2></div>
+                    <div class="border-b border-[var(--color-line)] p-5 sm:p-6"><h2 id="readiness-heading" class="text-xl font-semibold text-[var(--color-ink-strong)]">{{ __('production_bench.production.readiness_title') }} <x-contextual-help.trigger :topic="$production->package_later && isset($contextualHelp['topics']['production.package_later']) ? 'production.package_later' : 'production.completion'" :topics="$contextualHelp['topics']" /></h2></div>
                     <ul class="divide-y divide-[var(--color-line)] text-sm">
                         @foreach ([
                             'actuals' => 'readiness_actuals',
@@ -329,10 +335,12 @@
                     <div class="grid gap-4 sm:grid-cols-2">
                         @if ($production->production_output_type === null)
                             <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.output_kind') }}</span><select wire:ignore :value="value('completion', 'outputMode')" @input="field('completion', 'outputMode', $event.target.value)" :disabled="!canWrite || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input mt-1 w-full"><option value="units">{{ __('production_bench.production.output_units') }}</option><option value="intermediate">{{ __('production_bench.production.output_intermediate') }}</option></select></label>
+                        @elseif ($production->package_later)
+                            <div class="block text-sm"><span class="font-medium">{{ __('production_bench.production.output_kind') }}</span><p class="mt-1 sk-input bg-[var(--color-panel-muted)]">{{ __('production_bench.packaging.bulk_output') }}</p></div>
                         @else
                             <div class="block text-sm"><span class="font-medium">{{ __('production_bench.production.output_kind') }}</span><p class="mt-1 sk-input bg-[var(--color-panel-muted)]">{{ $production->production_output_type->value === 'manufactured_ingredient' ? __('production_bench.production.output_intermediate').' · '.$production->outputIngredient?->display_name : __('production_bench.production.output_units') }}</p></div>
                         @endif
-                        <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.output_quantity') }}</span><input type="number" inputmode="decimal" min="0" step="any" wire:ignore :value="value('completion', 'actualOutputQuantity')" @input="field('completion', 'actualOutputQuantity', $event.target.value)" :disabled="!canWrite || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input mt-1 w-full font-mono"></label>
+                        <label class="block text-sm"><span class="font-medium">{{ __($production->package_later ? 'production_bench.packaging.bulk_grams' : 'production_bench.production.output_quantity') }}</span><input type="number" inputmode="decimal" min="0" step="any" wire:ignore :value="value('completion', 'actualOutputQuantity')" @input="field('completion', 'actualOutputQuantity', $event.target.value)" :disabled="!canWrite || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input mt-1 w-full font-mono"></label>
                         @if ($production->production_output_type === null)
                             <label data-production-intermediate-ingredient x-cloak x-show="value('completion', 'outputMode') === 'intermediate'" class="block text-sm"><span class="font-medium">{{ __('production_bench.production.output_intermediate_ingredient') }}</span><select wire:ignore :value="value('completion', 'outputIngredientId')" @input="field('completion', 'outputIngredientId', $event.target.value)" :disabled="!canWrite || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input mt-1 w-full"><option value="">{{ __('production_bench.production.choose_intermediate') }}</option>@foreach ($intermediateIngredients as $ingredient)<option value="{{ $ingredient->id }}">{{ $ingredient->display_name }}</option>@endforeach</select></label>
                         @endif
@@ -379,10 +387,23 @@
                                 </ul>
                             @endif
                         </div>
-                    @else
+                    @endif
+                    @php($issuablePackedLots = $production->packagedLots->filter(fn ($lot) => $lot->packed_balance > 0 && $lot->status === \App\Enums\StockLotStatus::Released))
+                    @if ($production->outputLot->status === \App\Enums\StockLotStatus::Released || $issuablePackedLots->isNotEmpty())
                         <div class="space-y-4 p-5 sm:p-6">
                             <div class="grid gap-4 sm:grid-cols-4">
-                                <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.issue_kind') }}</span><select wire:ignore :value="value('issue', 'issueKind')" @input="field('issue', 'issueKind', $event.target.value)" :disabled="!canWrite || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input mt-1 w-full"><option value="shipment">{{ __('production_bench.production.issue_shipment') }}</option><option value="sample">{{ __('production_bench.production.issue_sample') }}</option><option value="damaged">{{ __('production_bench.production.issue_damaged') }}</option><option value="internal_use">{{ __('production_bench.production.issue_internal_use') }}</option></select></label>
+                                @if ($production->package_later && $issuablePackedLots->isNotEmpty())
+                                    <label class="block text-sm sm:col-span-4">
+                                        <span class="font-medium">{{ __('production_bench.production.output_lot') }}</span>
+                                        <select :value="value('issue', 'issueLotId')" @input="field('issue', 'issueLotId', $event.target.value); if (!$event.target.value && value('issue', 'issueKind') === 'shipment') field('issue', 'issueKind', 'damaged')" :disabled="!canWrite || busy || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input mt-1 w-full">
+                                            <option value="" @disabled($production->outputLot->status !== \App\Enums\StockLotStatus::Released)>{{ $production->outputLot->internal_lot_code }} · {{ __('production_bench.packaging.bulk_output') }}</option>
+                                            @foreach ($issuablePackedLots as $lot)
+                                                <option value="{{ $lot->id }}">{{ $lot->internal_lot_code }} · {{ $lot->product_size_label_snapshot }}</option>
+                                            @endforeach
+                                        </select>
+                                    </label>
+                                @endif
+                                <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.issue_kind') }}</span><select wire:ignore :value="value('issue', 'issueKind')" @input="field('issue', 'issueKind', $event.target.value)" :disabled="!canWrite || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input mt-1 w-full"><option value="shipment" :disabled="@js($production->package_later) && !value('issue', 'issueLotId')">{{ __('production_bench.production.issue_shipment') }}</option><option value="sample">{{ __('production_bench.production.issue_sample') }}</option><option value="damaged">{{ __('production_bench.production.issue_damaged') }}</option><option value="internal_use">{{ __('production_bench.production.issue_internal_use') }}</option></select></label>
                                 <label class="block text-sm"><span class="font-medium">{{ __('production_bench.production.issue_quantity') }}</span><input type="number" inputmode="decimal" min="0" step="any" wire:ignore :value="value('issue', 'issueQuantity')" @input="field('issue', 'issueQuantity', $event.target.value)" :disabled="!canWrite || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input mt-1 w-full font-mono"></label>
                                 <label class="block text-sm sm:col-span-2"><span class="font-medium">{{ __('production_bench.production.issue_note') }}</span><input type="text" wire:ignore :value="value('issue', 'issueNote')" @input="field('issue', 'issueNote', $event.target.value)" :disabled="!canWrite || @js($mutationLocked)" @disabled(! $editingOwnsLease || $mutationLocked) class="sk-input mt-1 w-full"></label>
                             </div>
@@ -390,6 +411,10 @@
                         </div>
                     @endif
                 </section>
+            @endif
+
+            @if ($production->package_later && $production->outputLot !== null)
+                @include('livewire.production-bench.production.package-bulk')
             @endif
 
             <section aria-labelledby="tasks-detail-heading" class="sk-card overflow-hidden">

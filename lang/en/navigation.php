@@ -26,6 +26,7 @@ return [
         'aria_label' => 'Signed-in user',
         'signed_in' => 'Signed in',
         'free_account' => 'Free account',
+        'platform_admin' => 'Platform admin',
     ],
     'actions' => [
         'dismiss_notification' => 'Dismiss notification',

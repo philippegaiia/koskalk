@@ -17,6 +17,7 @@ const source = fs
     .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
     .replace(/^import[\s\S]*?;\n/gm, '')
     .replace(/export function /g, 'function ');
+const productSizesFromPayload = (rows) => rows ?? [];
 
 eval(`${source}\nglobalThis.createRecipeWorkbenchState = createRecipeWorkbenchState;`);
 
@@ -70,6 +71,7 @@ const source = fs
     .readFileSync('resources/js/recipe-workbench/component.js', 'utf8')
     .replace(/^import[\s\S]*?;\n/gm, '')
     .replace(/export function /g, 'function ');
+const productSizesFromPayload = (rows) => rows ?? [];
 
 eval(`${source}\nglobalThis.createRecipeWorkbenchState = createRecipeWorkbenchState;`);
 
@@ -206,27 +208,31 @@ it('uses conversion actions and all four mass units in both formula benches', fu
 it('converts the costing override without changing the calculated cost', function (): void {
     $script = <<<'JS'
 import assert from 'node:assert/strict';
-import fs from 'node:fs';
-import { convertMass, convertMassPrice } from './resources/js/recipe-workbench/mass.js';
+import { register } from 'node:module';
+import { pathToFileURL } from 'node:url';
+
+register(
+    'data:text/javascript,' + encodeURIComponent(`
+        export async function resolve(specifier, context, nextResolve) {
+            if (specifier.startsWith('.') && !specifier.endsWith('.js')) {
+                try {
+                    return await nextResolve(specifier, context);
+                } catch {
+                    return nextResolve(specifier + '.js', context);
+                }
+            }
+
+            return nextResolve(specifier, context);
+        }
+    `),
+    pathToFileURL(`${process.cwd()}/`).href,
+);
+
+const { createCostingSection } = await import('./resources/js/recipe-workbench/sections/costing-section.js');
 
 const assertClose = (actual, expected, tolerance = 1e-12) => {
     assert.ok(Math.abs(actual - expected) <= tolerance, `${actual} is not within ${tolerance} of ${expected}`);
 };
-
-const nonNegativeNumber = (value) => Math.max(0, Number(value) || 0);
-const number = (value) => Number(value) || 0;
-const parseDecimalInput = number;
-const roundTo = (value, precision) => Number(Number(value).toFixed(precision));
-const formatDecimalInput = (value) => String(Number(value));
-const rowWeightForOilWeight = (oilWeight, row) => oilWeight * (nonNegativeNumber(row.percentage) / 100);
-const MASS_UNITS = ['g', 'kg', 'oz', 'lb'];
-
-const source = fs
-    .readFileSync('resources/js/recipe-workbench/sections/costing-section.js', 'utf8')
-    .replace(/^import[\s\S]*?;\n/gm, '')
-    .replace(/export function /g, 'function ');
-
-eval(`${source}\nglobalThis.createCostingSection = createCostingSection;`);
 
 const state = {
     costingOilWeight: 1,
@@ -252,7 +258,7 @@ const state = {
 
 Object.defineProperties(
     state,
-    Object.getOwnPropertyDescriptors(globalThis.createCostingSection({})),
+    Object.getOwnPropertyDescriptors(createCostingSection({})),
 );
 state.scheduleCostingSave = () => {};
 
@@ -422,6 +428,8 @@ import { convertMass, convertMassPrice } from './resources/js/recipe-workbench/m
 const nonNegativeNumber = (value) => Math.max(0, Number(value) || 0);
 const number = (value) => Number(value) || 0;
 const parseDecimalInput = number;
+const parseStrictDecimalInput = (value) => (Number.isFinite(Number(value)) && `${value ?? ''}`.trim() !== '' ? Number(value) : null);
+const retainedProductSizeKey = (sizes, key) => (sizes.some((size) => size.key === key) ? key : (sizes[0]?.key ?? null));
 const roundTo = (value, precision) => Number(Number(value).toFixed(precision));
 const formatDecimalInput = (value) => String(Number(value));
 const rowWeightForOilWeight = (oilWeight, row) => oilWeight * (nonNegativeNumber(row.percentage) / 100);

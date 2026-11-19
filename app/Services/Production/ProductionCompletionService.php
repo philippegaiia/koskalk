@@ -81,6 +81,7 @@ class ProductionCompletionService
             $currency = null;
             $ingredientTotal = '0';
             $packagingTotal = '0';
+            $allConsumptionPriced = true;
             $workspaceDefaultCurrency = strtoupper((string) ($workspace->default_currency ?? ''));
 
             $executionLots = [];
@@ -100,6 +101,7 @@ class ProductionCompletionService
 
                 $pricePerUnit = $this->pricePerUnit($lot, $row);
                 $lineCost = $this->lineCost($row, $pricePerUnit);
+                $allConsumptionPriced = $allConsumptionPriced && $pricePerUnit !== null;
 
                 if ($pricePerUnit !== null) {
                     $lineCurrency = $this->lineCurrency($lot, $workspaceDefaultCurrency);
@@ -162,11 +164,16 @@ class ProductionCompletionService
             //    Intermediate lots carry the producing batch's cost per gram so
             //    a downstream production prices them from this batch.
             $isIntermediate = $outputConfiguration['production_output_type'] === ProductionOutputType::ManufacturedIngredient;
-            $outputQuantity = $this->normalizeOutputQuantity($actualOutputQuantity, $isIntermediate);
+            $isMass = $isIntermediate || $lockedProduction->package_later;
+            $outputQuantity = $this->normalizeOutputQuantity($actualOutputQuantity, $isMass);
             $totalCost = bcadd($ingredientTotal, $packagingTotal, 9);
+            $costPerUnit = bcdiv($totalCost, $outputQuantity, 9);
             $intermediateCostPerGram = $isIntermediate && bccomp($totalCost, '0', 18) > 0
-                ? bcdiv($totalCost, $outputQuantity, 9)
+                ? $costPerUnit
                 : null;
+            $lotUnitCost = $isIntermediate
+                ? $intermediateCostPerGram
+                : ($allConsumptionPriced && filled($currency) ? $costPerUnit : null);
             $confirmedReadyOn = $this->confirmedReadyOn($lockedProduction, $manufactureDate, $estimatedReadyOn);
 
             $outputLot = StockLot::query()->create([
@@ -174,10 +181,14 @@ class ProductionCompletionService
                 'ingredient_id' => $isIntermediate ? $resolvedOutputIngredientId : null,
                 'packaging_item_id' => null,
                 'recipe_id' => $isIntermediate ? null : $lockedProduction->recipe_id,
+                'product_size_id' => $isIntermediate ? null : $lockedProduction->product_size_id,
+                'product_size_label_snapshot' => $isIntermediate ? null : $lockedProduction->product_size_label_snapshot,
+                'product_size_content_value_snapshot' => $isIntermediate ? null : $lockedProduction->product_size_content_value_snapshot,
+                'product_size_content_unit_snapshot' => $isIntermediate ? null : $lockedProduction->product_size_content_unit_snapshot,
                 'production_run_id' => $lockedProduction->id,
                 'internal_lot_code' => $lockedProduction->batch_number,
                 'origin' => StockLotOrigin::ProductionOutput,
-                'unit_kind' => $isIntermediate ? StockUnitKind::Mass : StockUnitKind::Count,
+                'unit_kind' => $isMass ? StockUnitKind::Mass : StockUnitKind::Count,
                 'status' => StockLotStatus::Quarantined,
                 'stocked_at' => $manufactureDate,
                 'expires_at' => null,
@@ -185,8 +196,8 @@ class ProductionCompletionService
                 'estimated_ready_on' => $confirmedReadyOn,
                 'released_at' => null,
                 'provenance_complete' => true,
-                'historical_unit_cost' => $intermediateCostPerGram,
-                'costing_unit_cost' => $intermediateCostPerGram,
+                'historical_unit_cost' => $lotUnitCost,
+                'costing_unit_cost' => $lotUnitCost,
                 'currency' => $currency,
                 'costing_currency' => $currency,
             ]);
@@ -197,7 +208,7 @@ class ProductionCompletionService
                 'type' => StockMovementType::ProductionOutput,
                 'quantity_delta' => $outputQuantity,
                 'original_quantity' => $outputQuantity,
-                'original_unit' => $isIntermediate ? 'g' : 'unit',
+                'original_unit' => $isMass ? 'g' : 'unit',
                 'occurred_at' => now(),
                 'actor_user_id' => $actor->id,
                 'source_type' => (new ProductionRun)->getMorphClass(),
@@ -206,10 +217,6 @@ class ProductionCompletionService
             ]);
 
             // 5. Close the run with the actual cost snapshot.
-            $costPerUnit = bccomp($outputQuantity, '0', self::GuardScale) > 0
-                ? bcdiv($totalCost, $outputQuantity, 9)
-                : null;
-
             $lockedProduction->update([
                 'formula_context_snapshot' => [
                     ...($lockedProduction->formula_context_snapshot ?? []),
@@ -220,8 +227,8 @@ class ProductionCompletionService
                 'completed_by_user_id' => $actor->id,
                 'manufacture_date' => $manufactureDate,
                 'estimated_ready_on' => $confirmedReadyOn,
-                'actual_output_units' => $isIntermediate ? null : (int) $outputQuantity,
-                'actual_output_mass_grams' => $isIntermediate ? $outputQuantity : null,
+                'actual_output_units' => $isMass ? null : (int) $outputQuantity,
+                'actual_output_mass_grams' => $isMass ? $outputQuantity : null,
                 'cost_currency' => $currency ?: null,
                 'actual_ingredient_total' => $ingredientTotal,
                 'actual_packaging_total' => $packagingTotal,
@@ -321,7 +328,7 @@ class ProductionCompletionService
         }
 
         // Validation only; the normalized value is recomputed at completion.
-        $this->normalizeOutputQuantity($actualOutputQuantity, $isIntermediate);
+        $this->normalizeOutputQuantity($actualOutputQuantity, $isIntermediate || $production->package_later);
 
         $requirements = $production->requirements()->get();
         $missingWaterActual = ProductionFormulaLine::query()
@@ -482,7 +489,7 @@ class ProductionCompletionService
         return Carbon::parse($manufactureDate)->addDays($days)->toDateString();
     }
 
-    private function normalizeOutputQuantity(string $value, bool $isIntermediate): string
+    private function normalizeOutputQuantity(string $value, bool $isMass): string
     {
         if (preg_match('/^\d+(?:\.\d+)?$/', trim($value)) !== 1 || bccomp(trim($value), '0', self::GuardScale) <= 0) {
             throw ValidationException::withMessages([
@@ -490,7 +497,7 @@ class ProductionCompletionService
             ]);
         }
 
-        if (! $isIntermediate && preg_match('/^\d+$/', trim($value)) !== 1) {
+        if (! $isMass && preg_match('/^\d+$/', trim($value)) !== 1) {
             throw ValidationException::withMessages([
                 'actual_output_quantity' => __('production_bench.production.validation.completion_finished_output_whole'),
             ]);

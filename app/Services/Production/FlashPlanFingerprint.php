@@ -17,7 +17,12 @@ class FlashPlanFingerprint
                 throw ValidationException::withMessages(['lines' => __('production_bench.production.validation.flash_products_required')]);
             }
 
-            return collect(['recipe_id', 'preset_id', 'desired_units', 'expected_units_per_batch', 'basis_input_value', 'basis_input_unit', 'task_set_id', 'production_location_id'])
+            $keys = ['recipe_id', 'preset_id', 'desired_units', 'expected_units_per_batch', 'basis_input_value', 'basis_input_unit', 'task_set_id', 'production_location_id'];
+            if (filled($line['product_size_key'] ?? null)) {
+                $keys[] = 'product_size_key';
+            }
+
+            return collect($keys)
                 ->mapWithKeys(function (string $key) use ($line, $usesProductionLocations): array {
                     $value = $key === 'production_location_id' && ! $usesProductionLocations ? '' : ($line[$key] ?? '');
                     if (! is_scalar($value) && ! $value instanceof \BackedEnum) {
@@ -37,6 +42,9 @@ class FlashPlanFingerprint
                         $number = NumberLocale::normalizeDecimalString($value);
                         $value = $number !== null && is_numeric($number) ? bcadd($number, '0', 9) : $value;
                     }
+                    if ($key === 'product_size_key') {
+                        $value = strtolower((string) $value);
+                    }
 
                     return [$key => $value];
                 })->all();
@@ -51,7 +59,7 @@ class FlashPlanFingerprint
     public function proposal(array $simulation, array $proposals, Workspace $workspace, int $limit): string
     {
         $lines = collect($simulation['lines'])->map(fn (array $line): array => collect($line)->only([
-            'line_index', 'recipe_id', 'recipe_version_id', 'desired_units', 'whole_batches', 'expected_units_per_batch',
+            'line_index', 'recipe_id', 'recipe_version_id', 'product_size_id', 'desired_units', 'whole_batches', 'expected_units_per_batch',
             'basis_input_value', 'basis_input_unit', 'task_set_id', 'production_location_id', 'output_ready_delay_days',
         ])->all())->all();
         $requirements = collect($simulation['requirements'])->map(fn (array $row): array => collect($row)->only([

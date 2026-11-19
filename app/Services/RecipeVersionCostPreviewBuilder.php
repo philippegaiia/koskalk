@@ -26,6 +26,7 @@ class RecipeVersionCostPreviewBuilder
         private readonly CanonicalSoapAlkaliResolver $alkaliResolver,
         private readonly LyeLiquidAllocationService $lyeLiquidAllocationService,
         private readonly LiquidSoapFormulaProcessor $liquidSoapFormulaProcessor,
+        private readonly ProductSizeResolver $productSizeResolver,
     ) {}
 
     /**
@@ -40,10 +41,19 @@ class RecipeVersionCostPreviewBuilder
      *     has_unpriced_rows: bool
      * }
      */
-    public function build(Recipe $recipe, RecipeVersion $version, User $user, string|int|float $batchBasisValue, ?int $unitsProduced): array
-    {
+    public function build(
+        Recipe $recipe,
+        RecipeVersion $version,
+        User $user,
+        string|int|float $batchBasisValue,
+        ?int $unitsProduced,
+        mixed $productSizeKey = null,
+    ): array {
         abort_unless((int) $version->recipe_id === (int) $recipe->id, 404);
         Gate::forUser($user)->authorize('view', $recipe);
+
+        $version->loadMissing('packagingItems.packagingItem');
+        $selection = $this->productSizeResolver->selectForProduction($version, $productSizeKey);
 
         $existingCosting = RecipeVersionCosting::query()
             ->with(['items', 'packagingItems.packagingItem'])
@@ -53,6 +63,12 @@ class RecipeVersionCostPreviewBuilder
         $costing = $this->costingSynchronizer->projectCosting($version, $existingCosting);
         $currency = $costing->currency ?: $user->defaultCurrency();
         $version = $costing->recipeVersion;
+
+        $version->setRelation('packagingItems', $version->packagingItems
+            ->filter(fn (RecipeVersionPackagingItem $item): bool => $selection->includesPackaging($item->product_size_id))->values());
+        $costing->setRelation('packagingItems', $costing->packagingItems
+            ->filter(fn (RecipeVersionCostingPackagingItem $item): bool => $selection->includesPackaging($item->product_size_id))->values());
+
         $snapshot = ($recipe->productFamily?->usesLiquidSoapPasteBench() ?? false)
             ? $this->recipeWorkbenchService->versionSnapshot($recipe, (int) $version->id)
             : null;
@@ -73,10 +89,16 @@ class RecipeVersionCostPreviewBuilder
             ),
         );
 
-        return $this->legacyPreviewShape($preview);
+        return [
+            ...$this->legacyPreviewShape($preview),
+            'product_size_id' => $selection->size?->id,
+            'product_size_key' => $selection->size?->public_id,
+            'product_size_label_snapshot' => $selection->size?->label($user->number_locale),
+        ];
     }
 
     /**
+     * @param  array{draft: array<string, mixed>, calculation: array<string, mixed>|null, labeling: array<string, mixed>, restrictions: array<string, mixed>}|null  $savedSnapshot
      * @return array{
      *     currency: string,
      *     ingredient_rows: array<int, array<string, mixed>>,
@@ -97,8 +119,11 @@ class RecipeVersionCostPreviewBuilder
         bool $includeDerivedRows = false,
         bool $requireCompletePackagingTotal = false,
         ?string $batchBasisUnit = null,
+        ?int $productSizeId = null,
+        bool $includeUnsizedPackaging = true,
+        ?array $savedSnapshot = null,
     ): array {
-        $version = RecipeVersion::withoutGlobalScopes()
+        $version = $savedSnapshot !== null ? clone $version : RecipeVersion::withoutGlobalScopes()
             ->with([
                 'phases' => fn ($query) => $query->withoutGlobalScopes()->orderBy('sort_order'),
                 'phases.items' => fn ($query) => $query->withoutGlobalScopes()->with('ingredient')->orderBy('position'),
@@ -107,7 +132,14 @@ class RecipeVersionCostPreviewBuilder
             ->findOrFail($version->id);
 
         $costing = $costing->loadMissing(['items.ingredient', 'packagingItems.packagingItem']);
-        $snapshot = $this->recipeWorkbenchService->versionSnapshot($recipe, (int) $version->id);
+        if ($productSizeId !== null) {
+            $belongsToSize = fn (RecipeVersionPackagingItem|RecipeVersionCostingPackagingItem $item): bool => $item->product_size_id === $productSizeId
+                || ($item->product_size_id === null && $includeUnsizedPackaging);
+            $version->setRelation('packagingItems', $version->packagingItems->filter($belongsToSize)->values());
+            $costing = clone $costing;
+            $costing->setRelation('packagingItems', $costing->packagingItems->filter($belongsToSize)->values());
+        }
+        $snapshot = $savedSnapshot ?? $this->recipeWorkbenchService->versionSnapshot($recipe, (int) $version->id);
 
         $syntheticRows = $includeDerivedRows
             ? $this->savedSyntheticRows($version, $costing, $snapshot['calculation'] ?? null, $snapshot['draft'] ?? [])
@@ -687,6 +719,10 @@ class RecipeVersionCostPreviewBuilder
 
     private function isSoapVersion(RecipeVersion $version): bool
     {
+        if ($version->relationLoaded('recipe') && $version->recipe?->relationLoaded('productFamily')) {
+            return $version->recipe->productFamily?->usesSoapCalculation() ?? false;
+        }
+
         $recipe = Recipe::query()->withoutGlobalScopes()->find($version->recipe_id);
 
         return $recipe?->productFamily()->withoutGlobalScopes()->first()?->usesSoapCalculation() ?? false;

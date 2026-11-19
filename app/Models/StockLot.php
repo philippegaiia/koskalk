@@ -23,6 +23,10 @@ use LogicException;
     'ingredient_id',
     'packaging_item_id',
     'recipe_id',
+    'product_size_id',
+    'product_size_label_snapshot',
+    'product_size_content_value_snapshot',
+    'product_size_content_unit_snapshot',
     'production_run_id',
     'supplier_listing_id',
     'organic_status',
@@ -212,6 +216,11 @@ class StockLot extends Model
         return $this->belongsTo(ProductionRun::class);
     }
 
+    public function productSize(): BelongsTo
+    {
+        return $this->belongsTo(ProductSize::class);
+    }
+
     public function storageLocation(): BelongsTo
     {
         return $this->belongsTo(StorageLocation::class, 'storage_location_id');
@@ -220,6 +229,7 @@ class StockLot extends Model
     protected function casts(): array
     {
         return [
+            'product_size_content_value_snapshot' => 'decimal:4',
             'origin' => StockLotOrigin::class,
             'unit_kind' => StockUnitKind::class,
             'status' => StockLotStatus::class,

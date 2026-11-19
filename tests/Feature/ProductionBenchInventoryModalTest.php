@@ -1,10 +1,19 @@
 <?php
 
+use App\Actions\Inventory\SaveProductSizeSku;
+use App\Enums\NominalContentUnit;
 use App\Enums\StockLotOrigin;
+use App\Enums\StockLotStatus;
 use App\Livewire\ProductionBench\InventoryIndex;
+use App\Models\Brand;
 use App\Models\Ingredient;
 use App\Models\PackagingItem;
+use App\Models\ProductCollection;
+use App\Models\ProductSize;
+use App\Models\Recipe;
+use App\Models\RecipeVersion;
 use App\Models\StockLot;
+use App\Models\StockMovement;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
 use App\Models\User;
@@ -39,6 +48,153 @@ function inventoryModalListing(Workspace $workspace, array $attributes = []): Su
         ->for(Ingredient::factory()->create(['display_name' => 'Olive oil']))
         ->create($attributes);
 }
+
+it('reports finished stock by size including archived and unrecorded sizes', function (): void {
+    [$user, $workspace] = inventoryModalWorkspace();
+    $recipe = Recipe::factory()->for($workspace)->create(['name' => 'Turmeric soap']);
+    $large = ProductSize::factory()->for($recipe)->create(['name' => '100 g bar', 'archived_at' => now()]);
+    $small = ProductSize::factory()->for($recipe)->create(['name' => '50 g bar', 'declared_content_value' => '50']);
+    $otherWorkspace = Workspace::factory()->create();
+    $otherRecipe = Recipe::factory()->for($otherWorkspace)->create(['name' => 'Other workspace soap']);
+
+    $createLot = function (Recipe $product, ?ProductSize $size, StockLotStatus $status, array $deltas): void {
+        $lot = StockLot::factory()->forRecipe()->create([
+            'workspace_id' => $product->workspace_id,
+            'recipe_id' => $product->id,
+            'product_size_id' => $size?->id,
+            'product_size_label_snapshot' => $size?->name,
+            'origin' => StockLotOrigin::ProductionOutput,
+            'status' => $status,
+        ]);
+        foreach ($deltas as $delta) {
+            StockMovement::factory()->for($lot)->create(['workspace_id' => $product->workspace_id, 'quantity_delta' => $delta]);
+        }
+    };
+
+    $createLot($recipe, $large, StockLotStatus::Released, ['40', '-3']);
+    $createLot($recipe, $large, StockLotStatus::Released, ['7']);
+    $createLot($recipe, $small, StockLotStatus::Quarantined, ['19']);
+    $createLot($recipe, null, StockLotStatus::Released, ['2']);
+    $createLot($otherRecipe, null, StockLotStatus::Released, ['70']);
+
+    $register = Livewire::actingAs($user)->test(InventoryIndex::class, ['mode' => 'stock'])
+        ->assertSee(__('production_bench.inventory.finished_stock_by_size'))
+        ->assertSee('100 g bar')
+        ->assertSee('50 g bar')
+        ->assertSee(__('production_bench.inventory.size_not_recorded'))
+        ->assertDontSee('Other workspace soap');
+
+    $balances = $register->viewData('finishedStock')->keyBy('product_size_id');
+    expect($balances)->toHaveCount(3)
+        ->and((int) $balances[$large->id]->available)->toBe(44)
+        ->and((int) $balances[$small->id]->available)->toBe(0)
+        ->and((int) $balances[$small->id]->quarantined)->toBe(19)
+        ->and((int) $balances['']->available)->toBe(2);
+
+    $published = RecipeVersion::factory()->for($recipe)->for($workspace)->create(['is_current' => false]);
+    $published->productSizes()->attach($small);
+    $catalogue = Livewire::test(InventoryIndex::class, ['mode' => 'finished-products']);
+    $balances = $catalogue->viewData('finishedStock')->keyBy('product_size_id');
+    expect($balances)->toHaveCount(3)
+        ->and((int) $balances[$small->id]->quarantined)->toBe(19)
+        ->and((int) $balances[$large->id]->available)->toBe(44);
+});
+
+it('lists the latest published sizes at zero stock before the first run', function (): void {
+    [$user, $workspace] = inventoryModalWorkspace();
+    $recipe = Recipe::factory()->for($workspace)->create(['name' => 'Turmeric soap']);
+    $old = ProductSize::factory()->for($recipe)->create(['name' => 'Old format']);
+    $published = ProductSize::factory()->for($recipe)->create(['name' => '50 g bar']);
+    $draft = ProductSize::factory()->for($recipe)->create(['name' => 'Draft format']);
+    foreach ([$old, $published, $draft] as $index => $size) {
+        $version = RecipeVersion::factory()->for($recipe)->for($workspace)->create([
+            'version_number' => $index + 1,
+            'is_current' => $size->is($draft),
+        ]);
+        $version->productSizes()->attach($size);
+    }
+
+    $this->actingAs($user)->get(route('production-bench.inventory.finished-products'))
+        ->assertOk()
+        ->assertSee('Finished products')
+        ->assertSee('Turmeric soap')
+        ->assertSee('50 g bar')
+        ->assertDontSee('Old format')
+        ->assertDontSee('Draft format');
+
+    $page = Livewire::test(InventoryIndex::class, ['mode' => 'finished-products'])
+        ->set('finishedPerPage', 10)
+        ->assertSee('50 g bar');
+    $balance = $page->viewData('finishedStock')->sole();
+    expect($balance->product_size_id)->toBe($published->id)
+        ->and((int) $balance->available)->toBe(0)
+        ->and((int) $balance->quarantined)->toBe(0);
+});
+
+it('edits and searches finished product SKUs and filters inherited organization', function (): void {
+    [$user, $workspace] = inventoryModalWorkspace();
+    $brand = Brand::factory()->for($workspace)->create(['name' => 'Workshop']);
+    $collection = ProductCollection::factory()->for($brand)->create(['name' => 'Signature']);
+    $otherCollection = ProductCollection::factory()->for($brand)->create(['name' => 'Everyday']);
+    $recipe = Recipe::factory()->for($workspace)->create([
+        'name' => 'Turmeric soap',
+        'brand_id' => $brand->id,
+        'product_collection_id' => $collection->id,
+    ]);
+    $mint = Recipe::factory()->for($workspace)->create([
+        'name' => 'Mint cleanser',
+        'brand_id' => $brand->id,
+        'product_collection_id' => $otherCollection->id,
+    ]);
+    $soapSize = ProductSize::factory()->for($recipe)->create();
+    $mintSize = ProductSize::factory()->for($mint)->create([
+        'name' => 'Travel bottle',
+        'declared_content_value' => '30',
+        'declared_content_unit' => NominalContentUnit::Millilitre,
+    ]);
+    foreach ([[$recipe, $soapSize], [$mint, $mintSize]] as [$product, $size]) {
+        RecipeVersion::factory()->for($product)->for($workspace)->create(['is_current' => false])
+            ->productSizes()->attach($size);
+    }
+
+    $historyUrl = route('production-bench.production.index', ['date_basis' => 'manufactured', 'size' => $soapSize->public_id]);
+    $page = Livewire::actingAs($user)->test(InventoryIndex::class, ['mode' => 'finished-products'])
+        ->assertSeeHtml(e($historyUrl))
+        ->assertSee('Workshop · Signature')
+        ->callAction('editSku', data: ['sku' => ' soap_100 '], arguments: ['sizeId' => $soapSize->id])
+        ->assertHasNoActionErrors()
+        ->assertSee('SOAP_100')
+        ->set('search', 'soap_100')
+        ->assertDontSee('Mint cleanser')
+        ->set('search', '100g')
+        ->assertSee('Turmeric soap')
+        ->assertDontSee('Mint cleanser')
+        ->set('search', 'bottle')
+        ->assertSee('Mint cleanser')
+        ->assertDontSee('Turmeric soap')
+        ->set('search', '')
+        ->set('brandFilter', (string) $brand->id)
+        ->set('collectionFilter', (string) $otherCollection->id)
+        ->assertSee('Mint cleanser')
+        ->assertDontSee('Turmeric soap')
+        ->callAction('editSku', data: ['sku' => 'soap_100'], arguments: ['sizeId' => $mintSize->id])
+        ->assertHasFormErrors(['sku']);
+
+    expect($soapSize->fresh()->sku)->toBe('SOAP_100')
+        ->and($mintSize->fresh()->sku)->toBeNull();
+
+    [$otherUser, $otherWorkspace] = inventoryModalWorkspace();
+    $otherProduct = Recipe::factory()->for($otherWorkspace)->create();
+    $foreignSize = ProductSize::factory()->for($otherProduct)->create();
+    $save = app(SaveProductSizeSku::class);
+    $save->handle($otherUser, $otherWorkspace, $foreignSize->id, 'soap_100');
+    expect($foreignSize->fresh()->sku)->toBe('SOAP_100');
+
+    $page->unmountAction()
+        ->callAction('editSku', data: ['sku' => ''], arguments: ['sizeId' => $soapSize->id])
+        ->assertHasNoActionErrors();
+    expect($soapSize->fresh()->sku)->toBeNull();
+});
 
 it('offers manual stock entry only from the Stock page', function (): void {
     [$user] = inventoryModalWorkspace();

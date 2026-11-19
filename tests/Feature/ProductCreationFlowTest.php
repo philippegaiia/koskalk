@@ -1,18 +1,35 @@
 <?php
 
+use App\Enums\WorkspaceMemberRole;
 use App\Models\InterfaceTranslation;
+use App\Models\Plan;
 use App\Models\ProductArea;
 use App\Models\ProductCategory;
 use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\SupportedLocale;
 use App\Models\User;
+use App\Models\UserEntitlement;
+use App\Models\Workspace;
+use App\Models\WorkspaceMember;
 use App\Services\ProductCreationCatalog;
 use Database\Seeders\SupportedLocaleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
 
 uses(RefreshDatabase::class);
+
+it('forbids a workspace viewer from opening the new Product flow', function (): void {
+    $workspace = Workspace::factory()->create();
+    $viewer = User::factory()->create(['active_workspace_id' => $workspace->id]);
+    $plan = Plan::factory()->create(['allows_collaboration' => true]);
+    UserEntitlement::factory()->for($workspace->owner)->for($plan)->create();
+    WorkspaceMember::factory()->for($workspace)->for($viewer)->create(['role' => WorkspaceMemberRole::Viewer]);
+
+    $this->actingAs($viewer)
+        ->get(route('recipes.start'))
+        ->assertForbidden();
+});
 
 it('starts new Products with a searchable Product Type decision', function (): void {
     $fixture = productCreationFixture();

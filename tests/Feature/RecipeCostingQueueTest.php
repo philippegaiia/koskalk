@@ -94,7 +94,7 @@ workbench.$wire.saveCosting = async (payload) => {
 };
 workbench.updatePackagingUnitCost(workbench.displayedPackagingCostRows[0], '0.30');
 assert.equal(await workbench.flushCostingSave(), true);
-assert.deepEqual(sent, [{ packaging_item_id: 7, name: 'Soap box', unit_cost: 0.30, components_per_unit: 2 }]);
+assert.deepEqual(sent, [{ product_size_key: workbench.productSizes[0].key, packaging_item_id: 7, name: 'Soap box', unit_cost: 0.30, components_per_unit: 2 }]);
 assert.equal(workbench.displayedPackagingCostRows[0].unit_cost, 0.30);
 JS);
 });

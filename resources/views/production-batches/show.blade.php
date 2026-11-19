@@ -9,9 +9,11 @@
     $versionLabel = $productionBatch->recipe_version_number
         ? __('batch_log.snapshot.version', ['number' => $productionBatch->recipe_version_number])
         : __('batch_log.snapshot.saved_formula');
+    $sizeSuffix = filled($productionBatch->product_size_label_snapshot) ? ' · '.$productionBatch->product_size_label_snapshot : '';
+    $batchTitle = $productionBatch->recipe_name.$sizeSuffix;
 @endphp
 
-@section('title', $productionBatch->recipe_name.' · '.__('batch_log.snapshot.title').' · '.config('app.name'))
+@section('title', $batchTitle.' · '.__('batch_log.snapshot.title').' · '.config('app.name'))
 @section('page_heading', __('batch_log.snapshot.title'))
 
 @section('content')
@@ -20,7 +22,7 @@
             <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                 <div class="min-w-0">
                     <p class="sk-eyebrow">{{ __('batch_log.snapshot.eyebrow') }}</p>
-                    <h1 class="mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $productionBatch->recipe_name }}</h1>
+                    <h1 class="mt-2 text-2xl font-semibold text-[var(--color-ink-strong)]">{{ $batchTitle }}</h1>
                     <p class="mt-2 text-sm text-[var(--color-ink-soft)]">
                         {{ $versionLabel }} · {{ $productionBatch->manufacture_date?->format('Y-m-d') ?? __('batch_log.snapshot.date_not_recorded') }}
                     </p>
@@ -145,7 +147,7 @@
             <section class="sk-card overflow-hidden">
                 <div class="border-b border-[var(--color-line)] px-5 py-4">
                     <p class="sk-eyebrow">{{ __('batch_log.snapshot.packaging') }}</p>
-                    <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('batch_log.snapshot.packaging_title') }}</h2>
+                    <h2 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('batch_log.snapshot.packaging_title').$sizeSuffix }}</h2>
                 </div>
 
                 @if ($productionBatch->packagingItems->isNotEmpty())

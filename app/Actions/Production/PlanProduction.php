@@ -33,10 +33,14 @@ class PlanProduction
         ProductionRunSource $source = ProductionRunSource::Direct,
         ?ProductionTaskSet $taskSet = null,
         ?int $productionLocationId = null,
+        ?string $productSizeKey = null,
+        bool $packageLater = false,
     ): ProductionRun {
         return DB::transaction(function () use (
             $actor,
             $productionLocationId,
+            $productSizeKey,
+            $packageLater,
             $basisInputUnit,
             $basisInputValue,
             $expectedUnits,
@@ -62,6 +66,8 @@ class PlanProduction
                 source: $source,
                 status: ProductionRunStatus::Scheduled,
                 taskSet: $taskSet,
+                productSizeKey: $productSizeKey,
+                packageLater: $packageLater,
             );
 
             if (! $production->wasRecentlyCreated) {

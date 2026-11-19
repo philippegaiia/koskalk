@@ -6,6 +6,7 @@ use App\Models\HelpTopicLocale;
 use App\Models\HelpTopicRevision;
 use App\Services\ContextualHelp\HelpContentManifest;
 use App\Services\ContextualHelp\HelpContentSnapshot;
+use App\Services\ContextualHelp\HelpTopicRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -13,11 +14,12 @@ use Illuminate\Support\Str;
 uses(RefreshDatabase::class);
 
 it('registers identities idempotently without inventing content', function (): void {
+    $keys = collect(array_keys(app(HelpTopicRegistry::class)->definitions()))->sort()->values()->all();
     $this->artisan('help:register')->assertSuccessful();
-    expect(HelpTopic::query()->count())->toBe(97);
+    expect(HelpTopic::query()->pluck('key')->sort()->values()->all())->toBe($keys);
     expect(HelpTopicLocale::query()->count())->toBe(0);
     $this->artisan('help:register')->assertSuccessful();
-    expect(HelpTopic::query()->count())->toBe(97);
+    expect(HelpTopic::query()->pluck('key')->sort()->values()->all())->toBe($keys);
 });
 
 it('exports private JSON to a new local path and refuses an overwrite', function (): void {

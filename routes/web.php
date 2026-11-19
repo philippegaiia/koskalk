@@ -221,6 +221,7 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         ->group(function (): void {
             Route::view('/', 'production-bench.home')->name('home');
             Route::view('/inventory', 'production-bench.inventory')->name('inventory');
+            Route::view('/inventory/finished-products', 'production-bench.inventory-finished-products')->name('inventory.finished-products');
             Route::view('/inventory/stock', 'production-bench.inventory-stock')->name('inventory.stock');
             Route::post('/inventory/materials/export', [InventoryOutputController::class, 'exportMaterials'])
                 ->middleware('throttle:workspace-exports')

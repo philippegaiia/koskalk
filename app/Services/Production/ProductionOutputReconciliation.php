@@ -12,7 +12,7 @@ class ProductionOutputReconciliation
      */
     public function forProduction(ProductionRun $production): array
     {
-        $isIntermediate = $production->actual_output_mass_grams !== null
+        $isIntermediate = $production->package_later || $production->actual_output_mass_grams !== null
             || $production->outputLot?->unit_kind === StockUnitKind::Mass;
         $unit = $isIntermediate ? 'g' : 'unit';
         $planned = $isIntermediate

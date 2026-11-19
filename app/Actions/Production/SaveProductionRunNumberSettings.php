@@ -2,6 +2,7 @@
 
 namespace App\Actions\Production;
 
+use App\Enums\PackedLotSuffix;
 use App\Models\ProductionRunNumberSetting;
 use App\Models\User;
 use App\Models\Workspace;
@@ -24,6 +25,7 @@ class SaveProductionRunNumberSettings
         string $suffix,
         int|string $padding,
         int|string $nextPermanentSerial,
+        PackedLotSuffix|string|null $packedLotSuffix = null,
     ): ProductionRunNumberSetting {
         $this->access->assertCanConfigure($actor, $workspace);
 
@@ -31,6 +33,7 @@ class SaveProductionRunNumberSettings
         $nextPermanentSerial = $this->normalizePositiveInteger($nextPermanentSerial, 'next_permanent_serial', PHP_INT_MAX - 1);
         $this->validateAffix($prefix, 'permanent_prefix');
         $this->validateAffix($suffix, 'permanent_suffix');
+        $packedLotSuffix = $this->normalizePackedLotSuffix($packedLotSuffix);
         $candidate = $this->numbers->formatPermanentNumber($prefix, $nextPermanentSerial, $suffix, $padding);
 
         if (mb_strlen($candidate) > 120) {
@@ -39,11 +42,11 @@ class SaveProductionRunNumberSettings
             ]);
         }
 
-        return DB::transaction(function () use ($actor, $candidate, $nextPermanentSerial, $padding, $prefix, $suffix, $workspace): ProductionRunNumberSetting {
+        return DB::transaction(function () use ($actor, $candidate, $nextPermanentSerial, $packedLotSuffix, $padding, $prefix, $suffix, $workspace): ProductionRunNumberSetting {
             [$lockedWorkspace, $settings] = $this->numbers->lockWorkspaceAndSettings($workspace);
             $this->access->assertCanConfigure($actor, $lockedWorkspace);
 
-            if ($this->numbers->identityExists($lockedWorkspace->id, [$candidate])) {
+            if ($this->numbers->permanentIdentityExists($lockedWorkspace->id, [$candidate])) {
                 throw ValidationException::withMessages([
                     'next_permanent_serial' => __('production_bench.settings.numbering_next_in_use'),
                 ]);
@@ -54,10 +57,22 @@ class SaveProductionRunNumberSettings
                 'permanent_suffix' => $suffix,
                 'permanent_padding' => $padding,
                 'next_permanent_serial' => $nextPermanentSerial,
+                'packed_lot_suffix' => $packedLotSuffix ?? $settings->packed_lot_suffix,
             ]);
 
             return $settings->refresh();
         }, attempts: 5);
+    }
+
+    private function normalizePackedLotSuffix(PackedLotSuffix|string|null $value): ?PackedLotSuffix
+    {
+        if ($value === null || $value instanceof PackedLotSuffix) {
+            return $value;
+        }
+
+        return PackedLotSuffix::tryFrom($value) ?? throw ValidationException::withMessages([
+            'packed_lot_suffix' => __('production_bench.settings.packed_lot_suffix_invalid'),
+        ]);
     }
 
     private function validateAffix(string $value, string $field): void

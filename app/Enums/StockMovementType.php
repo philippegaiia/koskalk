@@ -8,6 +8,9 @@ enum StockMovementType: string
     case PurchaseReceipt = 'purchase_receipt';
     case ProductionConsumption = 'production_consumption';
     case ProductionOutput = 'production_output';
+    case PackagingConsumption = 'packaging_consumption';
+    case PackagingOutput = 'packaging_output';
+    case PackagingReversal = 'packaging_reversal';
     case Shipment = 'shipment';
     case Sample = 'sample';
     case Damaged = 'damaged';

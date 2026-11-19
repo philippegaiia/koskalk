@@ -27,7 +27,10 @@
             @endif
             <dl class="mt-3 grid grid-cols-2 gap-x-5 gap-y-2 text-xs sm:grid-cols-4">
                 <div><dt class="font-semibold text-slate-600">{{ in_array($document['calculation_basis'], ['initial_oils', 'total_formula'], true) ? __('production_bench.run_print.basis_'.$document['calculation_basis']) : __('production_bench.production.basis') }}</dt><dd class="numeric mt-0.5">{{ $number($document['basis_quantity_grams']) }} g</dd></div>
-                <div><dt class="font-semibold text-slate-600">{{ __('production_bench.settings.expected_units') }}</dt><dd class="numeric mt-0.5">{{ $number($document['expected_units'], 0, 0) }}</dd></div>
+                <div><dt class="font-semibold text-slate-600">{{ __($document['package_later'] ? 'production_bench.production.output_kind' : 'production_bench.settings.expected_units') }}</dt><dd class="numeric mt-0.5">{{ $document['package_later'] ? __('production_bench.packaging.bulk_output') : $number($document['expected_units'], 0, 0) }}</dd></div>
+                @if (filled($document['product_size'] ?? null))
+                    <div><dt class="font-semibold text-slate-600">{{ __('batch_log.fields.product_size') }}</dt><dd class="mt-0.5">{{ $document['product_size'] }}</dd></div>
+                @endif
                 @foreach (['planned_for', 'started_at', 'manufacture_date', 'completed_at', 'aborted_at'] as $key)
                     @if ($document[$key] !== null)
                         <div><dt class="font-semibold text-slate-600">{{ __('production_bench.run_print.'.$key) }}</dt><dd class="mt-0.5">{{ $document[$key] }}</dd></div>

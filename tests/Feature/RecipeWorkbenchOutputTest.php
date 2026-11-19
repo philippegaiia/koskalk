@@ -418,6 +418,40 @@ it('converts the current formula fallback basis into its captured costing unit',
             && $projection['cost_per_unit'] === null);
 });
 
+it('prints costing for the size chosen in Costing, not every size\'s packaging', function (): void {
+    ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
+    Ingredient::factory()->create([
+        'catalog_key' => 'CH1',
+        'category' => IngredientCategory::SoapmakingAlkalis,
+        'subcategory' => IngredientSubcategory::SodiumHydroxide,
+        'display_name' => 'Sodium hydroxide',
+        'is_active' => true,
+    ]);
+    $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);
+    $payload['draft']['packaging_items'] = [
+        ['product_size_key' => 'large', 'packaging_item_id' => null, 'name' => 'Large box', 'components_per_unit' => 1],
+        ['product_size_key' => 'small', 'packaging_item_id' => null, 'name' => 'Small box', 'components_per_unit' => 1],
+    ];
+    $payload['costing'] = [
+        'loaded' => true,
+        'oil_weight_for_costing' => null,
+        'oil_unit_for_costing' => 'g',
+        'units_produced' => 20,
+        'currency' => 'EUR',
+        'product_size_key' => 'large',
+        'items' => [],
+        'packaging_items' => [
+            ['packaging_item_id' => null, 'name' => 'Large box', 'unit_cost' => 0.5, 'components_per_unit' => 1],
+        ],
+    ];
+
+    $this->actingAs($user)
+        ->postJson(route('recipes.workbench.print'), [...$payload, 'print_context' => 'costing'])
+        ->assertSuccessful()
+        ->assertViewHas('costingProjection', fn (array $projection): bool => collect($projection['packaging_rows'])->pluck('name')->all() === ['Large box']
+            && $projection['packaging_total'] === 10.0);
+});
+
 it('uses the submitted weight when weight editing mode is authoritative', function (): void {
     ['user' => $user, 'workspace' => $workspace, 'family' => $family, 'oil' => $oil] = createWorkbenchOutputFixture();
     $payload = recipeWorkbenchOutputPayload($workspace, $family, $oil);

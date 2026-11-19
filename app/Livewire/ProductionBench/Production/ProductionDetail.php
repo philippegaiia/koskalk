@@ -12,6 +12,7 @@ use App\Actions\Production\CancelProduction;
 use App\Actions\Production\CompleteProduction;
 use App\Actions\Production\CompleteProductionTask;
 use App\Actions\Production\IssueFinishedGoods;
+use App\Actions\Production\PackageBulkProduction;
 use App\Actions\Production\ReleaseOutputLot;
 use App\Actions\Production\ReleaseProductionStock;
 use App\Actions\Production\ReopenProductionTask;
@@ -22,6 +23,7 @@ use App\Actions\Production\SaveProductionActuals;
 use App\Actions\Production\SaveProductionJournalEntry;
 use App\Actions\Production\ScheduleProduction;
 use App\Actions\Production\StartProduction;
+use App\Actions\Production\UndoPacking;
 use App\Enums\MediaAssetType;
 use App\Enums\ProductionDocumentType;
 use App\Enums\ProductionRunStatus;
@@ -43,9 +45,11 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ContextualHelp\ProductionHelpTopics;
 use App\Services\MediaAssetUploadService;
+use App\Services\Production\PackedLotCodeGenerator;
 use App\Services\Production\ProductionDailyOccupancy;
 use App\Services\Production\ProductionDetailPresenter;
 use App\Services\ProductionBenchAccess;
+use App\Services\ProductSizeResolver;
 use App\Support\NumberLocale;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Concerns\InteractsWithActions;
@@ -58,6 +62,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Renderless;
@@ -93,6 +98,20 @@ class ProductionDetail extends Component implements HasActions, HasForms
 
     public string $outputMode = 'units';
 
+    public string $packedSizeKey = '';
+
+    public string $packagedUnits = '';
+
+    public string $packedBulkGrams = '';
+
+    public string $packedLotCode = '';
+
+    #[Locked]
+    public ?string $suggestedPackedLotCode = null;
+
+    #[Locked]
+    public ?string $packingRequestKey = null;
+
     public string $actualOutputQuantity = '';
 
     public string $manufactureDate = '';
@@ -110,6 +129,8 @@ class ProductionDetail extends Component implements HasActions, HasForms
     public ?string $outputIngredientId = null;
 
     public string $abortReason = '';
+
+    public string $issueLotId = '';
 
     public string $issueKind = 'shipment';
 
@@ -667,6 +688,44 @@ class ProductionDetail extends Component implements HasActions, HasForms
         $this->dispatch('production-completed');
     }
 
+    public function updatedPackedSizeKey(ProductSizeResolver $productSizes, PackedLotCodeGenerator $lotCodes): void
+    {
+        $production = $this->production();
+        $version = $production->package_later ? $production->recipeVersion : null;
+        $size = $version === null || $production->batch_number === null ? null
+            : $productSizes->forVersion($version, preferPackaged: true)->firstWhere('public_id', strtolower($this->packedSizeKey));
+
+        $this->suggestedPackedLotCode = $size === null ? null : $lotCodes->suggest($production->workspace, $production->batch_number, $size);
+        $this->packedLotCode = $this->suggestedPackedLotCode ?? '';
+        $this->resetErrorBag('packedLotCode');
+    }
+
+    public function packageBulk(PackageBulkProduction $package): void
+    {
+        $this->validate([
+            'packedSizeKey' => ['required', 'uuid'],
+            'packagedUnits' => ['required', 'integer', 'min:1', 'max:2147483647'],
+            'packedLotCode' => ['nullable', 'string', 'max:'.PackedLotCodeGenerator::MAX_LENGTH],
+        ]);
+        $this->packingRequestKey ??= (string) Str::uuid();
+        $lotCode = trim($this->packedLotCode);
+
+        $context = $this->productionEditingContext();
+        $package->handle(
+            actor: $this->user(),
+            production: $this->production(),
+            sizeKey: $this->packedSizeKey,
+            units: (int) $this->packagedUnits,
+            bulkGrams: NumberLocale::normalizeDecimalString($this->packedBulkGrams) ?? $this->packedBulkGrams,
+            requestKey: $this->packingRequestKey,
+            editing: $context,
+            lotCode: $lotCode === '' || $lotCode === $this->suggestedPackedLotCode ? null : $lotCode,
+        );
+        $this->acknowledgeProductionMutation($context);
+        $this->reset('packedSizeKey', 'packagedUnits', 'packedBulkGrams', 'packedLotCode', 'suggestedPackedLotCode', 'packingRequestKey');
+        $this->showAppNotification(__('production_bench.packaging.packed'));
+    }
+
     public function abort(AbortProduction $abortProduction): void
     {
         try {
@@ -742,9 +801,23 @@ class ProductionDetail extends Component implements HasActions, HasForms
         $this->dispatch('production-output-released');
     }
 
+    public function undoPacking(int $lotId, UndoPacking $undo): void
+    {
+        $this->resetErrorBag('packing');
+        $context = $this->productionEditingContext();
+        $undo->handle($this->user(), $this->production(), $lotId, $context);
+        $this->acknowledgeProductionMutation($context);
+        $this->showAppNotification(__('production_bench.packaging.undone'));
+    }
+
     public function issueFinishedGoods(): void
     {
-        $outputLot = $this->production()->outputLot;
+        $this->resetErrorBag('output');
+        $production = $this->production();
+        $outputLot = $this->issueLotId === '' ? $production->outputLot : $production->packagedLots->find($this->issueLotId);
+        if (! $outputLot instanceof StockLot && $this->issueLotId !== '') {
+            $this->addError('output', __('production_bench.production.validation.issue_output_lot_required'));
+        }
 
         if (! $outputLot instanceof StockLot) {
             return;
@@ -891,6 +964,7 @@ class ProductionDetail extends Component implements HasActions, HasForms
         ProductionBenchAccess $access,
         ProductionDailyOccupancy $occupancy,
         ProductionDetailPresenter $detailPresenter,
+        ProductSizeResolver $productSizes,
     ): View {
         $workspace = $this->workspace();
         $production = $this->production();
@@ -916,6 +990,17 @@ class ProductionDetail extends Component implements HasActions, HasForms
             ], true);
 
         $completionReadiness = $this->completionReadiness($production);
+        $packingVersion = $production->package_later && $production->outputLot ? $production->recipeVersion : null;
+        $packingSizes = $packingVersion
+            ? $productSizes->forVersion($packingVersion, preferPackaged: true)
+            : collect();
+        $packingComponents = collect();
+        if ($packingSizes->contains('public_id', $this->packedSizeKey)) {
+            $selection = $productSizes->selectForProduction($packingVersion, $this->packedSizeKey);
+            $packingComponents = $packingVersion->packagingItems->filter(
+                fn ($item): bool => $selection->includesPackaging($item->product_size_id),
+            );
+        }
 
         return view('livewire.production-bench.production.production-detail', [
             'canDetachDocuments' => $access->canConfigure($this->user(), $workspace),
@@ -923,6 +1008,11 @@ class ProductionDetail extends Component implements HasActions, HasForms
             'workspace' => $workspace,
             'production' => $production,
             'productionDetail' => $productionDetail,
+            'packingSizes' => $packingSizes,
+            'packingComponents' => $packingComponents,
+            'remainingBulk' => $production->package_later && $production->outputLot
+                ? $production->outputLot->movements()->sum('quantity_delta')
+                : null,
             'outputReconciliation' => $productionDetail['output'],
             'isBenchActive' => $access->isActive($workspace),
             'isReadOnly' => $access->isReadOnly($workspace),
@@ -987,7 +1077,11 @@ class ProductionDetail extends Component implements HasActions, HasForms
     {
         return ProductionRun::query()
             ->where('workspace_id', $this->workspace()->id)
-            ->with(['recipe', 'outputIngredient', 'productionLocation', 'requirements.reservations.stockLot', 'formulaLines', 'consumption.stockLot', 'documents.mediaAsset', 'tasks.employee', 'tasks.department', 'journalEntries.createdBy:id,name', 'outputLot', 'cancelledBy:id,name', 'batchNumberAssignedBy:id,name']);
+            ->with(['recipe', 'outputIngredient', 'productionLocation', 'requirements.reservations.stockLot', 'formulaLines', 'consumption.stockLot', 'documents.mediaAsset', 'tasks.employee', 'tasks.department', 'journalEntries.createdBy:id,name', 'outputLot', 'cancelledBy:id,name', 'batchNumberAssignedBy:id,name'])
+            ->with(['packagedLots' => fn ($query) => $query->orderBy('id')
+                ->withSum('movements as packed_balance', 'quantity_delta')
+                ->withCount('movements')
+                ->withExists(['movements as packing_undone' => fn ($movements) => $movements->where('type', StockMovementType::PackagingReversal)])]);
     }
 
     private function loadSavedProductionState(): void
@@ -1303,7 +1397,7 @@ class ProductionDetail extends Component implements HasActions, HasForms
             ],
             'tasks' => ['taskDates' => $production->tasks->mapWithKeys(fn (ProductionTask $task): array => [$task->id => $task->scheduled_for->toDateString()])->all()],
             'cancellation' => ['cancellationReason' => ''], 'abort' => ['abortReason' => ''],
-            'issue' => ['issueKind' => $this->issueKind, 'issueQuantity' => '', 'issueNote' => ''],
+            'issue' => ['issueLotId' => '', 'issueKind' => $production->package_later && $this->issueKind === 'shipment' ? 'damaged' : $this->issueKind, 'issueQuantity' => '', 'issueNote' => ''],
             'journal' => ['journalBody' => ''], 'document' => ['journalDocumentNote' => ''],
         ];
     }
@@ -1320,7 +1414,7 @@ class ProductionDetail extends Component implements HasActions, HasForms
             'planning' => ['scheduleDate'], 'location' => ['productionLocationId'],
             'completion' => ['outputMode', 'actualOutputQuantity', 'outputIngredientId', 'manufactureDate', 'estimatedReadyOn'],
             'tasks' => ['taskDates'], 'cancellation' => ['cancellationReason'], 'abort' => ['abortReason'],
-            'issue' => ['issueKind', 'issueQuantity', 'issueNote'], 'journal' => ['journalBody'], 'document' => ['journalDocumentNote'],
+            'issue' => ['issueLotId', 'issueKind', 'issueQuantity', 'issueNote'], 'journal' => ['journalBody'], 'document' => ['journalDocumentNote'],
         ];
     }
 

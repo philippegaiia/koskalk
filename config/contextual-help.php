@@ -50,6 +50,9 @@ return [
         'production.start_and_actuals' => ['domain' => 'production_runs'],
         'production.completion' => ['domain' => 'production_runs'],
         'production.output_lot' => ['domain' => 'production_runs'],
+        'production.package_later' => ['domain' => 'production_runs'],
+        'production.numbering' => ['domain' => 'production_runs'],
+        'production.history' => ['domain' => 'production_runs'],
         'production.tasks' => ['domain' => 'production_runs'],
         'production.task_sets' => ['domain' => 'production_runs'],
         'production.journal' => ['domain' => 'production_runs'],
@@ -68,6 +71,7 @@ return [
         'purchasing.receipt_documents' => ['domain' => 'production_purchasing'],
 
         'inventory.overview' => ['domain' => 'production_inventory'],
+        'inventory.finished_products' => ['domain' => 'production_inventory'],
         'inventory.quantities' => ['domain' => 'production_inventory'],
         'inventory.lots_and_status' => ['domain' => 'production_inventory'],
         'inventory.opening_stock' => ['domain' => 'production_inventory'],

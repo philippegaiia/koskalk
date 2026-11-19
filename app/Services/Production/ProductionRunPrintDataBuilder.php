@@ -146,6 +146,8 @@ final class ProductionRunPrintDataBuilder
             'abort_reason' => $production->abort_reason,
             'notes' => $production->notes,
             'expected_units' => $production->expected_units,
+            'package_later' => $production->package_later,
+            'product_size' => $production->product_size_label_snapshot,
             'actual_output_units' => $production->actual_output_units,
             'actual_output_mass_grams' => $production->actual_output_mass_grams,
             'procedure_available' => array_key_exists('manufacturing_procedure_html', $context),

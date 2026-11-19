@@ -7,6 +7,7 @@ use App\Actions\Production\CompleteProductionTask;
 use App\Actions\Production\CreateProductionDraft;
 use App\Actions\Production\DeleteProductionRun;
 use App\Actions\Production\IssueFinishedGoods;
+use App\Actions\Production\PackageBulkProduction;
 use App\Actions\Production\PrepareProductionStock;
 use App\Actions\Production\ReleaseOutputLot;
 use App\Actions\Production\ReleaseProductionStock;
@@ -17,6 +18,7 @@ use App\Actions\Purchasing\ReceiveDirectGoodsReceipt;
 use App\Enums\ListingPriceBasis;
 use App\Enums\MassUnit;
 use App\Enums\OwnerType;
+use App\Enums\PackedLotSuffix;
 use App\Enums\ProductionConsumptionKind;
 use App\Enums\ProductionDocumentType;
 use App\Enums\ProductionFormulaComponent;
@@ -42,7 +44,9 @@ use App\Models\PackagingItem;
 use App\Models\Plan;
 use App\Models\ProductFamily;
 use App\Models\ProductionRun;
+use App\Models\ProductionRunNumberSetting;
 use App\Models\ProductionTask;
+use App\Models\ProductSize;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
@@ -57,6 +61,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Models\WorkspaceProductionEntitlement;
+use App\Services\Inventory\WorkspaceStockLotQuery;
 use App\Support\NumberLocale;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -64,6 +69,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use Tests\Support\ProductionEditingFixture;
@@ -496,13 +502,20 @@ it('saves actuals from the production sheet', function (): void {
 
 it('completes a production atomically with consumption, costs, and an output lot', function (): void {
     $fixture = productionExecutionFixture();
+    $size = ProductSize::factory()->for($fixture['recipe'])->create(['name' => 'Small batch bar']);
+    $fixture['version']->productSizes()->attach($size);
     $production = productionExecutionRun($fixture, 'complete-1');
+    $size->update(['name' => 'Updated bar name']);
     $ingredientRequirement = $production->requirements()->where('kind', 'ingredient')->firstOrFail();
     $packagingRequirement = $production->requirements()->where('kind', 'packaging')->firstOrFail();
     $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->firstOrFail();
     $packagingLot = StockLot::query()->where('packaging_item_id', $fixture['packaging']->id)->firstOrFail();
     $oilLot->update(['historical_unit_cost' => '0.012500000', 'currency' => 'EUR']);
     $packagingLot->update(['historical_unit_cost' => '0.500000000', 'currency' => 'EUR']);
+    $alkaliRequirement = $production->requirements()->where('kind', 'ingredient')->where('ingredient_id', '!=', $fixture['olive']->id)->sole();
+    StockLot::query()->where('ingredient_id', $alkaliRequirement->ingredient_id)
+        ->where('workspace_id', $fixture['workspace']->id)->sole()
+        ->update(['historical_unit_cost' => '0', 'currency' => 'EUR']);
 
     app(SaveProductionActuals::class)->handle($fixture['owner'], $production, [
         ['production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000.000000000', 'note' => 'Over the plan'],
@@ -547,6 +560,12 @@ it('completes a production atomically with consumption, costs, and an output lot
     $outputLot = $completed->outputLot()->sole();
     expect($outputLot->internal_lot_code)->toBe($completed->batch_number)
         ->and($outputLot->recipe_id)->toBe($fixture['recipe']->id)
+        ->and($outputLot->product_size_id)->toBe($size->id)
+        ->and($outputLot->product_size_label_snapshot)->toBe('Small batch bar')
+        ->and($outputLot->product_size_content_value_snapshot)->toBe('100.0000')
+        ->and($outputLot->product_size_content_unit_snapshot)->toBe('g')
+        ->and($outputLot->historical_unit_cost)->toBe('1.963157894')
+        ->and($outputLot->currency)->toBe('EUR')
         ->and($outputLot->origin->value)->toBe('production_output')
         ->and($outputLot->status->value)->toBe('quarantined')
         ->and($outputLot->unit_kind->value)->toBe('count')
@@ -563,6 +582,203 @@ it('completes a production atomically with consumption, costs, and an output lot
     // Costs immutable: later price changes do not alter the snapshot.
     $oilLot->update(['historical_unit_cost' => '99.000000000']);
     expect($completed->fresh()->actual_ingredient_total)->toBe('137.500000000');
+});
+
+it('packs two sizes from the same released bulk lot and reports each size separately', function (): void {
+    $fixture = productionExecutionFixture();
+    $owner = $fixture['owner'];
+    $workspace = $fixture['workspace'];
+    $this->actingAs($owner);
+    $large = ProductSize::factory()->for($fixture['recipe'])->create(['name' => '100 g']);
+    $small = ProductSize::factory()->for($fixture['recipe'])->create(['name' => '50 g', 'declared_content_value' => 50]);
+    $fixture['version']->productSizes()->attach([$large->id, $small->id]);
+    $fixture['version']->packagingItems()->update(['product_size_id' => $large->id]);
+    $fixture['version']->packagingItems()->create([
+        'product_size_id' => $small->id,
+        'packaging_item_id' => $fixture['packaging']->id,
+        'name' => 'Soap box',
+        'components_per_unit' => 1,
+        'position' => 2,
+    ]);
+
+    $production = productionExecutionRun($fixture, 'bulk-pack', packageLater: true);
+    expect($production->requirements->pluck('packaging_item_id')->filter())->toBeEmpty();
+    $ingredientRequirement = $production->requirements()->where('ingredient_id', $fixture['olive']->id)->sole();
+    $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->sole();
+    app(SaveProductionActuals::class)->handle($owner, $production, [[
+        'production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000',
+    ]], editing: ProductionEditingFixture::command($owner, $production));
+    $completed = app(CompleteProduction::class)->handle(
+        actor: $owner,
+        production: $production->fresh(),
+        actualOutputQuantity: '6000.5',
+        manufactureDate: '2026-08-20',
+        editing: ProductionEditingFixture::command($owner, $production->fresh()),
+    );
+    $bulk = $completed->outputLot()->sole();
+    expect($bulk->unit_kind)->toBe(StockUnitKind::Mass)
+        ->and($bulk->product_size_id)->toBeNull()
+        ->and($completed->actual_output_units)->toBeNull();
+    $pack = app(PackageBulkProduction::class);
+    $record = fn (ProductSize $size, int $units, string $grams, ?string $key = null): StockLot => $pack->handle(
+        $owner, $completed->fresh(), $size->public_id, $units, $grams,
+        $key ?? (string) Str::uuid(), ProductionEditingFixture::command($owner, $completed->fresh()),
+    );
+
+    expect(fn () => $record($large, 40, '4000'))->toThrow(ValidationException::class);
+    app(ReleaseOutputLot::class)->handle($owner, $bulk, earlyReleaseConfirmed: true, editing: ProductionEditingFixture::command($owner, $bulk));
+    expect(fn () => $record($large, 40, '4000'))->toThrow(ValidationException::class);
+    expect($bulk->movements()->count())->toBe(1);
+    $boxes = StockLot::factory()->for($workspace)->released()->create([
+        'ingredient_id' => null, 'packaging_item_id' => $fixture['packaging']->id, 'unit_kind' => StockUnitKind::Count,
+        'available_from' => today(), 'expires_at' => today(),
+    ]);
+    StockMovement::factory()->for($boxes, 'stockLot')->create([
+        'workspace_id' => $workspace->id, 'type' => StockMovementType::OpeningBalance, 'quantity_delta' => 100,
+    ]);
+    $key = (string) Str::uuid();
+    $first = $record($large, 40, '4000', $key);
+    expect($record($large, 40, '4000', $key)->is($first))->toBeTrue();
+    expect(fn () => $record($small, 30, '2500'))->toThrow(ValidationException::class);
+    $smallPackaging = $fixture['version']->packagingItems()->where('product_size_id', $small->id)->sole();
+    $smallPackaging->update(['packaging_item_id' => null]);
+    expect(fn () => $record($small, 25, '1250'))->toThrow(ValidationException::class, 'Soap box');
+    $smallPackaging->update(['packaging_item_id' => $fixture['packaging']->id]);
+
+    $small->update(['archived_at' => now()]);
+    $page = Livewire::test(ProductionDetail::class, ['productionId' => $completed->id])
+        ->call('beginEditing')
+        ->assertSee('50 g · Retired')
+        ->set('packedSizeKey', $small->public_id)
+        ->assertSee('Soap box')
+        ->set('packagedUnits', '25')
+        ->set('packedBulkGrams', '1250')
+        ->call('packageBulk')
+        ->assertHasNoErrors()
+        ->assertSee($first->internal_lot_code);
+    $second = $completed->packagedLots()->where('product_size_id', $small->id)->sole();
+    expect($first->internal_lot_code)->toBe($completed->batch_number.'-A')
+        ->and($second->internal_lot_code)->toBe($completed->batch_number.'-B');
+
+    expect($completed->outputLot()->sole()->is($bulk))->toBeTrue()
+        ->and($completed->packagedLots()->count())->toBe(2)
+        ->and((int) $boxes->movements()->sum('quantity_delta'))->toBe(35)
+        ->and((float) $bulk->movements()->sum('quantity_delta'))->toBe(750.5);
+    Livewire::test(ProductionIndex::class)
+        ->assertViewHas('productions', fn ($runs): bool => $runs->total() === 1);
+    Livewire::withQueryParams(['date_basis' => 'manufactured', 'size' => $small->public_id])->test(ProductionIndex::class)
+        ->assertSee($second->internal_lot_code)
+        ->assertDontSee($first->internal_lot_code)
+        ->assertViewHas('historyTotals', fn ($totals): bool => (int) $totals->sole()->units === 25);
+    $balances = app(WorkspaceStockLotQuery::class)
+        ->paginateFinishedBySize($owner, $workspace, 25)
+        ->pluck('available', 'product_size_id')->map(fn ($units): int => (int) $units);
+    expect($balances->all())->toEqual([$large->id => 40, $small->id => 25]);
+    Livewire::test(ProductionDetail::class, ['productionId' => $completed->id])
+        ->assertSee($first->internal_lot_code)
+        ->assertSee($second->internal_lot_code);
+
+    foreach (['shipment', 'damaged', 'sample'] as $reason) {
+        $page->set('issueLotId', (string) $second->id)
+            ->set('issueKind', $reason)
+            ->set('issueQuantity', '1')
+            ->call('issueFinishedGoods')
+            ->assertHasNoErrors();
+    }
+    $page->call('undoPacking', $second->id)->assertHasErrors('packing')
+        ->call('undoPacking', $first->id)->assertHasNoErrors()
+        ->call('undoPacking', $first->id)->assertHasNoErrors()
+        ->assertSee(__('production_bench.packaging.undone'));
+
+    expect((int) $first->movements()->sum('quantity_delta'))->toBe(0)
+        ->and((int) $second->movements()->sum('quantity_delta'))->toBe(22)
+        ->and((int) $boxes->movements()->sum('quantity_delta'))->toBe(75)
+        ->and((float) $bulk->movements()->sum('quantity_delta'))->toBe(4750.5);
+    Livewire::withQueryParams(['date_basis' => 'manufactured'])->test(ProductionIndex::class)
+        ->assertDontSee($first->internal_lot_code)
+        ->assertSee($second->internal_lot_code)
+        ->assertViewHas('historyTotals', fn ($totals): bool => (int) $totals->sole()->units === 25);
+});
+
+it('suggests packed lot codes from the suffix setting and accepts a maker’s own unique code', function (): void {
+    $fixture = productionExecutionFixture();
+    $owner = $fixture['owner'];
+    $workspace = $fixture['workspace'];
+    $this->actingAs($owner);
+    $bar = ProductSize::factory()->for($fixture['recipe'])->create(['name' => 'Bar', 'sku' => 'soap bar/100']);
+    $sample = ProductSize::factory()->for($fixture['recipe'])->create([
+        'name' => 'Sample', 'declared_content_value' => null, 'declared_content_unit' => null, 'position' => 2,
+    ]);
+    $fixture['version']->productSizes()->attach([$bar->id, $sample->id]);
+    $fixture['version']->packagingItems()->update(['product_size_id' => $bar->id]);
+
+    $production = productionExecutionRun($fixture, 'bulk-pack-codes', packageLater: true);
+    $ingredientRequirement = $production->requirements()->where('ingredient_id', $fixture['olive']->id)->sole();
+    $oilLot = StockLot::query()->where('ingredient_id', $fixture['olive']->id)->sole();
+    app(SaveProductionActuals::class)->handle($owner, $production, [[
+        'production_requirement_id' => $ingredientRequirement->id, 'stock_lot_id' => $oilLot->id, 'quantity' => '11000',
+    ]], editing: ProductionEditingFixture::command($owner, $production));
+    $completed = app(CompleteProduction::class)->handle(
+        actor: $owner,
+        production: $production->fresh(),
+        actualOutputQuantity: '6000',
+        manufactureDate: '2026-08-20',
+        editing: ProductionEditingFixture::command($owner, $production->fresh()),
+    );
+    $bulk = $completed->outputLot()->sole();
+    app(ReleaseOutputLot::class)->handle($owner, $bulk, earlyReleaseConfirmed: true, editing: ProductionEditingFixture::command($owner, $bulk));
+    $boxes = StockLot::factory()->for($workspace)->released()->create([
+        'ingredient_id' => null, 'packaging_item_id' => $fixture['packaging']->id, 'unit_kind' => StockUnitKind::Count,
+        'available_from' => today(), 'expires_at' => today(),
+    ]);
+    StockMovement::factory()->for($boxes, 'stockLot')->create([
+        'workspace_id' => $workspace->id, 'type' => StockMovementType::OpeningBalance, 'quantity_delta' => 100,
+    ]);
+
+    $pack = app(PackageBulkProduction::class);
+    $record = fn (ProductSize $size, ?string $lotCode = null): string => $pack->handle(
+        $owner, $completed->fresh(), $size->public_id, 5, '500',
+        (string) Str::uuid(), ProductionEditingFixture::command($owner, $completed->fresh()), $lotCode,
+    )->internal_lot_code;
+    $batch = $completed->batch_number;
+    $settings = ProductionRunNumberSetting::query()->whereBelongsTo($workspace)->sole();
+    $numberedRun = productionExecutionRun($fixture, 'bulk-pending-numbered-run', start: false, packageLater: true);
+    expect($numberedRun->outputLot()->exists())->toBeFalse();
+    expect(fn () => $record($bar, strtolower($numberedRun->batch_number)))
+        ->toThrow(ValidationException::class, __('production_bench.packaging.validation.lot_code_taken'));
+    expect(fn () => $record($bar, 'b-00003'))
+        ->toThrow(ValidationException::class, __('production_bench.packaging.validation.lot_code_next_batch', [
+            'batch' => 'B-00003', 'suggestion' => $batch.'-A',
+        ]));
+
+    $settings->update(['packed_lot_suffix' => PackedLotSuffix::Content]);
+    expect($record($bar))->toBe($batch.'-100G')
+        ->and($record($bar))->toBe($batch.'-100G-2')
+        ->and($record($sample))->toBe($batch.'-A');
+
+    $settings->update(['packed_lot_suffix' => PackedLotSuffix::Sku]);
+    expect($record($bar))->toBe($batch.'-SOAP-BAR/100')
+        ->and($record($sample))->toBe($batch.'-B')
+        ->and($record($bar, ' GIFT-2026 '))->toBe('GIFT-2026')
+        ->and(fn () => $record($bar, 'gift-2026'))->toThrow(ValidationException::class, __('production_bench.packaging.validation.lot_code_taken'))
+        ->and(fn () => $record($bar, 'gift 2026'))->toThrow(ValidationException::class, __('production_bench.packaging.validation.lot_code_invalid'));
+
+    Livewire::test(ProductionDetail::class, ['productionId' => $completed->id])
+        ->call('beginEditing')
+        ->set('packedSizeKey', $bar->public_id)
+        ->assertSet('packedLotCode', $batch.'-SOAP-BAR/100-2')
+        ->set('packagedUnits', '5')
+        ->set('packedBulkGrams', '500')
+        ->set('packedLotCode', 'GIFT-2026')
+        ->call('packageBulk')
+        ->assertHasErrors('packedLotCode')
+        ->set('packedLotCode', 'GIFT-2027')
+        ->call('packageBulk')
+        ->assertHasNoErrors()
+        ->assertSee('GIFT-2027');
+
+    expect($completed->packagedLots()->pluck('internal_lot_code')->all())->toContain('GIFT-2027')
+        ->and((int) $boxes->movements()->sum('quantity_delta'))->toBe(75);
 });
 
 it('rechecks source lot eligibility before posting completion consumption', function (): void {
@@ -814,7 +1030,8 @@ it('completes a production from the production sheet', function (): void {
         });
 
     expect($page->instance()->completionDatesForm->getComponent('manufactureDate')->isNative())->toBeFalse()
-        ->and($page->instance()->completionDatesForm->getComponent('estimatedReadyOn')->isNative())->toBeFalse();
+        ->and($page->instance()->completionDatesForm->getComponent('estimatedReadyOn')->isNative())->toBeFalse()
+        ->and($production->outputLot()->sole()->historical_unit_cost)->toBeNull();
 
     expect($production->fresh()->status)->toBe(ProductionRunStatus::Completed)
         ->and($production->fresh()->outputLot()->sole()->internal_lot_code)->toBe($production->fresh()->batch_number);
@@ -2011,7 +2228,7 @@ function productionExecutionFixture(?Ingredient $oil = null, ?Workspace $workspa
 /**
  * @param  array{owner: User, workspace: Workspace, recipe: Recipe, version: RecipeVersion}  $fixture
  */
-function productionExecutionRun(array $fixture, string $idempotencyKey, bool $start = true): ProductionRun
+function productionExecutionRun(array $fixture, string $idempotencyKey, bool $start = true, bool $packageLater = false): ProductionRun
 {
     $production = app(CreateProductionDraft::class)->handle(
         actor: $fixture['owner'],
@@ -2023,6 +2240,7 @@ function productionExecutionRun(array $fixture, string $idempotencyKey, bool $st
         idempotencyKey: $idempotencyKey,
         status: ProductionRunStatus::Scheduled,
         plannedFor: '2026-08-20',
+        packageLater: $packageLater,
     );
 
     $production->requirements->each(function ($requirement) use ($fixture): void {

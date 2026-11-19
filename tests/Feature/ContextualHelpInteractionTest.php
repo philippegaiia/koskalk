@@ -71,6 +71,12 @@ handlers.get('keydown')({target:heading,key:'Tab',preventDefault(){prevented=tru
 assert.equal(prevented,true); assert.equal(document.activeElement,back);
 media.matches=true; resize();
 assert.equal(panel.attrs.role,'complementary'); assert.equal(main.inert,false); assert.equal(existingInert.inert,true); assert.equal(document.body.style.overflow,'auto');
+close.setAttribute('data-help-close', '');
+close.closest = selector => selector.includes('[data-help-close]') ? close : null;
+handlers.get('click')({target:close});
+assert.equal(panel.hidden,true);
+assert.equal(document.activeElement,origin);
+help.openTopic('two',origin);
 handlers.get('click')({target:back});
 assert.equal(help.isOpen,true);
 const indexButton=node('BUTTON');

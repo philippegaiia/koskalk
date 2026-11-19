@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\OwnerType;
 use App\Models\PackagingItem;
+use App\Models\ProductSize;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
 use App\Models\RecipeVersion;
@@ -12,6 +13,11 @@ use App\Models\User;
 
 class RecipeVersionStructureSynchronizer
 {
+    public function __construct(
+        private readonly ProductSizeResolver $productSizeResolver,
+        private readonly ProductSizeSynchronizer $productSizeSynchronizer,
+    ) {}
+
     /**
      * @param  array<string, mixed>  $normalizedPayload
      */
@@ -59,13 +65,32 @@ class RecipeVersionStructureSynchronizer
             }
         }
 
-        $this->syncPackagingItems($recipeVersion, $user, $normalizedPayload['packaging_items'] ?? []);
+        $recipeId = (int) $recipeVersion->recipe_id;
+        $productSizeIdsByKey = is_array($normalizedPayload['product_sizes'] ?? null)
+            ? $this->productSizeSynchronizer->sync($recipeId, $normalizedPayload['product_sizes'])
+            : null;
+
+        $this->syncPackagingItems($recipeVersion, $user, $normalizedPayload['packaging_items'] ?? [], $productSizeIdsByKey);
+        $sizeIds = $productSizeIdsByKey === null
+            ? ProductSize::query()->where('recipe_id', $recipeId)->whereNull('archived_at')->pluck('id')->all()
+            : array_values($productSizeIdsByKey);
+        if ($productSizeIdsByKey !== null) {
+            $this->productSizeSynchronizer->forgetRemovedYields($recipeVersion, $sizeIds);
+        }
+        $packagedSizeIds = $recipeVersion->packagingItems()->whereNotNull('product_size_id')->pluck('product_size_id')->all();
+        $recipeVersion->productSizes()->sync(array_values(array_unique([...$sizeIds, ...$packagedSizeIds])));
+        $this->productSizeSynchronizer->pruneArchived($recipeId);
     }
 
     /**
+     * Each line goes to its submitted size; a line without a known size goes to
+     * the first submitted size, or to the Product's default size when the
+     * payload carries no sizes.
+     *
      * @param  array<int, array<string, mixed>>  $packagingItems
+     * @param  array<string, int>|null  $productSizeIdsByKey
      */
-    private function syncPackagingItems(RecipeVersion $recipeVersion, User $user, array $packagingItems): void
+    private function syncPackagingItems(RecipeVersion $recipeVersion, User $user, array $packagingItems, ?array $productSizeIdsByKey): void
     {
         RecipeVersionPackagingItem::query()
             ->where('recipe_version_id', $recipeVersion->id)
@@ -81,6 +106,11 @@ class RecipeVersionStructureSynchronizer
             ->get()
             ->keyBy('id');
 
+        $fallbackProductSizeId = $packagingItems === []
+            ? null
+            : (collect($productSizeIdsByKey ?? [])->first()
+                ?? $this->productSizeResolver->defaultForProduct((int) $recipeVersion->recipe_id)->id);
+
         foreach ($packagingItems as $index => $packagingItemPayload) {
             $linkedPackagingItemId = isset($packagingItemPayload['packaging_item_id'])
                 && $linkedPackagingItems->has((int) $packagingItemPayload['packaging_item_id'])
@@ -88,6 +118,7 @@ class RecipeVersionStructureSynchronizer
                     : null;
 
             $packagingItem = new RecipeVersionPackagingItem([
+                'product_size_id' => $productSizeIdsByKey[$packagingItemPayload['product_size_key'] ?? ''] ?? $fallbackProductSizeId,
                 'packaging_item_id' => $linkedPackagingItemId,
                 'name' => trim((string) ($packagingItemPayload['name'] ?? '')),
                 'components_per_unit' => (float) ($packagingItemPayload['components_per_unit'] ?? 1),

@@ -542,7 +542,9 @@ it('does not ship English placeholders for Inventory translations', function ():
 
             expect($value, $coordinate)->not->toBe('');
 
-            if (! array_key_exists($coordinate, $languageNeutral)) {
+            if ($row['key'] === 'inventory.sku') {
+                expect($value)->toBe('SKU');
+            } elseif (! array_key_exists($coordinate, $languageNeutral)) {
                 expect($value, "{$coordinate} must not be English fallback")
                     ->not->toBe($english);
             }

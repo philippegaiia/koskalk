@@ -9,6 +9,7 @@ use Illuminate\Support\Carbon;
 
 #[Fillable([
     'recipe_version_id',
+    'product_size_id',
     'packaging_item_id',
     'name',
     'components_per_unit',
@@ -38,6 +39,11 @@ class RecipeVersionPackagingItem extends Model
     public function recipeVersion(): BelongsTo
     {
         return $this->belongsTo(RecipeVersion::class);
+    }
+
+    public function productSize(): BelongsTo
+    {
+        return $this->belongsTo(ProductSize::class);
     }
 
     public function packagingItem(): BelongsTo

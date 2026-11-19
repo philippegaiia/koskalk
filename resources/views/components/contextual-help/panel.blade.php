@@ -1,4 +1,4 @@
-<aside id="contextual-help-panel" data-contextual-help-panel data-index-title="{{ __('contextual_help.index_title') }}" aria-labelledby="contextual-help-heading" role="complementary" class="sk-help-panel" hidden>
+<aside id="contextual-help-panel" data-contextual-help-panel data-index-title="{{ __('contextual_help.index_title') }}" aria-labelledby="contextual-help-heading" role="complementary" {{ $attributes->class('sk-help-panel') }} hidden>
     <header class="flex items-center justify-between gap-3 border-b border-[var(--color-line)] px-5 py-4">
         <button type="button" data-help-back class="sk-btn sk-btn-ghost" hidden>{{ __('contextual_help.back') }}</button>
         <button type="button" data-help-close class="sk-btn sk-btn-ghost ml-auto">{{ __('contextual_help.close') }}</button>

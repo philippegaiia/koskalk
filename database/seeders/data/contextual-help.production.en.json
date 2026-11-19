@@ -418,7 +418,103 @@
           "translation_requests": []
         }
       ]
+    },
+    {
+      "public_id": "3eb60d0e-c99f-4dc4-8fd0-1492c8f1a5b3",
+      "key": "production.package_later",
+      "domain": "production_runs",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "6e3b4f99-b635-47c0-a90a-b760937c4beb",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "6e3b4f99-b635-47c0-a90a-b760937c4beb",
+              "revision_number": 1,
+              "title": "Pack several sizes from one batch",
+              "summary": "Use Package later to make one bulk batch and record each finished size after release.",
+              "body_markdown": "1. In **Plan production**, choose a product whose published formula has at least one size. Select **Package later**, enter the batch size, and review the ingredient requirements. Link each packaging line to a stock item before planning.\n2. Prepare stock, assign the batch number, and start production. Record the ingredients you used. When you complete the run, enter **Bulk produced (g)**.\n3. Release the bulk lot when the batch tasks and readiness checks are complete.\n4. In **Pack this batch**, select a size, enter **Units packed** and **Bulk used (g)**, then select **Record packing**. Repeat for each size.\n\nPacking draws from released, available packaging stock. If stock is short, check the listed components and any reservations on those lots. Unused bulk stays on the batch for the next packing. A size removed from the current formula stays selectable for a batch made from a version that included it, with a **Retired** label.\n\n### Issue or undo a packed lot\n\nSelect the packed lot in **Output lot** to record a shipment, sample, write-off, or internal use. To correct a packing before any of its units have been used, select **Undo packing**. The bulk and packaging go back to their original lots.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-11-17T14:06:13+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "f6c9c3c4-711f-43fa-a540-f1cdaa5094bf",
+      "key": "production.numbering",
+      "domain": "production_runs",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "a8b14713-58c1-4b68-a178-15f71edfb721",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "a8b14713-58c1-4b68-a178-15f71edfb721",
+              "revision_number": 1,
+              "title": "Set batch numbers and packed lot codes",
+              "summary": "Set permanent batch numbers and choose how the app suggests codes for packed lots.",
+              "body_markdown": "Open **Production Bench → Settings → Numbering**. Workspace owners and admins can set the prefix, suffix, padding, and **Next number** for permanent batch numbers. Check the preview before saving.\n\nUnder **Packed lot codes**, choose what to add to the batch number.\n\n- **Letter** gives codes such as **B-00001-A** and **B-00001-B**.\n- **Content** uses the declared amount and unit, such as **B-00001-100ML**.\n- **SKU** uses the size’s SKU, such as **B-00001-SOAP100**.\n\nA missing content value or SKU falls back to a letter. A repeat content or SKU code gets a number such as **-2**.\n\n### Enter a different lot code\n\nIn **Pack this batch**, keep the suggested **Lot code** or enter up to 64 letters, numbers, hyphens, underscores, dots, or slashes. The workspace checks codes without regard to case. If you enter the next production batch number, the form offers an alternative. The saved code stays with the packed lot.\n\n### Resolve an assignment conflict\n\nIf a stock lot already uses a batch number you are about to assign, the error identifies the lot and suggests a value for **Next number**. An owner or admin can enter that value in **Settings → Numbering** and retry.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-11-17T14:06:13+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
+    },
+    {
+      "public_id": "dc0eea38-d329-4aea-877f-393bdec8a304",
+      "key": "production.history",
+      "domain": "production_runs",
+      "archived_at": null,
+      "locales": [
+        {
+          "locale": "en",
+          "latest_revision_uuid": "0bfdca0d-8cab-419c-824a-6cf527f8b844",
+          "published_revision_uuid": null,
+          "lock_version": 1,
+          "published_by_uuid": null,
+          "published_at": null,
+          "revisions": [
+            {
+              "public_id": "0bfdca0d-8cab-419c-824a-6cf527f8b844",
+              "revision_number": 1,
+              "title": "See what you produced between two dates",
+              "summary": "Use Production history to find completed output and total actual units by size.",
+              "body_markdown": "1. In **Production Runs**, set **Filter by date** to **Manufacture date**. You can also open **Production history** from **Finished products**.\n2. Set **From** and **To** to the manufacture dates you want to include.\n3. Check **Units produced by size** for totals. Open a batch or packed lot code to see the run behind it.\n\nSelecting a size in **Finished products** opens history for that size. Choose **Show all sizes** to keep the date range and see the other sizes. Older runs without a recorded size appear as **Size not recorded**.\n\nEach packing contributes its actual units under its size, using the batch’s manufacture date. Undoing a packing removes its units from the totals. Find current balances, after shipments and samples, in **Finished products**.",
+              "source_english_revision_uuid": null,
+              "origin": "import",
+              "ai_model": null,
+              "prompt_version": null,
+              "created_by_uuid": null,
+              "created_at": "2026-11-17T14:06:13+00:00"
+            }
+          ],
+          "translation_requests": []
+        }
+      ]
     }
   ],
-  "digest": "e4713f90dae61af6ea20d35aadb61838eb1396a8adbbe9921670fa13002bc6d2"
+  "digest": "7ed582461beb0fcbb4d081ec901ae13407cf8252bb263dc1a33081ef5049bf31"
 }

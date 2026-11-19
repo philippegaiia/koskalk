@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
@@ -100,6 +101,11 @@ class RecipeVersion extends Model
     public function costings(): HasMany
     {
         return $this->hasMany(RecipeVersionCosting::class);
+    }
+
+    public function productSizes(): BelongsToMany
+    {
+        return $this->belongsToMany(ProductSize::class, 'recipe_version_product_sizes');
     }
 
     public function packagingItems(): HasMany

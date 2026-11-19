@@ -35,17 +35,37 @@
  </div>
  </div>
 
- <label class="sk-inset p-4">
+ <div class="sk-inset p-4">
+ <template x-if="productSizes.length > 1">
+ <label class="mb-3 block">
+ <span class="sk-eyebrow">{{ __('workbench.costing.packaging.size_group') }}</span>
+ <select
+     data-costing-size-picker
+     :value="costingProductSize?.key"
+     @change="selectCostingProductSize($event.target.value)"
+     class="mt-2 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)]"
+ >
+     <template x-for="(size, index) in productSizes" :key="size.key">
+         <option :value="size.key" :selected="costingProductSize?.key === size.key" x-text="productSizeLabel(size, index)"></option>
+     </template>
+ </select>
+ </label>
+ </template>
+ <label class="block">
  <span class="sk-eyebrow">{{ __('workbench.costing.settings.finished_units') }}</span>
+ <span x-show="productSizes.length === 1" class="mt-1 block text-xs text-[var(--color-ink-soft)]" x-text="productSizeLabel(costingProductSize)"></span>
  <input
- x-model="costingUnitsProduced"
- @blur="normalizeDecimalBlur($event); scheduleCostingSave()"
+ :value="costingSelectedUnitsProduced"
+ @change="updateCostingUnitsProduced($event.target.value)"
+ :disabled="!canEditCostingSizeYield"
  type="text"
  inputmode="numeric"
  class="numeric mt-3 w-full rounded-lg bg-[var(--color-field)] px-3 py-2.5 text-sm text-[var(--color-ink-strong)] transition"
  placeholder="{{ __('workbench.costing.settings.finished_units_placeholder') }}"
  />
+ <span x-show="!canEditCostingSizeYield" class="mt-2 block text-xs text-[var(--color-ink-soft)]">{{ __('workbench.costing.messages.save_product') }}</span>
  </label>
+ </div>
 
  <div class="sk-inset p-4">
  <span class="sk-eyebrow">{{ __('workbench.costing.settings.currency') }}</span>
@@ -133,12 +153,14 @@
  </template>
  </section>
 
- <section class="overflow-hidden sk-card">
+ <section class="overflow-hidden sk-card" aria-labelledby="costing-packaging-heading">
  <div class="border-b border-[var(--color-line)] px-5 py-4">
  <div>
  <p class="sk-eyebrow">{{ __('workbench.costing.packaging.title') }}</p>
- <h3 class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.costing.packaging.title') }}</h3>
+ <h3 id="costing-packaging-heading" class="mt-1 text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.costing.packaging.title') }}</h3>
  </div>
+
+ <p x-show="costingProductSize" class="mt-3 text-sm text-[var(--color-ink-soft)]" x-text="t('costing.packaging.size', { size: productSizeLabel(costingProductSize) })"></p>
  </div>
 
  <template x-if="displayedPackagingCostRows.length === 0">

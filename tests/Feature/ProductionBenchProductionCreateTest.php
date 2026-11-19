@@ -20,6 +20,7 @@ use App\Models\ProductionRunNumberSetting;
 use App\Models\ProductionTaskSet;
 use App\Models\ProductionTaskSetItem;
 use App\Models\ProductionTaskType;
+use App\Models\ProductSize;
 use App\Models\Recipe;
 use App\Models\RecipeItem;
 use App\Models\RecipePhase;
@@ -38,6 +39,32 @@ use Illuminate\Support\Facades\DB;
 use Livewire\Livewire;
 
 uses(RefreshDatabase::class);
+
+it('makes a size choice available when creating a run even for unpackaged sizes', function (): void {
+    $fixture = productionCreateFixture();
+    $large = ProductSize::factory()->for($fixture['recipe'])->create(['name' => 'Large bar']);
+    $small = ProductSize::factory()->for($fixture['recipe'])->create(['name' => 'Small bar']);
+    $fixture['version']->productSizes()->attach([$large->id, $small->id]);
+    $foreign = ProductSize::factory()->create();
+
+    Livewire::actingAs($fixture['owner'])->test(ProductionCreate::class)
+        ->set('recipeId', (string) $fixture['recipe']->id)
+        ->assertSee('Large bar')
+        ->assertSee('Small bar')
+        ->set('basisInputValue', '5')
+        ->set('expectedUnits', '30')
+        ->set('productSizeKey', $foreign->public_id)
+        ->call('saveDraft')
+        ->assertHasErrors('packaging')
+        ->set('productSizeKey', $small->public_id)
+        ->call('saveDraft')
+        ->assertHasNoErrors();
+
+    $run = ProductionRun::query()->where('recipe_id', $fixture['recipe']->id)->sole();
+    expect($run->product_size_id)->toBe($small->id)
+        ->and($run->product_size_label_snapshot)->toBe('Small bar')
+        ->and($run->expected_units)->toBe(30);
+});
 
 it('captures product organization when creating production and keeps the historical labels', function (): void {
     $fixture = productionCreateFixture();
@@ -187,6 +214,7 @@ it('loads the only applicable batch size when the product has no explicit defaul
 
 it('previews scaled requirements, stock positions, shortages, and task dates without writing a production', function (): void {
     $fixture = productionCreateFixture();
+    $fixture['owner']->update(['number_locale' => 'fr_FR']);
     WorkspaceIngredientCode::factory()->create([
         'workspace_id' => $fixture['workspace']->id,
         'ingredient_id' => $fixture['ingredient']->id,
@@ -203,6 +231,7 @@ it('previews scaled requirements, stock positions, shortages, and task dates wit
     $page->assertSee('Olive oil')
         ->assertSee('RM-OLIVE')
         ->assertSee('Soap box')
+        ->assertSee('100,00%')
         ->assertSee('6.00 kg')
         ->assertSee('5.00 kg')
         ->assertSee('1.00 kg')

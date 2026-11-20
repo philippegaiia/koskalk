@@ -329,6 +329,8 @@ it('stays saved after one save when the page re-renders with the server formula 
 const workbench = bench(liquidFamily);
 workbench.oilWeight = 10;
 workbench.oilUnit = 'kg';
+workbench.phaseItems.saponified_oils = [{ id: 'olive', ingredient_id: 1, percentage: 100, weight: 10 }];
+globalThis.window = { dispatchEvent: () => true };
 workbench.phaseItems.neutralization = [{ id: 'acid', ingredient_id: 7, percentage: 12, weight: 1.2 }];
 workbench.phaseItems.fragrance = [{ id: 'lavender', ingredient_id: 8, percentage: 6.1207, weight: 0.61207, final_percentage: 0.9138 }];
 workbench.flushCostingSave = async () => true;

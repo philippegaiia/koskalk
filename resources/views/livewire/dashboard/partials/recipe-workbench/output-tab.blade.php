@@ -245,9 +245,9 @@
  @elseif (! $isPublicCalculator)
         <x-workflow-action-bar max-width="max-w-app" data-output-save-bar>
  <x-slot:leading>
- <p x-show="saveMessage" class="text-sm text-[var(--color-ink-soft)]" role="status" x-text="saveMessage"></p>
+ <p role="status" class="text-sm font-medium" :class="saveStatus === 'error' ? 'text-[var(--color-danger-strong)]' : 'text-[var(--color-ink-soft)]'" x-text="draftDiagnostic.value"></p>
  </x-slot:leading>
- <button type="button" @click="publish()" :disabled="isFormulaLocked || !canSaveRecipe || isSaving" class="sk-btn sk-btn-primary">
+ <button type="button" @click="publish()" :disabled="!canPublishChanges" class="sk-btn sk-btn-primary disabled:bg-[var(--color-line)] disabled:text-[var(--color-ink-soft)]">
  <span x-text="isFormulaLocked ? t('header.locked') : (isSaving ? t('header.saving') : t('header.save'))"></span>
  </button>
  </x-workflow-action-bar>

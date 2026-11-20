@@ -641,3 +641,93 @@ JS;
 
     expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
 });
+
+it('enables formula saving only when needed and confirms a successful publish', function (): void {
+    $script = <<<'JS'
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { draftSignature } from './resources/js/recipe-workbench/draft-signature.js';
+
+const serializeDraft = workbench => ({ product_sizes: [{ name: workbench.sizeName }] });
+const bridge = fs.readFileSync('resources/js/recipe-workbench/bridge.js', 'utf8').replace(/^import[^;]+;\n/gm, '').replace(/export (async )?function /g, '$1function ');
+eval(`${bridge}\nglobalThis.persistWorkbench = persistWorkbench;`);
+const persistWorkbench = globalThis.persistWorkbench;
+const source = fs.readFileSync('resources/js/recipe-workbench/component.js', 'utf8').replace(/^import[\s\S]*?;\n/gm, '').replaceAll('export function', 'function');
+eval(`${source}\nglobalThis.createPersistenceSection = createPersistenceSection;`);
+
+const notifications = [];
+globalThis.window = new EventTarget();
+window.addEventListener('app-notification', event => notifications.push(event.detail));
+
+let savingResponse;
+const workbench = {
+    recipeId: 1, sizeName: '100 g', canWriteRecipe: true, canSaveRecipe: true,
+    hasSavedFormula: true, savedRecipeUrl: '/saved-formula', costingSaveSeq: 0,
+    isSaving: false, isFormulaLocked: false,
+    dirtyStateRegistry: { set() {} },
+    $wire: { publish() { return new Promise(resolve => { savingResponse = resolve; }); } },
+};
+
+Object.defineProperties(workbench, Object.getOwnPropertyDescriptors(globalThis.createPersistenceSection()));
+workbench.serializeDraft = () => serializeDraft(workbench);
+workbench.refreshDirtyBaseline();
+
+assert.equal(workbench.canPublishChanges, false);
+workbench.hasSavedFormula = false;
+assert.equal(workbench.canPublishChanges, true, 'An unpublished draft can be saved');
+workbench.canWriteRecipe = false;
+assert.equal(workbench.canPublishChanges, false);
+workbench.canWriteRecipe = true;
+workbench.canSaveRecipe = false;
+assert.equal(workbench.canPublishChanges, false);
+workbench.canSaveRecipe = true;
+workbench.hasSavedFormula = true;
+
+workbench.sizeName = '250 g';
+assert.equal(workbench.canPublishChanges, true);
+workbench.sizeName = '100 g';
+assert.equal(workbench.canPublishChanges, false, 'Undoing all edits disables Save');
+
+workbench.sizeName = '250 g';
+let saving = persistWorkbench(workbench, 'publish');
+assert.equal(workbench.canPublishChanges, false);
+savingResponse({ ok: false, message: 'Validation failed' });
+await saving;
+assert.equal(workbench.canPublishChanges, true);
+assert.deepEqual(notifications, []);
+
+saving = persistWorkbench(workbench, 'publish');
+workbench.sizeName = '500 g';
+savingResponse({ ok: true, saved_formula_url: '/saved-formula', message: 'Toutes les modifications sont enregistrées' });
+await saving;
+assert.equal(workbench.canPublishChanges, true, 'Newer edits still need saving');
+assert.deepEqual(notifications, []);
+
+workbench.hasSavedFormula = false;
+workbench.savedRecipeUrl = null;
+saving = persistWorkbench(workbench, 'publish');
+savingResponse({ ok: true, saved_formula_url: '/saved-formula', message: 'Toutes les modifications sont enregistrées' });
+await saving;
+assert.equal(workbench.hasSavedFormula, true);
+assert.equal(workbench.savedRecipeUrl, '/saved-formula');
+assert.equal(workbench.canPublishChanges, false);
+assert.deepEqual(notifications, [{ type: 'success', message: 'Toutes les modifications sont enregistrées' }]);
+
+notifications.length = 0;
+globalThis.document = new EventTarget();
+window.Livewire = { navigate(target) { assert.equal(target, '/edit-formula#packaging'); } };
+workbench.recipeId = null;
+workbench.hasSavedFormula = false;
+workbench.activeWorkbenchTab = 'packaging';
+saving = persistWorkbench(workbench, 'publish');
+savingResponse({ ok: true, redirect: '/edit-formula', message: 'Current changes are saved.' });
+await saving;
+assert.deepEqual(notifications, [], 'The first save waits for the new workbench before showing the notification');
+document.dispatchEvent(new Event('livewire:navigated'));
+document.dispatchEvent(new Event('livewire:navigated'));
+assert.deepEqual(notifications, [{ type: 'success', message: 'Current changes are saved.' }]);
+JS;
+    $process = new Process(['node', '--input-type=module', '--eval', $script], base_path());
+    $process->run();
+    expect($process->isSuccessful())->toBeTrue($process->getErrorOutput().$process->getOutput());
+});

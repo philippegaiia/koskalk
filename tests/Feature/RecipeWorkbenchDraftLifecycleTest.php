@@ -107,6 +107,8 @@ it('copies the visible instructions to the published snapshot and new current ve
     $remountedComponent->mount($recipe->fresh());
 
     expect($result['ok'])->toBeTrue()
+        ->and($result['message'])->toBe(__('workbench.status.saved_detail'))
+        ->and($result['saved_formula_url'])->toBe(route('recipes.saved', $recipe))
         ->and($versions)->toHaveCount(2)
         ->and($versions->first()->is_current)->toBeFalse()
         ->and($versions->first()->manufacturing_instructions)->toBe('<p>Visible publish procedure.</p>')

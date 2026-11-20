@@ -125,6 +125,11 @@ export async function persistWorkbench(workbench, method) {
             workbench.applySnapshot(response.snapshot);
         }
 
+        if (response.saved_formula_url) {
+            workbench.hasSavedFormula = true;
+            workbench.savedRecipeUrl = response.saved_formula_url;
+        }
+
         if (changedDuringSave) {
             workbench.dirtyBaselineSignature = submittedSignature;
         } else {
@@ -134,6 +139,13 @@ export async function persistWorkbench(workbench, method) {
         }
         workbench.recordEditingMutation?.(response);
 
+        const savedMessage = workbench.saveMessage;
+        const notifySaved = method === 'publish' && !changedDuringSave
+            ? () => window.dispatchEvent(new CustomEvent('app-notification', {
+                detail: { type: 'success', message: savedMessage },
+            }))
+            : null;
+
         if (response.redirect && !changedDuringSave && opensNewRecipe) {
             const hash = workbench.activeWorkbenchTab ? `#${workbench.activeWorkbenchTab}` : '';
             const target = response.redirect + hash;
@@ -141,12 +153,17 @@ export async function persistWorkbench(workbench, method) {
             workbench.isSaving = false;
 
             if (window.Livewire?.navigate) {
+                if (notifySaved) {
+                    document.addEventListener('livewire:navigated', notifySaved, { once: true });
+                }
                 window.Livewire.navigate(target);
 
                 return response;
             }
 
             window.location.assign(target);
+        } else {
+            notifySaved?.();
         }
 
         return response;

@@ -372,14 +372,14 @@ export function createFormulaSection() {
         },
 
         get draftDiagnostic() {
-            const hasUnsavedChanges = this.hasUnsavedWorkbenchChanges();
+            const hasUnsavedChanges = this.hasFormulaChangesToSave;
             const hasSaveError = this.saveStatus === 'error';
 
             return {
                 id: 'formula-state',
                 label: this.t('status.changes'),
                 value: this.isSaving ? this.t('status.saving') : (hasSaveError ? this.t('status.save_failed') : (hasUnsavedChanges ? this.t('status.unsaved') : this.t('status.saved'))),
-                detail: this.saveMessage || (this.isSaving ? this.t('status.saving_detail') : (hasUnsavedChanges ? this.t('status.save_changes') : this.t('status.saved_detail'))),
+                detail: hasSaveError ? this.saveMessage : (this.isSaving ? this.t('status.saving_detail') : (hasUnsavedChanges ? this.t('status.save_changes') : this.t('status.saved_detail'))),
                 tone: hasSaveError ? 'danger' : (this.isSaving ? 'neutral' : (hasUnsavedChanges ? 'warning' : 'success')),
             };
         },

@@ -70,7 +70,7 @@ class="sk-btn bg-[var(--color-field-muted)] text-[var(--color-ink-soft)] hover:t
 <x-action-icon name="printer" />{{ __('formula_documents.actions.print_short') }}
 </button>
 @elseif (! $isPublicCalculator)
-<button type="button" @click="publish()" :disabled="isFormulaLocked || !canSaveRecipe || isSaving" :class="isFormulaLocked || !canSaveRecipe || isSaving ? 'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'sk-btn-primary'" class="sk-btn">
+<button type="button" @click="publish()" :disabled="!canPublishChanges" class="sk-btn sk-btn-primary disabled:bg-[var(--color-line)] disabled:text-[var(--color-ink-soft)]">
 <span x-text="isFormulaLocked ? t('header.locked') : (isSaving ? t('header.saving') : t('header.save'))"></span>
 </button>
 @endif

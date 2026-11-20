@@ -1922,6 +1922,14 @@ function createPersistenceSection() {
                 && this.currentDirtySignature() !== this.dirtyBaselineSignature;
         },
 
+        get hasFormulaChangesToSave() {
+            return !this.hasSavedFormula || this.hasUnsavedWorkbenchChanges();
+        },
+
+        get canPublishChanges() {
+            return this.canWriteRecipe && this.canSaveRecipe && !this.isSaving && this.hasFormulaChangesToSave;
+        },
+
         blocksNavigation() {
             return this.hasUnsavedWorkbenchChanges()
                 || this.isSaving
@@ -1983,6 +1991,10 @@ function createPersistenceSection() {
         },
 
         async publish() {
+            if (!this.canPublishChanges) {
+                return;
+            }
+
             await this.persist('publish');
         },
 

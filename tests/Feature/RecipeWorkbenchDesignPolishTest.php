@@ -902,7 +902,6 @@ it('uses shared primary button colors for bench saves and ingredient additions',
     $ingredientBrowser = file_get_contents(resource_path('views/livewire/dashboard/partials/recipe-workbench/ingredient-browser.blade.php'));
 
     expect($saveBar)
-        ->toContain("'cursor-not-allowed bg-[var(--color-line)] text-[var(--color-ink-soft)]' : 'sk-btn-primary'")
         ->not->toContain('bg-[var(--color-accent)]')
         ->not->toContain('hover:bg-[var(--color-accent-hover)]');
 
@@ -1421,7 +1420,6 @@ it('uses the shared compact button sizing for workbench actions', function () {
         ->toContain('class="sk-btn shrink-0 bg-[var(--color-field-muted)]')
         ->and($bottomActionBar)
         ->toContain('class="sk-btn bg-[var(--color-field-muted)]')
-        ->toContain('class="sk-btn"')
         ->and($appStylesSource)
         ->toContain(".sk-btn,\n    .sk-action-link {")
         ->toContain('min-height: 2.5rem;')
@@ -1509,7 +1507,6 @@ it('keeps live formula diagnostics in a compact bottom save bar without SAP gap 
         ->toContain(":class=\"isFormulaDiagnosticsOpen ? 'grid-rows-[1fr]' : 'grid-rows-[0fr] invisible'\"")
         ->toContain(':aria-expanded="isFormulaDiagnosticsOpen.toString()"')
         ->toContain('publish()')
-        ->toContain('Save')
         ->not->toContain('requestOfficialRecipeSave()')
         ->not->toContain('Save draft')
         ->not->toContain('Save as reference')

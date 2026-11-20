@@ -508,10 +508,9 @@ class RecipeWorkbench extends Component implements HasActions, HasForms
 
         return [
             'ok' => true,
-            'message' => $wasUnsavedRecipe && $this->hasPendingRecipeContent()
-                ? 'Formula saved. Content and media were kept too.'
-                : 'Formula saved.',
-            'redirect' => route('recipes.edit', Recipe::withoutGlobalScopes()->findOrFail($recipeVersion->recipe_id)),
+            'message' => __('workbench.status.saved_detail'),
+            'redirect' => route('recipes.edit', $recipe),
+            'saved_formula_url' => route('recipes.saved', $recipe),
             'snapshot' => $snapshot,
         ];
     }

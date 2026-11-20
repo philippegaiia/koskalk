@@ -77,6 +77,55 @@ assert.equal(workbench.costingProductSize.key, large.key);
 JS);
 });
 
+it('asks before removing a size and only removes it once confirmed', function (): void {
+    runRecipeWorkbenchScenario(<<<'JS'
+const size = workbench.addProductSize();
+workbench.updateProductSizeName(size, 'Travel tin');
+workbench.addPackagingPlanRow({ id: 7, name: 'Tin' });
+const trigger = { focused: false, focus() { this.focused = true; } };
+workbench.$nextTick = (callback) => callback();
+
+assert.equal(workbench.requestProductSizeRemoval(size.key, trigger), true);
+assert.deepEqual(workbench.pendingProductSizeRemoval, { key: size.key, label: 'Travel tin', inUse: false, usageLines: [], packagingCount: 1 });
+assert.equal(workbench.productSizes.length, 1);
+
+workbench.cancelProductSizeRemoval();
+assert.equal(workbench.pendingProductSizeRemoval, null);
+assert.equal(trigger.focused, true);
+assert.equal(workbench.productSizes.length, 1);
+
+workbench.requestProductSizeRemoval(size.key);
+assert.equal(workbench.confirmProductSizeRemoval(), true);
+assert.deepEqual(workbench.productSizes, []);
+assert.deepEqual(workbench.packagingPlanRows, []);
+assert.equal(workbench.pendingProductSizeRemoval, null);
+JS);
+});
+
+it('offers to retire a size that saved records use, and lists what uses it', function (): void {
+    runRecipeWorkbenchScenario(<<<'JS'
+workbench.t = (key, replacements = {}) => `${key}:${replacements.count ?? ''}`;
+workbench.applyDraft({
+    productSizes: [
+        { key: 'used', name: '100 g bar', declared_content_value: 100, declared_content_unit: 'g', usage: { in_use: true, saved_versions: 2, production_runs: 0, batch_records: 1, stock_lots: 3 } },
+        { key: 'unused', name: '50 g bar', declared_content_value: 50, declared_content_unit: 'g', usage: { in_use: false, saved_versions: 0, production_runs: 0, batch_records: 0, stock_lots: 0 } },
+    ],
+    packagingItems: [],
+});
+
+assert.equal(workbench.productSizeIsInUse(workbench.productSizes[0]), true);
+assert.equal(workbench.productSizeIsInUse(workbench.productSizes[1]), false);
+workbench.requestProductSizeRemoval('used');
+assert.equal(workbench.pendingProductSizeRemoval.inUse, true);
+assert.deepEqual(workbench.pendingProductSizeRemoval.usageLines, [
+    'packaging.sizes.removal.usage.saved_versions:2',
+    'packaging.sizes.removal.usage.batch_records:1',
+    'packaging.sizes.removal.usage.stock_lots:3',
+]);
+assert.equal(workbench.serializeDraft().product_sizes[0].usage, undefined);
+JS);
+});
+
 it('saves sizes with the formula and shows a line without a known size under the first size', function (): void {
     runRecipeWorkbenchScenario(<<<'JS'
 workbench.applyDraft({

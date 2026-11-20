@@ -67,7 +67,25 @@ export function productSizesFromPayload(rows) {
             name: row.name ?? '',
             declared_content_value: declaredContentValue(row.declared_content_value),
             declared_content_unit: declaredContentUnits.includes(row.declared_content_unit) ? row.declared_content_unit : 'g',
+            usage: productSizeUsageFromPayload(row.usage),
         }));
+}
+
+const productSizeUsageCounts = ['saved_versions', 'production_runs', 'batch_records', 'stock_lots'];
+
+/**
+ * What keeps a saved size when the maker removes it. The server decides on
+ * save; this only tells the maker whether removing deletes or retires it.
+ */
+function productSizeUsageFromPayload(usage) {
+    if (usage === null || typeof usage !== 'object') {
+        return null;
+    }
+
+    return {
+        in_use: usage.in_use === true,
+        ...Object.fromEntries(productSizeUsageCounts.map((count) => [count, Math.max(0, Number.parseInt(usage[count], 10) || 0)])),
+    };
 }
 
 export function declaredContentValue(value) {

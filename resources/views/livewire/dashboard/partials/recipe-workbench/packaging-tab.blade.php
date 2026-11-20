@@ -58,11 +58,14 @@
  </div>
  <button
      type="button"
-     @click="removeProductSize(selectedProductSize.key)"
+     @click="requestProductSizeRemoval(selectedProductSize.key, $el)"
      :disabled="!canWriteRecipe"
-     :aria-label="t('packaging.sizes.remove_label', { size: productSizeLabel(selectedProductSize) })"
+     :aria-label="productSizeIsInUse(selectedProductSize)
+         ? t('packaging.sizes.retire_label', { size: productSizeLabel(selectedProductSize) })
+         : t('packaging.sizes.delete_label', { size: productSizeLabel(selectedProductSize) })"
      class="sk-btn sk-btn-outline text-[var(--color-danger-strong)]"
- >{{ __('workbench.packaging.sizes.remove') }}</button>
+     x-text="productSizeIsInUse(selectedProductSize) ? t('packaging.sizes.retire') : t('packaging.sizes.delete')"
+ >{{ __('workbench.packaging.sizes.delete') }}</button>
  </div>
 
  <div class="mt-4 grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)]">
@@ -192,6 +195,8 @@
  </template>
  </section>
  </template>
+
+    @include('livewire.dashboard.partials.recipe-workbench.product-size-removal-modal')
 
     <x-workflow-action-bar max-width="max-w-app" data-packaging-plan-save-bar>
  <button type="button" @click="publish()" :disabled="isFormulaLocked || !canSaveRecipe || isSaving" class="sk-btn sk-btn-primary">

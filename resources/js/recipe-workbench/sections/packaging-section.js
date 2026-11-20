@@ -108,6 +108,67 @@ export function createPackagingSection() {
             this.selectedProductSizeKey = retainedProductSizeKey(this.productSizes ?? [], sizeKey);
         },
 
+        /** Removing a size that saved records use retires it instead of deleting it. */
+        productSizeIsInUse(size) {
+            return size?.usage?.in_use === true;
+        },
+
+        /** The non-zero reasons a size is kept, as translated lines. */
+        productSizeUsageLines(size) {
+            const usage = size?.usage ?? {};
+
+            return ['saved_versions', 'production_runs', 'batch_records', 'stock_lots']
+                .filter((count) => (usage[count] ?? 0) > 0)
+                .map((count) => this.t(`packaging.sizes.removal.usage.${count}`, { count: usage[count] }));
+        },
+
+        requestProductSizeRemoval(sizeKey, trigger = null) {
+            const size = (this.productSizes ?? []).find((candidate) => candidate.key === sizeKey);
+
+            if (!size) {
+                return false;
+            }
+
+            this.pendingProductSizeRemoval = {
+                key: size.key,
+                label: this.productSizeLabel(size),
+                inUse: this.productSizeIsInUse(size),
+                usageLines: this.productSizeUsageLines(size),
+                packagingCount: this.packagingRowCountForSize(size.key),
+            };
+            this.pendingProductSizeRemovalTrigger = trigger;
+
+            return true;
+        },
+
+        cancelProductSizeRemoval() {
+            const trigger = this.pendingProductSizeRemovalTrigger;
+
+            this.pendingProductSizeRemoval = null;
+            this.pendingProductSizeRemovalTrigger = null;
+
+            if (typeof this.$nextTick === 'function') {
+                this.$nextTick(() => trigger?.focus?.());
+            }
+
+            return trigger;
+        },
+
+        confirmProductSizeRemoval() {
+            const sizeKey = this.pendingProductSizeRemoval?.key;
+
+            this.pendingProductSizeRemoval = null;
+            this.pendingProductSizeRemovalTrigger = null;
+
+            if (!sizeKey) {
+                return false;
+            }
+
+            this.removeProductSize(sizeKey);
+
+            return true;
+        },
+
         removeProductSize(sizeKey) {
             this.productSizes = (this.productSizes ?? []).filter((size) => size.key !== sizeKey);
             this.packagingPlanRows = (this.packagingPlanRows ?? []).filter((row) => row.product_size_key !== sizeKey);

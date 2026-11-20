@@ -32,6 +32,7 @@ class RecipeWorkbenchVersionPayloadMapper
         array $ingredientCatalogById = [],
     ): array {
         $productSizes = $this->productSizeResolver->forVersion($version)->keyBy('id');
+        $productSizeUsage = $this->productSizeResolver->usageForVersion($version, $productSizes->values());
         $phaseRows = collect($phaseBlueprints)
             ->keyBy('key')
             ->map(fn (array $phase): array => [$phase['key'] => []])
@@ -130,6 +131,7 @@ class RecipeWorkbenchVersionPayloadMapper
                     'name' => $size->name,
                     'declared_content_value' => $size->declared_content_value === null ? null : (float) $size->declared_content_value,
                     'declared_content_unit' => $size->declared_content_unit?->value,
+                    'usage' => $productSizeUsage[$size->id] ?? null,
                 ])
                 ->values()
                 ->all(),

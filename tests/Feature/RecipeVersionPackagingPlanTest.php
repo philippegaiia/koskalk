@@ -473,6 +473,39 @@ it('archives a removed size that saved history still uses and deletes one that n
         ->and(ProductSize::query()->where('public_id', $unpublished)->exists())->toBeFalse();
 });
 
+it('tells the workbench which sizes saved history or production still use', function () {
+    $user = User::factory()->create();
+    $this->actingAs($user);
+    $soapFamily = ProductFamily::factory()->create(['slug' => 'soap', 'name' => 'Soap']);
+    $produced = (string) str()->uuid();
+    $draftOnly = (string) str()->uuid();
+    $service = app(RecipeWorkbenchService::class);
+    $base = packagingPlanDraftPayload(packagingPlanIngredient(), 'Turmeric soap');
+    $published = $base + ['product_sizes' => [productSizeRow($produced, 'Produced')]];
+    $draft = $service->save($user, $soapFamily, $published);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($draft->recipe_id);
+    $service->publish($user, $soapFamily, $published, $recipe);
+    $service->save($user, $soapFamily, $base + [
+        'product_sizes' => [productSizeRow($produced, 'Produced'), productSizeRow($draftOnly, 'Draft only')],
+    ], $recipe);
+    ProductionRun::factory()->for($recipe)->create([
+        'workspace_id' => $recipe->workspace_id,
+        'recipe_version_id' => $draft->id,
+        'product_size_id' => ProductSize::query()->where('public_id', $produced)->value('id'),
+        'production_output_type' => ProductionOutputType::FinishedProduct,
+        'status' => ProductionRunStatus::Scheduled,
+    ]);
+
+    $usage = collect($service->currentVersionPayload($recipe)['productSizes'])->pluck('usage', 'key');
+
+    expect($usage[$produced]['in_use'])->toBeTrue()
+        ->and($usage[$produced]['saved_versions'])->toBeGreaterThan(0)
+        ->and($usage[$produced]['production_runs'])->toBe(1)
+        ->and($usage[$draftOnly])->toBe([
+            'in_use' => false, 'saved_versions' => 0, 'production_runs' => 0, 'batch_records' => 0, 'stock_lots' => 0,
+        ]);
+});
+
 it('brings an archived size back when restoring saved history, without removing sizes added since', function () {
     $user = User::factory()->create();
     $this->actingAs($user);

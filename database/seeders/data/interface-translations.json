@@ -51672,6 +51672,30 @@
     },
     {
       "group": "workbench",
+      "key": "packaging.sizes.delete",
+      "text": {
+        "de": "Größe löschen",
+        "es": "Eliminar formato",
+        "fr": "Supprimer le format",
+        "it": "Elimina formato",
+        "nl": "Formaat verwijderen",
+        "pt_BR": "Excluir tamanho"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.delete_label",
+      "text": {
+        "de": "Größe :size und ihre Verpackung löschen",
+        "es": "Eliminar el formato :size y su envase",
+        "fr": "Supprimer le format :size et son conditionnement",
+        "it": "Elimina il formato :size e il suo confezionamento",
+        "nl": "Formaat :size en de verpakking ervan verwijderen",
+        "pt_BR": "Excluir o tamanho :size e sua embalagem"
+      }
+    },
+    {
+      "group": "workbench",
       "key": "packaging.sizes.details",
       "text": {
         "de": "Größendetails",
@@ -51804,26 +51828,170 @@
     },
     {
       "group": "workbench",
-      "key": "packaging.sizes.remove",
+      "key": "packaging.sizes.removal.cancel",
       "text": {
-        "de": "Größe entfernen",
-        "es": "Eliminar formato",
-        "fr": "Supprimer le format",
-        "it": "Rimuovi formato",
-        "nl": "Formaat verwijderen",
-        "pt_BR": "Remover tamanho"
+        "de": "Abbrechen",
+        "es": "Cancelar",
+        "fr": "Annuler",
+        "it": "Annulla",
+        "nl": "Annuleren",
+        "pt_BR": "Cancelar"
       }
     },
     {
       "group": "workbench",
-      "key": "packaging.sizes.remove_label",
+      "key": "packaging.sizes.removal.delete_description",
       "text": {
-        "de": "Größe :size und ihre Verpackung entfernen",
-        "es": "Eliminar el formato :size y su envase",
-        "fr": "Supprimer le format :size et son conditionnement",
-        "it": "Rimuovi il formato :size e il suo confezionamento",
-        "nl": "Formaat :size en de verpakking ervan verwijderen",
-        "pt_BR": "Remover o tamanho :size e sua embalagem"
+        "de": ":size wird sonst nirgends verwendet und wird beim Speichern gelöscht.",
+        "es": ":size no se usa en ningún otro sitio, así que al guardar se elimina.",
+        "fr": ":size n’est utilisé nulle part ailleurs : l’enregistrement le supprime.",
+        "it": ":size non è usato altrove, quindi il salvataggio lo elimina.",
+        "nl": ":size wordt nergens anders gebruikt, dus opslaan verwijdert het.",
+        "pt_BR": ":size não é usado em nenhum outro lugar, então salvar o exclui."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.removal.delete_title",
+      "text": {
+        "de": "Diese Größe löschen?",
+        "es": "¿Eliminar este formato?",
+        "fr": "Supprimer ce format ?",
+        "it": "Eliminare questo formato?",
+        "nl": "Dit formaat verwijderen?",
+        "pt_BR": "Excluir este tamanho?"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.removal.on_save",
+      "text": {
+        "de": "Erst beim Speichern der Formel ändert sich etwas.",
+        "es": "Nada cambia hasta que guardes la fórmula.",
+        "fr": "Rien ne change tant que vous n’enregistrez pas la formule.",
+        "it": "Nulla cambia finché non salvi la formula.",
+        "nl": "Er verandert niets totdat je de formule opslaat.",
+        "pt_BR": "Nada muda até você salvar a fórmula."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.removal.packaging",
+      "text": {
+        "de": "Ihre Verpackungszeilen werden aus dieser Formel entfernt: :count",
+        "es": "Sus líneas de envase se quitan de esta fórmula: :count",
+        "fr": "Ses lignes de conditionnement sont retirées de cette formule : :count",
+        "it": "Le sue righe di confezionamento vengono rimosse da questa formula: :count",
+        "nl": "De verpakkingsregels worden uit deze formule verwijderd: :count",
+        "pt_BR": "Suas linhas de embalagem são removidas desta fórmula: :count"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.removal.retire_description",
+      "text": {
+        "de": ":size wird bereits verwendet. Beim Speichern bleibt die Größe in diesen Einträgen erhalten, wird für diese Formel aber nicht mehr angeboten.",
+        "es": ":size ya está en uso. Al guardar se conserva en esos registros, pero deja de ofrecerse para esta fórmula.",
+        "fr": ":size est déjà utilisé. L’enregistrement le conserve dans ces enregistrements, mais ne le propose plus pour cette formule.",
+        "it": ":size è già in uso. Il salvataggio lo conserva in quei record, ma non lo propone più per questa formula.",
+        "nl": ":size is al in gebruik. Opslaan bewaart het in die records, maar biedt het niet meer aan voor deze formule.",
+        "pt_BR": ":size já está em uso. Salvar o mantém nesses registros, mas deixa de oferecê-lo para esta fórmula."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.removal.retire_title",
+      "text": {
+        "de": "Diese Größe zurückziehen?",
+        "es": "¿Retirar este formato?",
+        "fr": "Retirer ce format ?",
+        "it": "Ritirare questo formato?",
+        "nl": "Dit formaat uit gebruik nemen?",
+        "pt_BR": "Retirar este tamanho?"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.removal.usage.batch_records",
+      "text": {
+        "de": "Chargenprotokolle: :count",
+        "es": "Registros de lote: :count",
+        "fr": "Fiches de lot : :count",
+        "it": "Registri di lotto: :count",
+        "nl": "Batchregistraties: :count",
+        "pt_BR": "Registros de lote: :count"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.removal.usage.production_runs",
+      "text": {
+        "de": "Produktionsläufe: :count",
+        "es": "Producciones: :count",
+        "fr": "Productions : :count",
+        "it": "Produzioni: :count",
+        "nl": "Productieruns: :count",
+        "pt_BR": "Produções: :count"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.removal.usage.saved_versions",
+      "text": {
+        "de": "Frühere gespeicherte Versionen: :count",
+        "es": "Versiones guardadas anteriores: :count",
+        "fr": "Versions enregistrées antérieures : :count",
+        "it": "Versioni salvate precedenti: :count",
+        "nl": "Eerder opgeslagen versies: :count",
+        "pt_BR": "Versões salvas anteriores: :count"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.removal.usage.stock_lots",
+      "text": {
+        "de": "Lagerchargen: :count",
+        "es": "Lotes de stock: :count",
+        "fr": "Lots en stock : :count",
+        "it": "Lotti in magazzino: :count",
+        "nl": "Voorraadpartijen: :count",
+        "pt_BR": "Lotes em estoque: :count"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.removal.used_by",
+      "text": {
+        "de": "Verwendet von",
+        "es": "Usado en",
+        "fr": "Utilisé par",
+        "it": "Usato da",
+        "nl": "Gebruikt door",
+        "pt_BR": "Usado em"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.retire",
+      "text": {
+        "de": "Größe zurückziehen",
+        "es": "Retirar formato",
+        "fr": "Retirer le format",
+        "it": "Ritira formato",
+        "nl": "Formaat uit gebruik nemen",
+        "pt_BR": "Retirar tamanho"
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "packaging.sizes.retire_label",
+      "text": {
+        "de": "Größe :size zurückziehen und ihre Verpackung aus dieser Formel entfernen",
+        "es": "Retirar el formato :size y quitar su envase de esta fórmula",
+        "fr": "Retirer le format :size et retirer son conditionnement de cette formule",
+        "it": "Ritira il formato :size e rimuovi il suo confezionamento da questa formula",
+        "nl": "Formaat :size uit gebruik nemen en de verpakking ervan uit deze formule verwijderen",
+        "pt_BR": "Retirar o tamanho :size e remover sua embalagem desta fórmula"
       }
     },
     {

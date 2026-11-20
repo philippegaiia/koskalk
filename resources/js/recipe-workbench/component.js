@@ -284,6 +284,8 @@ function createRecipeWorkbenchState(payload, dirtyStateRegistry) {
         phaseOrder,
         pendingCosmeticPhaseRemoval: null,
         pendingCosmeticPhaseRemovalTrigger: null,
+        pendingProductSizeRemoval: null,
+        pendingProductSizeRemovalTrigger: null,
         saveStatus: null,
         saveMessage: '',
         saveErrorMessages: [],

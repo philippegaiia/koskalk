@@ -47,6 +47,28 @@ it('prices the calculated alkali as a lye_alkali costing row for naoh soap', fun
         ->and($payload['water_ingredient']['name'])->toBe('Water');
 });
 
+it('finds the canonical water by catalog key when its subcategory drifted', function () {
+    $user = User::factory()->create();
+    makeCostingAlkaliIngredient(IngredientSubcategory::SodiumHydroxide, 'Sodium hydroxide');
+    makeCostingAlkaliIngredient(IngredientSubcategory::PotassiumHydroxide, 'Potassium hydroxide');
+    $water = Ingredient::factory()->create([
+        'catalog_key' => 'CH2',
+        'category' => IngredientCategory::WaterSolventsCarriers,
+        'subcategory' => null,
+        'display_name' => 'Water',
+        'is_active' => true,
+    ]);
+    $oil = makeCostingAlkaliOilIngredient();
+    $service = app(RecipeWorkbenchService::class);
+    $version = $service->save($user, makeCostingAlkaliSoapFamily(), costingAlkaliDraftPayload($oil));
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id);
+
+    $payload = $service->costingPayload($recipe, $user);
+
+    expect($payload['water_ingredient']['ingredient_id'])->toBe($water->id)
+        ->and(collect($payload['item_prices'])->firstWhere('phase_key', 'implicit_water')['ingredient_id'])->toBe($water->id);
+});
+
 it('does not persist an implicit water row when added liquids cover the full dilution', function () {
     $user = User::factory()->create();
     makeCostingAlkaliIngredient(IngredientSubcategory::SodiumHydroxide, 'Soude caustique');

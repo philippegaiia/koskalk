@@ -31,6 +31,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'packaging_total',
     'total_cost',
     'cost_per_unit',
+    'has_unpriced_rows',
     'production_notes',
 ])]
 class ProductionBatch extends Model
@@ -101,6 +102,7 @@ class ProductionBatch extends Model
             'packaging_total' => 'decimal:4',
             'total_cost' => 'decimal:4',
             'cost_per_unit' => 'decimal:4',
+            'has_unpriced_rows' => 'boolean',
         ];
     }
 }

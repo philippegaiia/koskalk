@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\IngredientCategory;
-use App\Enums\IngredientSubcategory;
 use App\Models\Ingredient;
 use App\Models\Recipe;
 use App\Models\RecipePhase;
@@ -24,6 +22,7 @@ class RecipeVersionCostPreviewBuilder
         private readonly MassConverter $massConverter,
         private readonly RecipeWorkbenchService $recipeWorkbenchService,
         private readonly CanonicalSoapAlkaliResolver $alkaliResolver,
+        private readonly CanonicalSoapWaterResolver $waterResolver,
         private readonly LyeLiquidAllocationService $lyeLiquidAllocationService,
         private readonly LiquidSoapFormulaProcessor $liquidSoapFormulaProcessor,
         private readonly ProductSizeResolver $productSizeResolver,
@@ -69,15 +68,24 @@ class RecipeVersionCostPreviewBuilder
         $costing->setRelation('packagingItems', $costing->packagingItems
             ->filter(fn (RecipeVersionCostingPackagingItem $item): bool => $selection->includesPackaging($item->product_size_id))->values());
 
-        $snapshot = ($recipe->productFamily?->usesLiquidSoapPasteBench() ?? false)
+        $snapshot = $this->isSoapVersion($version)
             ? $this->recipeWorkbenchService->versionSnapshot($recipe, (int) $version->id)
             : null;
+
+        // A soap batch also uses the calculated alkali and the plain water; a
+        // batch records ingredients, so a row without a catalog material is left out.
+        $syntheticRows = $snapshot === null
+            ? []
+            : array_values(array_filter(
+                $this->savedSyntheticRows($version, $costing, $snapshot['calculation'] ?? null, $snapshot['draft'] ?? []),
+                fn (array $row): bool => (int) ($row['ingredient_id'] ?? 0) > 0,
+            ));
 
         $preview = $this->buildFromTransientRows(
             formula: $this->transientFormulaForVersion(
                 $version,
                 $recipe->productFamily?->calculation_basis === 'total_formula' ? 'cosmetic' : 'soap',
-                [],
+                $syntheticRows,
                 $snapshot,
             ),
             costing: $this->transientCostingForProjection(
@@ -594,7 +602,7 @@ class RecipeVersionCostPreviewBuilder
 
         if (bccomp($waterWeight, '0', 18) > 0) {
             $waterCostingItem = $costing->items->first(fn (RecipeVersionCostingItem $item): bool => $item->phase_key === 'implicit_water');
-            $waterIngredient = $waterCostingItem?->ingredient ?? $this->plainWaterIngredient();
+            $waterIngredient = $waterCostingItem?->ingredient ?? $this->waterResolver->resolve();
 
             if ($waterIngredient instanceof Ingredient) {
                 $rows[] = [
@@ -611,19 +619,6 @@ class RecipeVersionCostPreviewBuilder
         }
 
         return $rows;
-    }
-
-    private function plainWaterIngredient(): ?Ingredient
-    {
-        return Ingredient::query()
-            ->where('is_active', true)
-            ->where('category', IngredientCategory::WaterSolventsCarriers->value)
-            ->where('subcategory', IngredientSubcategory::Water->value)
-            ->whereNull('owner_type')
-            ->whereNull('owner_id')
-            ->whereNull('workspace_id')
-            ->orderBy('id')
-            ->first();
     }
 
     /** @param list<array<string, mixed>> $syntheticRows

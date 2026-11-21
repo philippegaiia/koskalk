@@ -2,13 +2,14 @@
 
 namespace App\Services;
 
-use App\Enums\IngredientCategory;
-use App\Enums\IngredientSubcategory;
 use App\Models\Ingredient;
 
 class RecipeCompositionIngredientIdentityResolver
 {
-    public function __construct(private readonly CanonicalSoapAlkaliResolver $alkaliResolver) {}
+    public function __construct(
+        private readonly CanonicalSoapAlkaliResolver $alkaliResolver,
+        private readonly CanonicalSoapWaterResolver $waterResolver,
+    ) {}
 
     /**
      * @param  array<string, mixed>  $snapshot
@@ -37,7 +38,7 @@ class RecipeCompositionIngredientIdentityResolver
         }
 
         if (! is_array($identities['water'] ?? null) || $identities['water'] === []) {
-            $water = $this->plainWaterIngredient();
+            $water = $this->waterResolver->resolve();
 
             if ($water instanceof Ingredient) {
                 $identities['water'] = $this->identity($water);
@@ -57,19 +58,5 @@ class RecipeCompositionIngredientIdentityResolver
             'name' => (string) ($ingredient->localizedDisplayName() ?? ''),
             'inci_name' => $ingredient->displayInciName(),
         ];
-    }
-
-    private function plainWaterIngredient(): ?Ingredient
-    {
-        return Ingredient::query()
-            ->withoutGlobalScopes()
-            ->where('is_active', true)
-            ->where('category', IngredientCategory::WaterSolventsCarriers->value)
-            ->where('subcategory', IngredientSubcategory::Water->value)
-            ->whereNull('owner_type')
-            ->whereNull('owner_id')
-            ->whereNull('workspace_id')
-            ->orderBy('id')
-            ->first();
     }
 }

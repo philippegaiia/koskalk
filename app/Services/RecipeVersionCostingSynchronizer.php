@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\IngredientCategory;
-use App\Enums\IngredientSubcategory;
 use App\Enums\MassUnit;
 use App\Enums\MaterialPriceSource;
 use App\Enums\PackagingCategory;
@@ -52,6 +50,7 @@ class RecipeVersionCostingSynchronizer
         private readonly PackagingItemAuthoringService $packagingItemAuthoringService,
         private readonly MassConverter $massConverter,
         private readonly CanonicalSoapAlkaliResolver $alkaliResolver,
+        private readonly CanonicalSoapWaterResolver $waterResolver,
         private readonly ProductSizeSynchronizer $productSizeSynchronizer,
         private readonly ProductSizeResolver $productSizeResolver,
     ) {}
@@ -747,7 +746,7 @@ class RecipeVersionCostingSynchronizer
             return null;
         }
 
-        $water = $this->soapWaterIngredient();
+        $water = $this->waterResolver->resolve();
 
         if (! $water instanceof Ingredient) {
             return null;
@@ -758,19 +757,6 @@ class RecipeVersionCostingSynchronizer
             'name' => $water->localizedDisplayName(),
             'default_price_per_kg' => $this->derivedIngredientDefaultPricePerKg($recipeVersion, $water),
         ];
-    }
-
-    private function soapWaterIngredient(): ?Ingredient
-    {
-        return Ingredient::query()
-            ->where('is_active', true)
-            ->where('category', IngredientCategory::WaterSolventsCarriers->value)
-            ->where('subcategory', IngredientSubcategory::Water->value)
-            ->whereNull('owner_type')
-            ->whereNull('owner_id')
-            ->whereNull('workspace_id')
-            ->orderBy('id')
-            ->first();
     }
 
     /**
@@ -797,7 +783,7 @@ class RecipeVersionCostingSynchronizer
             return collect();
         }
 
-        $water = $this->soapWaterIngredient();
+        $water = $this->waterResolver->resolve();
 
         if (! $water instanceof Ingredient) {
             return collect();

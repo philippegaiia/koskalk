@@ -1212,6 +1212,18 @@
     },
     {
       "group": "batch_log",
+      "key": "costs.incomplete",
+      "text": {
+        "de": "Kosten unvollständig",
+        "es": "Coste incompleto",
+        "fr": "Coût incomplet",
+        "it": "Costo incompleto",
+        "nl": "Kosten onvolledig",
+        "pt_BR": "Custo incompleto"
+      }
+    },
+    {
+      "group": "batch_log",
       "key": "costs.ingredient",
       "text": {
         "de": "Zutatenkosten",
@@ -1220,6 +1232,18 @@
         "it": "Costo degli ingredienti",
         "nl": "Ingrediëntkosten",
         "pt_BR": "Custo dos ingredientes"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "costs.not_priced",
+      "text": {
+        "de": "Ohne Preis",
+        "es": "Sin precio",
+        "fr": "Sans prix",
+        "it": "Senza prezzo",
+        "nl": "Geen prijs",
+        "pt_BR": "Sem preço"
       }
     },
     {
@@ -1548,14 +1572,14 @@
     },
     {
       "group": "batch_log",
-      "key": "record.unpriced",
+      "key": "record.unpriced_allowed",
       "text": {
-        "de": "Einige Zeilen haben keinen Preis. Ergänzen Sie die Preise, bevor Sie die Produktion erfassen.",
-        "es": "Algunas filas no tienen precio. Añade los precios antes de registrar la producción.",
-        "fr": "Certaines lignes n’ont pas de prix. Ajoutez les prix avant d’enregistrer la production.",
-        "it": "Alcune righe non hanno un prezzo. Aggiungi i prezzi prima di registrare la produzione.",
-        "nl": "Sommige regels hebben geen prijs. Voeg prijzen toe voordat je de productie vastlegt.",
-        "pt_BR": "Algumas linhas estão sem preço. Adicione os preços antes de registrar a produção."
+        "de": "Einige Zeilen haben keinen Preis. Sie können die Charge trotzdem erfassen; ihre Kosten werden als unvollständig markiert.",
+        "es": "Algunas filas no tienen precio. Puedes registrar el lote igualmente; su coste se marcará como incompleto.",
+        "fr": "Certaines lignes n’ont pas de prix. Vous pouvez quand même enregistrer le lot ; son coût sera indiqué comme incomplet.",
+        "it": "Alcune righe non hanno un prezzo. Puoi comunque registrare il lotto; il suo costo sarà segnato come incompleto.",
+        "nl": "Sommige regels hebben geen prijs. Je kunt de batch toch vastleggen; de kosten worden als onvolledig gemarkeerd.",
+        "pt_BR": "Algumas linhas estão sem preço. Você ainda pode registrar o lote; o custo será marcado como incompleto."
       }
     },
     {

@@ -218,6 +218,7 @@ it('builds numeric production cost preview rows from live costing data', functio
         'position' => 1,
         'price_per_kg' => 8.5,
     ]);
+    productionSnapshotPriceAlkali($costing);
 
     RecipeVersionCostingPackagingItem::query()->create([
         'recipe_version_costing_id' => $costing->id,
@@ -279,6 +280,7 @@ it('prices production ingredient quantities using the saved batch unit', functio
         'position' => 1,
         'price_per_kg' => 10,
     ]);
+    productionSnapshotPriceAlkali($costing);
 
     $batch = app(ProductionSnapshotService::class)->record($recipe, $version->fresh(), $user, [
         'production_batch_number' => 'B-2026-LB',
@@ -287,9 +289,11 @@ it('prices production ingredient quantities using the saved batch unit', functio
         'units_produced' => 4,
     ]);
 
+    $oilRow = $batch->ingredients->firstWhere('phase_key', 'saponified_oils');
+
     expect($batch->batch_basis_unit)->toBe('lb')
-        ->and($batch->ingredients->first()->quantity)->toBe('2.0000')
-        ->and($batch->ingredients->first()->unit)->toBe('lb')
+        ->and($oilRow->quantity)->toBe('2.0000')
+        ->and($oilRow->unit)->toBe('lb')
         ->and($batch->ingredient_total)->toBe('9.0718')
         ->and($batch->total_cost)->toBe('9.0718')
         ->and($batch->cost_per_unit)->toBe('2.2680');
@@ -468,7 +472,7 @@ it('costs duplicate planned packaging rows independently', function (): void {
 
 it('records a soap production snapshot and freezes current prices', function (): void {
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
-    $costingRows = productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    $costingRows = productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25, alkaliPrice: 4.0);
 
     $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
         'production_batch_number' => 'B-2026-010',
@@ -489,14 +493,23 @@ it('records a soap production snapshot and freezes current prices', function ():
         ->and($batch->batch_basis_value)->toBe('1500.000')
         ->and($batch->batch_basis_unit)->toBe('g')
         ->and($batch->units_produced)->toBe(12)
-        ->and($batch->ingredient_total)->toBe('12.7500')
         ->and($batch->packaging_total)->toBe('3.0000')
-        ->and($batch->total_cost)->toBe('15.7500')
-        ->and($batch->cost_per_unit)->toBe('1.3125')
-        ->and($batch->ingredients)->toHaveCount(1)
-        ->and($batch->ingredients->first()->ingredient_name)->toBe('Olive Oil')
-        ->and($batch->ingredients->first()->quantity)->toBe('1500.0000')
-        ->and($batch->ingredients->first()->ingredient_lot_number)->toBe('OO-LOT-10')
+        ->and($batch->has_unpriced_rows)->toBeFalse()
+        ->and($batch->ingredients)->toHaveCount(2);
+
+    $oilRow = $batch->ingredients->firstWhere('phase_key', 'saponified_oils');
+    $alkaliRow = $batch->ingredients->firstWhere('phase_key', 'lye_alkali');
+    $alkaliCost = round((float) $alkaliRow->quantity / 1000 * 4, 4);
+
+    expect($oilRow->ingredient_name)->toBe('Olive Oil')
+        ->and($oilRow->quantity)->toBe('1500.0000')
+        ->and($oilRow->ingredient_lot_number)->toBe('OO-LOT-10')
+        ->and($alkaliRow->ingredient_name)->toBe('Sodium hydroxide')
+        ->and((float) $alkaliRow->quantity)->toBeGreaterThan(0)
+        ->and($alkaliRow->price_per_kg)->toBe('4.0000')
+        ->and((float) $alkaliRow->line_cost)->toEqualWithDelta($alkaliCost, 0.0001)
+        ->and((float) $batch->ingredient_total)->toEqualWithDelta(12.75 + $alkaliCost, 0.0001)
+        ->and((float) $batch->total_cost)->toEqualWithDelta(15.75 + $alkaliCost, 0.0001)
         ->and($batch->packagingItems)->toHaveCount(1)
         ->and($batch->packagingItems->first()->name)->toBe('Soap box')
         ->and($batch->production_notes)->toBe('Reached medium trace.');
@@ -513,14 +526,53 @@ it('records a soap production snapshot and freezes current prices', function ():
 
     $recordedBatch = $batch->fresh(['ingredients', 'packagingItems']);
 
-    expect($recordedBatch->ingredient_total)->toBe('12.7500')
+    expect($recordedBatch->ingredient_total)->toBe($batch->ingredient_total)
         ->and($recordedBatch->packaging_total)->toBe('3.0000')
-        ->and($recordedBatch->total_cost)->toBe('15.7500')
-        ->and($recordedBatch->cost_per_unit)->toBe('1.3125')
-        ->and($recordedBatch->ingredients->first()->price_per_kg)->toBe('8.5000')
-        ->and($recordedBatch->ingredients->first()->line_cost)->toBe('12.7500')
+        ->and($recordedBatch->total_cost)->toBe($batch->total_cost)
+        ->and($recordedBatch->ingredients->firstWhere('phase_key', 'saponified_oils')->price_per_kg)->toBe('8.5000')
+        ->and($recordedBatch->ingredients->firstWhere('phase_key', 'saponified_oils')->line_cost)->toBe('12.7500')
         ->and($recordedBatch->packagingItems->first()->unit_cost)->toBe('0.2500')
         ->and($recordedBatch->packagingItems->first()->line_cost)->toBe('3.0000');
+});
+
+it('records the calculated alkali and plain water in a soap batch', function (): void {
+    $water = Ingredient::factory()->create([
+        'catalog_key' => 'CH2',
+        'category' => IngredientCategory::WaterSolventsCarriers,
+        'subcategory' => IngredientSubcategory::Water,
+        'display_name' => 'Water',
+        'is_active' => true,
+    ]);
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    $costingRows = productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
+    RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $costingRows['costing_item']->recipe_version_costing_id,
+        'ingredient_id' => $water->id,
+        'phase_key' => 'implicit_water',
+        'position' => 1,
+        'price_per_kg' => 0.5,
+    ]);
+
+    $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'manufacture_date' => '2026-06-10',
+        'batch_basis' => 1000,
+        'units_produced' => 10,
+        'ingredient_lot_numbers' => [
+            "{$water->id}:implicit_water:1" => 'RO-TANK-3',
+        ],
+    ]);
+
+    $waterRow = $batch->ingredients->firstWhere('phase_key', 'implicit_water');
+
+    // 38% water of 1000 g oils is the plain water the batch uses.
+    expect($batch->has_unpriced_rows)->toBeFalse()
+        ->and($batch->ingredients->pluck('phase_key')->sort()->values()->all())->toBe(['implicit_water', 'lye_alkali', 'saponified_oils'])
+        ->and($waterRow->ingredient_id)->toBe($water->id)
+        ->and($waterRow->quantity)->toBe('380.0000')
+        ->and($waterRow->price_per_kg)->toBe('0.5000')
+        ->and($waterRow->line_cost)->toBe('0.1900')
+        ->and($waterRow->ingredient_lot_number)->toBe('RO-TANK-3')
+        ->and($batch->ingredient_total)->toBe('8.6900');
 });
 
 it('recalculates production costs on the formula sheet before recording', function (): void {
@@ -734,8 +786,8 @@ it('keeps production snapshots frozen after live price propagation', function ()
         ->and($recordedBatch->packaging_total)->toBe('3.0000')
         ->and($recordedBatch->total_cost)->toBe('15.7500')
         ->and($recordedBatch->cost_per_unit)->toBe('1.3125')
-        ->and($recordedBatch->ingredients->first()->price_per_kg)->toBe('8.5000')
-        ->and($recordedBatch->ingredients->first()->line_cost)->toBe('12.7500')
+        ->and($recordedBatch->ingredients->firstWhere('phase_key', 'saponified_oils')->price_per_kg)->toBe('8.5000')
+        ->and($recordedBatch->ingredients->firstWhere('phase_key', 'saponified_oils')->line_cost)->toBe('12.7500')
         ->and($recordedBatch->packagingItems->first()->unit_cost)->toBe('0.2500')
         ->and($recordedBatch->packagingItems->first()->line_cost)->toBe('3.0000')
         ->and(RecipeVersionCostingItem::query()
@@ -772,7 +824,7 @@ it('stores a production snapshot from the saved formula route', function (): voi
 
     expect($batch->production_batch_number)->toBe('B-2026-020')
         ->and($batch->production_notes)->toBe('QC: pH checked.')
-        ->and($batch->ingredients->first()->ingredient_lot_number)->toBe('OO-LOT-20');
+        ->and($batch->ingredients->firstWhere('phase_key', 'saponified_oils')->ingredient_lot_number)->toBe('OO-LOT-20');
 });
 
 it('records the posted production version instead of a newer saved version', function (): void {
@@ -972,7 +1024,7 @@ it('allows the owner to delete a production snapshot and its rows', function ():
     ]);
 
     expect(ProductionBatch::query()->count())->toBe(1)
-        ->and($batch->ingredients()->count())->toBe(1)
+        ->and($batch->ingredients()->count())->toBe(2)
         ->and($batch->packagingItems()->count())->toBe(1);
 
     $this->actingAs($user)
@@ -1077,7 +1129,7 @@ it('edits production annotations without recalculating frozen totals', function 
         ->and($batch->batch_basis_value)->toBe('1000.000')
         ->and($batch->units_produced)->toBe(10)
         ->and($batch->total_cost)->toBe('11.0000')
-        ->and($batch->ingredients->first()->ingredient_lot_number)->toBe('OO-LOT-60');
+        ->and($batch->ingredients->firstWhere('phase_key', 'saponified_oils')->ingredient_lot_number)->toBe('OO-LOT-60');
 });
 
 it('prints production notes without helper text and leaves writing space', function (): void {
@@ -1124,7 +1176,7 @@ it('updates production lot numbers without clearing omitted annotations', functi
 
     expect($batch->production_batch_number)->toBe('B-2026-035')
         ->and($batch->production_notes)->toBe('Keep these notes.')
-        ->and($batch->ingredients->first()->ingredient_lot_number)->toBe('OO-LOT-35');
+        ->and($batch->ingredients->firstWhere('phase_key', 'saponified_oils')->ingredient_lot_number)->toBe('OO-LOT-35');
 });
 
 it('does not allow future workspace members to store production snapshots during the owner-only MVP', function (): void {
@@ -1171,7 +1223,7 @@ it('validates required production recording fields', function (): void {
         ->assertSessionHasErrors(['recipe_version_id', 'manufacture_date', 'batch_basis', 'units_produced']);
 });
 
-it('redirects back with validation errors when recording unpriced production rows', function (): void {
+it('records an unpriced production batch as a snapshot and shows its cost as incomplete', function (): void {
     [$user, $recipe, $version] = productionSnapshotSoapRecipe();
 
     $this->actingAs($user)
@@ -1183,10 +1235,24 @@ it('redirects back with validation errors when recording unpriced production row
             'batch_basis' => 1000,
             'units_produced' => 10,
         ])
-        ->assertRedirect(route('recipes.saved', $recipe))
-        ->assertSessionHasErrors(['costing']);
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
 
-    expect(ProductionBatch::query()->count())->toBe(0);
+    $batch = ProductionBatch::query()->sole();
+
+    expect($batch->has_unpriced_rows)->toBeTrue()
+        ->and($batch->ingredients->every(fn (ProductionBatchIngredient $row): bool => $row->price_per_kg === null))->toBeTrue();
+
+    $this->actingAs($user)
+        ->get(route('production-batches.show', $batch))
+        ->assertSuccessful()
+        ->assertSee('Cost incomplete')
+        ->assertSee('Not priced');
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', $recipe))
+        ->assertSuccessful()
+        ->assertSee('Cost incomplete');
 });
 
 it('records only the chosen size and freezes its label on a basic batch', function (): void {
@@ -1282,7 +1348,7 @@ it('records a cosmetic production snapshot using total batch quantity language',
         ->and($batch->cost_per_unit)->toBe('2.4000');
 });
 
-it('does not record production snapshots with unpriced packaging rows', function (): void {
+it('records production snapshots with unpriced packaging rows marked unpriced', function (): void {
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
 
     $version->packagingItems()->create([
@@ -1308,31 +1374,39 @@ it('does not record production snapshots with unpriced packaging rows', function
         'position' => 1,
         'price_per_kg' => 8.5,
     ]);
+    productionSnapshotPriceAlkali($costing);
 
-    expect(fn () => app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+    $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
         'manufacture_date' => '2026-06-10',
         'batch_basis' => 1000,
         'units_produced' => 10,
-    ]))->toThrow(ValidationException::class, 'Production snapshots require prices');
+    ]);
 
-    expect(ProductionBatch::query()->count())->toBe(0)
-        ->and(ProductionBatchIngredient::query()->count())->toBe(0)
-        ->and(ProductionBatchPackagingItem::query()->count())->toBe(0)
+    $wrap = $batch->packagingItems->sole();
+
+    expect($batch->has_unpriced_rows)->toBeTrue()
+        ->and($batch->ingredient_total)->toBe('8.5000')
+        ->and($batch->packaging_total)->toBe('0.0000')
+        ->and($batch->total_cost)->toBe('8.5000')
+        ->and($wrap->name)->toBe('Unpriced wrap')
+        ->and($wrap->is_unpriced)->toBeTrue()
+        ->and($wrap->line_cost)->toBe('0.0000')
         ->and(RecipeVersionCostingPackagingItem::query()->count())->toBe(0);
 });
 
-it('does not record production snapshots with unpriced ingredient rows', function (): void {
+it('records production snapshots with unpriced ingredient rows without creating costing', function (): void {
     [$user, $recipe, $version] = productionSnapshotSoapRecipe();
 
-    expect(fn () => app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+    $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
         'manufacture_date' => '2026-06-10',
         'batch_basis' => 1000,
         'units_produced' => 10,
-    ]))->toThrow(ValidationException::class, 'Production snapshots require prices');
+    ]);
 
-    expect(ProductionBatch::query()->count())->toBe(0)
-        ->and(ProductionBatchIngredient::query()->count())->toBe(0)
-        ->and(ProductionBatchPackagingItem::query()->count())->toBe(0)
+    expect($batch->has_unpriced_rows)->toBeTrue()
+        ->and($batch->ingredient_total)->toBe('0.0000')
+        ->and($batch->ingredients->pluck('phase_key')->sort()->values()->all())->toBe(['lye_alkali', 'saponified_oils'])
+        ->and($batch->ingredients->pluck('price_per_kg')->filter()->all())->toBe([])
         ->and(RecipeVersionCosting::query()
             ->where('recipe_version_id', $version->id)
             ->where('user_id', $user->id)
@@ -1470,6 +1544,7 @@ it('preserves deliberately saved zero cost unlinked packaging rows across repeat
         'position' => 1,
         'price_per_kg' => 8.5,
     ]);
+    productionSnapshotPriceAlkali($costing);
 
     RecipeVersionCostingPackagingItem::query()->create([
         'recipe_version_costing_id' => $costing->id,
@@ -1536,7 +1611,7 @@ it('does not create costing rows when viewing the saved formula route without ex
     $this->actingAs($user)
         ->get(route('recipes.saved', $recipe))
         ->assertSuccessful()
-        ->assertSee('Some rows are unpriced. Add prices before recording production.');
+        ->assertSee('Some rows have no price. You can still record this batch; its cost will be marked incomplete.');
 
     expect(RecipeVersionCosting::query()
         ->where('recipe_version_id', $version->id)
@@ -1648,8 +1723,20 @@ function productionSnapshotIngredient(): Ingredient
     return $ingredient;
 }
 
+/** Price the calculated NaOH row of a soap costing, so a test can focus on its own rows. */
+function productionSnapshotPriceAlkali(RecipeVersionCosting $costing, float $pricePerKg = 0.0): RecipeVersionCostingItem
+{
+    return RecipeVersionCostingItem::query()->create([
+        'recipe_version_costing_id' => $costing->id,
+        'ingredient_id' => Ingredient::query()->withoutGlobalScopes()->where('catalog_key', 'CH1')->value('id'),
+        'phase_key' => 'lye_alkali',
+        'position' => 1,
+        'price_per_kg' => $pricePerKg,
+    ]);
+}
+
 /** @return array{packaging_item: PackagingItem, costing_item: RecipeVersionCostingItem, packaging_costing_item: RecipeVersionCostingPackagingItem} */
-function productionSnapshotAttachCosting(User $user, RecipeVersion $version, Ingredient $ingredient, float $ingredientPrice, float $packagingPrice): array
+function productionSnapshotAttachCosting(User $user, RecipeVersion $version, Ingredient $ingredient, float $ingredientPrice, float $packagingPrice, float $alkaliPrice = 0.0): array
 {
     $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $user->id,
@@ -1686,6 +1773,7 @@ function productionSnapshotAttachCosting(User $user, RecipeVersion $version, Ing
         'position' => 1,
         'price_per_kg' => $ingredientPrice,
     ]);
+    productionSnapshotPriceAlkali($costing, $alkaliPrice);
 
     $packagingCostingItem = RecipeVersionCostingPackagingItem::query()->create([
         'recipe_version_costing_id' => $costing->id,
@@ -1810,6 +1898,7 @@ function productionSnapshotCosmeticDraftPayload(Ingredient $ingredient, ProductT
 it('projects current prices without ambient authentication or saving costing and freezes them only in the snapshot', function (): void {
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
     rememberIngredientPriceForWorkspace($user, $ingredient, '8.5');
+    rememberIngredientPriceForWorkspace($user, Ingredient::query()->withoutGlobalScopes()->where('catalog_key', 'CH1')->firstOrFail(), '0');
     $service = app(ProductionSnapshotService::class);
     $input = ['batch_basis' => 1000, 'units_produced' => 10, 'manufacture_date' => '2026-09-25'];
 
@@ -1828,7 +1917,7 @@ it('projects current prices without ambient authentication or saving costing and
     $batch = $service->record($recipe, $version, $user, $input);
 
     expect($batch->total_cost)->toBe('8.5000');
-    expect($batch->ingredients->first()->price_per_kg)->toBe('8.5000');
+    expect($batch->ingredients->firstWhere('phase_key', 'saponified_oils')->price_per_kg)->toBe('8.5000');
     expect(RecipeVersionCosting::query()->count())->toBe(0);
 });
 

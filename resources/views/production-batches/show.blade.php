@@ -72,6 +72,9 @@
             <article class="sk-card p-4">
                 <p class="sk-eyebrow">{{ __('batch_log.costs.per_unit') }}</p>
                 <p class="numeric mt-3 text-xl font-semibold text-[var(--color-ink-strong)]">{{ $formatMoney($productionBatch->cost_per_unit, $productionBatch->currency) }}</p>
+                @if ($productionBatch->has_unpriced_rows)
+                    <p class="mt-1 text-xs font-medium text-[var(--color-warning-strong)]">{{ __('batch_log.costs.incomplete') }}</p>
+                @endif
             </article>
         </section>
 
@@ -126,8 +129,13 @@
                                     <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]">{{ $ingredient->phase_name }}</td>
                                     <td class="px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]"><span class="inline-flex items-center gap-1.5">{{ $ingredient->ingredient_name }} <x-ingredient-source-marker :is-user-owned="$ingredient->ingredient?->owner_type !== null" /></span></td>
                                     <td class="numeric px-5 py-4 align-top text-[var(--color-ink-strong)]">{{ $formatQuantity($ingredient->quantity, $ingredient->unit) }}</td>
-                                    <td class="numeric px-5 py-4 align-top text-[var(--color-ink-soft)]">{{ $formatMoney($ingredient->price_per_kg, $productionBatch->currency) }}</td>
-                                    <td class="numeric px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]">{{ $formatMoney($ingredient->line_cost, $productionBatch->currency) }}</td>
+                                    @if ($ingredient->price_per_kg === null)
+                                        <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]">{{ __('batch_log.costs.not_priced') }}</td>
+                                        <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]">—</td>
+                                    @else
+                                        <td class="numeric px-5 py-4 align-top text-[var(--color-ink-soft)]">{{ $formatMoney($ingredient->price_per_kg, $productionBatch->currency) }}</td>
+                                        <td class="numeric px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]">{{ $formatMoney($ingredient->line_cost, $productionBatch->currency) }}</td>
+                                    @endif
                                     <td class="px-5 py-4 align-top">
                                         <input name="ingredient_lot_numbers[{{ $lotKey }}]" value="{{ old('ingredient_lot_numbers.'.$lotKey, $ingredient->ingredient_lot_number) }}" type="text" class="w-full min-w-40 rounded-lg border border-[var(--color-line)] bg-[var(--color-field)] px-3 py-2 text-sm text-[var(--color-ink-strong)] outline outline-1 outline-[var(--color-field-outline)] transition focus:outline-2 focus:outline-[var(--color-accent)]" />
                                         @error('ingredient_lot_numbers.'.$lotKey)
@@ -166,8 +174,13 @@
                                     <tr>
                                         <td class="px-5 py-4 font-medium text-[var(--color-ink-strong)]">{{ $packagingItem->name }}</td>
                                         <td class="numeric px-5 py-4 text-[var(--color-ink-soft)]">{{ $formatNumber($packagingItem->components_per_unit, 3) }}</td>
-                                        <td class="numeric px-5 py-4 text-[var(--color-ink-soft)]">{{ $formatNumber($packagingItem->unit_cost, 2) }}</td>
-                                        <td class="numeric px-5 py-4 font-medium text-[var(--color-ink-strong)]">{{ $formatNumber($packagingItem->line_cost, 2) }}</td>
+                                        @if ($packagingItem->is_unpriced)
+                                            <td class="px-5 py-4 text-[var(--color-ink-soft)]">{{ __('batch_log.costs.not_priced') }}</td>
+                                            <td class="px-5 py-4 text-[var(--color-ink-soft)]">—</td>
+                                        @else
+                                            <td class="numeric px-5 py-4 text-[var(--color-ink-soft)]">{{ $formatNumber($packagingItem->unit_cost, 2) }}</td>
+                                            <td class="numeric px-5 py-4 font-medium text-[var(--color-ink-strong)]">{{ $formatNumber($packagingItem->line_cost, 2) }}</td>
+                                        @endif
                                     </tr>
                                 @endforeach
                             </tbody>

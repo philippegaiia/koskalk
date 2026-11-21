@@ -17,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'unit_cost',
     'cost_per_finished_unit',
     'line_cost',
+    'is_unpriced',
 ])]
 class ProductionBatchPackagingItem extends Model
 {
@@ -41,6 +42,7 @@ class ProductionBatchPackagingItem extends Model
             'unit_cost' => 'decimal:4',
             'cost_per_finished_unit' => 'decimal:4',
             'line_cost' => 'decimal:4',
+            'is_unpriced' => 'boolean',
         ];
     }
 }

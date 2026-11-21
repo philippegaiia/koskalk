@@ -6,7 +6,7 @@ return [
         'title' => 'Record production',
         'intro' => 'Freeze the saved formula, current prices, packaging plan, and lot annotations into a production batch.',
         'size_help' => 'Apply the selected size to load its packaging for this batch.',
-        'unpriced' => 'Some rows are unpriced. Add prices before recording production.',
+        'unpriced_allowed' => 'Some rows have no price. You can still record this batch; its cost will be marked incomplete.',
     ],
     'fields' => [
         'batch_number' => 'Production batch number',
@@ -32,6 +32,8 @@ return [
         'per_unit' => 'Cost per unit',
         'set_units' => 'Set units produced',
         'not_set' => 'Not set',
+        'incomplete' => 'Cost incomplete',
+        'not_priced' => 'Not priced',
         'summary' => 'Cost summary',
     ],
     'actions' => [

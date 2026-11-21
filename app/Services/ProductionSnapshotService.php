@@ -9,7 +9,6 @@ use App\Models\User;
 use App\Models\Workspace;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Validation\ValidationException;
 
 class ProductionSnapshotService
 {
@@ -66,8 +65,9 @@ class ProductionSnapshotService
             $version = RecipeVersion::withoutGlobalScopes()->where('recipe_id', $recipe->id)->lockForUpdate()->findOrFail($version->id);
             abort_unless($version->workspace_id === $recipe->workspace_id, 403);
             app(EntitlementService::class)->assertCanCreateProductionBatch($user);
+            // A batch is a snapshot first: it records with unpriced rows and
+            // carries the marker so its partial cost never reads as complete.
             $preview = $this->preview($recipe, $version, $user, $input);
-            $this->ensurePreviewIsPriced($preview);
 
             $recipe->loadMissing('productFamily');
 
@@ -92,6 +92,7 @@ class ProductionSnapshotService
                 'packaging_total' => $preview['packaging_total'],
                 'total_cost' => $preview['total_cost'],
                 'cost_per_unit' => $preview['cost_per_unit'] ?? 0,
+                'has_unpriced_rows' => (bool) ($preview['has_unpriced_rows'] ?? false),
                 'production_notes' => $this->nullableString($input['production_notes'] ?? null),
             ]);
 
@@ -109,7 +110,7 @@ class ProductionSnapshotService
                     'quantity' => $row['quantity'],
                     'unit' => $row['unit'],
                     'price_per_kg' => $row['price_per_kg'],
-                    'line_cost' => $row['line_cost'],
+                    'line_cost' => $row['line_cost'] ?? 0,
                     'ingredient_lot_number' => is_array($ingredientLotNumbers)
                         ? $this->nullableString($ingredientLotNumbers[$lotKey] ?? null)
                         : null,
@@ -123,8 +124,9 @@ class ProductionSnapshotService
                     'name' => $row['name'],
                     'components_per_unit' => $row['components_per_unit'],
                     'unit_cost' => $row['unit_cost'] ?? 0,
-                    'cost_per_finished_unit' => $row['cost_per_finished_unit'],
-                    'line_cost' => $row['line_cost'],
+                    'cost_per_finished_unit' => $row['cost_per_finished_unit'] ?? 0,
+                    'line_cost' => $row['line_cost'] ?? 0,
+                    'is_unpriced' => (bool) ($row['is_unpriced'] ?? false),
                 ]);
             }
 
@@ -139,22 +141,6 @@ class ProductionSnapshotService
         return $recipe->productFamily?->calculation_basis === 'total_formula'
             ? 'Total batch quantity'
             : 'Oil quantity';
-    }
-
-    /**
-     * @param  array<string, mixed>  $preview
-     *
-     * @throws ValidationException
-     */
-    private function ensurePreviewIsPriced(array $preview): void
-    {
-        if (! (bool) ($preview['has_unpriced_rows'] ?? false)) {
-            return;
-        }
-
-        throw ValidationException::withMessages([
-            'costing' => 'Production snapshots require prices for every ingredient and packaging row before recording.',
-        ]);
     }
 
     private function positiveFloat(mixed $value): ?float

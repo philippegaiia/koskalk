@@ -72,7 +72,7 @@
                                 <td class="px-2 py-1.5 font-medium">{{ $ingredient->ingredient_name }}@if ($ingredient->ingredient?->owner_type !== null)<span class="ml-1 text-slate-500" aria-label="{{ __('workbench.output.common.user_owned') }}">•</span>@endif</td>
                                 <td class="numeric px-2 py-1.5">{{ $formatQuantity($ingredient->quantity, $ingredient->unit) }}</td>
                                 <td class="px-2 py-1.5">{{ $ingredient->ingredient_lot_number ?: '' }}&nbsp;</td>
-                                <td class="numeric px-2 py-1.5 font-medium">{{ $formatMoney($ingredient->line_cost, $productionBatch->currency) }}</td>
+                                <td class="numeric px-2 py-1.5 font-medium">{{ $ingredient->price_per_kg === null ? __('batch_log.costs.not_priced') : $formatMoney($ingredient->line_cost, $productionBatch->currency) }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -98,7 +98,7 @@
                                 <tr class="border border-slate-300">
                                     <td class="px-2 py-1.5 font-medium">{{ $packagingItem->name }}</td>
                                     <td class="numeric px-2 py-1.5">{{ $formatNumber($packagingItem->components_per_unit, 3) }}</td>
-                                    <td class="numeric px-2 py-1.5 font-medium">{{ $formatMoney($packagingItem->line_cost, $productionBatch->currency) }}</td>
+                                    <td class="numeric px-2 py-1.5 font-medium">{{ $packagingItem->is_unpriced ? __('batch_log.costs.not_priced') : $formatMoney($packagingItem->line_cost, $productionBatch->currency) }}</td>
                                 </tr>
                             @endforeach
                         </tbody>
@@ -112,6 +112,9 @@
 
             <section class="mt-4 break-inside-avoid">
                 <h2 class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">{{ __('batch_log.costs.summary') }}</h2>
+                @if ($productionBatch->has_unpriced_rows)
+                    <p class="mt-1 text-xs font-medium text-slate-700">{{ __('batch_log.costs.incomplete') }}</p>
+                @endif
                 <table class="mt-2 w-full border-collapse text-sm">
                     <tbody>
                         <tr class="border border-slate-300">

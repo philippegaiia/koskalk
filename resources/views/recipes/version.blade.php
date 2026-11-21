@@ -279,7 +279,7 @@
 
                     @if ($productionPreview['has_unpriced_rows'] ?? false)
                         <p class="mt-3 rounded-lg border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)]/35 px-3 py-2 text-sm font-medium text-[var(--color-warning-strong)]">
-                            {{ $productionPreview['calculation_error'] ?? __('batch_log.record.unpriced') }}
+                            {{ $productionPreview['calculation_error'] ?? __('batch_log.record.unpriced_allowed') }}
                         </p>
                     @endif
 
@@ -430,6 +430,9 @@
                                         </p>
                                         <p class="numeric mt-0.5 text-xs text-[var(--color-ink-soft)]">
                                             {{ __('batch_log.history.summary', ['quantity' => $formatNumber($productionBatch->batch_basis_value).' '.$productionBatch->batch_basis_unit, 'units' => $productionBatch->units_produced, 'cost' => $formatMoney($productionBatch->cost_per_unit, $productionBatch->currency)]) }}
+                                            @if ($productionBatch->has_unpriced_rows)
+                                                <span class="font-medium text-[var(--color-warning-strong)]"> · {{ __('batch_log.costs.incomplete') }}</span>
+                                            @endif
                                         </p>
                                     </div>
                                     <div class="flex gap-3 text-sm font-medium">

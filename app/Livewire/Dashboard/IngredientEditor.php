@@ -39,12 +39,14 @@ use App\Services\WorkspaceIngredientGuidanceService;
 use App\SoapSap;
 use App\Support\LocalizedDecimalInput;
 use App\Support\NumberLocale;
+use Closure;
 use Filament\Actions\Action;
 use Filament\Actions\Concerns\InteractsWithActions;
 use Filament\Actions\Contracts\HasActions;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -167,9 +169,6 @@ class IngredientEditor extends Component implements HasActions, HasForms
     /** @var array<int, string>|null */
     private ?array $ifraProductCategoryOptionsCache = null;
 
-    /** @var array<int> */
-    private array $inactiveIfraProductCategoryIdsCache = [];
-
     public function generateClassificationPrompt(IngredientClassificationPromptBuilder $builder): void
     {
         $name = trim((string) ($this->data['name'] ?? ''));
@@ -265,7 +264,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
             'html' => $guidance?->guidance_html,
         ]);
 
-        $this->form->fill($state);
+        $this->form->fill($this->withLocalizedIfraMaxima($state));
     }
 
     public function hydrate(): void
@@ -473,7 +472,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
             && $ingredient->owner_type === OwnerType::Workspace
                 ? $workspaceIngredientGuidances->recordFor($workspace, $ingredient)?->guidance_html
                 : null;
-        $this->form->fill($refreshedState);
+        $this->form->fill($this->withLocalizedIfraMaxima($refreshedState));
         $this->confirmCompositionRemoval = false;
 
         /** @var array<string, mixed> $canonicalState */
@@ -1285,41 +1284,55 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                         LocalizedDecimalInput::make('ifra.peroxide_value')
                                             ->label(__('ingredients.editor.compliance.ifra.peroxide'))
                                             ->minValue(0)
-                                            ->suffix('meq O₂/kg'),
+                                            ->suffix('meq O₂/kg')
+                                            ->digitsAndSeparatorsOnly(),
                                         Textarea::make('ifra.source_notes')
                                             ->label(__('ingredients.editor.compliance.ifra.notes'))
                                             ->rows(3)
                                             ->columnSpanFull(),
                                         Repeater::make('ifra.limits')
                                             ->label(__('ingredients.editor.compliance.ifra.limits'))
-                                            ->itemLabel(fn (array $state): string => $this->ifraProductCategoryOptions()[(int) ($state['ifra_product_category_id'] ?? 0)]
-                                                ?? __('ingredients.editor.compliance.ifra.new_category_limit'))
-                                            ->addActionLabel(__('ingredients.editor.compliance.ifra.add_category_limit'))
-                                            ->deleteAction(fn (Action $action): Action => $action->label(__('ingredients.editor.compliance.ifra.remove_category_limit')))
+                                            ->helperText(__('ingredients.editor.compliance.ifra.limits_help'))
+                                            ->table([
+                                                TableColumn::make(__('ingredients.editor.compliance.ifra.category')),
+                                                TableColumn::make(__('ingredients.editor.compliance.ifra.maximum'))
+                                                    ->width('12rem'),
+                                            ])
                                             ->schema([
-                                                Select::make('ifra_product_category_id')
-                                                    ->label(__('ingredients.editor.compliance.ifra.category'))
-                                                    ->options(fn (): array => $this->ifraProductCategoryOptions())
-                                                    ->disableOptionWhen(fn (Get $get, mixed $value): bool => $this->isInactiveIfraProductCategoryOption(
-                                                        $value,
-                                                        $get('ifra_product_category_id'),
-                                                    ))
-                                                    ->searchable()
-                                                    ->preload()
-                                                    ->live()
-                                                    ->required(),
+                                                Hidden::make('ifra_product_category_id'),
+                                                Hidden::make('restriction_note'),
+                                                TextEntry::make('category_label')
+                                                    ->hiddenLabel()
+                                                    ->state(fn (Get $get): ?string => $this->ifraProductCategoryOptions()[(int) $get('ifra_product_category_id')] ?? null),
                                                 LocalizedDecimalInput::make('max_percentage')
                                                     ->label(__('ingredients.editor.compliance.ifra.maximum'))
+                                                    ->hiddenLabel()
                                                     ->minValue(0)
                                                     ->maxValue(100)
-                                                    ->required()
-                                                    ->suffix('%'),
+                                                    ->suffix('%')
+                                                    ->required(fn (Get $get): bool => collect($get('../') ?? [])
+                                                        ->contains(fn (mixed $row): bool => is_array($row) && filled($row['max_percentage'] ?? null)))
+                                                    ->validationMessages([
+                                                        'required' => __('ingredients.editor.validation.ifra_category_required'),
+                                                    ])
+                                                    ->extraInputAttributes(fn (Get $get): array => [
+                                                        'aria-label' => e(__('ingredients.editor.compliance.ifra.maximum').' — '.($this->ifraProductCategoryOptions()[(int) $get('ifra_product_category_id')] ?? '')),
+                                                    ])
+                                                    ->digitsAndSeparatorsOnly(),
                                             ])
-                                            ->columns([
-                                                'md' => 2,
-                                            ])
-                                            ->defaultItems(0)
+                                            ->extraAttributes(['class' => 'sk-ifra-limits-grid'])
+                                            ->rules([static fn (): Closure => static function (string $attribute, mixed $value, Closure $fail): void {
+                                                $rows = collect(is_array($value) ? $value : []);
+                                                $isFilled = fn (mixed $row): bool => is_array($row) && filled($row['max_percentage'] ?? null);
+
+                                                if ($rows->contains($isFilled) && ! $rows->every($isFilled)) {
+                                                    $fail(__('ingredients.editor.validation.ifra_all_categories_required'));
+                                                }
+                                            }])
+                                            ->addable(false)
+                                            ->deletable(false)
                                             ->reorderable(false)
+                                            ->compact()
                                             ->columnSpanFull(),
                                     ]),
                             ]),
@@ -1328,6 +1341,46 @@ class IngredientEditor extends Component implements HasActions, HasForms
             ->statePath('data')
             ->disabled(! $this->canEditIngredientData())
             ->model($this->currentIngredient() ?? Ingredient::class);
+    }
+
+    /**
+     * Show the saved peroxide value and IFRA maxima in the user's number format (0,5 for
+     * comma locales), as Production Bench forms do; LocalizedDecimalInput parses either
+     * separator back.
+     *
+     * @param  array<string, mixed>  $state
+     * @return array<string, mixed>
+     */
+    private function withLocalizedIfraMaxima(array $state): array
+    {
+        $numberLocale = $this->currentUser()?->number_locale;
+
+        if (is_numeric($state['ifra']['peroxide_value'] ?? null)) {
+            $state['ifra']['peroxide_value'] = NumberLocale::formatAdaptiveDecimal(
+                $state['ifra']['peroxide_value'],
+                minimumDecimals: 0,
+                maximumDecimals: 3,
+                locale: $numberLocale,
+            );
+        }
+
+        $state['ifra']['limits'] = collect($state['ifra']['limits'] ?? [])
+            ->map(function (array $row) use ($numberLocale): array {
+                if (is_numeric($row['max_percentage'] ?? null)) {
+                    $row['max_percentage'] = NumberLocale::formatAdaptiveDecimal(
+                        $row['max_percentage'],
+                        minimumDecimals: 0,
+                        maximumDecimals: 5,
+                        locale: $numberLocale,
+                    );
+                }
+
+                return $row;
+            })
+            ->values()
+            ->all();
+
+        return $state;
     }
 
     private function ingredientEditorTabErrorBadge(string $tabKey): ?string
@@ -2173,38 +2226,11 @@ class IngredientEditor extends Component implements HasActions, HasForms
             ->orderBy('code')
             ->get();
 
-        $this->inactiveIfraProductCategoryIdsCache = $categories
-            ->filter(fn (IfraProductCategory $category): bool => ! $category->is_active)
-            ->map(fn (IfraProductCategory $category): int => (int) $category->id)
-            ->values()
-            ->all();
-
         return $this->ifraProductCategoryOptionsCache = $categories
             ->mapWithKeys(fn (IfraProductCategory $category): array => [
                 (int) $category->id => $category->optionLabel(),
             ])
             ->all();
-    }
-
-    private function isInactiveIfraProductCategoryOption(mixed $value, mixed $currentValue): bool
-    {
-        $categoryId = (int) $value;
-
-        if (! in_array($categoryId, $this->inactiveIfraProductCategoryIds(), true)) {
-            return false;
-        }
-
-        return $categoryId !== (int) $currentValue;
-    }
-
-    /**
-     * @return array<int>
-     */
-    private function inactiveIfraProductCategoryIds(): array
-    {
-        $this->ifraProductCategoryOptions();
-
-        return $this->inactiveIfraProductCategoryIdsCache;
     }
 
     /**

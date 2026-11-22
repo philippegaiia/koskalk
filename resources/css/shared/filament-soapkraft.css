@@ -406,4 +406,17 @@
     .dark .fi-tabs-item.fi-active > .fi-icon {
         color: var(--color-amber-light);
     }
+
+    /* IFRA category grid: keep rows compact. A missing value shows its red ring plus a
+       short one-line message; one message under the grid explains the rule. */
+    .sk-ifra-limits-grid .fi-fo-field-wrp-error-message {
+        margin-top: 0.125rem;
+        font-size: var(--text-xs);
+        line-height: var(--text-xs--line-height);
+        white-space: nowrap;
+    }
+
+    .sk-ifra-limits-grid .fi-input {
+        text-align: center;
+    }
 }

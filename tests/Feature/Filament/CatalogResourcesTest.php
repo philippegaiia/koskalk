@@ -368,6 +368,48 @@ it('saves current IFRA guidance from the ingredient specialist tab', function ()
         ->and($certificate->limits->first()->restriction_note)->toBe('Finished product maximum.');
 });
 
+it('requires every IFRA category maximum in the admin grid once one is entered', function (): void {
+    $admin = User::factory()->admin()->create();
+    $categoryTwo = IfraProductCategory::factory()->create(['code' => '2', 'is_active' => true]);
+    $categoryTenA = IfraProductCategory::factory()->create(['code' => '10A', 'is_active' => true]);
+    $categoryOne = IfraProductCategory::factory()->create(['code' => '1', 'is_active' => true]);
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::AromaticMaterials,
+        'subcategory' => IngredientSubcategory::EssentialOils,
+        'requires_aromatic_compliance' => true,
+        'owner_type' => null,
+        'owner_id' => null,
+    ]);
+    $this->actingAs($admin);
+
+    $page = Livewire::test(EditIngredient::class, ['record' => $ingredient->public_id]);
+    $rows = $page->get('data.ifra.limits');
+    $rowKeys = array_keys($rows);
+
+    expect(collect($rows)->pluck('ifra_product_category_id')->all())
+        ->toBe([$categoryOne->id, $categoryTwo->id, $categoryTenA->id]);
+
+    $page->set("data.ifra.limits.{$rowKeys[0]}.max_percentage", '0,5')
+        ->call('save')
+        ->assertHasFormErrors([
+            'ifra.limits',
+            "ifra.limits.{$rowKeys[1]}.max_percentage" => 'required',
+            "ifra.limits.{$rowKeys[2]}.max_percentage" => 'required',
+        ]);
+
+    expect($ingredient->ifraCertificates()->count())->toBe(0);
+
+    $page->set("data.ifra.limits.{$rowKeys[1]}.max_percentage", '0')
+        ->set("data.ifra.limits.{$rowKeys[2]}.max_percentage", '100')
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    $limits = $ingredient->ifraCertificates()->firstOrFail()->limits->keyBy('ifra_product_category_id');
+
+    expect($limits)->toHaveCount(3)
+        ->and((float) $limits[$categoryOne->id]->max_percentage)->toBe(0.5);
+});
+
 it('links IFRA certificates to a known amendment and active category limits', function (): void {
     $admin = User::factory()->admin()->create();
     $amendment = IfraAmendment::factory()->create(['code' => '51']);

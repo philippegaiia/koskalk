@@ -20,10 +20,12 @@ use App\Models\IngredientFunction;
 use App\Models\Substance;
 use App\Models\SupportedLocale;
 use App\Models\User;
+use App\Services\IngredientDataEntryService;
 use App\Services\IngredientTranslationService;
 use App\Services\MediaStorage;
 use App\SoapSap;
 use App\Support\FilamentUploadMetadata;
+use App\Support\LocalizedDecimalInput;
 use Closure;
 use Filament\Actions\Action;
 use Filament\Forms\Components\BaseFileUpload;
@@ -31,6 +33,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Repeater\TableColumn;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -653,43 +656,47 @@ class IngredientForm
                             ->columnSpanFull(),
                         Repeater::make('ifra.limits')
                             ->label(__('ingredients.editor.compliance.ifra.limits'))
+                            ->helperText(__('ingredients.editor.compliance.ifra.limits_help'))
+                            ->table([
+                                TableColumn::make(__('ingredients.editor.compliance.ifra.category')),
+                                TableColumn::make(__('ingredients.editor.compliance.ifra.maximum'))
+                                    ->width('12rem'),
+                            ])
                             ->schema([
-                                Select::make('ifra_product_category_id')
-                                    ->label(__('ingredients.editor.compliance.ifra.category'))
-                                    ->options(fn (): array => IfraProductCategory::query()
-                                        ->where('is_active', true)
-                                        ->orderBy('code')
-                                        ->get()
-                                        ->mapWithKeys(fn (IfraProductCategory $category): array => [
-                                            $category->id => $category->optionLabel(),
-                                        ])
-                                        ->all())
-                                    ->searchable()
-                                    ->preload()
-                                    ->live()
-                                    ->required(),
-                                TextInput::make('max_percentage')
+                                Hidden::make('ifra_product_category_id'),
+                                Hidden::make('restriction_note'),
+                                TextEntry::make('category_label')
+                                    ->hiddenLabel()
+                                    ->state(fn (Get $get): ?string => static::ifraCategoryLabel($get('ifra_product_category_id'))),
+                                LocalizedDecimalInput::make('max_percentage')
                                     ->label(__('ingredients.editor.compliance.ifra.maximum'))
-                                    ->numeric()
-                                    ->inputMode('decimal')
+                                    ->hiddenLabel()
                                     ->minValue(0)
                                     ->maxValue(100)
                                     ->suffix('%')
-                                    ->live(onBlur: true)
-                                    ->required(),
-                                Textarea::make('restriction_note')
-                                    ->label(__('ingredients.editor.compliance.ifra.restriction_note'))
-                                    ->rows(2)
-                                    ->columnSpanFull(),
+                                    ->required(fn (Get $get): bool => static::anyIfraMaximumEntered($get('../')))
+                                    ->validationMessages([
+                                        'required' => __('ingredients.editor.validation.ifra_category_required'),
+                                    ])
+                                    ->extraInputAttributes(fn (Get $get): array => [
+                                        'aria-label' => e(__('ingredients.editor.compliance.ifra.maximum').' — '.static::ifraCategoryLabel($get('ifra_product_category_id'))),
+                                    ])
+                                    ->digitsAndSeparatorsOnly(),
                             ])
-                            ->columns([
-                                'default' => 1,
-                                'lg' => 2,
-                            ])
-                            ->itemLabel(fn (array $state): ?string => static::ifraLimitItemLabel($state))
-                            ->collapsed()
-                            ->defaultItems(0)
+                            ->default(fn (): array => app(IngredientDataEntryService::class)->ifraLimitRows())
+                            ->extraAttributes(['class' => 'sk-ifra-limits-grid'])
+                            ->rules([static fn (): Closure => static function (string $attribute, mixed $value, Closure $fail): void {
+                                $rows = collect(is_array($value) ? $value : []);
+                                $isFilled = fn (mixed $row): bool => is_array($row) && filled($row['max_percentage'] ?? null);
+
+                                if ($rows->contains($isFilled) && ! $rows->every($isFilled)) {
+                                    $fail(__('ingredients.editor.validation.ifra_all_categories_required'));
+                                }
+                            }])
+                            ->addable(false)
+                            ->deletable(false)
                             ->reorderable(false)
+                            ->compact()
                             ->columnSpanFull(),
                     ])
                     ->columns([
@@ -867,12 +874,20 @@ class IngredientForm
         return static::percentageItemLabel($name, $state['concentration_percent'] ?? null);
     }
 
-    /** @param array<string, mixed> $state */
-    private static function ifraLimitItemLabel(array $state): ?string
+    private static function ifraCategoryLabel(mixed $categoryId): ?string
     {
-        $category = IfraProductCategory::query()->find($state['ifra_product_category_id'] ?? null);
+        $labels = once(fn (): array => IfraProductCategory::query()
+            ->get()
+            ->mapWithKeys(fn (IfraProductCategory $category): array => [(int) $category->id => $category->optionLabel()])
+            ->all());
 
-        return static::percentageItemLabel($category?->optionLabel(), $state['max_percentage'] ?? null);
+        return $labels[(int) $categoryId] ?? null;
+    }
+
+    private static function anyIfraMaximumEntered(mixed $limits): bool
+    {
+        return collect(is_array($limits) ? $limits : [])
+            ->contains(fn (mixed $row): bool => is_array($row) && filled($row['max_percentage'] ?? null));
     }
 
     /** @param array<string, mixed> $state */

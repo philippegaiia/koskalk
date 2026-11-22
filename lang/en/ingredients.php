@@ -1093,6 +1093,7 @@ return [
                 'new_category_limit' => 'New category limit',
                 'maximum' => 'Maximum concentration (%)',
                 'restriction_note' => 'Restriction note',
+                'limits_help' => 'Enter the maximum for every category as printed on the certificate: 0% means prohibited, 100% means no restriction. Leave every row blank if you have no certificate.',
                 'invalid_category' => 'Choose IFRA categories from the catalogue.',
             ],
             'substances' => [
@@ -1155,6 +1156,8 @@ return [
             'peroxide_negative' => 'Peroxide value cannot be negative.',
             'ifra_maximum_negative' => 'Maximum IFRA concentration cannot be negative.',
             'ifra_maximum' => 'Maximum IFRA concentration cannot exceed 100%.',
+            'ifra_all_categories_required' => 'Enter the maximum for every IFRA category as printed on the certificate, or leave them all blank.',
+            'ifra_category_required' => 'Enter certificate value',
             'component_reference_required' => 'Each blend row must use an ingredient from your catalogue.',
             'composition_removal_confirmation' => 'Confirm that you want to remove this blend composition before saving as a single ingredient.',
             'composition_total' => 'Blend percentages must total 100%.',

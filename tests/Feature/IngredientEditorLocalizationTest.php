@@ -33,6 +33,7 @@ use App\Models\WorkspaceIngredientCode;
 use App\Models\WorkspaceIngredientGuidance;
 use App\Models\WorkspaceMember;
 use App\Services\UserIngredientAuthoringService;
+use App\Support\LocalizedDecimalInput;
 use Database\Seeders\SupportedLocaleSeeder;
 use Filament\Forms\Components\Repeater;
 use Filament\Schemas\Components\Tabs;
@@ -1377,7 +1378,35 @@ it('configures allergen and substance repeaters with contextual controls', funct
         ->and($substanceQueries)->toHaveCount(1);
 });
 
-it('configures IFRA category limits with cached labels and persisted inactive categories', function (): void {
+it('shows saved IFRA maxima and peroxide value in the user number format', function (): void {
+    $user = User::factory()->create(['number_locale' => 'fr_FR']);
+    $lips = IfraProductCategory::factory()->create(['code' => '1', 'is_active' => true]);
+    $soap = IfraProductCategory::factory()->create(['code' => '9', 'is_active' => true]);
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::AromaticMaterials,
+        'owner_type' => OwnerType::User,
+        'owner_id' => $user->id,
+        'requires_aromatic_compliance' => true,
+    ]);
+    $certificate = $ingredient->ifraCertificates()->create([
+        'certificate_name' => 'Supplier IFRA certificate',
+        'peroxide_value' => 2.5,
+        'is_current' => true,
+    ]);
+    $certificate->limits()->create(['ifra_product_category_id' => $lips->id, 'max_percentage' => 0.5]);
+    $certificate->limits()->create(['ifra_product_category_id' => $soap->id, 'max_percentage' => 100]);
+
+    $this->actingAs($user);
+
+    $component = Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient]);
+    $rows = collect($component->get('data.ifra.limits'))->pluck('max_percentage', 'ifra_product_category_id');
+
+    expect($component->get('data.ifra.peroxide_value'))->toBe('2,5')
+        ->and($rows[$lips->id])->toBe('0,5')
+        ->and($rows[$soap->id])->toBe('100');
+});
+
+it('shows a fixed IFRA grid of active and persisted inactive categories with cached labels', function (): void {
     $user = User::factory()->create();
     $activeCategory = IfraProductCategory::factory()->create([
         'code' => '3',
@@ -1428,41 +1457,37 @@ it('configures IFRA category limits with cached labels and persisted inactive ca
     $component = Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient]);
     $limits = $component->instance()->form->getComponent('ifra.limits', withHidden: true);
     $rawState = $limits->getRawState();
-    $rowKey = array_key_first($rawState);
-    $rowSelect = $limits->getChildSchema($rowKey)->getComponent('ifra_product_category_id');
+    $rowCategoryIds = collect($rawState)->pluck('ifra_product_category_id')->all();
+    $firstRowKey = array_key_first($rawState);
+    $label = $limits->getChildSchema($firstRowKey)->getComponent('category_label');
+    $maximum = $limits->getChildSchema($firstRowKey)->getComponent('max_percentage');
     $reference = $component->instance()->form->getComponent('ifra.reference_label', withHidden: true);
     $sourceNotes = $component->instance()->form->getComponent('ifra.source_notes', withHidden: true);
-    $maximum = $limits->getChildSchema($rowKey)->getComponent('max_percentage');
 
-    expect($limits->getAddActionLabel())->toBe('Add category limit')
-        ->and($limits->getDeleteAction()->getLabel())->toBe('Remove category limit')
+    expect($rowCategoryIds)->toBe([$activeCategory->id, $latestInactiveCategory->id])
+        ->and($limits->isAddable())->toBeFalse()
+        ->and($limits->isDeletable())->toBeFalse()
         ->and($limits->isReorderable())->toBeFalse()
-        ->and($limits->getItemLabel($rowKey, 0))->toBe($latestInactiveCategory->optionLabel())
-        ->and($rowSelect->isLive())->toBeTrue()
-        ->and($rowSelect->getOptions())->toHaveKey($activeCategory->id)
-        ->and($rowSelect->getOptions())->toHaveKey($latestInactiveCategory->id)
-        ->and($rowSelect->getOptions())->not->toHaveKey($olderInactiveCategory->id)
-        ->and($rowSelect->getOptions())->not->toHaveKey($unpersistedInactiveCategory->id)
-        ->and($rowSelect->isOptionDisabled($latestInactiveCategory->id, $latestInactiveCategory->optionLabel()))->toBeFalse()
+        ->and($limits->isTable())->toBeTrue()
+        ->and($label->getState())->toBe($activeCategory->optionLabel())
+        ->and(data_get($rawState, "{$firstRowKey}.max_percentage"))->toBeNull()
         ->and($reference->getLabel())->toBe('Reference label (optional)')
         ->and($sourceNotes->getLabel())->toBe('IFRA source notes')
         ->and($maximum->getLabel())->toBe('Maximum concentration (%)');
 
-    $limits->rawState([...$rawState, 'new-item' => []]);
-    $newSelect = $limits->getChildSchema('new-item')->getComponent('ifra_product_category_id');
+    $component
+        ->assertSeeHtml('x-on:beforeinput="'.LocalizedDecimalInput::KEEP_DIGITS_ON_INPUT.'"')
+        ->assertSeeHtml('x-on:paste="'.LocalizedDecimalInput::KEEP_DIGITS_ON_PASTE.'"');
 
-    expect($limits->getItemLabel('new-item', 1))->toBe('New category limit')
-        ->and($newSelect->isOptionDisabled($latestInactiveCategory->id, $latestInactiveCategory->optionLabel()))->toBeTrue();
-
-    $limits->getItemLabel($rowKey, 0);
-    $newSelect->getOptions();
+    collect($rawState)->keys()->each(fn (string $key): mixed => $limits->getChildSchema($key)->getComponent('category_label')->getState());
 
     $categoryQueries = collect(DB::getQueryLog())
         ->filter(fn (array $query): bool => str_contains($query['query'], ' from "ifra_product_categories"'));
 
     DB::disableQueryLog();
 
-    expect($categoryQueries)->toHaveCount(1);
+    // One query builds the grid rows, one builds the cached labels; rendering rows adds none.
+    expect($categoryQueries)->toHaveCount(2);
 });
 
 it('resolves legacy ingredient tab query values against visible tabs', function (): void {

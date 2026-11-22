@@ -18,6 +18,7 @@ use App\Models\Substance;
 use App\Support\NumberLocale;
 use Closure;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -275,16 +276,80 @@ class IngredientDataEntryService
                     : null,
             'peroxide_value' => $certificate?->peroxide_value === null ? null : (float) $certificate->peroxide_value,
             'source_notes' => $certificate?->source_notes,
-            'limits' => $certificate?->limits
-                ->sortBy('ifra_product_category_id')
-                ->map(fn (IfraCertificateLimit $limit): array => [
-                    'ifra_product_category_id' => $limit->ifra_product_category_id,
-                    'max_percentage' => $limit->max_percentage === null ? null : (float) $limit->max_percentage,
-                    'restriction_note' => $limit->restriction_note,
-                ])
-                ->values()
-                ->all() ?? [],
+            'limits' => $this->ifraLimitRows($certificate),
         ];
+    }
+
+    /**
+     * One editable row per active IFRA category, plus any inactive category already
+     * saved on the certificate, in the order printed on IFRA certificates (1, 2, … 5A,
+     * 5B, … 10A, 10B, … 12). Categories without a saved limit start blank.
+     *
+     * @return list<array{ifra_product_category_id: int, max_percentage: ?float, restriction_note: ?string}>
+     */
+    public function ifraLimitRows(?IfraCertificate $certificate = null): array
+    {
+        $savedLimits = $certificate?->limits->keyBy('ifra_product_category_id') ?? collect();
+
+        return IfraProductCategory::query()
+            ->where('is_active', true)
+            ->orWhereIn('id', $savedLimits->keys()->all())
+            ->get()
+            ->sortBy('code', SORT_NATURAL | SORT_FLAG_CASE)
+            ->map(function (IfraProductCategory $category) use ($savedLimits): array {
+                /** @var IfraCertificateLimit|null $limit */
+                $limit = $savedLimits->get($category->id);
+
+                return [
+                    'ifra_product_category_id' => (int) $category->id,
+                    'max_percentage' => $limit?->max_percentage === null ? null : (float) $limit->max_percentage,
+                    'restriction_note' => $limit?->restriction_note,
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * A certificate lists a maximum for every category, so once any maximum is entered
+     * every active category needs one (0 = prohibited, 100 = no restriction). Leaving
+     * all of them blank records no category limits.
+     *
+     * @param  Collection<int, array{_state_index: int, ifra_product_category_id: int, max_percentage: ?float, restriction_note: ?string}>  $submittedLimits
+     */
+    private function ensureEveryActiveIfraCategoryHasMaximum(Collection $submittedLimits): void
+    {
+        $enteredCategoryIds = $submittedLimits
+            ->filter(fn (array $limit): bool => $limit['max_percentage'] !== null)
+            ->pluck('ifra_product_category_id')
+            ->unique();
+
+        if ($enteredCategoryIds->isEmpty()) {
+            return;
+        }
+
+        $missingCategoryIds = IfraProductCategory::query()
+            ->where('is_active', true)
+            ->whereNotIn('id', $enteredCategoryIds->all())
+            ->pluck('id')
+            ->map(fn (int|string $id): int => (int) $id);
+
+        if ($missingCategoryIds->isEmpty()) {
+            return;
+        }
+
+        $messages = ['ifra.limits' => [__('ingredients.editor.validation.ifra_all_categories_required')]];
+
+        $submittedLimits
+            ->filter(fn (array $limit): bool => $limit['max_percentage'] === null
+                && $missingCategoryIds->contains($limit['ifra_product_category_id']))
+            ->each(function (array $limit) use (&$messages): void {
+                $messages["ifra.limits.{$limit['_state_index']}.max_percentage"] = [
+                    __('ingredients.editor.validation.ifra_category_required'),
+                ];
+            });
+
+        throw ValidationException::withMessages($messages);
     }
 
     /**
@@ -313,7 +378,11 @@ class IngredientDataEntryService
                     ? trim((string) $row['restriction_note'])
                     : null,
             ]);
-        $limits = $submittedLimits->unique('ifra_product_category_id')->values();
+        $this->ensureEveryActiveIfraCategoryHasMaximum($submittedLimits);
+        $limits = $submittedLimits
+            ->filter(fn (array $limit): bool => $limit['max_percentage'] !== null)
+            ->unique('ifra_product_category_id')
+            ->values();
 
         foreach ($limits as $index => $limit) {
             if ($limit['max_percentage'] === null || $limit['max_percentage'] < 0 || $limit['max_percentage'] > 100) {
@@ -327,7 +396,7 @@ class IngredientDataEntryService
             ->where('is_current', true)
             ->latest('id')
             ->first();
-        $categoryIds = $limits->pluck('ifra_product_category_id')->all();
+        $categoryIds = $submittedLimits->pluck('ifra_product_category_id')->unique()->values()->all();
         $persistedCategoryIds = IfraCertificateLimit::query()
             ->select('ifra_product_category_id')
             ->where('ifra_certificate_id', $certificate?->id ?? 0);

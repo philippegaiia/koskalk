@@ -3,12 +3,14 @@
     $selectedAssets = $getSelectedMediaAssets();
     $isMultiple = $isMultiple();
     $maximumItems = $getMaximumItems();
-    $canUpload = $canUpload();
-    $usage = $getMediaAssetUsage();
+    $allowsUploads = $field->hasFileAttachments();
+    $canUpload = $allowsUploads && $canUpload();
+    $usage = $allowsUploads ? $getMediaAssetUsage() : null;
     $preserveAspectRatio = $shouldPreserveAspectRatio();
     $embedded = $isEmbedded();
     $acceptedTypes = $getAcceptedMediaAssetTypeValues();
     $acceptsDocuments = $acceptsDocuments();
+    $chooseLabel = __(! $allowsUploads ? 'media_library.picker.choose' : ($acceptsDocuments ? 'media_library.picker.choose_documents' : ($isMultiple ? 'media_library.picker.choose_multiple' : 'media_library.picker.choose')));
     $acceptedFileTypes = $field->getFileAttachmentsAcceptedFileTypes() ?? [];
     $acceptedFormatLabels = collect($acceptedFileTypes)
         ->map(static fn (string $type): ?string => match ($type) {
@@ -79,12 +81,12 @@
                         </div>
                     @endforeach
                 </div>
-            @else
+            @elseif ($allowsUploads)
                 <div class="rounded-xl border border-dashed border-[var(--color-line)] bg-[var(--color-field-muted)] px-4 py-5 text-sm text-[var(--color-ink-soft)]">{{ $acceptsDocuments ? __('media_library.picker.no_document_selection') : __('media_library.picker.no_selection') }}</div>
             @endif
 
             <div class="flex flex-wrap gap-2">
-                <button x-ref="trigger" type="button" x-on:click="openPicker()" class="sk-btn sk-btn-primary">{{ $acceptsDocuments ? __('media_library.picker.choose_documents') : ($isMultiple ? __('media_library.picker.choose_multiple') : __('media_library.picker.choose')) }}</button>
+                <button x-ref="trigger" type="button" x-on:click="openPicker()" class="sk-btn sk-btn-primary">{{ $chooseLabel }}</button>
                 <button type="button" x-show="multiple ? (Array.isArray(state) && state.length) : state" x-bind:aria-describedby="(multiple ? (Array.isArray(state) && state.length) : state) ? '{{ $pickerId }}-remove-selection-help' : null" x-on:click="state = multiple ? [] : null" class="min-h-9 px-2 text-xs font-medium text-[var(--color-ink-soft)] underline underline-offset-2 focus-visible:outline-2 focus-visible:outline-[var(--color-active)]">{{ __('media_library.picker.clear') }}</button>
             </div>
             <p id="{{ $pickerId }}-remove-selection-help" x-show="multiple ? (Array.isArray(state) && state.length) : state" class="max-w-xl text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('media_library.picker.remove_selection_help') }}</p>
@@ -103,13 +105,15 @@
                 </div>
             @endunless
 
+                @if ($allowsUploads)
                 <div class="border-b border-[var(--color-line)] px-5 pt-3" role="tablist" aria-label="{{ $acceptsDocuments ? __('media_library.picker.choose_documents') : __('media_library.picker.choose') }}">
                     <button id="{{ $pickerId }}-library-tab" data-media-picker-library-tab x-ref="libraryTab" type="button" role="tab" aria-controls="{{ $pickerId }}-library-panel" x-on:click="activeTab = 'library'" x-on:keydown.arrow-right.prevent="moveTabFocus(1)" x-on:keydown.arrow-left.prevent="moveTabFocus(-1)" x-on:keydown.home.prevent="focusTab('library')" x-on:keydown.end.prevent="focusTab('upload')" x-bind:aria-selected="activeTab === 'library'" x-bind:tabindex="activeTab === 'library' ? 0 : -1" class="border-b-2 px-3 py-2 text-sm font-medium" x-bind:class="activeTab === 'library' ? 'border-[var(--color-active)] text-[var(--color-active-strong)]' : 'border-transparent text-[var(--color-ink-soft)]'">{{ __('media_library.picker.library') }}</button>
                     <button id="{{ $pickerId }}-upload-tab" data-media-picker-upload-tab x-ref="uploadTab" type="button" role="tab" aria-controls="{{ $pickerId }}-upload-panel" x-on:click="activeTab = 'upload'" x-on:keydown.arrow-right.prevent="moveTabFocus(1)" x-on:keydown.arrow-left.prevent="moveTabFocus(-1)" x-on:keydown.home.prevent="focusTab('library')" x-on:keydown.end.prevent="focusTab('upload')" x-bind:aria-selected="activeTab === 'upload'" x-bind:tabindex="activeTab === 'upload' ? 0 : -1" class="border-b-2 px-3 py-2 text-sm font-medium" x-bind:class="activeTab === 'upload' ? 'border-[var(--color-active)] text-[var(--color-active-strong)]' : 'border-transparent text-[var(--color-ink-soft)]'">{{ $acceptsDocuments ? __('media_library.picker.upload_new_document') : __('media_library.picker.upload_new') }}</button>
                 </div>
+                @endif
 
                 <div class="max-h-[56dvh] overflow-y-auto p-5">
-                    <div id="{{ $pickerId }}-library-panel" aria-labelledby="{{ $pickerId }}-library-tab" x-show="activeTab === 'library'" role="tabpanel" class="space-y-4">
+                    <div id="{{ $pickerId }}-library-panel" @if ($allowsUploads) aria-labelledby="{{ $pickerId }}-library-tab" role="tabpanel" @endif x-show="activeTab === 'library'" class="space-y-4">
                         <label for="{{ $pickerId }}-search" class="sr-only">{{ __('media_library.picker.search_label') }}</label>
                         <input autocomplete="off" id="{{ $pickerId }}-search" x-ref="search" x-model="search" x-on:input.debounce.350ms="loadAssets(true)" type="search" placeholder="{{ __('media_library.picker.search_placeholder') }}" class="w-full rounded-lg border border-[var(--color-line)] bg-[var(--color-panel)] px-3 py-2 text-sm text-[var(--color-ink-strong)]" />
                         <p x-cloak x-show="uploadCompletion && ! pendingUpload" x-text="uploadCompletion" role="status" aria-live="polite" class="text-sm text-[var(--color-ink-soft)]"></p>
@@ -139,6 +143,7 @@
                         </div>
                         <button x-show="hasMoreAssets" x-on:click="loadMoreAssets()" type="button" class="sk-btn border border-[var(--color-line)]">{{ __('media_library.picker.load_more') }}</button>
                     </div>
+                    @if ($allowsUploads)
                     <div id="{{ $pickerId }}-upload-panel" aria-labelledby="{{ $pickerId }}-upload-tab" x-show="activeTab === 'upload'" role="tabpanel" class="space-y-4">
                         @if ($canUpload)
                             <p class="text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('media_library.picker.upload_description') }}</p>
@@ -194,6 +199,7 @@
                             <div data-media-picker-upload-unavailable class="rounded-xl border border-[var(--color-line)] bg-[var(--color-field-muted)] p-4 text-sm text-[var(--color-ink-soft)]">{{ __('media_library.picker.upload_unavailable') }}@if ($usage['limit'] !== null) {{ __('media_library.quota.limited', ['used' => $usage['used'], 'limit' => $usage['limit']]) }}@endif</div>
                         @endif
                     </div>
+                    @endif
                 </div>
 
             @unless ($embedded)

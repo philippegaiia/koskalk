@@ -42,10 +42,11 @@ class SaveSupplierListing
         Ingredient|PackagingItem $subject,
         array $attributes,
         ?SupplierListing $listing = null,
+        bool $refreshUnchangedPrice = true,
     ): SupplierListing {
         $this->access->assertWritable($actor, $workspace);
 
-        return DB::transaction(function () use ($actor, $attributes, $listing, $subject, $supplier, $workspace): SupplierListing {
+        return DB::transaction(function () use ($actor, $attributes, $listing, $refreshUnchangedPrice, $subject, $supplier, $workspace): SupplierListing {
             $lockedWorkspace = Workspace::withoutGlobalScopes()->lockForUpdate()->findOrFail($workspace->id);
             $this->access->assertWritable($actor, $lockedWorkspace);
             $currentSubject = $this->existingSubject($subject);
@@ -116,7 +117,17 @@ class SaveSupplierListing
                     ...$values,
                 ]);
             } else {
-                $currentListing->update($values);
+                $currentListing->fill($values);
+                if (! $refreshUnchangedPrice && ! $currentListing->isDirty([
+                    'supplier_id', 'currency', 'net_quantity', 'net_unit', 'price_amount', 'price_basis', 'price_unit', 'total_price',
+                ])) {
+                    $currentListing->price_recorded_at = $currentListing->getOriginal('price_recorded_at');
+                    $currentListing->save();
+
+                    return $currentListing;
+                }
+
+                $currentListing->save();
             }
 
             if ($currentSubject instanceof Ingredient) {
@@ -212,6 +223,7 @@ class SaveSupplierListing
             'price_amount' => ['required', 'string', 'max:255'],
             'price_unit' => ['nullable', 'string', 'max:24'],
             'supplier_sku' => ['nullable', 'string', 'max:255'],
+            'internal_reference' => ['nullable', 'string', 'max:255'],
             'supplier_item_name' => ['nullable', 'string', 'max:255'],
             'container' => ['nullable', 'string', 'max:255'],
             'minimum_packs' => ['required', 'integer', 'min:1'],

@@ -17,6 +17,7 @@ use App\Models\ProductionRun;
 use App\Models\Recipe;
 use App\Models\RecipeVersion;
 use App\Models\StockLot;
+use App\Models\SupplierListing;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\ContextualHelp\ApplicationHelpTopics;
@@ -590,6 +591,7 @@ class MediaLibraryIndex extends Component
                 'productionDocuments.documentable' => function (MorphTo $morphTo): void {
                     $morphTo->morphWith([
                         GoodsReceipt::class => ['supplier'],
+                        SupplierListing::class => ['supplier'],
                     ]);
                 },
             ])
@@ -692,6 +694,10 @@ class MediaLibraryIndex extends Component
             $target instanceof ProductionRun => [
                 'label' => '#'.$target->getKey(),
                 'url' => null,
+            ],
+            $target instanceof SupplierListing => [
+                'label' => trim(($target->supplier?->name ?? '').' · '.($target->supplier_item_name ?: $target->supplier_sku ?: $target->purchase_format), ' ·'),
+                'url' => route('production-bench.purchasing.listings.edit', $target),
             ],
             default => [
                 'label' => __('media_library.missing_target'),

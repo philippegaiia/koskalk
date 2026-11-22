@@ -24,7 +24,7 @@ class DeleteSupplierListing
                 ->lockForUpdate()
                 ->findOrFail($listing->id);
 
-            if ($lockedListing->purchaseOrderLines()->exists() || $lockedListing->stockLots()->exists()) {
+            if ($lockedListing->purchaseOrderLines()->exists() || $lockedListing->stockLots()->exists() || $lockedListing->documents()->exists()) {
                 $lockedListing->update(['is_active' => false]);
 
                 return false;

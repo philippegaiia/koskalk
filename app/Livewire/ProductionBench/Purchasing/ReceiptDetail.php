@@ -91,7 +91,7 @@ class ReceiptDetail extends Component
         $receiptTypes = $this->receiptDocumentTypeValues();
         $lotTypes = $this->lotDocumentTypeValues();
         $validated = $this->validate([
-            'documentUpload' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp,heic,heif', 'max:10240'],
+            'documentUpload' => ['required', 'file', 'mimes:pdf,jpg,jpeg,png,webp,heic,heif', 'max:'.config('media.asset_uploads.max_size_kb')],
             'documentType' => ['required', Rule::in([...$receiptTypes, ...$lotTypes])],
             'documentLotIds' => [Rule::requiredIf(in_array($this->documentType, $lotTypes, true)), 'array'],
             'documentLotIds.*' => ['integer'],
@@ -110,6 +110,7 @@ class ReceiptDetail extends Component
                 $validated['documentUpload'],
                 [MediaAssetType::Image, MediaAssetType::Pdf],
                 processSynchronously: true,
+                purchasingDocument: true,
             )->refresh();
 
             $attach->handle(

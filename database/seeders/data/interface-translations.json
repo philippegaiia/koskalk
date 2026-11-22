@@ -23232,6 +23232,18 @@
     },
     {
       "group": "media_library",
+      "key": "validation.purchasing_pdf_size",
+      "text": {
+        "de": "„:filename“ überschreitet die PDF-Grenze von :max MB.",
+        "es": "«:filename» supera el límite de :max MB para archivos PDF.",
+        "fr": "« :filename » dépasse la limite de :max Mo pour les PDF.",
+        "it": "«:filename» supera il limite di :max MB per i PDF.",
+        "nl": "‘:filename’ overschrijdt de pdf-limiet van :max MB.",
+        "pt_BR": "“:filename” excede o limite de :max MB para PDFs."
+      }
+    },
+    {
+      "group": "media_library",
       "key": "validation.recipe_media_mismatch",
       "text": {
         "de": "Das ausgewählte Rezepturmedium gehört nicht zu dieser Formel.",
@@ -30434,12 +30446,12 @@
       "group": "production_bench",
       "key": "listing.deactivated",
       "text": {
-        "de": "Der Lieferantenartikel wird in Bestands- oder Einkaufsbelegen verwendet und wurde deaktiviert.",
-        "es": "La referencia se usa en registros de stock o compra y se ha desactivado.",
-        "fr": "La référence est utilisée dans des documents de stock ou d’achat et a été désactivée.",
-        "it": "L’articolo fornitore è usato nei registri di magazzino o acquisto ed è stato disattivato.",
-        "nl": "Het leveranciersartikel wordt in voorraad- of inkooprecords gebruikt en is gedeactiveerd.",
-        "pt_BR": "A oferta do fornecedor é usada em registros de estoque ou compras e foi desativada."
+        "de": "Lieferantenangebot deaktiviert. Dokumente und Datensätze bleiben erhalten.",
+        "es": "Referencia del proveedor desactivada. Se conservan sus documentos y registros.",
+        "fr": "Référence fournisseur désactivée. Ses documents et ses enregistrements sont conservés.",
+        "it": "Articolo del fornitore disattivato. I documenti e i registri vengono conservati.",
+        "nl": "Leveranciersartikel gedeactiveerd. Documenten en gegevens blijven bewaard.",
+        "pt_BR": "Item do fornecedor desativado. Os documentos e registros foram preservados."
       }
     },
     {
@@ -30458,12 +30470,12 @@
       "group": "production_bench",
       "key": "listing.delete_confirm",
       "text": {
-        "de": "Diesen Lieferantenartikel löschen? Verwendete Artikel werden deaktiviert, damit Bestands- und Einkaufsbelege erhalten bleiben.",
-        "es": "¿Eliminar esta referencia? Las referencias utilizadas se desactivarán para conservar los registros de stock y compra.",
-        "fr": "Supprimer cette référence fournisseur ? Les références utilisées seront désactivées afin de conserver les documents de stock et d’achat.",
-        "it": "Eliminare questo articolo fornitore? Gli articoli usati saranno disattivati per conservare i registri di magazzino e acquisto.",
-        "nl": "Dit leveranciersartikel verwijderen? Gebruikte artikelen worden gedeactiveerd om voorraad- en inkooprecords te bewaren.",
-        "pt_BR": "Excluir esta oferta do fornecedor? Ofertas usadas serão desativadas para preservar os registros de estoque e compras."
+        "de": "Dieses Lieferantenangebot löschen? Angebote mit Dokumenten, Bestand oder Einkaufsdatensätzen werden deaktiviert.",
+        "es": "¿Eliminar esta referencia del proveedor? Las referencias con documentos, existencias o registros de compra se desactivarán.",
+        "fr": "Supprimer cette référence fournisseur ? Les références liées à des documents, à du stock ou à des achats seront désactivées.",
+        "it": "Eliminare questo articolo del fornitore? Gli articoli con documenti, scorte o registri di acquisto verranno disattivati.",
+        "nl": "Dit leveranciersartikel verwijderen? Artikelen met documenten, voorraad of inkoopgegevens worden gedeactiveerd.",
+        "pt_BR": "Excluir este item do fornecedor? Itens com documentos, estoque ou registros de compras serão desativados."
       }
     },
     {
@@ -30488,6 +30500,30 @@
         "it": "Calcolato: :price",
         "nl": "Afgeleid: :price",
         "pt_BR": "Derivado: :price"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "listing.document_detach_confirm",
+      "text": {
+        "de": "Dieses Dokument vom Angebot entfernen? Die Datei bleibt in der Medienbibliothek.",
+        "es": "¿Quitar este documento de la referencia? El archivo se conserva en la biblioteca multimedia.",
+        "fr": "Retirer ce document de la référence ? Le fichier reste dans la médiathèque.",
+        "it": "Rimuovere questo documento dall’articolo? Il file resta nella libreria multimediale.",
+        "nl": "Dit document van het artikel verwijderen? Het bestand blijft in de mediabibliotheek.",
+        "pt_BR": "Remover este documento do item? O arquivo permanece na biblioteca de mídia."
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "listing.documents_help",
+      "text": {
+        "de": "Optional. Fügen Sie Dateien hinzu, die für mehrere Lieferungen gelten. Gemeinsam ausgewählte Dateien haben denselben Typ und dieselbe Notiz. Fügen Sie für einen anderen Typ oder eine andere Notiz eine weitere Gruppe hinzu.",
+        "es": "Opcional. Añade archivos que se apliquen a varias entregas. Los archivos seleccionados juntos comparten tipo y nota. Añade otro grupo para un tipo o una nota distintos.",
+        "fr": "Facultatif. Ajoutez des fichiers valables pour plusieurs livraisons. Les fichiers sélectionnés ensemble partagent le même type et la même note. Ajoutez un autre groupe pour un type ou une note différente.",
+        "it": "Facoltativo. Aggiungi file validi per più consegne. I file selezionati insieme condividono tipo e nota. Aggiungi un altro gruppo per un tipo o una nota diversi.",
+        "nl": "Optioneel. Voeg bestanden toe die voor meerdere leveringen gelden. Samen geselecteerde bestanden delen hetzelfde type en dezelfde notitie. Voeg een groep toe voor een ander type of een andere notitie.",
+        "pt_BR": "Opcional. Adicione arquivos válidos para várias entregas. Arquivos selecionados juntos compartilham o tipo e a nota. Adicione outro grupo para um tipo ou uma nota diferente."
       }
     },
     {
@@ -30524,6 +30560,18 @@
         "it": "L’ingrediente non è nel catalogo?",
         "nl": "Ingrediënt niet in de catalogus?",
         "pt_BR": "Ingrediente não está no catálogo?"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "listing.internal_reference",
+      "text": {
+        "de": "Interne Einkaufsreferenz",
+        "es": "Referencia interna de compra",
+        "fr": "Référence d’achat interne",
+        "it": "Riferimento interno di acquisto",
+        "nl": "Interne inkoopreferentie",
+        "pt_BR": "Referência interna de compra"
       }
     },
     {
@@ -38340,18 +38388,6 @@
     },
     {
       "group": "production_bench",
-      "key": "receipt.document_file_help",
-      "text": {
-        "de": "PDF oder Bild, maximal 10 MB. Dateien bleiben privat.",
-        "es": "PDF o imagen, hasta 10 MB. Los archivos permanecen privados.",
-        "fr": "PDF ou image, 10 Mo maximum. Les fichiers restent privés.",
-        "it": "PDF o immagine, fino a 10 MB. I file restano privati.",
-        "nl": "Pdf of afbeelding, maximaal 10 MB. Bestanden blijven privé.",
-        "pt_BR": "PDF ou imagem, até 10 MB. Os arquivos permanecem privados."
-      }
-    },
-    {
-      "group": "production_bench",
       "key": "receipt.document_lot_target_invalid",
       "text": {
         "de": "Jedes ausgewählte Los muss zu diesem Wareneingang gehören.",
@@ -39404,6 +39440,18 @@
         "it": "Ordine emesso",
         "nl": "Uitgegeven bestelling",
         "pt_BR": "Pedido de compra emitido"
+      }
+    },
+    {
+      "group": "production_bench",
+      "key": "receipt.purchasing_document_file_help",
+      "text": {
+        "de": "PDFs bis :pdfMax MB. Bilder bis :imageMax MB. Dateien bleiben privat.",
+        "es": "PDF de hasta :pdfMax MB. Imágenes de hasta :imageMax MB. Los archivos son privados.",
+        "fr": "PDF jusqu’à :pdfMax Mo. Images jusqu’à :imageMax Mo. Les fichiers restent privés.",
+        "it": "PDF fino a :pdfMax MB. Immagini fino a :imageMax MB. I file restano privati.",
+        "nl": "Pdf’s tot :pdfMax MB. Afbeeldingen tot :imageMax MB. Bestanden blijven privé.",
+        "pt_BR": "PDFs de até :pdfMax MB. Imagens de até :imageMax MB. Os arquivos permanecem privados."
       }
     },
     {

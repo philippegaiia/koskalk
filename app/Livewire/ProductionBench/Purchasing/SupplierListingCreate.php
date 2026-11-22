@@ -2,15 +2,21 @@
 
 namespace App\Livewire\ProductionBench\Purchasing;
 
+use App\Actions\Inventory\AttachProductionDocument;
+use App\Actions\Inventory\DetachProductionDocument;
 use App\Actions\Purchasing\DeleteSupplierListing;
 use App\Actions\Purchasing\SaveSupplierListing;
 use App\DecimalStringFormatter;
 use App\Enums\ListingPriceBasis;
+use App\Enums\MediaAssetType;
 use App\Enums\OrganicStatus;
 use App\Enums\OwnerType;
+use App\Enums\ProductionDocumentType;
 use App\Enums\Visibility;
+use App\Forms\Components\MediaAssetPicker;
 use App\Livewire\Concerns\InteractsWithProductionWorkspace;
 use App\Models\Ingredient;
+use App\Models\MediaAsset;
 use App\Models\PackagingItem;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
@@ -19,12 +25,17 @@ use App\Models\Workspace;
 use App\Services\ContextualHelp\PurchasingHelpTopics;
 use App\Services\CurrencyCatalog;
 use App\Services\MassConverter;
+use App\Services\MediaAssetUploadService;
 use App\Services\ProductionBenchAccess;
 use App\Services\SupplierListingPriceCalculator;
 use App\Services\WorkspaceIngredientCodeService;
 use App\Support\LocalizedDecimalInput;
 use App\Support\NumberLocale;
+use Filament\Actions\Concerns\InteractsWithActions;
+use Filament\Actions\Contracts\HasActions;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Radio;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -32,6 +43,7 @@ use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -40,13 +52,17 @@ use Filament\Schemas\Concerns\RestrictsFileUploadsToSchemaComponents;
 use Filament\Schemas\Schema;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Throwable;
 
-class SupplierListingCreate extends Component implements HasForms
+class SupplierListingCreate extends Component implements HasActions, HasForms
 {
+    use InteractsWithActions;
     use InteractsWithForms;
     use InteractsWithProductionWorkspace;
     use RestrictsFileUploadsToSchemaComponents;
@@ -54,6 +70,8 @@ class SupplierListingCreate extends Component implements HasForms
     private const OptionLimit = 20;
 
     private const InitialOptionLimit = 10;
+
+    private const DocumentUploadLimit = 10;
 
     private CurrencyCatalog $currencyCatalog;
 
@@ -158,6 +176,7 @@ class SupplierListingCreate extends Component implements HasForms
             'ingredient_id' => $ingredient?->id,
             'packaging_item_id' => $packagingItem?->id,
             'supplier_sku' => $editingListing?->supplier_sku,
+            'internal_reference' => $editingListing?->internal_reference,
             'supplier_item_name' => $editingListing?->supplier_item_name,
             'purchase_format' => $editingListing?->purchase_format,
             'net_quantity' => $this->editableDecimal(
@@ -176,8 +195,11 @@ class SupplierListingCreate extends Component implements HasForms
         ]);
     }
 
-    public function save(SaveSupplierListing $saveSupplierListing): void
-    {
+    public function save(
+        SaveSupplierListing $saveSupplierListing,
+        MediaAssetUploadService $uploads,
+        AttachProductionDocument $attachDocument,
+    ): void {
         if ($this->lockedSupplierPublicId !== null) {
             $this->data['supplier_id'] = $this->workspaceSupplierByPublicId($this->lockedSupplierPublicId)->id;
         }
@@ -191,17 +213,110 @@ class SupplierListingCreate extends Component implements HasForms
             return;
         }
 
+        $actor = $this->user();
+        $workspace = $this->workspace();
+        $listing = $this->editingListing();
+        $documents = $state['new_documents'] ?? [];
+        $documentKeys = array_keys($this->data['new_documents'] ?? []);
+        $fileCount = array_sum(array_map(fn (array $document): int => count($document['uploads'] ?? []) + count($document['library_asset_ids'] ?? []), $documents));
+        if ($fileCount > self::DocumentUploadLimit) {
+            $this->addError('data.new_documents', __('validation.max.array', [
+                'attribute' => __('production_bench.receipt.documents'),
+                'max' => self::DocumentUploadLimit,
+            ]));
+
+            return;
+        }
+
+        $saveListing = fn (): SupplierListing => $saveSupplierListing->handle(
+            actor: $actor,
+            workspace: $workspace,
+            supplier: $supplier,
+            subject: $subject,
+            attributes: $this->listingAttributes($state),
+            listing: $listing,
+            refreshUnchangedPrice: $documents === [],
+        );
+        $uploadedAssets = [];
+        $attachments = [];
+        $documentIndex = 0;
+        $documentField = 'uploads';
+
         try {
-            $saveSupplierListing->handle(
-                actor: $this->user(),
-                workspace: $this->workspace(),
-                supplier: $supplier,
-                subject: $subject,
-                attributes: $this->listingAttributes($state),
-                listing: $this->editingListing(),
-            );
-        } catch (ValidationException $exception) {
-            $this->surfaceValidationErrors($exception, (string) $state['material_type']);
+            if ($documents === []) {
+                $saveListing();
+            } else {
+                app(ProductionBenchAccess::class)->assertWritable($actor, $workspace);
+                foreach ($documents as $documentIndex => $document) {
+                    $documentField = 'library_asset_ids';
+                    foreach ($document['library_asset_ids'] ?? [] as $assetId) {
+                        $id = filter_var($assetId, FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
+                        if ($id === false) {
+                            throw ValidationException::withMessages(['document' => __('production_bench.receipt.document_asset_invalid')]);
+                        }
+
+                        $attachments[] = ['id' => $id, 'index' => $documentIndex, 'field' => $documentField];
+                    }
+
+                    $documentField = 'uploads';
+                    foreach ($document['uploads'] ?? [] as $upload) {
+                        if (! $upload instanceof TemporaryUploadedFile) {
+                            throw ValidationException::withMessages(['upload' => __('production_bench.receipt.document_asset_invalid')]);
+                        }
+
+                        $asset = $uploads->start(
+                            $actor,
+                            $workspace,
+                            $upload,
+                            [MediaAssetType::Pdf, MediaAssetType::Image],
+                            processSynchronously: true,
+                            documentImage: true,
+                            purchasingDocument: true,
+                        );
+                        $uploadedAssets[] = $asset;
+                        $attachments[] = ['id' => $asset->id, 'index' => $documentIndex, 'field' => $documentField];
+                    }
+                }
+
+                DB::transaction(function () use ($actor, $attachments, $attachDocument, $saveListing, $documents, &$documentIndex, &$documentField): void {
+                    $listing = $saveListing();
+                    foreach ($attachments as ['id' => $assetId, 'index' => $documentIndex, 'field' => $documentField]) {
+                        $document = $documents[$documentIndex];
+                        $lockedAsset = MediaAsset::query()
+                            ->where('workspace_id', $listing->workspace_id)->lockForUpdate()->find($assetId);
+                        if (! $lockedAsset instanceof MediaAsset) {
+                            throw ValidationException::withMessages(['document' => __('production_bench.receipt.document_asset_invalid')]);
+                        }
+                        $attachDocument->handle(
+                            actor: $actor,
+                            documentable: $listing,
+                            asset: $lockedAsset,
+                            type: ProductionDocumentType::from($document['type']),
+                            note: filled($document['note'] ?? null) ? trim($document['note']) : null,
+                        );
+                    }
+                });
+            }
+        } catch (Throwable $exception) {
+            foreach ($uploadedAssets as $asset) {
+                try {
+                    $uploads->rollbackUnreferencedUpload($actor, $workspace, $asset);
+                } catch (Throwable $cleanupException) {
+                    report($cleanupException);
+                }
+            }
+
+            if (! $exception instanceof ValidationException) {
+                throw $exception;
+            }
+
+            $documentError = $exception->errors()['upload'][0] ?? $exception->errors()['document'][0] ?? null;
+            if ($documentError !== null) {
+                $key = $documentKeys[$documentIndex] ?? null;
+                $this->addError($key === null ? 'data.new_documents' : "data.new_documents.{$key}.{$documentField}", $documentError);
+            } else {
+                $this->surfaceValidationErrors($exception, (string) $state['material_type']);
+            }
 
             return;
         }
@@ -213,6 +328,13 @@ class SupplierListingCreate extends Component implements HasForms
         }
 
         $this->redirectRoute('production-bench.purchasing.listings', navigate: true);
+    }
+
+    public function detachDocument(DetachProductionDocument $detach, int $documentId): void
+    {
+        $listing = $this->editingListing() ?? abort(404);
+        $document = $listing->documents()->where('workspace_id', $this->workspace()->id)->findOrFail($documentId);
+        $detach->handle($this->user(), $document);
     }
 
     public function delete(DeleteSupplierListing $deleteSupplierListing): void
@@ -314,8 +436,11 @@ class SupplierListingCreate extends Component implements HasForms
                     ->compact()
                     ->columns(['md' => 2])
                     ->schema([
-                        TextInput::make('supplier_sku')->label(__('production_bench.listing.supplier_sku'))->maxLength(255),
-                        TextInput::make('supplier_item_name')->label(__('production_bench.listing.supplier_item_name'))->maxLength(255),
+                        Grid::make(['md' => 4])->columnSpanFull()->schema([
+                            TextInput::make('supplier_sku')->label(__('production_bench.listing.supplier_sku'))->maxLength(255),
+                            TextInput::make('internal_reference')->label(__('production_bench.listing.internal_reference'))->maxLength(255),
+                            TextInput::make('supplier_item_name')->label(__('production_bench.listing.supplier_item_name'))->maxLength(255)->columnSpan(['md' => 2]),
+                        ]),
                         TextInput::make('purchase_format')->label(__('production_bench.listing.purchase_format'))->placeholder(__('production_bench.listing.purchase_format_placeholder'))->required()->maxLength(255)->columnSpanFull(),
                         LocalizedDecimalInput::make('net_quantity')
                             ->label(__('production_bench.listing.net_quantity'))
@@ -394,6 +519,71 @@ class SupplierListingCreate extends Component implements HasForms
                         Toggle::make('is_active')->label(__('production_bench.common.active'))->default(true),
                         Textarea::make('notes')->label(__('production_bench.common.notes'))->rows(4)->columnSpanFull(),
                     ]),
+                Section::make(__('production_bench.receipt.attach_document'))
+                    ->description(__('production_bench.listing.documents_help'))
+                    ->schema([
+                        Repeater::make('new_documents')
+                            ->hiddenLabel()
+                            ->defaultItems(0)
+                            ->maxItems(self::DocumentUploadLimit)
+                            ->reorderable(false)
+                            ->addActionLabel(__('production_bench.receipt.attach_document'))
+                            ->schema([
+                                FileUpload::make('uploads')
+                                    ->label(__('production_bench.receipt.documents'))
+                                    ->helperText(__('production_bench.receipt.purchasing_document_file_help', [
+                                        'pdfMax' => config('media.asset_uploads.pdf.purchasing_max_size_kb') / 1024,
+                                        'imageMax' => config('media.asset_uploads.max_size_kb') / 1024,
+                                    ]))
+                                    ->acceptedFileTypes(['application/pdf', 'image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'])
+                                    ->maxSize((int) config('media.asset_uploads.max_size_kb'))
+                                    ->multiple()
+                                    ->maxFiles(self::DocumentUploadLimit)
+                                    ->previewable(false)
+                                    ->storeFiles(false)
+                                    ->required(fn (Get $get): bool => blank($get('library_asset_ids')))
+                                    ->live()
+                                    ->afterStateUpdated(function (FileUpload $component, MediaAssetUploadService $uploads): void {
+                                        $path = $component->getStatePath();
+                                        $this->resetValidation($path);
+                                        $messages = [];
+
+                                        foreach ($component->getState() ?? [] as $file) {
+                                            if ($file instanceof TemporaryUploadedFile
+                                                && ($message = $uploads->pdfSizeError($file, purchasingDocument: true)) !== null) {
+                                                $messages[] = $message;
+                                            }
+                                        }
+
+                                        if ($messages !== []) {
+                                            $this->addError($path, implode(' ', $messages));
+                                        }
+                                    })
+                                    ->columnSpanFull(),
+                                MediaAssetPicker::make('library_asset_ids')
+                                    ->hiddenLabel()
+                                    ->documents()
+                                    ->fileAttachments(false)
+                                    ->multiple()
+                                    ->maxItems(self::DocumentUploadLimit)
+                                    ->rules(['array', 'max:'.self::DocumentUploadLimit])
+                                    ->columnSpanFull(),
+                                Select::make('type')
+                                    ->label(__('production_bench.receipt.document_type'))
+                                    ->options(collect([
+                                        ProductionDocumentType::Specification,
+                                        ProductionDocumentType::SafetyDataSheet,
+                                        ProductionDocumentType::Certificate,
+                                        ProductionDocumentType::Other,
+                                    ])->mapWithKeys(fn (ProductionDocumentType $type): array => [
+                                        $type->value => __('production_bench.receipt.document_types.'.$type->value),
+                                    ])->all())
+                                    ->required(),
+                                TextInput::make('note')
+                                    ->label(__('production_bench.common.notes'))
+                                    ->maxLength(1000),
+                            ])->columns(2),
+                    ]),
             ])
             ->statePath('data')
             ->model(SupplierListing::class);
@@ -401,8 +591,15 @@ class SupplierListingCreate extends Component implements HasForms
 
     public function render(PurchasingHelpTopics $helpTopics): View
     {
+        $documents = $this->editingListing()?->documents()
+            ->where('workspace_id', $this->workspace()->id)
+            ->with('mediaAsset')
+            ->latest('id')
+            ->get() ?? collect();
+
         return view('livewire.production-bench.purchasing.supplier-listing-create', [
             'canDelete' => app(ProductionBenchAccess::class)->canConfigure($this->user(), $this->workspace()),
+            'documents' => $documents,
             'contextualHelp' => $helpTopics->resolve('listings', app()->getLocale()),
             'lockedSupplier' => $this->lockedSupplierPublicId === null ? null : $this->workspaceSupplierByPublicId($this->lockedSupplierPublicId),
         ]);
@@ -584,6 +781,7 @@ class SupplierListingCreate extends Component implements HasForms
 
         return [
             'supplier_sku' => $state['supplier_sku'] ?? null,
+            'internal_reference' => $state['internal_reference'] ?? null,
             'supplier_item_name' => $state['supplier_item_name'] ?? null,
             'purchase_format' => $state['purchase_format'],
             'container' => null,

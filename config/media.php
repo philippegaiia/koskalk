@@ -28,6 +28,7 @@ return [
         'accepted_document_extensions' => ['pdf'],
         'pdf' => [
             'max_size_kb' => 180,
+            'purchasing_max_size_kb' => 1024,
             'max_pages' => 50,
             'pdfinfo_binary' => env('PDFINFO_BINARY', 'pdfinfo'),
             'pdftoppm_binary' => env('PDFTOPPM_BINARY', 'pdftoppm'),

@@ -213,6 +213,7 @@ return [
     ],
     'validation' => [
         'pdf_size' => 'This PDF exceeds the :max KB limit. Compress it and try again.',
+        'purchasing_pdf_size' => '“:filename” exceeds the :max MB PDF limit.',
         'asset_in_use_by_documents' => 'This file is attached to production or receipt documents and cannot be removed.',
         'display_name_required' => 'Enter a display name.',
         'display_name_max' => 'The display name must not be longer than 255 characters.',

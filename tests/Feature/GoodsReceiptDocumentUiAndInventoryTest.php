@@ -76,6 +76,7 @@ it('uploads one private asset and attaches it to selected receipt lots', functio
 
     Livewire::test(ReceiptDetail::class, ['goodsReceipt' => $receipt->public_id])
         ->assertSeeHtml('data-receipt-document-upload')
+        ->assertSee('PDFs up to 1 MB. Images up to 10 MB.')
         ->assertSeeHtml('value="certificate_of_analysis"')
         ->set('documentType', ProductionDocumentType::CertificateOfAnalysis->value)
         ->assertSeeHtml('value="'.$line->stock_lot_id.'"')

@@ -225,9 +225,10 @@ class PurchasingIndex extends Component
     public function uploadDocument(
         MediaAssetUploadService $uploads,
         AttachProductionDocument $attach,
+        ProductionBenchAccess $access,
     ): void {
         $this->validate([
-            'documentUpload' => ['required', 'file', 'max:10240'],
+            'documentUpload' => ['required', 'file', 'max:'.config('media.asset_uploads.max_size_kb')],
             'documentLotId' => ['required', 'integer'],
             'documentType' => ['required', 'string'],
         ]);
@@ -237,6 +238,7 @@ class PurchasingIndex extends Component
             ->findOrFail($this->documentLotId);
         $type = ProductionDocumentType::from($this->documentType);
         $asset = null;
+        $access->assertWritable($this->user(), $this->workspace());
 
         try {
             $asset = $uploads->start(
@@ -245,6 +247,7 @@ class PurchasingIndex extends Component
                 $this->documentUpload,
                 [MediaAssetType::Image, MediaAssetType::Pdf],
                 processSynchronously: true,
+                purchasingDocument: true,
             )->refresh();
             $attach->handle(
                 actor: $this->user(),

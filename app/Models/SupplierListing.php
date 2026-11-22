@@ -12,9 +12,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 #[Fillable([
-    'workspace_id', 'supplier_id', 'ingredient_id', 'packaging_item_id', 'supplier_sku',
+    'workspace_id', 'supplier_id', 'ingredient_id', 'packaging_item_id', 'supplier_sku', 'internal_reference',
     'supplier_item_name', 'purchase_format', 'container', 'unit_kind', 'canonical_quantity_per_purchase_format',
     'net_quantity', 'net_unit', 'price_basis', 'price_amount', 'price_unit', 'price_recorded_at', 'total_price',
     'currency', 'minimum_packs', 'organic_status', 'notes', 'is_active',
@@ -54,6 +55,11 @@ class SupplierListing extends Model
     public function stockLots(): HasMany
     {
         return $this->hasMany(StockLot::class);
+    }
+
+    public function documents(): MorphMany
+    {
+        return $this->morphMany(ProductionDocument::class, 'documentable');
     }
 
     protected function casts(): array

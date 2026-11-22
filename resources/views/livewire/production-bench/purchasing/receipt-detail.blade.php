@@ -164,7 +164,10 @@
                 <label class="space-y-2 sm:col-span-2">
                     <span class="text-sm font-medium">{{ __('production_bench.receipt.document_file') }}</span>
                     <input wire:model="documentUpload" type="file" accept="application/pdf,image/*" required aria-invalid="{{ $errors->has('documentUpload') ? 'true' : 'false' }}" aria-describedby="receipt-document-upload-help{{ $errors->has('documentUpload') ? ' receipt-document-upload-error' : '' }}" class="sk-input w-full file:mr-4 file:rounded-lg file:border-0 file:bg-[var(--color-field-muted)] file:px-3 file:py-2 file:text-sm file:font-medium">
-                    <span id="receipt-document-upload-help" class="block text-xs text-[var(--color-ink-muted)]">{{ __('production_bench.receipt.document_file_help') }}</span>
+                    <span id="receipt-document-upload-help" class="block text-xs text-[var(--color-ink-muted)]">{{ __('production_bench.receipt.purchasing_document_file_help', [
+                        'pdfMax' => config('media.asset_uploads.pdf.purchasing_max_size_kb') / 1024,
+                        'imageMax' => config('media.asset_uploads.max_size_kb') / 1024,
+                    ]) }}</span>
                     @error('documentUpload')<span id="receipt-document-upload-error" class="block text-xs text-[var(--color-danger-strong)]">{{ $message }}</span>@enderror
                 </label>
 

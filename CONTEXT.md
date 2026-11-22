@@ -70,7 +70,10 @@ The immutable Koskalk identifier used by catalog and resolver logic. It is an ad
 An optional workspace-authored mnemonic reference for an ingredient or packaging item. Ingredient codes and packaging codes are each unique among their own current workspace assignments, may be changed or reused, and are distinct from Koskalk catalogue keys, supplier codes, supplier SKUs, and stock-lot codes. Koskalk does not generate these codes. Production and procurement history preserve the value frozen at creation time.
 
 **Supplier SKU**:
-The supplier's identifier for a supplier listing. It is distinct from an internal material code; Koskalk does not add a second user-defined identifier to the listing itself.
+The supplier's identifier for a supplier listing.
+
+**Internal purchasing reference**:
+An optional workspace-authored reference for a specific supplier listing. The internal material code identifies the ingredient or packaging item across listings.
 
 **Ingredient change review**:
 A recheck of a formula's INCI and regulatory guidance after the current data of any linked ingredient changes.

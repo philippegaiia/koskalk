@@ -35,10 +35,11 @@ class MediaAssetUploadService
         array $allowedTypes = [MediaAssetType::Image],
         bool $processSynchronously = false,
         bool $documentImage = false,
+        bool $purchasingDocument = false,
     ): MediaAsset {
         Gate::forUser($user)->authorize('create', MediaAsset::class);
         $this->assertCanEditWorkspace($user, $workspace);
-        $type = $this->validateUpload($upload, $allowedTypes);
+        $type = $this->validateUpload($upload, $allowedTypes, $purchasingDocument);
 
         $disk = (string) config('media.asset_pending_disk');
         $extension = strtolower($upload->getClientOriginalExtension());
@@ -247,21 +248,35 @@ class MediaAssetUploadService
         }
     }
 
+    public function pdfSizeError(UploadedFile $upload, bool $purchasingDocument = false): ?string
+    {
+        $maxSizeKb = $purchasingDocument
+            ? (int) config('media.asset_uploads.pdf.purchasing_max_size_kb')
+            : (int) config('media.asset_uploads.pdf.max_size_kb', 180);
+
+        if (strtolower($upload->getClientOriginalExtension()) !== 'pdf' || $upload->getSize() <= $maxSizeKb * 1024) {
+            return null;
+        }
+
+        return $purchasingDocument
+            ? __('media_library.validation.purchasing_pdf_size', [
+                'filename' => $upload->getClientOriginalName(),
+                'max' => $maxSizeKb / 1024,
+            ])
+            : __('media_library.validation.pdf_size', ['max' => $maxSizeKb]);
+    }
+
     /**
      * @param  array<int, MediaAssetType>  $allowedTypes
      */
-    private function validateUpload(UploadedFile $upload, array $allowedTypes): MediaAssetType
+    private function validateUpload(UploadedFile $upload, array $allowedTypes, bool $purchasingDocument): MediaAssetType
     {
         $extension = strtolower($upload->getClientOriginalExtension());
         $maxBytes = ((int) config('media.asset_uploads.max_size_kb', 10240)) * 1024;
         $mimeType = $upload->getMimeType();
-
-        if ($extension === 'pdf' && ($upload->getSize() ?: 0) > (int) config('media.asset_uploads.pdf.max_size_kb', 180) * 1024) {
-            throw ValidationException::withMessages([
-                'upload' => __('media_library.validation.pdf_size', [
-                    'max' => (int) config('media.asset_uploads.pdf.max_size_kb', 180),
-                ]),
-            ]);
+        $pdfSizeError = $this->pdfSizeError($upload, $purchasingDocument);
+        if ($pdfSizeError !== null) {
+            throw ValidationException::withMessages(['upload' => $pdfSizeError]);
         }
 
         if (($upload->getSize() ?: 0) > $maxBytes) {

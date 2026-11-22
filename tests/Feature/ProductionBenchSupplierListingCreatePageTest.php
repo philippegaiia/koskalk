@@ -3,10 +3,13 @@
 use App\Enums\ListingPriceBasis;
 use App\Enums\MassDisplaySystem;
 use App\Enums\OwnerType;
+use App\Enums\ProductionDocumentType;
 use App\Enums\StockUnitKind;
 use App\Enums\Visibility;
+use App\Livewire\Dashboard\MediaLibraryIndex;
 use App\Livewire\ProductionBench\Purchasing\SupplierListingCreate;
 use App\Models\Ingredient;
+use App\Models\MediaAsset;
 use App\Models\PackagingItem;
 use App\Models\Supplier;
 use App\Models\SupplierListing;
@@ -14,9 +17,12 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceIngredientCode;
 use App\Services\ProductionBenchAccess;
+use Filament\Forms\Components\Repeater;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 
@@ -29,6 +35,231 @@ it('protects both supplier listing creation routes', function (): void {
         ->assertRedirect(route('login'));
     $this->get('/dashboard/production-bench/purchasing/suppliers/'.$supplier->public_id.'/listings/new')
         ->assertRedirect(route('login'));
+});
+
+it('adds and removes upload groups using the listing form actions', function (): void {
+    [$owner] = listingCreateWorkspace();
+    $this->actingAs($owner);
+
+    $page = Livewire::test(SupplierListingCreate::class);
+    $repeater = collect($page->instance()->form->getFlatFields())->sole(
+        fn ($field): bool => $field instanceof Repeater && $field->getName() === 'new_documents',
+    );
+    $context = ['schemaComponent' => $repeater->getKey()];
+
+    $page->call('mountAction', 'add', [], $context)->assertOk();
+    $page->call('mountAction', 'add', [], $context)->assertOk();
+    $groups = $page->get('data.new_documents');
+    expect($groups)->toHaveCount(2);
+
+    $page->call('mountAction', 'delete', ['item' => array_key_first($groups)], $context)
+        ->assertOk();
+    expect($page->get('data.new_documents'))->toHaveCount(1);
+});
+
+it('reuses a private library certificate across purchase formats', function (): void {
+    [$owner, $workspace] = listingCreateWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $ingredient = Ingredient::factory()->create();
+    $first = SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create();
+    $second = SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create([
+        'purchase_format' => '25 kg drum',
+        'net_quantity' => '25',
+        'canonical_quantity_per_purchase_format' => '25000',
+    ]);
+    $certificate = MediaAsset::factory()->for($workspace)->pdf()->ready()->create([
+        'original_filename' => 'supplier-certificate.pdf',
+    ]);
+    $this->actingAs($owner);
+
+    foreach ([$first, $second] as $listing) {
+        Livewire::test(SupplierListingCreate::class, ['listing' => $listing->public_id])
+            ->set('data.new_documents', ['certificate' => [
+                'library_asset_ids' => [(string) $certificate->id],
+                'type' => ProductionDocumentType::Certificate->value,
+                'note' => $listing->purchase_format,
+            ]])
+            ->assertSee('Choose from Media Library')
+            ->assertSee('supplier-certificate.pdf')
+            ->assertDontSeeHtml('data-media-picker-upload-tab')
+            ->call('save')
+            ->assertHasNoErrors();
+
+        expect($listing->documents()->sole()->media_asset_id)->toBe($certificate->id)
+            ->and($listing->documents()->sole()->note)->toBe($listing->purchase_format);
+    }
+
+    Livewire::test(SupplierListingCreate::class, ['listing' => $first->public_id])
+        ->call('detachDocument', $first->documents()->sole()->id)->assertHasNoErrors();
+
+    expect($first->documents()->exists())->toBeFalse()
+        ->and($second->documents()->sole()->media_asset_id)->toBe($certificate->id)
+        ->and(MediaAsset::query()->count())->toBe(1);
+});
+
+it('refuses to attach a library file from another workspace or one that is not ready', function (bool $foreign): void {
+    [$owner, $workspace] = listingCreateWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $listing = SupplierListing::factory()->for($workspace)->for($supplier)->create();
+    $asset = $foreign
+        ? MediaAsset::factory()->ready()->create()
+        : MediaAsset::factory()->for($workspace)->failed()->create();
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierListingCreate::class, ['listing' => $listing->public_id])
+        ->set('data.new_documents', ['certificate' => [
+            'library_asset_ids' => [$asset->id],
+            'type' => ProductionDocumentType::Certificate->value,
+        ]])
+        ->call('save')
+        ->assertHasErrors('data.new_documents.certificate.library_asset_ids');
+
+    expect($listing->documents()->exists())->toBeFalse()
+        ->and($asset->fresh())->not->toBeNull();
+})->with(['another workspace' => true, 'failed asset' => false]);
+
+it('saves private documents with a supplier listing and keeps earlier copies when updated', function (): void {
+    Storage::fake('local');
+    config()->set('media.asset_pending_disk', 'local');
+    config()->set('media.asset_disk', 'local');
+    [$owner, $workspace] = listingCreateWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $ingredient = Ingredient::factory()->create();
+    $this->actingAs($owner);
+    $pdf = listingDocumentPdf();
+
+    Livewire::test(SupplierListingCreate::class)
+        ->set('data.supplier_id', $supplier->id)
+        ->set('data.ingredient_id', $ingredient->id)
+        ->set('data.purchase_format', 'Drum')
+        ->set('data.net_quantity', '1')
+        ->set('data.price_amount', '10')
+        ->set('data.new_documents', ['first' => [], 'second' => []])
+        ->set('data.new_documents.first.uploads', [
+            UploadedFile::fake()->image('specification.jpg'),
+            UploadedFile::fake()->image('specification-appendix.jpg'),
+        ])
+        ->set('data.new_documents.first.type', ProductionDocumentType::Specification->value)
+        ->set('data.new_documents.first.note', 'Initial revision')
+        ->set('data.new_documents.second.uploads', [$pdf])
+        ->assertSee('PDFs up to 1 MB. Images up to 10 MB.')
+        ->set('data.new_documents.second.type', ProductionDocumentType::SafetyDataSheet->value)
+        ->set('data.new_documents.second.note', 'Supplier safety data')
+        ->call('save')
+        ->assertHasNoErrors()
+        ->assertRedirect(route('production-bench.purchasing.listings'));
+
+    $listing = SupplierListing::query()->sole();
+    $specifications = $listing->documents()->where('type', ProductionDocumentType::Specification)->with('mediaAsset')->get();
+    $original = $specifications->firstWhere('mediaAsset.original_filename', 'specification.jpg');
+    $safetySheet = $listing->documents()->where('type', ProductionDocumentType::SafetyDataSheet)->sole();
+    expect($original->note)->toBe('Initial revision')
+        ->and($original->workspace_id)->toBe($workspace->id)
+        ->and($specifications->pluck('note')->all())->toBe(['Initial revision', 'Initial revision'])
+        ->and($safetySheet->note)->toBe('Supplier safety data')
+        ->and($safetySheet->mediaAsset->original_filename)->toBe('safety-sheet.pdf')
+        ->and($safetySheet->mediaAsset->original_size)->toBe($pdf->getSize());
+
+    $imagePreviewUrl = route('media.show', [$original->mediaAsset, 'master']);
+    $pdfPreviewUrl = route('media.download', [$safetySheet->mediaAsset, 'inline' => 1]);
+    $this->get($imagePreviewUrl)->assertSuccessful();
+    $this->get($pdfPreviewUrl)->assertOk()
+        ->assertHeader('Content-Type', 'application/pdf')
+        ->assertHeader('Content-Disposition', 'inline; filename=safety-sheet.pdf');
+    Livewire::test(MediaLibraryIndex::class)
+        ->call('openAssetPanel', $original->media_asset_id, 'usage')
+        ->assertSeeHtml('href="'.route('production-bench.purchasing.listings.edit', $listing).'"');
+
+    $this->travel(1)->day();
+    Livewire::test(SupplierListingCreate::class, ['listing' => $listing->public_id])
+        ->assertSeeInOrder(['Attach document', 'specification.jpg'])
+        ->assertSeeHtml('href="'.$imagePreviewUrl.'" target="_blank"')
+        ->assertSeeHtml('href="'.$pdfPreviewUrl.'" target="_blank"')
+        ->assertSee('Initial revision')
+        ->set('data.new_documents', ['revision' => []])
+        ->set('data.new_documents.revision.uploads', [UploadedFile::fake()->image('new-specification.jpg')])
+        ->set('data.new_documents.revision.type', ProductionDocumentType::Specification->value)
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($listing->documents()->count())->toBe(4)
+        ->and($listing->fresh()->price_recorded_at->equalTo($listing->price_recorded_at))->toBeTrue();
+
+    Livewire::test(SupplierListingCreate::class, ['listing' => $listing->public_id])
+        ->assertSee('new-specification.jpg')
+        ->call('delete');
+    expect($listing->fresh()->is_active)->toBeFalse()
+        ->and($listing->documents()->count())->toBe(4);
+
+    $unrelatedListing = SupplierListing::factory()->for($workspace)->for($supplier)->create();
+    Livewire::test(SupplierListingCreate::class, ['listing' => $unrelatedListing->public_id])
+        ->call('detachDocument', $original->id)
+        ->assertNotFound();
+
+    Livewire::test(SupplierListingCreate::class, ['listing' => $listing->public_id])
+        ->call('detachDocument', $original->id)
+        ->assertHasNoErrors()
+        ->assertDontSeeHtml('href="'.$imagePreviewUrl.'"');
+    expect($listing->documents()->count())->toBe(3);
+    $this->get(route('media.download', $original->mediaAsset))->assertSuccessful();
+
+    $this->actingAs(User::factory()->create())->get($imagePreviewUrl)->assertNotFound();
+    $this->get($pdfPreviewUrl)->assertNotFound();
+});
+
+it('requires a listing document type for uploads and rejects a batch certificate', function (): void {
+    Storage::fake('local');
+    [$owner, $workspace] = listingCreateWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $ingredient = Ingredient::factory()->create();
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierListingCreate::class)
+        ->set('data.supplier_id', $supplier->id)
+        ->set('data.ingredient_id', $ingredient->id)
+        ->set('data.purchase_format', 'Drum')
+        ->set('data.net_quantity', '1')
+        ->set('data.price_amount', '10')
+        ->set('data.new_documents', ['certificate' => []])
+        ->set('data.new_documents.certificate.uploads', [UploadedFile::fake()->image('certificate.jpg')])
+        ->call('save')
+        ->assertHasErrors(['data.new_documents.certificate.type' => 'required'])
+        ->set('data.new_documents.certificate.type', ProductionDocumentType::CertificateOfAnalysis->value)
+        ->call('save')
+        ->assertHasErrors('data.new_documents.certificate.type');
+
+    expect(SupplierListing::query()->count())->toBe(0);
+});
+
+it('names an oversized PDF and cleans up earlier files in the same listing save', function (): void {
+    Storage::fake('local');
+    config()->set('media.asset_pending_disk', 'local');
+    config()->set('media.asset_disk', 'local');
+    [$owner, $workspace] = listingCreateWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $ingredient = Ingredient::factory()->create();
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierListingCreate::class)
+        ->set('data.supplier_id', $supplier->id)
+        ->set('data.ingredient_id', $ingredient->id)
+        ->set('data.purchase_format', 'Drum')
+        ->set('data.net_quantity', '1')
+        ->set('data.price_amount', '10')
+        ->set('data.new_documents', ['files' => []])
+        ->set('data.new_documents.files.uploads', [
+            UploadedFile::fake()->image('first.jpg'),
+            UploadedFile::fake()->createWithContent('oversized-certificate.pdf', str_pad("%PDF-1.4\n", 1024 * 1024 + 1)),
+        ])
+        ->assertHasErrors('data.new_documents.files.uploads')
+        ->assertSee('“oversized-certificate.pdf” exceeds the 1 MB PDF limit.')
+        ->set('data.new_documents.files.type', ProductionDocumentType::Certificate->value)
+        ->call('save')
+        ->assertHasErrors('data.new_documents.files.uploads')
+        ->assertSee('“oversized-certificate.pdf” exceeds the 1 MB PDF limit.');
+
+    expect(SupplierListing::query()->exists())->toBeFalse()
+        ->and(MediaAsset::query()->where('workspace_id', $workspace->id)->exists())->toBeFalse();
 });
 
 it('shows a focused global listing form with searchable catalog selectors', function (): void {
@@ -202,6 +433,7 @@ it('creates an exact-price mass listing globally and returns to the listings ind
         ->set('data.material_type', 'ingredient')
         ->set('data.ingredient_id', $ingredient->id)
         ->set('data.supplier_sku', 'OO-200')
+        ->set('data.internal_reference', ' BUY-042 ')
         ->set('data.supplier_item_name', 'Extra virgin olive oil')
         ->set('data.purchase_format', '200 kg drum')
         ->set('data.net_quantity', '200')
@@ -224,6 +456,7 @@ it('creates an exact-price mass listing globally and returns to the listings ind
         'supplier_id' => $supplier->id,
         'ingredient_id' => $ingredient->id,
         'supplier_sku' => 'OO-200',
+        'internal_reference' => 'BUY-042',
         'supplier_item_name' => 'Extra virgin olive oil',
         'purchase_format' => '200 kg drum',
         'net_quantity' => '200.000000000',
@@ -286,6 +519,7 @@ it('updates an existing supplier listing without changing its supplier or materi
     $supplier = Supplier::factory()->for($workspace)->create();
     $ingredient = Ingredient::factory()->create();
     $listing = SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create([
+        'internal_reference' => 'BUY-042',
         'purchase_format' => '200 kg drum',
         'net_quantity' => '200',
         'net_unit' => 'kg',
@@ -301,6 +535,8 @@ it('updates an existing supplier listing without changing its supplier or materi
         ->assertSet('data.price_amount', '4.20')
         ->assertSet('data.supplier_id', $supplier->id)
         ->assertSet('data.ingredient_id', $ingredient->id)
+        ->assertSet('data.internal_reference', 'BUY-042')
+        ->set('data.internal_reference', '')
         ->set('data.purchase_format', '190 kg drum')
         ->set('data.net_quantity', '190')
         ->set('data.price_amount', '4.65')
@@ -311,6 +547,7 @@ it('updates an existing supplier listing without changing its supplier or materi
     expect($listing->fresh())
         ->supplier_id->toBe($supplier->id)
         ->ingredient_id->toBe($ingredient->id)
+        ->internal_reference->toBeNull()
         ->purchase_format->toBe('190 kg drum')
         ->net_quantity->toBe('190.000000000')
         ->price_amount->toBe('4.650000000')
@@ -688,6 +925,27 @@ it('rejects inactive and read-only listing pages and blocks a later save', funct
 
     expect(SupplierListing::query()->count())->toBe(0);
 });
+
+function listingDocumentPdf(): UploadedFile
+{
+    $content = "%PDF-1.4\n".str_repeat("% padding\n", 30720);
+    $objects = [
+        '<< /Type /Catalog /Pages 2 0 R >>',
+        '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+        '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << >> >>',
+    ];
+    $offsets = "0000000000 65535 f \n";
+    foreach ($objects as $index => $object) {
+        $offsets .= sprintf("%010d 00000 n \n", strlen($content));
+        $number = $index + 1;
+        $content .= "{$number} 0 obj\n{$object}\nendobj\n";
+    }
+
+    $xref = strlen($content);
+    $content .= "xref\n0 4\n{$offsets}trailer\n<< /Size 4 /Root 1 0 R >>\nstartxref\n{$xref}\n%%EOF\n";
+
+    return UploadedFile::fake()->createWithContent('safety-sheet.pdf', $content);
+}
 
 /** @return array{0: User, 1: Workspace} */
 function listingCreateWorkspace(MassDisplaySystem $massDisplaySystem = MassDisplaySystem::Metric): array

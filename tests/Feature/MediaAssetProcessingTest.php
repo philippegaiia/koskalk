@@ -225,6 +225,26 @@ it('accepts a PDF at 180 KB and rejects one byte above before reserving media', 
     Queue::assertPushed(NormalizeMediaAssetJob::class, 1);
 });
 
+it('accepts purchasing PDFs up to 1 MB while preserving the general 180 KB limit', function (): void {
+    Queue::fake();
+    [$user, $workspace] = mediaProcessingWorkspace(10);
+    $header = "%PDF-1.4\n";
+    $content = $header.str_repeat(' ', 1024 * 1024 - strlen($header));
+    $uploads = app(MediaAssetUploadService::class);
+    $pdf = UploadedFile::fake()->createWithContent('supplier-certificate.pdf', $content);
+
+    expect(fn () => $uploads->start($user, $workspace, $pdf, [MediaAssetType::Pdf]))
+        ->toThrow(ValidationException::class, '180 KB');
+
+    $asset = $uploads->start($user, $workspace, $pdf, [MediaAssetType::Pdf], purchasingDocument: true);
+    expect($asset->original_size)->toBe(1024 * 1024);
+
+    $oversized = UploadedFile::fake()->createWithContent('oversized.pdf', $content.' ');
+    expect(fn () => $uploads->start($user, $workspace, $oversized, [MediaAssetType::Pdf], purchasingDocument: true))
+        ->toThrow(ValidationException::class, '“oversized.pdf” exceeds the 1 MB PDF limit.')
+        ->and(MediaAsset::query()->count())->toBe(1);
+});
+
 it('defaults media processing to a 25 megapixel limit', function () {
     expect(config('media.asset_uploads.max_pixels'))->toBe(25_000_000);
 });

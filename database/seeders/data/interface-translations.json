@@ -11256,6 +11256,18 @@
     },
     {
       "group": "ingredients",
+      "key": "editor.compliance.ifra.limits_help",
+      "text": {
+        "de": "Geben Sie für jede Kategorie den Höchstwert laut Zertifikat ein: 0 % bedeutet verboten, 100 % bedeutet keine Einschränkung. Lassen Sie alle Zeilen leer, wenn Sie kein Zertifikat haben.",
+        "es": "Introduzca el máximo de cada categoría tal como figura en el certificado: 0 % significa prohibido y 100 % significa sin restricción. Deje todas las filas vacías si no tiene certificado.",
+        "fr": "Saisissez le maximum de chaque catégorie tel qu’il figure sur le certificat : 0 % signifie interdit, 100 % signifie aucune restriction. Laissez toutes les lignes vides si vous n’avez pas de certificat.",
+        "it": "Inserisci il massimo per ogni categoria come riportato sul certificato: 0% significa vietato, 100% significa nessuna restrizione. Lascia vuote tutte le righe se non hai un certificato.",
+        "nl": "Vul voor elke categorie het maximum in zoals vermeld op het certificaat: 0% betekent verboden, 100% betekent geen beperking. Laat alle rijen leeg als u geen certificaat hebt.",
+        "pt_BR": "Informe o máximo de cada categoria conforme o certificado: 0% significa proibido e 100% significa sem restrição. Deixe todas as linhas em branco se não tiver certificado."
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "editor.compliance.ifra.maximum",
       "text": {
         "de": "Höchstkonzentration (%)",
@@ -14756,6 +14768,30 @@
         "it": "Scegli un acido grasso attivo oppure conserva l’acido grasso inattivo già salvato su questo ingrediente.",
         "nl": "Kies een actief vetzuur of behoud een inactief vetzuur dat al op dit ingrediënt is opgeslagen.",
         "pt_BR": "Escolha um ácido graxo ativo ou mantenha o ácido graxo inativo já salvo neste ingrediente."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.validation.ifra_all_categories_required",
+      "text": {
+        "de": "Geben Sie für jede IFRA-Kategorie den Höchstwert laut Zertifikat ein oder lassen Sie alle leer.",
+        "es": "Introduzca el máximo de cada categoría IFRA tal como figura en el certificado, o deje todas vacías.",
+        "fr": "Saisissez le maximum de chaque catégorie IFRA tel qu’il figure sur le certificat, ou laissez-les toutes vides.",
+        "it": "Inserisci il massimo per ogni categoria IFRA come riportato sul certificato, oppure lasciale tutte vuote.",
+        "nl": "Vul voor elke IFRA-categorie het maximum in zoals vermeld op het certificaat, of laat ze allemaal leeg.",
+        "pt_BR": "Informe o máximo de cada categoria IFRA conforme o certificado ou deixe todas em branco."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.validation.ifra_category_required",
+      "text": {
+        "de": "Zertifikatswert eingeben",
+        "es": "Introduzca el valor del certificado",
+        "fr": "Saisir la valeur du certificat",
+        "it": "Inserisci il valore del certificato",
+        "nl": "Vul de certificaatwaarde in",
+        "pt_BR": "Informe o valor do certificado"
       }
     },
     {

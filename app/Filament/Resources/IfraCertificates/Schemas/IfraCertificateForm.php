@@ -84,8 +84,8 @@ class IfraCertificateForm
                                 Select::make('ifra_product_category_id')
                                     ->options(fn (): array => IfraProductCategory::query()
                                         ->where('is_active', true)
-                                        ->orderBy('code')
                                         ->get()
+                                        ->sortBy('code', SORT_NATURAL | SORT_FLAG_CASE)
                                         ->mapWithKeys(fn (IfraProductCategory $category): array => [
                                             $category->id => $category->optionLabel(),
                                         ])

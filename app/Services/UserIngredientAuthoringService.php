@@ -81,7 +81,7 @@ class UserIngredientAuthoringService
                 'source_amendment_label' => null,
                 'peroxide_value' => null,
                 'source_notes' => null,
-                'limits' => [],
+                'limits' => $this->ingredientDataEntryService->ifraLimitRows(),
             ],
         ];
     }

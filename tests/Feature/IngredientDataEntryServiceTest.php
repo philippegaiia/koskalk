@@ -245,6 +245,90 @@ it('rejects a nonexistent IFRA category from the ingredient entry service', func
     ]))->toThrow(ValidationException::class, __('ingredients.editor.compliance.ifra.invalid_category'));
 });
 
+it('lists every active IFRA category in certificate order for a new IFRA entry', function (): void {
+    foreach (['10A', '1', '5B', '12', '2', '5A', '11B', '9'] as $code) {
+        IfraProductCategory::factory()->create(['code' => $code, 'is_active' => true]);
+    }
+    IfraProductCategory::factory()->create(['code' => '3', 'is_active' => false]);
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::AromaticMaterials,
+        'requires_aromatic_compliance' => true,
+    ]);
+
+    $rows = collect(data_get(app(IngredientDataEntryService::class)->formData($ingredient), 'ifra.limits'));
+    $codes = $rows->map(fn (array $row): string => IfraProductCategory::query()->findOrFail($row['ifra_product_category_id'])->code)->all();
+
+    expect($codes)->toBe(['1', '2', '5A', '5B', '9', '10A', '11B', '12'])
+        ->and($rows->pluck('max_percentage')->unique()->all())->toBe([null]);
+});
+
+it('requires a maximum for every active IFRA category once one is entered', function (): void {
+    $first = IfraProductCategory::factory()->create(['code' => '1', 'is_active' => true]);
+    $second = IfraProductCategory::factory()->create(['code' => '2', 'is_active' => true]);
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::AromaticMaterials,
+        'requires_aromatic_compliance' => true,
+    ]);
+
+    try {
+        app(IngredientDataEntryService::class)->syncCurrentData($ingredient, [
+            'current_version' => ['display_name' => 'Lavender essential oil'],
+            'ifra' => ['limits' => [
+                ['ifra_product_category_id' => $first->id, 'max_percentage' => '0.5'],
+                ['ifra_product_category_id' => $second->id, 'max_percentage' => ''],
+            ]],
+        ]);
+        $this->fail('Expected a validation exception.');
+    } catch (ValidationException $exception) {
+        expect($exception->errors())->toHaveKey('ifra.limits')
+            ->and($exception->errors())->toHaveKey('ifra.limits.1.max_percentage')
+            ->and($exception->errors())->not->toHaveKey('ifra.limits.0.max_percentage');
+    }
+
+    expect($ingredient->ifraCertificates()->count())->toBe(0);
+});
+
+it('saves zero as prohibited and one hundred as unrestricted IFRA maxima', function (): void {
+    $first = IfraProductCategory::factory()->create(['code' => '1', 'is_active' => true]);
+    $second = IfraProductCategory::factory()->create(['code' => '2', 'is_active' => true]);
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::AromaticMaterials,
+        'requires_aromatic_compliance' => true,
+    ]);
+
+    app(IngredientDataEntryService::class)->syncCurrentData($ingredient, [
+        'current_version' => ['display_name' => 'Lavender essential oil'],
+        'ifra' => ['limits' => [
+            ['ifra_product_category_id' => $first->id, 'max_percentage' => '0'],
+            ['ifra_product_category_id' => $second->id, 'max_percentage' => '100'],
+        ]],
+    ]);
+
+    $limits = $ingredient->ifraCertificates()->firstOrFail()->limits->keyBy('ifra_product_category_id');
+
+    expect((float) $limits[$first->id]->max_percentage)->toBe(0.0)
+        ->and((float) $limits[$second->id]->max_percentage)->toBe(100.0);
+});
+
+it('stores no IFRA certificate when every category maximum is left blank', function (): void {
+    $first = IfraProductCategory::factory()->create(['code' => '1', 'is_active' => true]);
+    $second = IfraProductCategory::factory()->create(['code' => '2', 'is_active' => true]);
+    $ingredient = Ingredient::factory()->create([
+        'category' => IngredientCategory::AromaticMaterials,
+        'requires_aromatic_compliance' => true,
+    ]);
+
+    app(IngredientDataEntryService::class)->syncCurrentData($ingredient, [
+        'current_version' => ['display_name' => 'Lavender essential oil'],
+        'ifra' => ['limits' => [
+            ['ifra_product_category_id' => $first->id, 'max_percentage' => null],
+            ['ifra_product_category_id' => $second->id, 'max_percentage' => ''],
+        ]],
+    ]);
+
+    expect($ingredient->ifraCertificates()->count())->toBe(0);
+});
+
 it('syncs ingredient functions from the ingredient entry service', function () {
     $ingredient = Ingredient::factory()->create([
         'category' => IngredientCategory::Other,

@@ -1867,7 +1867,7 @@ it('keeps persisted inactive IFRA categories and rejects untrusted category ids'
         ->toHaveCount(1)
         ->and($updatedLatestCertificate?->limits->first()?->ifra_product_category_id)
         ->toBe($latestInactiveCategory->id)
-        ->and($categoryValidationQueries)->toHaveCount(1);
+        ->and($categoryValidationQueries)->toHaveCount(2);
 
     expect($updated->requires_aromatic_compliance)->toBeTrue()
         ->and(data_get($state, 'ifra.limits.0.ifra_product_category_id'))->toBe($latestInactiveCategory->id);

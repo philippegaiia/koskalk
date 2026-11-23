@@ -94,11 +94,10 @@ it('shows platform ingredients whether or not the user has priced them', functio
 
     $this->get(route('ingredients.index'))
         ->assertSuccessful()
-        ->assertSee('Manage ingredients for formulas and costing.')
         ->assertSee('Ingredient catalog')
         ->assertSee('All')
         ->assertSeeHtml('aria-label="Ingredient catalog filters"')
-        ->assertSeeHtml('class="sk-btn sk-btn-primary justify-center"')
+        ->assertSeeHtml('class="sk-btn sk-btn-primary min-h-11 justify-center"')
         ->assertDontSeeHtml('fi-ta')
         ->assertSeeHtml('role="radiogroup"')
         ->assertSeeHtml('aria-checked="true"')
@@ -718,8 +717,8 @@ it('renders compact ingredient rows and price inputs with the shared field treat
     $ingredientsIndexSource = file_get_contents(resource_path('views/livewire/dashboard/ingredients-index.blade.php'));
 
     expect($ingredientsIndexSource)
-        ->toContain('class="sk-table table-auto"')
-        ->toContain('class="sk-input numeric py-2 text-right"');
+        ->toContain('class="sk-table table-auto [&_tbody_td]:py-1"')
+        ->toContain('class="sk-input numeric py-1.5 text-right"');
 
     $styles = file_get_contents(resource_path('css/app.css'));
     preg_match('/\.sk-table tbody td\s*\{([^}]+)\}/', $styles, $matches);

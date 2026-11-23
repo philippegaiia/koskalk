@@ -11,6 +11,7 @@ use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingPackagingItem;
 use App\Models\RecipeVersionPackagingItem;
+use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Services\MediaStorage;
@@ -45,10 +46,9 @@ it('lets a signed-in user open the packaging items page and see saved items', fu
         ->get(route('packaging-items.index'))
         ->assertSuccessful()
         ->assertSee('Packaging')
-        ->assertSee('Manage packaging for your recipes and costing.')
         ->assertSee('Packaging library')
         ->assertSeeHtml('aria-label="Packaging library filters"')
-        ->assertSeeHtml('class="sk-btn sk-btn-primary justify-center"')
+        ->assertSeeHtml('class="sk-btn sk-btn-primary min-h-11 justify-center"')
         ->assertDontSeeHtml('fi-ta')
         ->assertSee('Unit price (EUR)')
         ->assertSee('0.12')
@@ -439,6 +439,33 @@ it('allows deleting an unused packaging item from the catalog table', function (
         ->call('deletePackagingItem', $packagingItem->id);
 
     expect(PackagingItem::query()->find($packagingItem->id))->toBeNull();
+});
+
+it('blocks deleting a packaging item that has stock history', function () {
+    $user = User::factory()->create();
+
+    $packagingItem = createPackagingItemForWorkspace([
+        'user_id' => $user->id,
+        'name' => 'Stocked jar',
+        'unit_cost' => 0.12,
+        'currency' => 'EUR',
+        'notes' => null,
+    ]);
+    $lot = StockLot::factory()->forPackaging()->create([
+        'workspace_id' => $packagingItem->workspace_id,
+        'packaging_item_id' => $packagingItem->id,
+    ]);
+
+    actingAs($user);
+
+    Livewire::test(PackagingItemsIndex::class)
+        ->call('confirmDelete', $packagingItem->id)
+        ->assertSee(__('packaging.validation.delete_linked_records'))
+        ->call('deletePackagingItem', $packagingItem->id)
+        ->assertHasErrors('packaging_item');
+
+    expect(PackagingItem::query()->find($packagingItem->id))->not->toBeNull()
+        ->and($lot->fresh()->packaging_item_id)->toBe($packagingItem->id);
 });
 
 it('prevents direct deletion of a packaging item that is already used in costing', function () {

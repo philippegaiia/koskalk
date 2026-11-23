@@ -18,6 +18,7 @@ use App\Models\Workspace;
 use App\Models\WorkspaceIngredientCode;
 use App\Services\ProductionBenchAccess;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
 use Illuminate\Database\Events\QueryExecuted;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -278,7 +279,6 @@ it('shows a focused global listing form with searchable catalog selectors', func
         ->assertOk()
         ->assertSee('New supplier listing')
         ->assertSee('Supplier')
-        ->assertSee('OLVEA · Olvea')
         ->assertSee('Purchase format')
         ->assertSee('Pricing')
         ->assertSee('Calculated price')
@@ -311,7 +311,8 @@ it('shows a focused global listing form with searchable catalog selectors', func
 
     $component = Livewire::test(SupplierListingCreate::class)
         ->assertSee('Ingredient not in the catalogue?')
-        ->assertDontSee('Packaging item not in the catalogue?');
+        ->assertDontSee('Packaging item not in the catalogue?')
+        ->assertFormFieldExists('supplier_id', fn (Select $field): bool => $field->getOptions() === [$supplier->id => 'OLVEA · Olvea']);
 
     expect($component->instance()->supplierSearchResults('Olvea'))->toBe([$supplier->id => 'OLVEA · Olvea'])
         ->and($component->instance()->ingredientSearchResults('Olive'))->toHaveCount(1);
@@ -552,6 +553,32 @@ it('updates an existing supplier listing without changing its supplier or materi
         ->net_quantity->toBe('190.000000000')
         ->price_amount->toBe('4.650000000')
         ->notes->toBe('Updated quotation');
+});
+
+it('keeps updating a supplier listing after its ingredient is deactivated', function (): void {
+    [$owner, $workspace] = listingCreateWorkspace();
+    $supplier = Supplier::factory()->for($workspace)->create();
+    $ingredient = Ingredient::factory()->create(['is_active' => false]);
+    $listing = SupplierListing::factory()->for($workspace)->for($supplier)->for($ingredient)->create([
+        'purchase_format' => '25 kg bag',
+        'net_quantity' => '25',
+        'net_unit' => 'kg',
+        'price_basis' => ListingPriceBasis::PerUnit,
+        'price_amount' => '3.10',
+        'price_unit' => 'kg',
+        'currency' => 'EUR',
+    ]);
+    $this->actingAs($owner);
+
+    Livewire::test(SupplierListingCreate::class, ['listing' => $listing->public_id])
+        ->assertSet('data.ingredient_id', $ingredient->id)
+        ->set('data.price_amount', '3.40')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($listing->fresh())
+        ->ingredient_id->toBe($ingredient->id)
+        ->price_amount->toBe('3.400000000');
 });
 
 it('keeps meaningful sub-cent precision when formatting a listing for editing', function (): void {

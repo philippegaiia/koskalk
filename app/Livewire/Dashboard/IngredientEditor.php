@@ -994,7 +994,7 @@ class IngredientEditor extends Component implements HasActions, HasForms
                                             ->visible(fn (): bool => $this->hasInheritedSoapChemistry()),
                                         TextEntry::make('verified_function_names')
                                             ->label(__('ingredients.editor.overview.verified_functions'))
-                                            ->formatStateUsing(fn (mixed $state): string => collect(is_array($state) ? $state : [])->implode(', '))
+                                            ->state(fn (): string => collect($this->data['verified_function_names'] ?? [])->filter()->implode(', '))
                                             ->belowContent(__('ingredients.editor.supplier.verified_functions_helper'))
                                             ->visible(fn (): bool => collect($this->data['verified_function_names'] ?? [])->filter()->isNotEmpty()),
                                         Select::make('function_ids')

@@ -19,6 +19,7 @@ use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMaterialSetting;
 use App\Services\ProductionBenchAccess;
+use Filament\Forms\Components\Select;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 
@@ -58,7 +59,7 @@ it('shows storage controls only when the workspace enables them', function (): v
     Livewire::test(InventoryIndex::class, ['mode' => 'stock'])
         ->assertActionVisible('changeStorageLocation', ['lot_id' => $lot->id])
         ->assertSeeHtml('data-storage-location-column')
-        ->assertSee($location->name);
+        ->assertFormFieldExists('lotStorageLocation', 'lotAdvancedFiltersForm', fn (Select $field): bool => in_array($location->name, $field->getOptions(), true));
 
     Livewire::test(InventoryMaterialDetail::class, [
         'subject' => $ingredient->public_id,

@@ -83,6 +83,10 @@ class SupplierListingCreate extends Component implements HasActions, HasForms
     #[Locked]
     public ?string $editingListingPublicId = null;
 
+    /** The edited listing keeps its ingredient selectable even after that ingredient is deactivated. */
+    #[Locked]
+    public ?int $editingListingIngredientId = null;
+
     #[Locked]
     public string $navigationSection = 'listings';
 
@@ -122,6 +126,7 @@ class SupplierListingCreate extends Component implements HasActions, HasForms
         $this->assertPageIsWritable($access);
         $workspace = $this->workspace();
         $editingListing = $this->resolveEditingListing($listing);
+        $this->editingListingIngredientId = $editingListing?->ingredient_id;
         $lockedSupplier = null;
 
         $supplier = $editingListing?->supplier
@@ -811,7 +816,10 @@ class SupplierListingCreate extends Component implements HasActions, HasForms
                 'translations' => fn ($query) => $query->whereIn('locale', $localeCandidates),
                 'workspaceCodes' => fn ($query) => $query->where('workspace_id', $workspace->id),
             ])
-            ->where('is_active', true)
+            ->where(fn (Builder $query): Builder => $query
+                ->where('is_active', true)
+                ->when($this->editingListingIngredientId !== null, fn (Builder $currentQuery): Builder => $currentQuery
+                    ->orWhereKey($this->editingListingIngredientId)))
             ->accessibleTo($user)
             ->where(function (Builder $query) use ($user, $workspace): void {
                 $query->where('visibility', Visibility::Public->value)

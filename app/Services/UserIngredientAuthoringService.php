@@ -837,7 +837,10 @@ class UserIngredientAuthoringService
         $ingredient->allergen_source_notes = $ingredient->requiresAromaticCompliance()
             ? Arr::get($state, 'allergen_source_notes')
             : $ingredient->allergen_source_notes;
-        $ingredient->is_active = true;
+
+        if (! $ingredient->exists) {
+            $ingredient->is_active = true;
+        }
     }
 
     /**
@@ -862,7 +865,7 @@ class UserIngredientAuthoringService
             'current_version' => [
                 'display_name' => Arr::get($state, 'name'),
                 'inci_name' => Arr::get($state, 'inci_name'),
-                'is_active' => true,
+                'is_active' => $ingredient->is_active ?? true,
                 'is_manufactured' => false,
             ],
             'cas_number' => Arr::get($state, 'cas_number'),

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Dashboard;
 
+use App\Enums\IngredientRemovalOutcome;
 use App\Enums\MassDisplaySystem;
 use App\Enums\MassUnit;
 use App\Enums\MaterialPriceSource;
@@ -199,7 +200,6 @@ class IngredientsIndex extends Component
             ? $ingredientFormulaMutationService->impact($currentUser, $pendingDeleteIngredient)
             : null;
         $replacementCandidates = $pendingDeleteIngredient instanceof Ingredient
-            && $pendingDeleteBlock === null
             && ($pendingDeleteImpact['formula_count'] > 0 || $pendingDeleteImpact['composite_count'] > 0)
             ? $ingredientFormulaMutationService->replacementCandidates($currentUser, $pendingDeleteIngredient)
             : collect();
@@ -238,6 +238,7 @@ class IngredientsIndex extends Component
             'mine' => __('ingredients.filters.yours'),
             'platform' => __('ingredients.filters.soapkraft'),
             'priced' => __('ingredients.filters.priced'),
+            'inactive' => __('ingredients.filters.inactive'),
         ];
     }
 
@@ -471,14 +472,26 @@ class IngredientsIndex extends Component
 
         try {
             $ingredientName = $ingredient->localizedDisplayName();
-            $ingredientFormulaMutationService->replaceEverywhereAndDelete($user, $ingredient, $replacement);
+            $outcome = $ingredientFormulaMutationService->replaceEverywhereAndDelete($user, $ingredient, $replacement);
         } catch (ValidationException $exception) {
             $this->surfaceMutationErrors($exception);
 
             return;
         }
 
-        $this->finishMutation(__('ingredients.status.replaced_and_deleted', ['ingredient' => $ingredientName]));
+        $this->finishMutation(__($outcome === IngredientRemovalOutcome::Deactivated
+            ? 'ingredients.status.replaced_and_deactivated'
+            : 'ingredients.status.replaced_and_deleted', ['ingredient' => $ingredientName]));
+    }
+
+    public function deactivateIngredient(IngredientFormulaMutationService $ingredientFormulaMutationService): void
+    {
+        $this->setPendingIngredientActive($ingredientFormulaMutationService, false);
+    }
+
+    public function reactivateIngredient(IngredientFormulaMutationService $ingredientFormulaMutationService): void
+    {
+        $this->setPendingIngredientActive($ingredientFormulaMutationService, true);
     }
 
     public function removeEverywhereAndDelete(IngredientFormulaMutationService $ingredientFormulaMutationService): void
@@ -600,6 +613,38 @@ class IngredientsIndex extends Component
         }
 
         return $this->ownedIngredient($this->pendingDeleteId, $user);
+    }
+
+    private function setPendingIngredientActive(
+        IngredientFormulaMutationService $ingredientFormulaMutationService,
+        bool $isActive,
+    ): void {
+        $user = $this->currentUser();
+
+        if (! $user instanceof User) {
+            return;
+        }
+
+        $ingredient = $this->pendingOwnedIngredient($user);
+
+        if (! $ingredient instanceof Ingredient) {
+            $this->closeMissingPendingIngredient();
+
+            return;
+        }
+
+        try {
+            $ingredientName = $ingredient->localizedDisplayName();
+            $ingredientFormulaMutationService->setActive($user, $ingredient, $isActive);
+        } catch (ValidationException $exception) {
+            $this->surfaceMutationErrors($exception);
+
+            return;
+        }
+
+        $this->finishMutation(__($isActive ? 'ingredients.status.reactivated' : 'ingredients.status.deactivated', [
+            'ingredient' => $ingredientName,
+        ]));
     }
 
     private function finishMutation(string $statusMessage): void

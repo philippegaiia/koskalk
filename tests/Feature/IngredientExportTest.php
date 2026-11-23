@@ -142,7 +142,7 @@ it('shows the Excel-first export menu beside the ingredient search and current c
     $this->actingAs($actor)
         ->get(route('ingredients.index'))
         ->assertSuccessful()
-        ->assertSee('Export ingredients')
+        ->assertSee('Export')
         ->assertSee('Excel workbook (.xlsx)')
         ->assertSee('CSV file (.csv)')
         ->assertSeeHtml('aria-haspopup="menu"')

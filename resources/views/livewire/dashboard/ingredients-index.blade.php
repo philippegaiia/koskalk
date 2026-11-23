@@ -3,27 +3,7 @@
     x-on:ingredient-removal-closed.window="$nextTick(() => (document.getElementById($event.detail.triggerId) ?? document.getElementById('ingredient-catalog-heading'))?.focus())"
 >
     <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
-    <section class="sk-card p-5 sm:p-6">
-        <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div class="min-w-0">
-                <p class="sk-eyebrow">{{ __('ingredients.page.eyebrow') }}</p>
-                <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <h3 class="mt-2 max-w-4xl text-xl font-semibold text-[var(--color-ink-strong)] sm:text-2xl">{{ __('ingredients.page.heading') }}</h3>
-                    <x-contextual-help.index-button :help="$contextualHelp" tab="materials" />
-                </div>
-                <p class="mt-2 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">
-                    {{ __('ingredients.page.intro') }}
-                </p>
-            </div>
-
-            <div class="flex flex-wrap items-center gap-3 lg:justify-end">
-
-                <a href="{{ route('dashboard') }}" wire:navigate class="sk-btn sk-btn-outline">
-                    {{ __('ingredients.actions.back_to_dashboard') }}
-                </a>
-            </div>
-        </div>
-    </section>
+    <x-contextual-help.index-button :help="$contextualHelp" tab="materials" />
 
     @if (! $currentUser)
         <section class="sk-card p-8 text-center">
@@ -31,50 +11,26 @@
             <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">{{ __('ingredients.auth.description') }}</p>
         </section>
     @else
-        <section class="overflow-hidden sk-card p-0">
-            <div class="flex flex-col gap-4 border-b border-[var(--color-line)] bg-[var(--color-field-muted)] px-5 py-4">
-                <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                    <div>
-                        <p id="ingredient-catalog-heading" tabindex="-1" class="text-sm font-medium text-[var(--color-ink-strong)] focus:outline-none">{{ __('ingredients.catalog.heading') }}</p>
-                        <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('ingredients.catalog.description') }}</p>
-                    </div>
-
-                    <div class="flex flex-wrap items-center gap-2">
-                        @if ($canDuplicateIngredients)
-                            @include('livewire.dashboard.partials.duplicate-ingredient-modal')
-                        @endif
-
-                        @if ($canCreateIngredients)
-                            <a href="{{ route('ingredients.create') }}" wire:navigate class="sk-btn sk-btn-primary justify-center">{{ __('ingredients.actions.add') }}</a>
-                        @endif
-                    </div>
-                </div>
+        <section class="overflow-hidden sk-card p-0" aria-labelledby="ingredient-catalog-heading">
+            <div class="flex flex-col gap-2.5 border-b border-[var(--color-line)] bg-[var(--color-field-muted)] px-5 py-3">
+                <h3 id="ingredient-catalog-heading" tabindex="-1" data-contextual-help-heading class="sr-only">{{ __('ingredients.catalog.heading') }}</h3>
 
                 <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between" aria-label="{{ __('ingredients.catalog.filters_label') }}">
-                    <div class="flex flex-col gap-2">
-                        <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="{{ __('ingredients.catalog.filter_label') }}">
-                            @foreach ($this->ownershipFilterOptions() as $filterValue => $filterLabel)
-                                <button
-                                    type="button"
-                                    role="radio"
-                                    aria-checked="{{ $ownershipFilter === $filterValue ? 'true' : 'false' }}"
-                                    wire:click="setOwnershipFilter('{{ $filterValue }}')"
-                                    class="{{ $ownershipFilter === $filterValue ? 'border-[var(--color-active)] bg-[var(--color-active-soft)] text-[var(--color-active-strong)]' : 'border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)]' }} rounded-full border px-4 py-2 text-sm font-medium transition"
-                                >
-                                    {{ $filterValue === 'mine' ? $filterLabel.' ('.$privateIngredientUsage['used'].')' : $filterLabel }}
-                                </button>
-                            @endforeach
-                        </div>
-
-                        <p class="text-xs text-[var(--color-ink-soft)]">
-                            @if ($privateIngredientUsage['limit'] === null)
-                                {{ trans_choice('ingredients.limits.unlimited', $privateIngredientUsage['used'], ['used' => $privateIngredientUsage['used']]) }}
-                            @else
-                                {{ trans_choice('ingredients.limits.limited', $privateIngredientUsage['limit'], ['used' => $privateIngredientUsage['used'], 'limit' => $privateIngredientUsage['limit']]) }}
-                            @endif
-                        </p>
+                    <div class="flex flex-wrap gap-2" role="radiogroup" aria-label="{{ __('ingredients.catalog.filter_label') }}">
+                        @foreach ($this->ownershipFilterOptions() as $filterValue => $filterLabel)
+                            <button
+                                type="button"
+                                role="radio"
+                                aria-checked="{{ $ownershipFilter === $filterValue ? 'true' : 'false' }}"
+                                wire:click="setOwnershipFilter('{{ $filterValue }}')"
+                                class="{{ $ownershipFilter === $filterValue ? 'border-[var(--color-active)] bg-[var(--color-active-soft)] text-[var(--color-active-strong)]' : 'border-[var(--color-line)] bg-[var(--color-panel)] text-[var(--color-ink-soft)] hover:bg-[var(--color-field-muted)] hover:text-[var(--color-ink-strong)]' }} rounded-full border px-3.5 py-2.5 text-sm font-medium leading-4 transition"
+                            >
+                                {{ $filterValue === 'mine' ? $filterLabel.' ('.$privateIngredientUsage['used'].')' : $filterLabel }}
+                            </button>
+                        @endforeach
                     </div>
 
+                    <div class="flex flex-wrap items-center gap-2 xl:justify-end">
                     <div
                         x-data="listOutputDownload()"
                         data-export-url="{{ route('ingredients.export') }}"
@@ -92,16 +48,15 @@
                         data-export-error-invalid="{{ __('ingredients.exports.ui.errors.invalid') }}"
                         data-export-error-throttled="{{ __('ingredients.exports.ui.errors.throttled') }}"
                         data-export-error-failed="{{ __('ingredients.exports.ui.errors.failed') }}"
-                        class="flex flex-col gap-3 sm:flex-row sm:items-end"
+                        class="flex flex-wrap items-center gap-2"
                         @keydown.escape.window="if (outputMenuOpen) { outputMenuOpen = false; $refs.exportMenuTrigger.focus(); }"
                     >
-                        <label class="sk-field min-w-64">
-                            <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('ingredients.search.label') }}</span>
+                        <label class="sk-field min-h-11 w-64 py-2">
                             <input data-list-output-search @input="visibleSearch = $event.target.value" autocomplete="off" wire:model.live.debounce.250ms="search" type="text" placeholder="{{ __('ingredients.search.placeholder') }}" class="sk-field-control" aria-label="{{ __('ingredients.search.aria_label') }}" />
                         </label>
 
                         @if ($destinationWorkspacePublicId)
-                        <div class="flex flex-wrap items-end gap-2">
+                        <div class="flex flex-wrap items-center gap-2">
                             <div class="relative" @click.outside="outputMenuOpen = false">
                                 <button
                                     x-ref="exportMenuTrigger"
@@ -125,12 +80,32 @@
                                 </div>
                             </div>
 
-                            <p x-show="currentResultsAreEmpty()" x-cloak class="max-w-64 pb-2 text-xs text-[var(--color-ink-soft)]">{{ __('ingredients.exports.validation.empty') }}</p>
-                            <p x-show="outputPending" x-cloak role="status" aria-live="polite" class="pb-2 text-xs text-[var(--color-ink-soft)]">{{ __('ingredients.exports.ui.pending') }}</p>
-                            <p x-show="outputError" x-cloak role="alert" class="pb-2 text-xs text-[var(--color-danger-strong)]" x-text="outputError"></p>
+                            <p x-show="currentResultsAreEmpty()" x-cloak class="max-w-64 text-xs text-[var(--color-ink-soft)]">{{ __('ingredients.exports.validation.empty') }}</p>
+                            <p x-show="outputPending" x-cloak role="status" aria-live="polite" class="text-xs text-[var(--color-ink-soft)]">{{ __('ingredients.exports.ui.pending') }}</p>
+                            <p x-show="outputError" x-cloak role="alert" class="text-xs text-[var(--color-danger-strong)]" x-text="outputError"></p>
                         </div>
                         @endif
                     </div>
+
+                    @if ($canDuplicateIngredients)
+                        @include('livewire.dashboard.partials.duplicate-ingredient-modal', ['duplicateButtonLabel' => __('ingredients.duplicate.button_short'), 'duplicateButtonVariant' => 'sk-btn-outline min-h-11'])
+                    @endif
+
+                    @if ($canCreateIngredients)
+                        <a href="{{ route('ingredients.create') }}" wire:navigate class="sk-btn sk-btn-primary min-h-11 justify-center">{{ __('ingredients.actions.add_short') }}</a>
+                    @endif
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 text-xs text-[var(--color-ink-soft)]">
+                    <p>{{ __('ingredients.page.intro') }}</p>
+                    <p class="shrink-0">
+                        @if ($privateIngredientUsage['limit'] === null)
+                            {{ trans_choice('ingredients.limits.unlimited', $privateIngredientUsage['used'], ['used' => $privateIngredientUsage['used']]) }}
+                        @else
+                            {{ trans_choice('ingredients.limits.limited', $privateIngredientUsage['limit'], ['used' => $privateIngredientUsage['used'], 'limit' => $privateIngredientUsage['limit']]) }}
+                        @endif
+                    </p>
                 </div>
             </div>
 
@@ -146,18 +121,18 @@
                 </div>
             @else
                 <x-sticky-table-scroll>
-                    <table class="sk-table table-auto">
+                    <table class="sk-table table-auto [&_tbody_td]:py-1">
                         <colgroup>
-                            <col />
+                            <col class="w-16" />
                             <col />
                             <col class="w-40" />
                             <col class="w-24" />
                             <col class="w-32" />
-                            <col class="w-32" />
+                            <col class="w-48" />
                         </colgroup>
                         <thead wire:ignore.self data-sticky-table-header class="relative z-20 whitespace-nowrap shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
-                                <th scope="col">{{ __('ingredients.table.picture') }}</th>
+                                <th scope="col"><span class="sr-only">{{ __('ingredients.table.picture') }}</span></th>
                                 <th scope="col">
                                     <button type="button" wire:click="sortBy('display_name')" class="sk-table-sort-button">
                                         {{ __('ingredients.table.name') }}
@@ -199,7 +174,7 @@
                                 @endphp
                                 <tr wire:key="ingredient-{{ $ingredient->id }}">
                                     <td>
-                                        <div class="sk-ingredient-image-tile {{ $isFallbackImage ? 'is-fallback' : '' }}">
+                                        <div class="sk-ingredient-image-tile size-8 {{ $isFallbackImage ? 'is-fallback' : '' }}">
                                             <img src="{{ $imageUrl }}" alt="" />
                                         </div>
                                     </td>
@@ -208,6 +183,9 @@
                                             <p class="flex items-center gap-1.5 font-semibold text-[var(--color-ink-strong)]">
                                                 <span>{{ $displayName }}</span>
                                                 <x-ingredient-source-marker :is-user-owned="$isMine" />
+                                                @if ($isMine && ! $ingredient->is_active)
+                                                    <span class="sk-badge sk-badge-inert whitespace-nowrap text-xs font-medium">{{ __('ingredients.table.inactive') }}</span>
+                                                @endif
                                             </p>
                                             @if ($inciName)
                                                 <p class="mt-0.5 text-xs text-[var(--color-ink-soft)]">
@@ -237,7 +215,7 @@
                                                 type="text"
                                                 inputmode="decimal"
                                                 @disabled(! $canEditPrices)
-                                                class="sk-input numeric py-2 text-right"
+                                                class="sk-input numeric py-1.5 text-right"
                                                 aria-label="{{ __('ingredients.accessibility.price', ['ingredient' => $displayName, 'unit' => $currentPriceUnit]) }}"
                                             />
                                             @error('price_'.$ingredient->id)
@@ -331,13 +309,15 @@
                 $hasBlockedDependencies = $hasBlockedFormulas || $hasBlockedComposites;
                 $hasReplacementCandidates = $replacementCandidates->isNotEmpty();
                 $isCarrierOil = $pendingDeleteImpact['requires_soap_carrier'];
+                $isPendingIngredientActive = (bool) $pendingDeleteIngredient->is_active;
+                $mutationTargets = 'deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete, deactivateIngredient, reactivateIngredient';
             @endphp
             <div
                 class="fixed inset-0 z-50 flex items-center justify-center bg-[color:oklch(20.3%_0.026_149_/_0.46)] p-4"
                 x-data
                 x-init="$nextTick(() => $refs.initialFocus?.focus())"
                 wire:loading.attr="data-mutating"
-                wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete"
+                wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete, deactivateIngredient, reactivateIngredient"
                 @click.self="if (! $el.hasAttribute('data-mutating')) $wire.cancelDelete()"
                 @keydown.escape.window="if (! $el.hasAttribute('data-mutating')) $wire.cancelDelete()"
                 role="dialog"
@@ -345,26 +325,22 @@
                 aria-labelledby="ingredient-delete-heading"
                 aria-describedby="ingredient-delete-description"
             >
-                @if ($pendingDeleteBlock !== null)
+                @if ($usedFormulaCount === 0 && $usedCompositeCount === 0)
                     <div x-trap.noscroll="true" class="w-full max-w-md rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-6 shadow-xl">
-                        <h3 id="ingredient-delete-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.removal.manage_heading', ['ingredient' => $pendingDeleteIngredient->localizedDisplayName()]) }}</h3>
-                        <p id="ingredient-delete-description" class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">{{ $pendingDeleteBlock }}</p>
-                        <div class="mt-6 flex justify-end">
-                            <button x-ref="initialFocus" type="button" wire:click="cancelDelete" class="sk-btn sk-btn-outline">{{ __('ingredients.actions.cancel') }}</button>
-                        </div>
-                    </div>
-                @elseif ($usedFormulaCount === 0 && $usedCompositeCount === 0)
-                    <div x-trap.noscroll="true" class="w-full max-w-md rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-6 shadow-xl">
-                        <h3 id="ingredient-delete-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.removal.delete_heading', ['ingredient' => $pendingDeleteIngredient->localizedDisplayName()]) }}</h3>
-                        <p id="ingredient-delete-description" class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('ingredients.removal.delete_description') }}</p>
+                        <h3 id="ingredient-delete-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ $pendingDeleteBlock === null ? __('ingredients.removal.delete_heading', ['ingredient' => $pendingDeleteIngredient->localizedDisplayName()]) : __('ingredients.removal.manage_heading', ['ingredient' => $pendingDeleteIngredient->localizedDisplayName()]) }}</h3>
+                        <p id="ingredient-delete-description" class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">{{ $pendingDeleteBlock ?? __('ingredients.removal.delete_description') }}</p>
+                        <p class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">{{ $isPendingIngredientActive ? __('ingredients.removal.deactivate.description') : __('ingredients.removal.reactivate.description') }}</p>
 
                         @error('ingredient')
                             <p role="alert" class="mt-4 rounded-lg bg-[var(--color-danger-soft)] px-3 py-2 text-sm text-[var(--color-danger-strong)]">{{ $message }}</p>
                         @enderror
 
                         <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-                            <button x-ref="initialFocus" type="button" wire:click="cancelDelete" wire:loading.attr="disabled" wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete" class="min-h-11 rounded-lg border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-wait disabled:opacity-50">{{ __('ingredients.actions.cancel') }}</button>
-                            <button type="button" wire:click="deleteIngredient" wire:loading.attr="disabled" wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete" class="min-h-11 rounded-lg bg-[var(--color-danger-strong)] px-4 py-2 text-sm font-medium text-[var(--color-cream)] hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-danger-strong)] disabled:cursor-wait disabled:opacity-50">{{ __('ingredients.actions.delete') }}</button>
+                            <button x-ref="initialFocus" type="button" wire:click="cancelDelete" wire:loading.attr="disabled" wire:target="{{ $mutationTargets }}" class="min-h-11 rounded-lg border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-wait disabled:opacity-50">{{ __('ingredients.actions.cancel') }}</button>
+                            <button type="button" wire:click="{{ $isPendingIngredientActive ? 'deactivateIngredient' : 'reactivateIngredient' }}" wire:loading.attr="disabled" wire:target="{{ $mutationTargets }}" class="min-h-11 rounded-lg border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-strong)] hover:bg-[var(--color-panel-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-wait disabled:opacity-50">{{ $isPendingIngredientActive ? __('ingredients.removal.deactivate.action') : __('ingredients.removal.reactivate.action') }}</button>
+                            @if ($pendingDeleteBlock === null)
+                                <button type="button" wire:click="deleteIngredient" wire:loading.attr="disabled" wire:target="{{ $mutationTargets }}" class="min-h-11 rounded-lg bg-[var(--color-danger-strong)] px-4 py-2 text-sm font-medium text-[var(--color-cream)] hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-danger-strong)] disabled:cursor-wait disabled:opacity-50">{{ __('ingredients.actions.delete') }}</button>
+                            @endif
                         </div>
                     </div>
                 @else
@@ -383,7 +359,7 @@
                                     {{ __('ingredients.removal.choose_change') }}
                                 </p>
                             </div>
-                            <button x-ref="initialFocus" type="button" wire:click="cancelDelete" wire:loading.attr="disabled" wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete" class="grid size-10 shrink-0 place-items-center rounded-lg text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-wait disabled:opacity-50" aria-label="{{ __('ingredients.accessibility.close_removal') }}">
+                            <button x-ref="initialFocus" type="button" wire:click="cancelDelete" wire:loading.attr="disabled" wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete, deactivateIngredient, reactivateIngredient" class="grid size-10 shrink-0 place-items-center rounded-lg text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-wait disabled:opacity-50" aria-label="{{ __('ingredients.accessibility.close_removal') }}">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
                                 </svg>
@@ -423,6 +399,13 @@
                                 @if ($pendingDeleteImpact['inaccessible_blocked_composite_count'] > 0)
                                     <p class="mt-3">{{ trans_choice('ingredients.removal.additional_composite_blocked', $pendingDeleteImpact['inaccessible_blocked_composite_count'], ['count' => $pendingDeleteImpact['inaccessible_blocked_composite_count']]) }}</p>
                                 @endif
+                            </div>
+                        @endif
+
+                        @if ($pendingDeleteBlock !== null)
+                            <div class="mt-5 rounded-xl border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)] p-4 text-sm leading-6 text-[var(--color-warning-strong)]">
+                                <p>{{ $pendingDeleteBlock }}</p>
+                                <p class="mt-1">{{ __('ingredients.removal.history_kept') }}</p>
                             </div>
                         @endif
 
@@ -482,14 +465,15 @@
                                 type="button"
                                 wire:click="replaceEverywhereAndDelete"
                                 wire:loading.attr="disabled"
-                                wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete"
+                                wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete, deactivateIngredient, reactivateIngredient"
                                 @disabled($hasBlockedDependencies || ! $hasReplacementCandidates || $replacementIngredientId === null)
                                 class="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-[var(--color-accent)] px-4 py-2.5 text-sm font-semibold text-[var(--color-cream)] hover:bg-[var(--color-accent-hover)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                             >
-                                {{ __('ingredients.removal.replacement.action') }}
+                                {{ $pendingDeleteBlock === null ? __('ingredients.removal.replacement.action') : __('ingredients.removal.replacement.action_deactivate') }}
                             </button>
                         </div>
 
+                        @if ($pendingDeleteBlock === null)
                         <div class="mt-6 border-t border-[var(--color-line)] pt-5">
                             <p class="text-sm font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.removal.without_replacement.heading') }}</p>
                             <p class="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">{{ __('ingredients.removal.without_replacement.description') }}</p>
@@ -500,16 +484,31 @@
                                 type="button"
                                 wire:click="removeEverywhereAndDelete"
                                 wire:loading.attr="disabled"
-                                wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete"
+                                wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete, deactivateIngredient, reactivateIngredient"
                                 @disabled($hasBlockedDependencies)
                                 class="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-[var(--color-danger-strong)] px-4 py-2.5 text-sm font-semibold text-[var(--color-cream)] hover:opacity-90 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-danger-strong)] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
                             >
                                 {{ __('ingredients.removal.without_replacement.action') }}
                             </button>
                         </div>
+                        @endif
+
+                        <div class="mt-6 border-t border-[var(--color-line)] pt-5">
+                            <p class="text-sm font-semibold text-[var(--color-ink-strong)]">{{ $isPendingIngredientActive ? __('ingredients.removal.deactivate.heading') : __('ingredients.removal.reactivate.heading') }}</p>
+                            <p class="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">{{ $isPendingIngredientActive ? __('ingredients.removal.deactivate.description') : __('ingredients.removal.reactivate.description') }}</p>
+                            <button
+                                type="button"
+                                wire:click="{{ $isPendingIngredientActive ? 'deactivateIngredient' : 'reactivateIngredient' }}"
+                                wire:loading.attr="disabled"
+                                wire:target="{{ $mutationTargets }}"
+                                class="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-lg border border-[var(--color-line)] px-4 py-2.5 text-sm font-semibold text-[var(--color-ink-strong)] hover:bg-[var(--color-panel-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-wait disabled:opacity-50 sm:w-auto"
+                            >
+                                {{ $isPendingIngredientActive ? __('ingredients.removal.deactivate.action') : __('ingredients.removal.reactivate.action') }}
+                            </button>
+                        </div>
 
                         <div class="mt-6 flex justify-end border-t border-[var(--color-line)] pt-4">
-                            <button type="button" wire:click="cancelDelete" wire:loading.attr="disabled" wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete" class="min-h-11 rounded-lg border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-wait disabled:opacity-50">{{ __('ingredients.actions.cancel') }}</button>
+                            <button type="button" wire:click="cancelDelete" wire:loading.attr="disabled" wire:target="deleteIngredient, replaceEverywhereAndDelete, removeEverywhereAndDelete, deactivateIngredient, reactivateIngredient" class="min-h-11 rounded-lg border border-[var(--color-line)] px-4 py-2 text-sm font-medium text-[var(--color-ink-soft)] hover:bg-[var(--color-panel-strong)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-accent)] disabled:cursor-wait disabled:opacity-50">{{ __('ingredients.actions.cancel') }}</button>
                         </div>
                     </div>
                 @endif

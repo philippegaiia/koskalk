@@ -31,8 +31,11 @@ it('uses the approved Soapkraft and customer ingredient terminology', function (
     $this->actingAs($user)
         ->get(route('ingredients.index'))
         ->assertSuccessful()
-        ->assertSeeText('Manage ingredients for formulas and costing.')
         ->assertSeeText('Soapkraft ingredients come from the Soapkraft library.')
+        ->assertSeeText('Duplicate')
+        ->assertSeeHtml('placeholder="Search name, INCI, or category"')
+        ->assertDontSeeText('Back to dashboard')
+        ->assertDontSeeText('Add ingredient')
         ->assertSeeText('Your ingredients')
         ->assertSeeText('Soapkraft')
         ->assertSeeText('Your price / kg (EUR)')
@@ -54,12 +57,11 @@ it('loads ingredient index interface copy from the database', function () {
     ]);
 
     foreach ([
-        'page.heading' => 'Gérez les ingrédients de vos formules et de vos coûts.',
-        'catalog.description' => 'Parcourez les ingrédients, mettez à jour vos coûts et gérez ceux qui vous appartiennent.',
         'filters.yours' => 'Vos ingrédients',
         'filters.soapkraft' => 'Soapkraft',
         'price.column' => 'Votre prix / kg (:currency)',
-        'duplicate.button' => 'Dupliquer un ingrédient Soapkraft',
+        'duplicate.button_short' => 'Dupliquer',
+        'actions.add_short' => 'Ajouter',
         'table.source.yours' => 'Vous',
     ] as $key => $translation) {
         InterfaceTranslation::query()->create([
@@ -91,11 +93,10 @@ it('loads ingredient index interface copy from the database', function () {
     $this->actingAs($user)
         ->get(route('ingredients.index'))
         ->assertSuccessful()
-        ->assertSeeText('Gérez les ingrédients de vos formules et de vos coûts.')
-        ->assertSeeText('Parcourez les ingrédients, mettez à jour vos coûts et gérez ceux qui vous appartiennent.')
+        ->assertSeeText('Dupliquer')
+        ->assertSeeText('Ajouter')
         ->assertSeeText('Vos ingrédients')
         ->assertSeeText('Votre prix / kg (EUR)')
-        ->assertSeeText('Dupliquer un ingrédient Soapkraft')
         ->assertSeeText('Vous')
         ->assertSeeText('Ingrédients par page')
         ->assertSeeText('1–1 sur 1');
@@ -107,14 +108,15 @@ it('keeps every ingredient index interface string in the ingredients translation
     expect($copy)
         ->toHaveKeys([
             'actions.add',
-            'actions.back_to_dashboard',
-            'search.label',
+            'actions.add_short',
+            'search.placeholder',
             'empty.no_matches',
             'table.picture',
             'table.source.label',
             'table.source.yours',
             'table.source.soapkraft',
             'duplicate.button',
+            'duplicate.button_short',
             'usage.current',
             'removal.delete_heading',
             'removal.replacement.heading',

@@ -15,9 +15,7 @@ return [
     ],
     'page' => [
         'title' => 'Packaging',
-        'heading' => 'Manage packaging for your recipes and costing.',
         'intro' => 'Add boxes, jars, labels, inserts, and other reusable packaging with a unit price. Saved items can be reused in your recipes without entering them again.',
-        'aria_label' => 'Packaging overview',
     ],
     'auth' => [
         'aria_label' => 'Sign in required',
@@ -26,21 +24,19 @@ return [
     ],
     'catalog' => [
         'heading' => 'Packaging library',
-        'description' => 'Saved packaging available for your recipes and costing.',
         'table_label' => 'Packaging library',
         'filters_label' => 'Packaging library filters',
     ],
     'actions' => [
         'add' => 'Add packaging',
-        'back_to_dashboard' => 'Back to dashboard',
+        'add_short' => 'Add',
         'edit' => 'Edit',
         'delete' => 'Delete',
         'cancel' => 'Cancel',
         'remove_everywhere' => 'Remove everywhere and delete',
     ],
     'search' => [
-        'label' => 'Search',
-        'placeholder' => 'Name, code, or notes',
+        'placeholder' => 'Search name, code, or notes',
         'aria_label' => 'Search packaging',
     ],
     'empty' => [
@@ -82,7 +78,7 @@ return [
             'unit_price' => 'Unit price',
         ],
         'ui' => [
-            'label' => 'Export packaging',
+            'label' => 'Export',
             'menu_label' => 'Packaging export format',
             'pending' => 'Preparing packaging export…',
             'errors' => [
@@ -102,6 +98,7 @@ return [
     'validation' => [
         'remove_from_formulas' => 'Remove this packaging item from every formula before deleting it.',
         'in_use' => 'This packaging item is still in use and cannot be deleted.',
+        'delete_linked_records' => 'This packaging item is linked to stock, purchasing, or production records and cannot be deleted.',
         'material_code_format' => 'Use 1–64 letters, numbers, periods, underscores, hyphens, or slashes; start with a letter or number.',
         'material_code_unique' => 'This internal material code is already used by another packaging item in this workspace.',
     ],

@@ -13262,12 +13262,12 @@
       "group": "ingredients",
       "key": "editor.overview.workspace_functions",
       "text": {
-        "de": "Arbeitsbereichsfunktionen (optional)",
-        "es": "Funciones del espacio de trabajo (opcional)",
-        "fr": "Fonctions de l’espace de travail (facultatif)",
-        "it": "Funzioni dell’area di lavoro (facoltative)",
-        "nl": "Werkruimtefuncties (optioneel)",
-        "pt_BR": "Funções do espaço de trabalho (opcional)"
+        "de": "Zusätzliche Funktionen (optional)",
+        "es": "Funciones adicionales (opcional)",
+        "fr": "Fonctions supplémentaires (facultatif)",
+        "it": "Funzioni aggiuntive (facoltative)",
+        "nl": "Aanvullende functies (optioneel)",
+        "pt_BR": "Funções adicionais (opcional)"
       }
     },
     {

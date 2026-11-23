@@ -712,7 +712,7 @@ return [
             'aromatic_compliance_helper' => 'Uses the fragrance phase in the formula workbench and enables allergen and IFRA records.',
             'inherited_soap' => 'Soap data inherited from Soapkraft. Editable values stay within inherited limits.',
             'verified_functions' => 'Verified functions',
-            'workspace_functions' => 'Workspace functions (optional)',
+            'workspace_functions' => 'Additional functions (optional)',
             'identifiers_section' => 'Identifiers and alternative names',
             'material_code' => 'Internal material code (optional)',
         ],

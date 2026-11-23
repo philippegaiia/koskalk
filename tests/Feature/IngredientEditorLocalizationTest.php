@@ -938,7 +938,7 @@ it('uses the approved task-focused copy on the add ingredient page', function ()
         ->assertSeeText('Help classify this ingredient')
         ->assertDontSeeText('Certified organic')
         ->assertDontSeeText('Verified COSING functions')
-        ->assertSeeText('Workspace functions (optional)')
+        ->assertSeeText('Additional functions (optional)')
         ->assertSeeText('AI research helper')
         ->assertSeeText('Generate a prompt to research classification, identifiers, COSING functions, and concise professional notes. It will not change this form.')
         ->assertSeeText('Generate prompt')
@@ -1567,7 +1567,7 @@ it('starts with a single ingredient and renders the editor groups in task order'
         ->and(strpos($html, 'wire:model="data.ingredient_structure"'))->toBeLessThan(strpos($html, 'wire:model="data.inci_name"'))
         ->and(strpos($html, 'wire:model="data.inci_name"'))->toBeLessThan(strpos($html, 'wire:model="data.material_code"'))
         ->and(strpos($html, 'Subcategory'))->toBeLessThan(strpos($html, 'Treat as an aromatic ingredient'))
-        ->and(strpos($html, 'Treat as an aromatic ingredient'))->toBeLessThan(strpos($html, 'Workspace functions (optional)'))
+        ->and(strpos($html, 'Treat as an aromatic ingredient'))->toBeLessThan(strpos($html, 'Additional functions (optional)'))
         ->and(strpos($html, 'data-ingredient-basics-section'))->toBeLessThan(strpos($html, 'data-ingredient-classification-section'))
         ->and(strpos($html, 'data-ingredient-classification-section'))->toBeLessThan(strpos($html, 'data-ingredient-identity-section'))
         ->and(strpos($html, 'data-ingredient-identity-section'))->toBeLessThan(strpos($html, 'classification-prompt-title'));
@@ -1619,14 +1619,14 @@ it('orders every classification field for a trusted duplicate with verified func
         ->toContain('Soap data inherited from Soapkraft. Editable values stay within inherited limits.')
         ->toContain('Verified functions')
         ->toContain('Verified emollient')
-        ->toContain('Workspace functions (optional)');
+        ->toContain('Additional functions (optional)');
 
     $fieldLabels = [
         'Subcategory',
         'Treat as an aromatic ingredient',
         'Soap data inherited from Soapkraft. Editable values stay within inherited limits.',
         'Verified functions',
-        'Workspace functions (optional)',
+        'Additional functions (optional)',
     ];
 
     foreach (array_slice($fieldLabels, 0, -1) as $index => $label) {
@@ -1981,7 +1981,7 @@ it('loads ingredient editor interface copy from the database', function () {
         'editor.overview.material_code' => 'Code matière interne (facultatif)',
         'editor.overview.identifiers_section' => 'Identifiants et noms alternatifs',
         'editor.overview.verified_functions' => 'Fonctions vérifiées',
-        'editor.overview.workspace_functions' => 'Fonctions de l’espace de travail (facultatif)',
+        'editor.overview.workspace_functions' => 'Fonctions supplémentaires (facultatif)',
         'editor.details.type.label' => 'Type d’ingrédient',
         'editor.details.type.single' => 'Ingrédient simple',
         'editor.details.type.blend' => 'Mélange',
@@ -2020,7 +2020,7 @@ it('loads ingredient editor interface copy from the database', function () {
         ->assertSeeText('Utilise la phase parfumée dans l’atelier de formulation et active les enregistrements d’allergènes et IFRA.')
         ->assertDontSeeText('Fonctions COSING vérifiées')
         ->assertDontSeeText('Fonctions officielles en lecture seule.')
-        ->assertSeeText('Fonctions de l’espace de travail (facultatif)')
+        ->assertSeeText('Fonctions supplémentaires (facultatif)')
         ->assertSeeText('Assistant de recherche IA')
         ->assertSeeText('Aidez à classer cet ingrédient')
         ->assertSeeText('Générez un prompt pour rechercher la classification, les identifiants, les fonctions COSING et de brèves notes professionnelles. Il ne modifiera pas ce formulaire.')

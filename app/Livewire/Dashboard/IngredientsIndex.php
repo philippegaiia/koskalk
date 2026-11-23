@@ -192,10 +192,14 @@ class IngredientsIndex extends Component
         $pendingDeleteIngredient = $currentUser instanceof User
             ? $this->pendingOwnedIngredient($currentUser)
             : null;
+        $pendingDeleteBlock = $pendingDeleteIngredient instanceof Ingredient
+            ? $ingredientFormulaMutationService->deletionBlock($pendingDeleteIngredient)
+            : null;
         $pendingDeleteImpact = $pendingDeleteIngredient instanceof Ingredient
             ? $ingredientFormulaMutationService->impact($currentUser, $pendingDeleteIngredient)
             : null;
         $replacementCandidates = $pendingDeleteIngredient instanceof Ingredient
+            && $pendingDeleteBlock === null
             && ($pendingDeleteImpact['formula_count'] > 0 || $pendingDeleteImpact['composite_count'] > 0)
             ? $ingredientFormulaMutationService->replacementCandidates($currentUser, $pendingDeleteIngredient)
             : collect();
@@ -218,6 +222,7 @@ class IngredientsIndex extends Component
                 'unit' => $this->currentPriceUnit,
             ]),
             'pendingDeleteIngredient' => $pendingDeleteIngredient,
+            'pendingDeleteBlock' => $pendingDeleteBlock,
             'pendingDeleteImpact' => $pendingDeleteImpact,
             'replacementCandidates' => $replacementCandidates,
         ]);

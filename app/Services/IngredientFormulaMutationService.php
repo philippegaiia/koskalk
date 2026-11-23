@@ -17,6 +17,7 @@ use App\Models\Workspace;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -185,6 +186,7 @@ class IngredientFormulaMutationService
                 $lockedIngredients->get($ingredient->getKey()),
                 $user,
             );
+            $this->assertNoDeletionBlock($lockedIngredient);
 
             $lockedReplacement = $lockedIngredients->get($replacement->getKey());
 
@@ -250,6 +252,7 @@ class IngredientFormulaMutationService
                     ->first(),
                 $user,
             );
+            $this->assertNoDeletionBlock($lockedIngredient);
 
             $dependencyGraph = $this->lockAndValidateCompositeGraph($lockedIngredient, $user);
             $impact = $this->impact($user, $lockedIngredient);
@@ -510,9 +513,64 @@ class IngredientFormulaMutationService
         });
     }
 
+    public function deletionBlock(Ingredient $ingredient): ?string
+    {
+        if (DB::table('stock_lots')->where('ingredient_id', $ingredient->id)->exists()) {
+            return __('ingredients.validation.delete_stock_usage');
+        }
+
+        $references = [
+            'production_requirements' => 'ingredient_id',
+            'production_runs' => 'output_ingredient_id',
+            'recipes' => 'output_ingredient_id',
+            'purchase_order_lines' => 'ingredient_id',
+            'supplier_listings' => 'ingredient_id',
+            'ingredient_enrichment_batch_items' => 'ingredient_id',
+        ];
+
+        foreach ($references as $table => $column) {
+            if (DB::table($table)->where($column, $ingredient->id)->exists()) {
+                return __('ingredients.validation.delete_linked_records');
+            }
+        }
+
+        if (DB::table('ingredient_intake_items')->where('existing_ingredient_id', $ingredient->id)
+            ->orWhere('promoted_ingredient_id', $ingredient->id)->exists()) {
+            return __('ingredients.validation.delete_linked_records');
+        }
+
+        if (CurrentMaterialPrice::query()->where('ingredient_id', $ingredient->id)->exists()) {
+            return __('ingredients.validation.delete_current_price');
+        }
+
+        return null;
+    }
+
+    private function assertNoDeletionBlock(Ingredient $ingredient): void
+    {
+        $message = $this->deletionBlock($ingredient);
+        if ($message !== null) {
+            throw ValidationException::withMessages(['ingredient' => $message]);
+        }
+    }
+
     private function deleteIngredient(Ingredient $ingredient): void
     {
-        if ($ingredient->delete() !== true) {
+        try {
+            $deleted = $ingredient->delete();
+        } catch (QueryException $exception) {
+            $sqlState = $exception->errorInfo[0] ?? null;
+            $isForeignKeyViolation = $sqlState === '23503'
+                || ($sqlState === '23000' && str_contains($exception->errorInfo[2] ?? '', 'FOREIGN KEY constraint failed'));
+
+            if (! $isForeignKeyViolation) {
+                throw $exception;
+            }
+
+            throw ValidationException::withMessages(['ingredient' => __('ingredients.validation.delete_linked_records')]);
+        }
+
+        if ($deleted !== true) {
             throw new RuntimeException('The ingredient could not be deleted.');
         }
     }

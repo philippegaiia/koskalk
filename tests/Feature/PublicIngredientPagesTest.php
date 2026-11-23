@@ -16,6 +16,7 @@ use App\Models\RecipeItem;
 use App\Models\RecipeVersion;
 use App\Models\RecipeVersionCosting;
 use App\Models\RecipeVersionCostingItem;
+use App\Models\StockLot;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
@@ -520,6 +521,31 @@ it('removes a used ingredient everywhere and closes the dialog', function () {
 
     expect($source->fresh())->toBeNull()
         ->and($recipeItem->fresh())->toBeNull();
+});
+
+it('preserves the formula and stock lot when an ingredient in stock cannot be deleted', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    $user->update(['active_workspace_id' => $workspace->id]);
+    $source = catalogPrivateIngredient($user, IngredientCategory::Other, 'Stocked Additive');
+    $replacement = catalogPrivateIngredient($user, IngredientCategory::Other, 'Replacement Additive');
+    [, , $recipeItem] = catalogFormulaUsage($user, $source, 'Stocked Formula');
+    $lot = StockLot::factory()->for($workspace)->for($source)->create();
+    $this->actingAs($user);
+
+    Livewire::test(IngredientsIndex::class)
+        ->call('confirmDelete', $source->id)
+        ->assertSee(__('ingredients.validation.delete_stock_usage'))
+        ->assertDontSeeHtml('wire:click="removeEverywhereAndDelete"')
+        ->call('removeEverywhereAndDelete')
+        ->assertHasErrors('ingredient')
+        ->set('replacementIngredientId', (string) $replacement->id)
+        ->call('replaceEverywhereAndDelete')
+        ->assertHasErrors('ingredient');
+
+    expect($source->fresh())->not->toBeNull()
+        ->and($recipeItem->fresh()->ingredient_id)->toBe($source->id)
+        ->and($lot->fresh()->ingredient_id)->toBe($source->id);
 });
 
 it('blocks automatic removal when affected formulas cannot all be edited without leaking inaccessible names', function () {

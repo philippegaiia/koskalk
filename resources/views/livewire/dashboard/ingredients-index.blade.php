@@ -345,7 +345,15 @@
                 aria-labelledby="ingredient-delete-heading"
                 aria-describedby="ingredient-delete-description"
             >
-                @if ($usedFormulaCount === 0 && $usedCompositeCount === 0)
+                @if ($pendingDeleteBlock !== null)
+                    <div x-trap.noscroll="true" class="w-full max-w-md rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-6 shadow-xl">
+                        <h3 id="ingredient-delete-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.removal.manage_heading', ['ingredient' => $pendingDeleteIngredient->localizedDisplayName()]) }}</h3>
+                        <p id="ingredient-delete-description" class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">{{ $pendingDeleteBlock }}</p>
+                        <div class="mt-6 flex justify-end">
+                            <button x-ref="initialFocus" type="button" wire:click="cancelDelete" class="sk-btn sk-btn-outline">{{ __('ingredients.actions.cancel') }}</button>
+                        </div>
+                    </div>
+                @elseif ($usedFormulaCount === 0 && $usedCompositeCount === 0)
                     <div x-trap.noscroll="true" class="w-full max-w-md rounded-xl border border-[var(--color-line)] bg-[var(--color-panel)] p-6 shadow-xl">
                         <h3 id="ingredient-delete-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('ingredients.removal.delete_heading', ['ingredient' => $pendingDeleteIngredient->localizedDisplayName()]) }}</h3>
                         <p id="ingredient-delete-description" class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">{{ __('ingredients.removal.delete_description') }}</p>

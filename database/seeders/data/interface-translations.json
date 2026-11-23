@@ -20232,6 +20232,42 @@
     },
     {
       "group": "ingredients",
+      "key": "validation.delete_current_price",
+      "text": {
+        "de": "Für diese Zutat ist ein aktueller Preis hinterlegt. Entfernen Sie den Preis vor dem Löschen.",
+        "es": "Este ingrediente tiene un precio vigente. Borra el precio antes de eliminarlo.",
+        "fr": "Cet ingrédient a un prix actuel. Effacez le prix avant de supprimer l’ingrédient.",
+        "it": "Questo ingrediente ha un prezzo corrente. Rimuovi il prezzo prima di eliminarlo.",
+        "nl": "Dit ingrediënt heeft een actuele prijs. Wis de prijs voordat je het ingrediënt verwijdert.",
+        "pt_BR": "Este ingrediente tem um preço atual. Limpe o preço antes de excluir o ingrediente."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "validation.delete_linked_records",
+      "text": {
+        "de": "Diese Zutat ist mit Einkaufs-, Produktions- oder Katalogdaten verknüpft und kann nicht gelöscht werden.",
+        "es": "Este ingrediente está vinculado a registros de compras, producción o catálogo y no se puede eliminar.",
+        "fr": "Cet ingrédient est lié à des données d’achat, de production ou de catalogue et ne peut pas être supprimé.",
+        "it": "Questo ingrediente è collegato a registri di acquisto, produzione o catalogo e non può essere eliminato.",
+        "nl": "Dit ingrediënt is gekoppeld aan inkoop-, productie- of catalogusgegevens en kan niet worden verwijderd.",
+        "pt_BR": "Este ingrediente está vinculado a registros de compras, produção ou catálogo e não pode ser excluído."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "validation.delete_stock_usage",
+      "text": {
+        "de": "Diese Zutat ist mit einer Lagercharge verknüpft und kann nicht gelöscht werden. Die Charge gehört zum Bestandsverlauf.",
+        "es": "Este ingrediente está vinculado a un lote de existencias y no se puede eliminar. El lote forma parte del historial de inventario.",
+        "fr": "Cet ingrédient est lié à un lot de stock et ne peut pas être supprimé. Le lot fait partie de l’historique de votre inventaire.",
+        "it": "Questo ingrediente è collegato a un lotto di magazzino e non può essere eliminato. Il lotto fa parte dello storico dell’inventario.",
+        "nl": "Dit ingrediënt is gekoppeld aan een voorraadpartij en kan niet worden verwijderd. De partij hoort bij je voorraadgeschiedenis.",
+        "pt_BR": "Este ingrediente está vinculado a um lote de estoque e não pode ser excluído. O lote faz parte do histórico do inventário."
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "validation.replacement_unavailable",
       "text": {
         "de": "Die ausgewählte Ersatzzutat ist nicht mehr verfügbar.",

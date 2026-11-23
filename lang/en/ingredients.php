@@ -616,6 +616,9 @@ return [
     'validation' => [
         'choose_compatible_replacement' => 'Choose an available compatible replacement ingredient.',
         'choose_dependency_action' => 'Choose how to update the formulas or composite ingredients that use this ingredient.',
+        'delete_stock_usage' => 'This ingredient is linked to a stock lot and cannot be deleted. The lot is part of your inventory history.',
+        'delete_linked_records' => 'This ingredient is linked to purchasing, production, or catalogue records and cannot be deleted.',
+        'delete_current_price' => 'This ingredient has a current price. Clear the price before deleting the ingredient.',
         'choose_replacement' => 'Choose a replacement ingredient.',
         'replacement_unavailable' => 'The selected replacement ingredient is no longer available.',
     ],

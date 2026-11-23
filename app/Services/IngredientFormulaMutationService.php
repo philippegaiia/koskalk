@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientRemovalOutcome;
 use App\Enums\Visibility;
 use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
@@ -168,12 +169,16 @@ class IngredientFormulaMutationService
             ->values();
     }
 
+    /**
+     * Swaps the ingredient for the replacement in every formula and composite, then deletes it.
+     * An ingredient with stock, purchasing or production history is deactivated instead.
+     */
     public function replaceEverywhereAndDelete(
         User $user,
         Ingredient $ingredient,
         Ingredient $replacement,
-    ): void {
-        $this->transaction->run(function () use ($user, $ingredient, $replacement): void {
+    ): IngredientRemovalOutcome {
+        return $this->transaction->run(function () use ($user, $ingredient, $replacement): IngredientRemovalOutcome {
             $this->lockIngredientWorkspace($ingredient, $user);
             $lockedIngredients = Ingredient::query()
                 ->whereKey([$ingredient->getKey(), $replacement->getKey()])
@@ -186,7 +191,6 @@ class IngredientFormulaMutationService
                 $lockedIngredients->get($ingredient->getKey()),
                 $user,
             );
-            $this->assertNoDeletionBlock($lockedIngredient);
 
             $lockedReplacement = $lockedIngredients->get($replacement->getKey());
 
@@ -236,8 +240,15 @@ class IngredientFormulaMutationService
                 $this->invalidateGeneratedIngredientLists($affectedVersionIds);
             }
 
-            $this->scheduleMediaDeletionAfterCommit($lockedIngredient);
+            if ($this->deletionBlock($lockedIngredient) !== null) {
+                $lockedIngredient->forceFill(['is_active' => false])->save();
+
+                return IngredientRemovalOutcome::Deactivated;
+            }
+
             $this->deleteIngredient($lockedIngredient);
+
+            return IngredientRemovalOutcome::Deleted;
         });
     }
 
@@ -272,7 +283,6 @@ class IngredientFormulaMutationService
                 ->where('component_ingredient_id', $lockedIngredient->id)
                 ->delete();
 
-            $this->scheduleMediaDeletionAfterCommit($lockedIngredient);
             $this->deleteIngredient($lockedIngredient);
         });
     }
@@ -513,6 +523,10 @@ class IngredientFormulaMutationService
         });
     }
 
+    /**
+     * Returns why the ingredient must be kept, or null when nothing outside formulas references it.
+     * A remembered workspace price is not a reason to keep it: deletion clears that price.
+     */
     public function deletionBlock(Ingredient $ingredient): ?string
     {
         if (DB::table('stock_lots')->where('ingredient_id', $ingredient->id)->exists()) {
@@ -521,6 +535,8 @@ class IngredientFormulaMutationService
 
         $references = [
             'production_requirements' => 'ingredient_id',
+            'production_formula_lines' => 'ingredient_id',
+            'production_batch_ingredients' => 'ingredient_id',
             'production_runs' => 'output_ingredient_id',
             'recipes' => 'output_ingredient_id',
             'purchase_order_lines' => 'ingredient_id',
@@ -534,21 +550,40 @@ class IngredientFormulaMutationService
             }
         }
 
-        if (DB::table('ingredient_intake_items')->where('existing_ingredient_id', $ingredient->id)
-            ->orWhere('promoted_ingredient_id', $ingredient->id)->exists()) {
+        if (DB::table('ingredient_intake_items')
+            ->where(fn ($query) => $query
+                ->where('existing_ingredient_id', $ingredient->id)
+                ->orWhere('promoted_ingredient_id', $ingredient->id))
+            ->exists()) {
             return __('ingredients.validation.delete_linked_records');
-        }
-
-        if (CurrentMaterialPrice::query()->where('ingredient_id', $ingredient->id)->exists()) {
-            return __('ingredients.validation.delete_current_price');
         }
 
         return null;
     }
 
+    /**
+     * Hides an owned ingredient from ingredient pickers, or brings it back, without touching formulas or history.
+     */
+    public function setActive(User $user, Ingredient $ingredient, bool $isActive): void
+    {
+        $this->transaction->run(function () use ($user, $ingredient, $isActive): void {
+            $this->lockIngredientWorkspace($ingredient, $user);
+            $lockedIngredient = $this->validatedOwnedIngredient(
+                Ingredient::query()
+                    ->whereKey($ingredient->getKey())
+                    ->lockForUpdate()
+                    ->first(),
+                $user,
+            );
+
+            $lockedIngredient->forceFill(['is_active' => $isActive])->save();
+        });
+    }
+
     private function assertNoDeletionBlock(Ingredient $ingredient): void
     {
         $message = $this->deletionBlock($ingredient);
+
         if ($message !== null) {
             throw ValidationException::withMessages(['ingredient' => $message]);
         }
@@ -556,6 +591,9 @@ class IngredientFormulaMutationService
 
     private function deleteIngredient(Ingredient $ingredient): void
     {
+        CurrentMaterialPrice::query()->whereBelongsTo($ingredient)->delete();
+        $this->scheduleMediaDeletionAfterCommit($ingredient);
+
         try {
             $deleted = $ingredient->delete();
         } catch (QueryException $exception) {

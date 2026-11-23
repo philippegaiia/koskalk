@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\IngredientCategory;
+use App\Enums\IngredientRemovalOutcome;
 use App\Enums\OwnerType;
 use App\Enums\Visibility;
 use App\Enums\WorkspaceMemberRole;
@@ -51,7 +52,7 @@ it('uses bounded deadlock retries for both ingredient mutation transactions', fu
         ->shouldReceive('transaction')
         ->twice()
         ->with(Mockery::type(Closure::class), 3)
-        ->andReturnNull();
+        ->andReturn(IngredientRemovalOutcome::Deleted, null);
 
     $service = new IngredientFormulaMutationService(
         app(IngredientCompositeDependencyService::class),

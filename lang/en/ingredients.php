@@ -383,12 +383,10 @@ return [
     ],
     'page' => [
         'eyebrow' => 'Ingredients',
-        'heading' => 'Manage ingredients for formulas and costing.',
         'intro' => 'Soapkraft ingredients come from the Soapkraft library. Add your own costing price, duplicate one to create an editable copy, or create a private ingredient from scratch.',
     ],
     'catalog' => [
         'heading' => 'Ingredient catalog',
-        'description' => 'Browse ingredients, update costing, and manage the ones you own.',
         'filters_label' => 'Ingredient catalog filters',
         'filter_label' => 'Ingredient catalog filter',
     ],
@@ -398,7 +396,7 @@ return [
     ],
     'actions' => [
         'add' => 'Add ingredient',
-        'back_to_dashboard' => 'Back to dashboard',
+        'add_short' => 'Add',
         'edit' => 'Edit',
         'delete' => 'Delete',
         'view_reference' => 'View reference',
@@ -411,6 +409,7 @@ return [
         'yours' => 'Your ingredients',
         'soapkraft' => 'Soapkraft',
         'priced' => 'Priced',
+        'inactive' => 'Inactive',
     ],
     'exports' => [
         'filename' => 'ingredient-price-book',
@@ -446,7 +445,7 @@ return [
             'desc' => 'Descending',
         ],
         'ui' => [
-            'label' => 'Export ingredients',
+            'label' => 'Export',
             'menu_label' => 'Ingredient export formats',
             'xlsx' => 'Excel workbook (.xlsx)',
             'csv' => 'CSV file (.csv)',
@@ -475,8 +474,7 @@ return [
         'limited' => '{1} :used of :limit private ingredient|[2,*] :used of :limit private ingredients',
     ],
     'search' => [
-        'label' => 'Search',
-        'placeholder' => 'Name, INCI, or category',
+        'placeholder' => 'Search name, INCI, or category',
         'aria_label' => 'Search ingredients',
     ],
     'empty' => [
@@ -492,6 +490,7 @@ return [
         'uncategorized' => 'Uncategorized',
         'actions' => 'Actions',
         'per_page' => 'Ingredients per page',
+        'inactive' => 'Inactive',
         'source' => [
             'label' => 'Source',
             'yours' => 'You',
@@ -524,6 +523,7 @@ return [
     ],
     'duplicate' => [
         'button' => 'Duplicate ingredient',
+        'button_short' => 'Duplicate',
         'eyebrow' => 'Duplicate',
         'heading' => 'Duplicate ingredient',
         'description' => 'Search your ingredients and the Soapkraft library, review what will carry across, then create an editable private copy.',
@@ -599,12 +599,24 @@ return [
             'no_match' => 'No compatible replacement matches your search.',
             'unavailable' => 'No compatible replacement is currently available.',
             'action' => 'Replace everywhere and delete',
+            'action_deactivate' => 'Replace everywhere and deactivate',
         ],
         'without_replacement' => [
             'heading' => 'Remove without replacement',
             'description' => 'This is permanent. Formula totals and composite percentages may become incomplete and will need manual review.',
             'soap_warning' => 'Soap calculations may change or become invalid when a carrier oil is removed.',
             'action' => 'Remove everywhere and delete',
+        ],
+        'history_kept' => 'You can still replace it in your formulas: it will then be deactivated instead of deleted.',
+        'deactivate' => [
+            'heading' => 'Deactivate instead',
+            'description' => 'Deactivating keeps formulas and history unchanged and hides this ingredient when adding ingredients to a formula. You can reactivate it at any time.',
+            'action' => 'Deactivate',
+        ],
+        'reactivate' => [
+            'heading' => 'Reactivate',
+            'description' => 'This ingredient is inactive. Reactivating makes it available again when adding ingredients to a formula.',
+            'action' => 'Reactivate',
         ],
     ],
     'alkalis' => [
@@ -618,13 +630,15 @@ return [
         'choose_dependency_action' => 'Choose how to update the formulas or composite ingredients that use this ingredient.',
         'delete_stock_usage' => 'This ingredient is linked to a stock lot and cannot be deleted. The lot is part of your inventory history.',
         'delete_linked_records' => 'This ingredient is linked to purchasing, production, or catalogue records and cannot be deleted.',
-        'delete_current_price' => 'This ingredient has a current price. Clear the price before deleting the ingredient.',
         'choose_replacement' => 'Choose a replacement ingredient.',
         'replacement_unavailable' => 'The selected replacement ingredient is no longer available.',
     ],
     'status' => [
         'deleted' => ':ingredient was deleted.',
         'replaced_and_deleted' => ':ingredient was replaced everywhere and deleted.',
+        'replaced_and_deactivated' => ':ingredient was replaced everywhere and deactivated, because it has stock, purchasing, or production history.',
+        'deactivated' => ':ingredient was deactivated.',
+        'reactivated' => ':ingredient was reactivated.',
         'removed_and_deleted' => ':ingredient was removed everywhere and deleted.',
         'unavailable' => 'The ingredient is no longer available in your catalog.',
     ],

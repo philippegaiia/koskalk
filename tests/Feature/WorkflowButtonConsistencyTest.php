@@ -18,6 +18,6 @@ it('uses the mapped app button variant for browse-page workflow actions', functi
     'add listing from listing index' => ['livewire/production-bench/purchasing/supplier-listing-index', "route('production-bench.purchasing.listings.create')", 'sk-btn-primary'],
     'edit supplier' => ['livewire/production-bench/purchasing/supplier-detail', "route('production-bench.purchasing.suppliers.edit', \$supplier)", 'sk-btn-outline'],
     'add listing from supplier' => ['livewire/production-bench/purchasing/supplier-detail', "route('production-bench.purchasing.suppliers.listings.create', \$supplier)", 'sk-btn-primary'],
-    'back from ingredients' => ['livewire/dashboard/ingredients-index', "route('dashboard')", 'sk-btn-outline'],
-    'back from packaging' => ['livewire/dashboard/packaging-items-index', "route('dashboard')", 'sk-btn-outline'],
+    'add ingredient' => ['livewire/dashboard/ingredients-index', "route('ingredients.create')", 'sk-btn-primary'],
+    'add packaging item' => ['livewire/dashboard/packaging-items-index', "route('packaging-items.create')", 'sk-btn-primary'],
 ]);

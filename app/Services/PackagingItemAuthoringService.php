@@ -21,6 +21,7 @@ class PackagingItemAuthoringService
     public function __construct(
         private readonly CurrentMaterialPriceService $currentMaterialPriceService,
         private readonly WorkspaceProvisioner $workspaceProvisioner,
+        private readonly PackagingItemFormulaMutationService $packagingItemFormulaMutationService,
     ) {}
 
     /**
@@ -107,6 +108,8 @@ class PackagingItemAuthoringService
 
                 return true;
             }
+
+            $this->packagingItemFormulaMutationService->assertNoDeletionBlock($lockedItem);
 
             $featuredImagePath = $lockedItem->featured_image_path;
             $lockedItem->currentPrice()->delete();

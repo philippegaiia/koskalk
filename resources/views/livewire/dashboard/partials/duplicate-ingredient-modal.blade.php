@@ -46,9 +46,9 @@
         :disabled="isBlocked()"
         aria-haspopup="dialog"
         :aria-expanded="open.toString()"
-        class="sk-btn sk-btn-primary justify-center disabled:cursor-not-allowed disabled:opacity-60"
+        class="sk-btn {{ $duplicateButtonVariant ?? 'sk-btn-primary' }} justify-center disabled:cursor-not-allowed disabled:opacity-60"
     >
-        {{ __('ingredients.duplicate.button') }}
+        {{ $duplicateButtonLabel ?? __('ingredients.duplicate.button') }}
     </button>
     <p
         x-cloak

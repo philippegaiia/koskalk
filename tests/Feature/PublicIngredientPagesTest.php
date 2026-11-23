@@ -7,6 +7,7 @@ use App\Enums\WorkspaceMemberRole;
 use App\Livewire\Dashboard\IngredientEditor;
 use App\Livewire\Dashboard\IngredientsIndex;
 use App\Models\Allergen;
+use App\Models\CurrentMaterialPrice;
 use App\Models\Ingredient;
 use App\Models\IngredientAllergenEntry;
 use App\Models\IngredientComponent;
@@ -103,8 +104,9 @@ it('keeps compact ingredient columns readable without forcing the catalog to scr
     // the table overflow at every viewport, 1920 included, because the app
     // container is already capped at 74rem.
     expect($catalogSource)
-        ->toContain('<table class="sk-table table-auto">')
+        ->toContain('<table class="sk-table table-auto [&_tbody_td]:py-1">')
         ->not->toMatch('/min-w-\[\d+(\.\d+)?rem\]/')
+        ->toContain('<col class="w-16" />')
         ->toContain('<col class="w-40" />')
         ->toContain('<col class="w-24" />');
 
@@ -523,7 +525,7 @@ it('removes a used ingredient everywhere and closes the dialog', function () {
         ->and($recipeItem->fresh())->toBeNull();
 });
 
-it('preserves the formula and stock lot when an ingredient in stock cannot be deleted', function (): void {
+it('keeps an ingredient in stock but still lets the user replace it in formulas', function (): void {
     $user = User::factory()->create();
     $workspace = Workspace::factory()->for($user, 'owner')->create();
     $user->update(['active_workspace_id' => $workspace->id]);
@@ -533,19 +535,73 @@ it('preserves the formula and stock lot when an ingredient in stock cannot be de
     $lot = StockLot::factory()->for($workspace)->for($source)->create();
     $this->actingAs($user);
 
-    Livewire::test(IngredientsIndex::class)
+    $component = Livewire::test(IngredientsIndex::class)
         ->call('confirmDelete', $source->id)
         ->assertSee(__('ingredients.validation.delete_stock_usage'))
+        ->assertSee(__('ingredients.removal.replacement.action_deactivate'))
         ->assertDontSeeHtml('wire:click="removeEverywhereAndDelete"')
         ->call('removeEverywhereAndDelete')
-        ->assertHasErrors('ingredient')
-        ->set('replacementIngredientId', (string) $replacement->id)
-        ->call('replaceEverywhereAndDelete')
         ->assertHasErrors('ingredient');
 
+    expect($recipeItem->fresh()->ingredient_id)->toBe($source->id);
+
+    $component
+        ->set('replacementIngredientId', (string) $replacement->id)
+        ->call('replaceEverywhereAndDelete')
+        ->assertHasNoErrors();
+
     expect($source->fresh())->not->toBeNull()
-        ->and($recipeItem->fresh()->ingredient_id)->toBe($source->id)
+        ->and($source->fresh()->is_active)->toBeFalse()
+        ->and($recipeItem->fresh()->ingredient_id)->toBe($replacement->id)
         ->and($lot->fresh()->ingredient_id)->toBe($source->id);
+});
+
+it('deletes an unused ingredient together with its remembered workspace price', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    $user->update(['active_workspace_id' => $workspace->id]);
+    $ingredient = catalogPrivateIngredient($user, IngredientCategory::Other, 'Priced Additive');
+    $price = CurrentMaterialPrice::factory()->create([
+        'workspace_id' => $workspace->id,
+        'ingredient_id' => $ingredient->id,
+    ]);
+    $this->actingAs($user);
+
+    Livewire::test(IngredientsIndex::class)
+        ->call('confirmDelete', $ingredient->id)
+        ->call('deleteIngredient')
+        ->assertHasNoErrors();
+
+    expect($ingredient->fresh())->toBeNull()
+        ->and(CurrentMaterialPrice::query()->find($price->id))->toBeNull();
+});
+
+it('deactivates and reactivates an owned ingredient without changing its formulas', function (): void {
+    $user = User::factory()->create();
+    $workspace = Workspace::factory()->for($user, 'owner')->create();
+    $user->update(['active_workspace_id' => $workspace->id]);
+    $ingredient = catalogPrivateIngredient($user, IngredientCategory::Other, 'Seasonal Additive');
+    [, , $recipeItem] = catalogFormulaUsage($user, $ingredient, 'Seasonal Formula');
+    $this->actingAs($user);
+
+    Livewire::test(IngredientsIndex::class)
+        ->call('confirmDelete', $ingredient->id)
+        ->call('deactivateIngredient')
+        ->assertHasNoErrors()
+        ->set('ownershipFilter', 'inactive')
+        ->assertSee('Seasonal Additive')
+        ->assertSee(__('ingredients.table.inactive'));
+
+    expect($ingredient->fresh()->is_active)->toBeFalse()
+        ->and($recipeItem->fresh()->ingredient_id)->toBe($ingredient->id);
+
+    Livewire::test(IngredientsIndex::class)
+        ->call('confirmDelete', $ingredient->id)
+        ->assertSee(__('ingredients.removal.reactivate.action'))
+        ->call('reactivateIngredient')
+        ->assertHasNoErrors();
+
+    expect($ingredient->fresh()->is_active)->toBeTrue();
 });
 
 it('blocks automatic removal when affected formulas cannot all be edited without leaking inaccessible names', function () {

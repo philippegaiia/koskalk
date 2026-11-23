@@ -322,6 +322,27 @@ it('updates and clears the workspace material code while editing an ingredient',
         ->exists())->toBeFalse();
 });
 
+it('keeps a deactivated ingredient inactive when it is edited and saved', function (): void {
+    $user = User::factory()->create();
+    Workspace::factory()->for($user, 'owner')->create();
+    $ingredient = app(UserIngredientAuthoringService::class)->create([
+        'name' => 'Retired Clay',
+        'category' => IngredientCategory::MineralsSaltsPowders->value,
+    ], $user);
+    $ingredient->forceFill(['is_active' => false])->save();
+
+    $this->actingAs($user);
+
+    Livewire::test(IngredientEditor::class, ['ingredient' => $ingredient->fresh()])
+        ->set('data.name', 'Retired Clay Renamed')
+        ->call('save')
+        ->assertHasNoErrors();
+
+    expect($ingredient->fresh())
+        ->display_name->toBe('Retired Clay Renamed')
+        ->is_active->toBeFalse();
+});
+
 it('rejects duplicate workspace material codes and rolls back a new ingredient', function (): void {
     $user = User::factory()->create();
     Workspace::factory()->for($user, 'owner')->create();

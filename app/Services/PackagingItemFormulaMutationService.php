@@ -72,6 +72,37 @@ class PackagingItemFormulaMutationService
         ];
     }
 
+    /**
+     * Returns why the packaging item must be kept, or null when nothing outside formulas references it.
+     */
+    public function deletionBlock(PackagingItem $packagingItem): ?string
+    {
+        $references = [
+            'stock_lots',
+            'supplier_listings',
+            'purchase_order_lines',
+            'production_requirements',
+            'production_batch_packaging_items',
+        ];
+
+        foreach ($references as $table) {
+            if (DB::table($table)->where('packaging_item_id', $packagingItem->id)->exists()) {
+                return __('packaging.validation.delete_linked_records');
+            }
+        }
+
+        return null;
+    }
+
+    public function assertNoDeletionBlock(PackagingItem $packagingItem): void
+    {
+        $message = $this->deletionBlock($packagingItem);
+
+        if ($message !== null) {
+            throw ValidationException::withMessages(['packaging_item' => $message]);
+        }
+    }
+
     public function removeEverywhereAndDelete(User $user, PackagingItem $packagingItem): void
     {
         $this->transaction->run(function () use ($user, $packagingItem): void {
@@ -91,6 +122,7 @@ class PackagingItemFormulaMutationService
             }
 
             Gate::forUser($user)->authorize('delete', $lockedPackagingItem);
+            $this->assertNoDeletionBlock($lockedPackagingItem);
 
             $impact = $this->impact($user, $lockedPackagingItem);
 

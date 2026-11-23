@@ -184,7 +184,7 @@ it('shows export controls and allows a viewer to download packaging without Prod
     WorkspaceMember::factory()->for($workspace)->for($viewer, 'user')->create(['role' => WorkspaceMemberRole::Viewer]);
     PackagingItem::factory()->for($workspace)->create(['name' => 'Shared box']);
 
-    $this->actingAs($viewer)->get(route('packaging-items.index'))->assertSee('Export packaging')
+    $this->actingAs($viewer)->get(route('packaging-items.index'))->assertSee('Export')
         ->assertSee('Excel workbook (.xlsx)')->assertSee('CSV file (.csv)')
         ->assertSee(route('packaging-items.export'), false)->assertSee($workspace->public_id, false)
         ->assertSeeHtml('data-export-livewire-filters=\'["sortField","sortDirection"]\'')

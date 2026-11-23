@@ -225,7 +225,6 @@ final class WorkspaceIngredientGuidanceService
         if (
             $ingredient->owner_type !== OwnerType::Workspace
             || (int) $ingredient->workspace_id !== (int) $workspace->id
-            || ! $ingredient->is_active
         ) {
             throw ValidationException::withMessages([
                 'guidance_html' => __('ingredients.editor.validation.workspace_guidance_forbidden'),

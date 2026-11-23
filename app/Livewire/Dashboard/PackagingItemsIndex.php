@@ -168,7 +168,15 @@ class PackagingItemsIndex extends Component
             return;
         }
 
-        if (! app(PackagingItemAuthoringService::class)->delete($packagingItem, $user)) {
+        try {
+            $deleted = app(PackagingItemAuthoringService::class)->delete($packagingItem, $user);
+        } catch (ValidationException $exception) {
+            $this->addError('packaging_item', $exception->validator->errors()->first('packaging_item'));
+
+            return;
+        }
+
+        if (! $deleted) {
             $this->addError('packaging_item', __('packaging.validation.in_use'));
 
             return;
@@ -244,6 +252,9 @@ class PackagingItemsIndex extends Component
                 'currency' => $this->currentCurrency ?? config('currency.default', 'EUR'),
             ]),
             'pendingDeleteItem' => $pendingDeleteItem,
+            'pendingDeleteBlock' => $pendingDeleteItem instanceof PackagingItem
+                ? $packagingItemFormulaMutationService->deletionBlock($pendingDeleteItem)
+                : null,
             'pendingDeleteImpact' => $pendingDeleteItem instanceof PackagingItem && $currentUser instanceof User
                 ? $packagingItemFormulaMutationService->impact($currentUser, $pendingDeleteItem)
                 : null,

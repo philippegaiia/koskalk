@@ -1,23 +1,6 @@
 <div class="mx-auto w-full max-w-app space-y-6">
     <script type="application/json" data-contextual-help-scope>{!! \Illuminate\Support\Js::encode($contextualHelp) !!}</script>
-    <section class="sk-card p-5 sm:p-6" aria-label="{{ __('packaging.page.aria_label') }}">
-        <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div class="min-w-0 flex-1">
-                <p class="sk-eyebrow">{{ __('packaging.page.title') }}</p>
-                <div data-contextual-help-heading class="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <h3 class="mt-2 max-w-4xl text-xl font-semibold text-[var(--color-ink-strong)] sm:text-2xl">{{ __('packaging.page.heading') }}</h3>
-                    <x-contextual-help.index-button :help="$contextualHelp" tab="materials" />
-                </div>
-                <p class="mt-2 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)]">
-                    {{ __('packaging.page.intro') }}
-                </p>
-            </div>
-
-            <a href="{{ route('dashboard') }}" wire:navigate class="sk-btn sk-btn-outline">
-                {{ __('packaging.actions.back_to_dashboard') }}
-            </a>
-        </div>
-    </section>
+    <x-contextual-help.index-button :help="$contextualHelp" tab="materials" />
 
     @if (! $currentUser)
         <section class="sk-card p-8 text-center" aria-label="{{ __('packaging.auth.aria_label') }}">
@@ -25,19 +8,14 @@
             <p class="mt-3 text-sm leading-7 text-[var(--color-ink-soft)]">{{ __('packaging.auth.description') }}</p>
         </section>
     @else
-        <section class="overflow-hidden sk-card p-0" aria-label="{{ __('packaging.catalog.table_label') }}">
-            <div class="flex flex-col gap-4 border-b border-[var(--color-line)] bg-[var(--color-field-muted)] px-5 py-4">
-                <div class="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-[var(--color-ink-strong)]">{{ __('packaging.catalog.heading') }}</p>
-                        <p class="mt-1 text-xs text-[var(--color-ink-soft)]">{{ __('packaging.catalog.description') }}</p>
-                    </div>
+        <section class="overflow-hidden sk-card p-0" aria-labelledby="packaging-catalog-heading">
+            <div class="flex flex-col gap-2.5 border-b border-[var(--color-line)] bg-[var(--color-field-muted)] px-5 py-3">
+                <h3 id="packaging-catalog-heading" data-contextual-help-heading class="sr-only">{{ __('packaging.catalog.heading') }}</h3>
 
-                    @if ($canCreateItems)
-                        <a href="{{ route('packaging-items.create') }}" wire:navigate class="sk-btn sk-btn-primary justify-center">{{ __('packaging.actions.add') }}</a>
-                    @endif
-                </div>
+                <div class="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+                <p class="max-w-xl text-xs text-[var(--color-ink-soft)]">{{ __('packaging.page.intro') }}</p>
 
+                <div class="flex flex-wrap items-center gap-2 xl:justify-end">
                 <div
                     x-data="listOutputDownload()"
                     data-export-url="{{ route('packaging-items.export') }}"
@@ -53,17 +31,16 @@
                     data-export-error-invalid="{{ __('packaging.exports.ui.errors.invalid') }}"
                     data-export-error-throttled="{{ __('ingredients.exports.ui.errors.throttled') }}"
                     data-export-error-failed="{{ __('packaging.exports.ui.errors.failed') }}"
-                    class="flex flex-col gap-3 sm:flex-row sm:items-end"
+                    class="flex flex-wrap items-center gap-2"
                     aria-label="{{ __('packaging.catalog.filters_label') }}"
                     @keydown.escape.window="if (outputMenuOpen) { outputMenuOpen = false; $refs.exportMenuTrigger.focus(); }"
                 >
-                    <label class="sk-field min-w-64">
-                        <span class="shrink-0 text-[var(--color-ink-soft)]">{{ __('packaging.search.label') }}</span>
+                    <label class="sk-field min-h-11 w-64 py-2">
                         <input data-list-output-search @input="visibleSearch = $event.target.value" autocomplete="off" wire:model.live.debounce.250ms="search" type="text" placeholder="{{ __('packaging.search.placeholder') }}" class="sk-field-control" aria-label="{{ __('packaging.search.aria_label') }}" />
                     </label>
 
                     @if ($destinationWorkspacePublicId)
-                        <div class="flex flex-wrap items-end gap-2">
+                        <div class="flex flex-wrap items-center gap-2">
                             <div class="relative" @click.outside="outputMenuOpen = false">
                                 <button
                                     x-ref="exportMenuTrigger"
@@ -85,11 +62,17 @@
                                     <button x-ref="csvExport" type="button" role="menuitem" :disabled="outputPending" wire:loading.attr="disabled" wire:target="sortBy" @click="outputMenuOpen = false; $nextTick(() => $refs.exportMenuTrigger.focus()); exportList('csv')" @keydown.arrow-down.prevent="$refs.xlsxExport.focus()" @keydown.arrow-up.prevent="$refs.xlsxExport.focus()" class="block min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm font-medium text-[var(--color-ink-strong)] hover:bg-[var(--color-panel-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[var(--color-accent)]">{{ __('ingredients.exports.ui.csv') }}</button>
                                 </div>
                             </div>
-                            <p x-show="currentResultsAreEmpty()" x-cloak class="max-w-64 pb-2 text-xs text-[var(--color-ink-soft)]">{{ __('packaging.exports.validation.empty') }}</p>
-                            <p x-show="outputPending" x-cloak role="status" aria-live="polite" class="pb-2 text-xs text-[var(--color-ink-soft)]">{{ __('packaging.exports.ui.pending') }}</p>
-                            <p x-show="outputError" x-cloak role="alert" class="pb-2 text-xs text-[var(--color-danger-strong)]" x-text="outputError"></p>
+                            <p x-show="currentResultsAreEmpty()" x-cloak class="max-w-64 text-xs text-[var(--color-ink-soft)]">{{ __('packaging.exports.validation.empty') }}</p>
+                            <p x-show="outputPending" x-cloak role="status" aria-live="polite" class="text-xs text-[var(--color-ink-soft)]">{{ __('packaging.exports.ui.pending') }}</p>
+                            <p x-show="outputError" x-cloak role="alert" class="text-xs text-[var(--color-danger-strong)]" x-text="outputError"></p>
                         </div>
                     @endif
+                </div>
+
+                @if ($canCreateItems)
+                    <a href="{{ route('packaging-items.create') }}" wire:navigate class="sk-btn sk-btn-primary min-h-11 justify-center">{{ __('packaging.actions.add_short') }}</a>
+                @endif
+                </div>
                 </div>
             </div>
 
@@ -105,7 +88,15 @@
                 </div>
             @else
                 <x-sticky-table-scroll>
-                    <table class="sk-table">
+                    <table class="sk-table [&_tbody_td]:py-1">
+                        <colgroup>
+                            <col class="w-16" />
+                            <col />
+                            <col />
+                            <col />
+                            <col />
+                            <col />
+                        </colgroup>
                         <thead wire:ignore.self data-sticky-table-header class="relative z-20 whitespace-nowrap shadow-[0_1px_0_0_var(--color-line)]">
                             <tr>
                                 <th scope="col"><span class="sr-only">{{ __('packaging.table.image') }}</span></th>
@@ -125,9 +116,9 @@
                                 <tr wire:key="packaging-item-{{ $item->id }}">
                                     <td>
                                         @if ($imageUrl)
-                                            <img src="{{ $imageUrl }}" alt="{{ $item->name }}" class="size-13 rounded-lg object-cover" />
+                                            <img src="{{ $imageUrl }}" alt="{{ $item->name }}" class="size-8 rounded-lg object-cover" />
                                         @else
-                                            <span class="grid size-13 place-items-center rounded-lg bg-[var(--color-panel-strong)] text-[var(--color-ink-soft)]" aria-hidden="true">
+                                            <span class="grid size-8 place-items-center rounded-lg bg-[var(--color-panel-strong)] text-[var(--color-ink-soft)]" aria-hidden="true">
                                                 <span class="text-xs font-semibold">PKG</span>
                                             </span>
                                         @endif
@@ -136,7 +127,7 @@
                                     <td class="font-mono text-sm text-[var(--color-ink-soft)]">{{ $item->material_code ?? '—' }}</td>
                                     <td>
                                         @if ($canUpdateItems)
-                                            <input type="text" inputmode="decimal" value="{{ $this->formattedUnitCost($item->unit_cost) }}" wire:change="updateUnitCost({{ $item->id }}, $event.target.value)" class="sk-input numeric w-32" aria-label="{{ __('packaging.accessibility.unit_price', ['item' => $item->name]) }}" />
+                                            <input type="text" inputmode="decimal" value="{{ $this->formattedUnitCost($item->unit_cost) }}" wire:change="updateUnitCost({{ $item->id }}, $event.target.value)" class="sk-input numeric w-32 py-1.5" aria-label="{{ __('packaging.accessibility.unit_price', ['item' => $item->name]) }}" />
                                         @else
                                             <span class="numeric text-sm text-[var(--color-ink-soft)]">{{ $this->formattedUnitCost($item->unit_cost) }}</span>
                                         @endif
@@ -171,7 +162,13 @@
                 <div class="sk-card w-full max-w-md p-6" @click.stop>
                     @php($usedFormulaCount = $pendingDeleteImpact['formula_count'] ?? 0)
 
-                    @if ($usedFormulaCount > 0)
+                    @if ($pendingDeleteBlock !== null)
+                        <h3 id="packaging-delete-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('packaging.removal.unused.heading', ['item' => $pendingDeleteItem->name]) }}</h3>
+                        <p role="alert" class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">{{ $pendingDeleteBlock }}</p>
+                        <div class="mt-5 flex justify-end">
+                            <button type="button" wire:click="cancelDelete()" class="sk-btn sk-btn-outline">{{ __('packaging.actions.cancel') }}</button>
+                        </div>
+                    @elseif ($usedFormulaCount > 0)
                         <h3 id="packaging-delete-heading" class="text-lg font-semibold text-[var(--color-ink-strong)]">{{ __('packaging.removal.used.heading', ['item' => $pendingDeleteItem->name]) }}</h3>
                         <p class="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
                             {{ trans_choice('packaging.removal.used.description', $usedFormulaCount, ['count' => $usedFormulaCount]) }}

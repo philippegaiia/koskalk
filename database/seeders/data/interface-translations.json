@@ -7944,14 +7944,14 @@
     },
     {
       "group": "ingredients",
-      "key": "actions.back_to_dashboard",
+      "key": "actions.add_short",
       "text": {
-        "de": "Zurück zum Dashboard",
-        "es": "Volver al panel",
-        "fr": "Retour au tableau de bord",
-        "it": "Torna alla dashboard",
-        "nl": "Terug naar dashboard",
-        "pt_BR": "Voltar ao painel"
+        "de": "Hinzufügen",
+        "es": "Añadir",
+        "fr": "Ajouter",
+        "it": "Aggiungi",
+        "nl": "Toevoegen",
+        "pt_BR": "Adicionar"
       }
     },
     {
@@ -8072,18 +8072,6 @@
         "it": "Accedi per gestire gli ingredienti",
         "nl": "Meld je aan om ingrediënten te beheren",
         "pt_BR": "Entre para gerenciar ingredientes"
-      }
-    },
-    {
-      "group": "ingredients",
-      "key": "catalog.description",
-      "text": {
-        "de": "Durchsuche Zutaten, aktualisiere Kosten und verwalte deine eigenen Einträge.",
-        "es": "Consulta ingredientes, actualiza costes y gestiona los que te pertenecen.",
-        "fr": "Parcourez les ingrédients, mettez à jour vos coûts et gérez ceux qui vous appartiennent.",
-        "it": "Consulta gli ingredienti, aggiorna i costi e gestisci quelli di tua proprietà.",
-        "nl": "Bekijk ingrediënten, werk kostprijzen bij en beheer je eigen ingrediënten.",
-        "pt_BR": "Navegue pelos ingredientes, atualize os custos e gerencie aqueles que pertencem a você."
       }
     },
     {
@@ -9212,6 +9200,18 @@
         "it": "Duplica un ingrediente Soapkraft",
         "nl": "Een Soapkraft-ingrediënt dupliceren",
         "pt_BR": "Duplicar um ingrediente Soapkraft"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "duplicate.button_short",
+      "text": {
+        "de": "Duplizieren",
+        "es": "Duplicar",
+        "fr": "Dupliquer",
+        "it": "Duplica",
+        "nl": "Dupliceren",
+        "pt_BR": "Duplicar"
       }
     },
     {
@@ -15842,12 +15842,12 @@
       "group": "ingredients",
       "key": "exports.ui.label",
       "text": {
-        "de": "Zutaten exportieren",
-        "es": "Exportar ingredientes",
-        "fr": "Exporter les ingrédients",
-        "it": "Esporta ingredienti",
-        "nl": "Ingrediënten exporteren",
-        "pt_BR": "Exportar ingredientes"
+        "de": "Exportieren",
+        "es": "Exportar",
+        "fr": "Exporter",
+        "it": "Esporta",
+        "nl": "Exporteren",
+        "pt_BR": "Exportar"
       }
     },
     {
@@ -15956,6 +15956,18 @@
         "it": "Tutti",
         "nl": "Alle",
         "pt_BR": "Todos"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "filters.inactive",
+      "text": {
+        "de": "Inaktiv",
+        "es": "Inactivos",
+        "fr": "Inactifs",
+        "it": "Inattivi",
+        "nl": "Inactief",
+        "pt_BR": "Inativos"
       }
     },
     {
@@ -17640,18 +17652,6 @@
     },
     {
       "group": "ingredients",
-      "key": "page.heading",
-      "text": {
-        "de": "Verwalte Zutaten für Rezepturen und Kostenberechnungen.",
-        "es": "Gestiona los ingredientes de tus fórmulas y sus costes.",
-        "fr": "Gérez les ingrédients de vos formules et de vos coûts.",
-        "it": "Gestisci gli ingredienti per formule e costi.",
-        "nl": "Beheer ingrediënten voor formules en kostprijzen.",
-        "pt_BR": "Gerencie ingredientes para fórmulas e custos."
-      }
-    },
-    {
-      "group": "ingredients",
       "key": "page.intro",
       "text": {
         "de": "Soapkraft-Zutaten stammen aus der Soapkraft-Bibliothek. Hinterlege deinen Kalkulationspreis, dupliziere eine Zutat als bearbeitbare Kopie oder erstelle eine eigene Zutat von Grund auf.",
@@ -17748,6 +17748,42 @@
     },
     {
       "group": "ingredients",
+      "key": "removal.deactivate.action",
+      "text": {
+        "de": "Deaktivieren",
+        "es": "Desactivar",
+        "fr": "Désactiver",
+        "it": "Disattiva",
+        "nl": "Deactiveren",
+        "pt_BR": "Desativar"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "removal.deactivate.description",
+      "text": {
+        "de": "Beim Deaktivieren bleiben Formeln und Verlauf unverändert, und die Zutat wird beim Hinzufügen von Zutaten zu einer Formel ausgeblendet. Sie können sie jederzeit wieder aktivieren.",
+        "es": "Al desactivarlo, las fórmulas y el historial no cambian y el ingrediente deja de aparecer al añadir ingredientes a una fórmula. Puedes reactivarlo en cualquier momento.",
+        "fr": "La désactivation laisse les formules et l’historique inchangés et masque cet ingrédient lors de l’ajout d’ingrédients à une formule. Vous pouvez le réactiver à tout moment.",
+        "it": "La disattivazione lascia invariati formule e storico e nasconde questo ingrediente quando aggiungi ingredienti a una formula. Puoi riattivarlo in qualsiasi momento.",
+        "nl": "Deactiveren laat formules en geschiedenis ongewijzigd en verbergt dit ingrediënt bij het toevoegen van ingrediënten aan een formule. Je kunt het op elk moment opnieuw activeren.",
+        "pt_BR": "Desativar mantém as fórmulas e o histórico inalterados e oculta este ingrediente ao adicionar ingredientes a uma fórmula. Você pode reativá-lo a qualquer momento."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "removal.deactivate.heading",
+      "text": {
+        "de": "Stattdessen deaktivieren",
+        "es": "Desactivar en su lugar",
+        "fr": "Désactiver plutôt",
+        "it": "Disattiva invece",
+        "nl": "In plaats daarvan deactiveren",
+        "pt_BR": "Desativar em vez disso"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "removal.delete_description",
       "text": {
         "de": "Dadurch wird die Zutat aus deinem Katalog entfernt.",
@@ -17820,6 +17856,18 @@
     },
     {
       "group": "ingredients",
+      "key": "removal.history_kept",
+      "text": {
+        "de": "Sie können die Zutat in Ihren Formeln trotzdem ersetzen: Sie wird dann deaktiviert statt gelöscht.",
+        "es": "Aún puedes sustituirlo en tus fórmulas: en ese caso se desactivará en lugar de eliminarse.",
+        "fr": "Vous pouvez toujours le remplacer dans vos formules : il sera alors désactivé au lieu d’être supprimé.",
+        "it": "Puoi comunque sostituirlo nelle tue formule: verrà disattivato invece di essere eliminato.",
+        "nl": "Je kunt het nog steeds vervangen in je formules: het wordt dan gedeactiveerd in plaats van verwijderd.",
+        "pt_BR": "Você ainda pode substituí-lo nas suas fórmulas: ele será desativado em vez de excluído."
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "removal.manage_heading",
       "text": {
         "de": ":ingredient verwalten",
@@ -17832,6 +17880,42 @@
     },
     {
       "group": "ingredients",
+      "key": "removal.reactivate.action",
+      "text": {
+        "de": "Wieder aktivieren",
+        "es": "Reactivar",
+        "fr": "Réactiver",
+        "it": "Riattiva",
+        "nl": "Opnieuw activeren",
+        "pt_BR": "Reativar"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "removal.reactivate.description",
+      "text": {
+        "de": "Diese Zutat ist inaktiv. Durch erneutes Aktivieren steht sie beim Hinzufügen von Zutaten zu einer Formel wieder zur Verfügung.",
+        "es": "Este ingrediente está inactivo. Al reactivarlo vuelve a estar disponible al añadir ingredientes a una fórmula.",
+        "fr": "Cet ingrédient est inactif. Le réactiver le rend de nouveau disponible lors de l’ajout d’ingrédients à une formule.",
+        "it": "Questo ingrediente è inattivo. Riattivandolo torna disponibile quando aggiungi ingredienti a una formula.",
+        "nl": "Dit ingrediënt is inactief. Opnieuw activeren maakt het weer beschikbaar bij het toevoegen van ingrediënten aan een formule.",
+        "pt_BR": "Este ingrediente está inativo. Reativá-lo o torna disponível novamente ao adicionar ingredientes a uma fórmula."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "removal.reactivate.heading",
+      "text": {
+        "de": "Wieder aktivieren",
+        "es": "Reactivar",
+        "fr": "Réactiver",
+        "it": "Riattiva",
+        "nl": "Opnieuw activeren",
+        "pt_BR": "Reativar"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "removal.replacement.action",
       "text": {
         "de": "Überall ersetzen und löschen",
@@ -17840,6 +17924,18 @@
         "it": "Sostituisci ovunque ed elimina",
         "nl": "Overal vervangen en verwijderen",
         "pt_BR": "Substituir em todos os lugares e excluir"
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "removal.replacement.action_deactivate",
+      "text": {
+        "de": "Überall ersetzen und deaktivieren",
+        "es": "Sustituir en todas partes y desactivar",
+        "fr": "Remplacer partout et désactiver",
+        "it": "Sostituisci ovunque e disattiva",
+        "nl": "Overal vervangen en deactiveren",
+        "pt_BR": "Substituir em todos os lugares e desativar"
       }
     },
     {
@@ -17976,26 +18072,14 @@
     },
     {
       "group": "ingredients",
-      "key": "search.label",
-      "text": {
-        "de": "Suchen",
-        "es": "Buscar",
-        "fr": "Rechercher",
-        "it": "Cerca",
-        "nl": "Zoeken",
-        "pt_BR": "Pesquisar"
-      }
-    },
-    {
-      "group": "ingredients",
       "key": "search.placeholder",
       "text": {
-        "de": "Name, INCI oder Kategorie",
-        "es": "Nombre, INCI o categoría",
-        "fr": "Nom, INCI ou catégorie",
-        "it": "Nome, INCI o categoria",
-        "nl": "Naam, INCI of categorie",
-        "pt_BR": "Nome, INCI ou categoria"
+        "de": "Name, INCI oder Kategorie suchen",
+        "es": "Buscar nombre, INCI o categoría",
+        "fr": "Rechercher un nom, un INCI ou une catégorie",
+        "it": "Cerca nome, INCI o categoria",
+        "nl": "Zoek op naam, INCI of categorie",
+        "pt_BR": "Pesquisar nome, INCI ou categoria"
       }
     },
     {
@@ -18024,6 +18108,18 @@
     },
     {
       "group": "ingredients",
+      "key": "status.deactivated",
+      "text": {
+        "de": ":ingredient wurde deaktiviert.",
+        "es": ":ingredient se desactivó.",
+        "fr": ":ingredient a été désactivé.",
+        "it": ":ingredient è stato disattivato.",
+        "nl": ":ingredient is gedeactiveerd.",
+        "pt_BR": ":ingredient foi desativado."
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "status.deleted",
       "text": {
         "de": ":ingredient wurde gelöscht.",
@@ -18036,6 +18132,18 @@
     },
     {
       "group": "ingredients",
+      "key": "status.reactivated",
+      "text": {
+        "de": ":ingredient wurde wieder aktiviert.",
+        "es": ":ingredient se reactivó.",
+        "fr": ":ingredient a été réactivé.",
+        "it": ":ingredient è stato riattivato.",
+        "nl": ":ingredient is opnieuw geactiveerd.",
+        "pt_BR": ":ingredient foi reativado."
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "status.removed_and_deleted",
       "text": {
         "de": ":ingredient wurde überall entfernt und gelöscht.",
@@ -18044,6 +18152,18 @@
         "it": ":ingredient è stato rimosso ovunque ed eliminato.",
         "nl": ":ingredient is overal weggehaald en verwijderd.",
         "pt_BR": ":ingredient foi removido de todos os lugares e excluído."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "status.replaced_and_deactivated",
+      "text": {
+        "de": ":ingredient wurde überall ersetzt und deaktiviert, da Lager-, Einkaufs- oder Produktionsdaten vorhanden sind.",
+        "es": ":ingredient se sustituyó en todas partes y se desactivó, porque tiene historial de existencias, compras o producción.",
+        "fr": ":ingredient a été remplacé partout et désactivé, car il a un historique de stock, d’achat ou de production.",
+        "it": ":ingredient è stato sostituito ovunque e disattivato, perché ha uno storico di magazzino, acquisti o produzione.",
+        "nl": ":ingredient is overal vervangen en gedeactiveerd, omdat het voorraad-, inkoop- of productiegeschiedenis heeft.",
+        "pt_BR": ":ingredient foi substituído em todos os lugares e desativado, porque tem histórico de estoque, compras ou produção."
       }
     },
     {
@@ -20016,6 +20136,18 @@
     },
     {
       "group": "ingredients",
+      "key": "table.inactive",
+      "text": {
+        "de": "Inaktiv",
+        "es": "Inactivo",
+        "fr": "Inactif",
+        "it": "Inattivo",
+        "nl": "Inactief",
+        "pt_BR": "Inativo"
+      }
+    },
+    {
+      "group": "ingredients",
       "key": "table.inci",
       "text": {
         "de": "INCI",
@@ -20228,18 +20360,6 @@
         "it": "Scegli un ingrediente sostitutivo.",
         "nl": "Kies een vervangend ingrediënt.",
         "pt_BR": "Escolha um ingrediente substituto."
-      }
-    },
-    {
-      "group": "ingredients",
-      "key": "validation.delete_current_price",
-      "text": {
-        "de": "Für diese Zutat ist ein aktueller Preis hinterlegt. Entfernen Sie den Preis vor dem Löschen.",
-        "es": "Este ingrediente tiene un precio vigente. Borra el precio antes de eliminarlo.",
-        "fr": "Cet ingrédient a un prix actuel. Effacez le prix avant de supprimer l’ingrédient.",
-        "it": "Questo ingrediente ha un prezzo corrente. Rimuovi il prezzo prima di eliminarlo.",
-        "nl": "Dit ingrediënt heeft een actuele prijs. Wis de prijs voordat je het ingrediënt verwijdert.",
-        "pt_BR": "Este ingrediente tem um preço atual. Limpe o preço antes de excluir o ingrediente."
       }
     },
     {
@@ -24600,14 +24720,14 @@
     },
     {
       "group": "packaging",
-      "key": "actions.back_to_dashboard",
+      "key": "actions.add_short",
       "text": {
-        "de": "Zurück zum Dashboard",
-        "es": "Volver al panel",
-        "fr": "Retour au tableau de bord",
-        "it": "Torna al pannello",
-        "nl": "Terug naar het dashboard",
-        "pt_BR": "Voltar ao painel"
+        "de": "Hinzufügen",
+        "es": "Añadir",
+        "fr": "Ajouter",
+        "it": "Aggiungi",
+        "nl": "Toevoegen",
+        "pt_BR": "Adicionar"
       }
     },
     {
@@ -24692,18 +24812,6 @@
         "it": "Accedi per gestire le confezioni",
         "nl": "Meld je aan om verpakkingen te beheren",
         "pt_BR": "Entre para gerenciar embalagens"
-      }
-    },
-    {
-      "group": "packaging",
-      "key": "catalog.description",
-      "text": {
-        "de": "Gespeicherte Verpackungen für deine Rezepturen und Kostenberechnungen.",
-        "es": "Envases guardados que puedes utilizar en tus fórmulas y cálculos de costes.",
-        "fr": "Les emballages enregistrés que vous pouvez utiliser dans vos recettes et vos coûts.",
-        "it": "Confezioni salvate da utilizzare nelle formule e nel calcolo dei costi.",
-        "nl": "Opgeslagen verpakkingen voor je formules en kostprijzen.",
-        "pt_BR": "Embalagens salvas disponíveis para suas receitas e custos."
       }
     },
     {
@@ -25286,12 +25394,12 @@
       "group": "packaging",
       "key": "exports.ui.label",
       "text": {
-        "de": "Verpackungen exportieren",
-        "es": "Exportar envases",
-        "fr": "Exporter les emballages",
-        "it": "Esporta imballaggi",
-        "nl": "Verpakkingen exporteren",
-        "pt_BR": "Exportar embalagens"
+        "de": "Exportieren",
+        "es": "Exportar",
+        "fr": "Exporter",
+        "it": "Esporta",
+        "nl": "Exporteren",
+        "pt_BR": "Exportar"
       }
     },
     {
@@ -25364,30 +25472,6 @@
         "it": "Lo spazio di lavoro selezionato è cambiato. Aggiorna l’elenco degli imballaggi e riprova.",
         "nl": "Je geselecteerde werkruimte is gewijzigd. Vernieuw de verpakkingslijst en probeer het opnieuw.",
         "pt_BR": "Seu espaço de trabalho selecionado mudou. Atualize a lista de embalagens e tente novamente."
-      }
-    },
-    {
-      "group": "packaging",
-      "key": "page.aria_label",
-      "text": {
-        "de": "Verpackungsübersicht",
-        "es": "Resumen de envases",
-        "fr": "Aperçu des emballages",
-        "it": "Panoramica delle confezioni",
-        "nl": "Overzicht van verpakkingen",
-        "pt_BR": "Visão geral das embalagens"
-      }
-    },
-    {
-      "group": "packaging",
-      "key": "page.heading",
-      "text": {
-        "de": "Verwalte Verpackungen für deine Rezepturen und Kostenberechnungen.",
-        "es": "Gestiona los envases de tus fórmulas y sus costes.",
-        "fr": "Gérez les emballages de vos recettes et de vos coûts.",
-        "it": "Gestisci le confezioni per le tue formule e i costi.",
-        "nl": "Beheer verpakkingen voor je formules en kostprijzen.",
-        "pt_BR": "Gerencie as embalagens das suas receitas e custos."
       }
     },
     {
@@ -25488,26 +25572,14 @@
     },
     {
       "group": "packaging",
-      "key": "search.label",
-      "text": {
-        "de": "Suchen",
-        "es": "Buscar",
-        "fr": "Rechercher",
-        "it": "Cerca",
-        "nl": "Zoeken",
-        "pt_BR": "Pesquisar"
-      }
-    },
-    {
-      "group": "packaging",
       "key": "search.placeholder",
       "text": {
-        "de": "Name, Code oder Notizen",
-        "es": "Nombre, código o notas",
-        "fr": "Nom, code ou notes",
-        "it": "Nome, codice o note",
-        "nl": "Naam, code of notities",
-        "pt_BR": "Nome, código ou notas"
+        "de": "Name, Code oder Notizen suchen",
+        "es": "Buscar nombre, código o notas",
+        "fr": "Rechercher un nom, un code ou des notes",
+        "it": "Cerca nome, codice o note",
+        "nl": "Zoek op naam, code of notities",
+        "pt_BR": "Pesquisar nome, código ou notas"
       }
     },
     {
@@ -25604,6 +25676,18 @@
         "it": "Confezioni per pagina",
         "nl": "Verpakkingen per pagina",
         "pt_BR": "Itens de embalagem por página"
+      }
+    },
+    {
+      "group": "packaging",
+      "key": "validation.delete_linked_records",
+      "text": {
+        "de": "Diese Verpackung ist mit Lager-, Einkaufs- oder Produktionsdaten verknüpft und kann nicht gelöscht werden.",
+        "es": "Este envase está vinculado a registros de existencias, compras o producción y no se puede eliminar.",
+        "fr": "Cet emballage est lié à des données de stock, d’achat ou de production et ne peut pas être supprimé.",
+        "it": "Questa confezione è collegata a registri di magazzino, acquisti o produzione e non può essere eliminata.",
+        "nl": "Deze verpakking is gekoppeld aan voorraad-, inkoop- of productiegegevens en kan niet worden verwijderd.",
+        "pt_BR": "Esta embalagem está vinculada a registros de estoque, compras ou produção e não pode ser excluída."
       }
     },
     {

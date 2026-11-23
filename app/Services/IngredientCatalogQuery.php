@@ -47,6 +47,13 @@ final class IngredientCatalogQuery
                     $actor,
                     $workspaceId,
                 )))
+            ->when($ownershipFilter === 'inactive', fn (Builder $query): Builder => $query
+                ->where(fn (Builder $ownedQuery): Builder => $this->applyCompanyIngredientScope(
+                    $ownedQuery,
+                    $actor,
+                    $workspaceId,
+                ))
+                ->where('is_active', false))
             ->when($ownershipFilter === 'platform', fn (Builder $query): Builder => $query
                 ->whereNull('owner_type')
                 ->where('is_active', true))

@@ -26,7 +26,7 @@ class IngredientExportRequest extends FormRequest
             'workspace' => ['required', 'uuid'],
             'format' => ['required', 'in:xlsx,csv'],
             'search' => ['sometimes', 'nullable', 'string', 'max:255'],
-            'ownershipFilter' => ['sometimes', 'in:all,mine,platform,priced'],
+            'ownershipFilter' => ['sometimes', 'in:all,mine,platform,priced,inactive'],
             'sortField' => ['sometimes', 'in:display_name,category'],
             'sortDirection' => ['sometimes', 'in:asc,desc'],
         ];

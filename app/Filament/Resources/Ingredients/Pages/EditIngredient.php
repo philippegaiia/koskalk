@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Ingredients\Pages;
 
+use App\Actions\Ingredients\MarkIngredientsCatalogReviewed;
 use App\Enums\IngredientCategory;
 use App\Enums\IngredientLabelMarket;
 use App\Filament\Resources\Ingredients\IngredientResource;
@@ -101,6 +102,27 @@ class EditIngredient extends EditRecord
 
                     Notification::make()
                         ->title(__('ingredient_admin.market_labels.action.saved'))
+                        ->success()
+                        ->send();
+                }),
+            Action::make('markCatalogReviewed')
+                ->label(__('ingredient_admin.catalog_review.actions.mark_reviewed'))
+                ->color('success')
+                ->icon(Heroicon::CheckBadge)
+                ->requiresConfirmation()
+                ->modalDescription(__('ingredient_admin.catalog_review.actions.mark_reviewed_single_description'))
+                ->visible(fn (Ingredient $record): bool => $record->isPlatformCatalogRecord() && $record->requires_admin_review)
+                ->action(function (Ingredient $record, MarkIngredientsCatalogReviewed $markReviewed): void {
+                    $actor = auth()->user();
+
+                    abort_unless($actor instanceof User, 403);
+
+                    $markReviewed->handle($actor, collect([$record]));
+                    $record->refresh();
+                    $this->refreshFormData(['requires_admin_review']);
+
+                    Notification::make()
+                        ->title(trans_choice('ingredient_admin.catalog_review.actions.marked', 1, ['count' => 1]))
                         ->success()
                         ->send();
                 }),

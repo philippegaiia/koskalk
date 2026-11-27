@@ -380,7 +380,6 @@ it('applies guidance without changing identity records or their provenance', fun
                 'soap_inci_koh_name' => $subject->soap_inci_koh_name,
                 'is_soap_saponification_trusted' => $subject->is_soap_saponification_trusted,
                 'requires_aromatic_compliance' => $subject->requires_aromatic_compliance,
-                'requires_admin_review' => $subject->requires_admin_review,
                 'is_active' => $subject->is_active,
                 'is_manufactured' => $subject->is_manufactured,
             ],
@@ -435,7 +434,8 @@ it('applies guidance without changing identity records or their provenance', fun
 
     expect($totals)->toMatchArray(['applied' => 1, 'unchanged' => 0, 'stale' => 0, 'failed' => 0])
         ->and($identityState($ingredient))->toBe($beforeIdentity)
-        ->and($ingredient->fresh()->info_markdown)->toBe(trim(guidanceApplyText('Generated')));
+        ->and($ingredient->fresh()->info_markdown)->toBe(trim(guidanceApplyText('Generated')))
+        ->and($ingredient->fresh()->requires_admin_review)->toBeTrue();
 });
 
 it('keeps a workspace override unchanged while applying reviewed platform guidance', function (): void {

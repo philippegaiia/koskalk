@@ -206,6 +206,8 @@ class ApplyPlatformIngredientEnrichment
         $ingredient->source_data = $sourceData;
         $ingredient->requires_admin_review = $promotion ? false : true;
         if ($promotion) {
+            $ingredient->catalog_reviewed_at = $reviewedAt;
+            $ingredient->catalog_reviewed_by_user_id = $reviewerId;
             $ingredient->taxonomy_source = 'admin_reviewed_enrichment';
             $ingredient->taxonomy_reviewed_at = $reviewedAt;
             $ingredient->taxonomy_reviewed_by_user_id = $reviewerId;

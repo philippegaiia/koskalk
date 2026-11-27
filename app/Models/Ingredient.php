@@ -51,6 +51,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'liquid_soap_neutralizer',
     'requires_aromatic_compliance',
     'requires_admin_review',
+    'catalog_reviewed_at',
+    'catalog_reviewed_by_user_id',
     'is_active',
     'is_manufactured',
     'source_data',
@@ -72,6 +74,46 @@ class Ingredient extends Model
     use HasPublicId;
     use HasTenantOwnership {
         isAccessibleBy as tenantIsAccessibleBy;
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $ingredient): void {
+            $ingredient->syncCatalogReviewSignOff();
+        });
+    }
+
+    /**
+     * Keep the sign-off date and reviewer in step with the Needs review flag on platform records,
+     * whichever path (editor toggle, sign-off action, or an applied AI change) moved it.
+     */
+    private function syncCatalogReviewSignOff(): void
+    {
+        if (! $this->isDirty('requires_admin_review') || ! $this->isPlatformCatalogRecord()) {
+            return;
+        }
+
+        if ($this->requires_admin_review) {
+            $this->catalog_reviewed_at = null;
+            $this->catalog_reviewed_by_user_id = null;
+
+            return;
+        }
+
+        if (! $this->isDirty('catalog_reviewed_at')) {
+            $this->catalog_reviewed_at = now();
+            $this->catalog_reviewed_by_user_id = auth()->id();
+        }
+    }
+
+    public function isPlatformCatalogRecord(): bool
+    {
+        return $this->owner_type === null && $this->owner_id === null && $this->workspace_id === null;
+    }
+
+    public function catalogReviewedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'catalog_reviewed_by_user_id');
     }
 
     public function sharingLineageKey(): ?string
@@ -537,6 +579,7 @@ class Ingredient extends Model
             'liquid_soap_neutralizer' => LiquidSoapNeutralizer::class,
             'requires_aromatic_compliance' => 'bool',
             'requires_admin_review' => 'bool',
+            'catalog_reviewed_at' => 'datetime',
             'is_active' => 'bool',
             'is_manufactured' => 'bool',
             'source_data' => 'array',

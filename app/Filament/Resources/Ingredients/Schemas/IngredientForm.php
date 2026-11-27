@@ -139,7 +139,7 @@ class IngredientForm
                                 ->default(false),
                             Toggle::make('requires_admin_review')
                                 ->label(__('ingredients.editor.admin.classification.needs_review'))
-                                ->helperText(__('ingredients.editor.admin.classification.needs_review_helper'))
+                                ->helperText(fn (?Ingredient $record): string => self::reviewSignOffHelper($record))
                                 ->default(true),
                             Toggle::make('is_active')
                                 ->label(__('ingredients.editor.admin.classification.active'))
@@ -182,6 +182,23 @@ class IngredientForm
                     ->visible(fn (LivewireComponent $livewire): bool => $livewire instanceof CreateIngredient || $livewire instanceof EditIngredient)
                     ->columnSpanFull(),
             ]);
+    }
+
+    private static function reviewSignOffHelper(?Ingredient $record): string
+    {
+        $helper = __('ingredients.editor.admin.classification.needs_review_helper');
+
+        if (! $record instanceof Ingredient || $record->requires_admin_review || $record->catalog_reviewed_at === null) {
+            return $helper;
+        }
+
+        $date = $record->catalog_reviewed_at->toFormattedDateString();
+        $reviewer = $record->catalogReviewedBy?->name;
+        $signedOff = $reviewer === null
+            ? __('ingredient_admin.catalog_review.signed_off_without_reviewer', ['date' => $date])
+            : __('ingredient_admin.catalog_review.signed_off', ['date' => $date, 'name' => $reviewer]);
+
+        return $signedOff.' '.$helper;
     }
 
     private static function marketDeclarationsTab(): Tab

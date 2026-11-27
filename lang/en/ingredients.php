@@ -978,7 +978,7 @@ return [
                 'liquid_soap_neutralizer_helper' => 'Lets the liquid soap bench offer this platform material to neutralize free KOH. A fatty acid also needs trusted soap chemistry.',
                 'aromatic_compliance_helper' => 'Keep allergen and IFRA data active even if the ingredient is temporarily classified as Other.',
                 'needs_review' => 'Needs review',
-                'needs_review_helper' => 'Keep this enabled when the imported category, soap trust, or compliance status still needs confirmation.',
+                'needs_review_helper' => 'Stays on until you sign off this ingredient. Applying AI enrichment, guidance, or translations turns it back on.',
                 'active' => 'Active',
                 'functions' => 'Ingredient functions',
                 'functions_helper' => 'Verified COSING functions retain their source. You may remove them during administrator review; newly selected functions are saved as manual assignments.',

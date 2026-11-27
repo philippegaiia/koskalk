@@ -6,6 +6,7 @@ use App\Models\Allergen;
 use App\Models\RecipeVersion;
 use App\Models\RegulatoryRegime;
 use App\Models\RegulatoryRegimeAllergen;
+use App\Services\EuFragranceAllergenCatalogSynchronizer;
 use Illuminate\Database\Seeder;
 
 class RegulatoryRegimeSeeder extends Seeder
@@ -20,7 +21,7 @@ class RegulatoryRegimeSeeder extends Seeder
             [
                 'market_code' => 'eu',
                 'name' => 'EU regime',
-                'version_label' => 'Full 82 fragrance allergens',
+                'version_label' => 'Fragrance allergens, Regulation (EU) 2023/1545',
                 'status' => 'active',
                 'is_default' => true,
                 'effective_from' => null,
@@ -28,7 +29,7 @@ class RegulatoryRegimeSeeder extends Seeder
                 'source_name' => 'EU fragrance allergen labelling',
                 'source_url' => 'https://eur-lex.europa.eu/eli/reg/2023/1545/oj/eng',
                 'reviewed_at' => now(),
-                'notes' => 'Default practical EU label regime using the full 82 allergen catalog and 0.01% rinse-off / 0.001% leave-on thresholds.',
+                'notes' => 'EU label regime using the 81 fragrance allergen entries individually labelled under Regulation (EU) 2023/1545, at 0.01% rinse-off / 0.001% leave-on.',
                 'source_data' => [
                     'thresholds' => [
                         'rinse_off_percent' => 0.01,
@@ -89,8 +90,8 @@ class RegulatoryRegimeSeeder extends Seeder
             ],
         );
 
-        $this->mapAllergenRules($euRegime, null, 'EU full fragrance allergen catalog');
-        $this->mapAllergenRules($canada2026Regime, null, 'Canada expanded fragrance allergen catalog (SOR/DORS-63)');
+        $this->mapAllergenRules($euRegime, 'EU fragrance allergens, Regulation (EU) 2023/1545');
+        $this->mapAllergenRules($canada2026Regime, 'Canada expanded fragrance allergen catalog (SOR/DORS-63)');
 
         // The former separate preview regime is superseded by canada_2026.
         // Re-point any stored versions first so their regime reference survives.
@@ -110,36 +111,25 @@ class RegulatoryRegimeSeeder extends Seeder
     }
 
     /**
-     * @param  array<int, string>|null  $inciNames
+     * Maps every allergen aligned to Regulation (EU) 2023/1545 to the market,
+     * leaving rows the regulation does not list unmapped.
      */
-    private function mapAllergenRules(RegulatoryRegime $regime, ?array $inciNames, string $sourceReference): void
+    private function mapAllergenRules(RegulatoryRegime $regime, string $sourceReference): void
     {
-        $query = Allergen::query()->orderBy('inci_name');
-
-        if ($inciNames !== null) {
-            $query->whereIn('inci_name', $inciNames);
-        }
-
-        $query->each(function (Allergen $allergen) use ($regime, $sourceReference): void {
-            RegulatoryRegimeAllergen::query()->updateOrCreate(
-                [
-                    'regulatory_regime_id' => $regime->id,
-                    'allergen_id' => $allergen->id,
-                ],
-                [
-                    'declaration_label' => null,
-                    'rinse_off_threshold_percent' => 0.01000,
-                    'leave_on_threshold_percent' => 0.00100,
-                    'threshold_operator' => 'greater_than_or_equal',
-                    'group_key' => null,
-                    'group_label' => null,
-                    'is_active' => true,
-                    'effective_from' => null,
-                    'effective_until' => null,
-                    'source_reference' => $sourceReference,
-                    'source_data' => null,
-                ],
-            );
-        });
+        Allergen::query()
+            ->where('source_file', EuFragranceAllergenCatalogSynchronizer::SOURCE_FILE)
+            ->orderBy('inci_name')
+            ->each(function (Allergen $allergen) use ($regime, $sourceReference): void {
+                RegulatoryRegimeAllergen::query()->updateOrCreate(
+                    [
+                        'regulatory_regime_id' => $regime->id,
+                        'allergen_id' => $allergen->id,
+                    ],
+                    [
+                        ...EuFragranceAllergenCatalogSynchronizer::defaultRuleAttributes(),
+                        'source_reference' => $sourceReference,
+                    ],
+                );
+            });
     }
 }

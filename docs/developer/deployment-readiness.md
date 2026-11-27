@@ -39,11 +39,16 @@ $FORGE_PHP artisan db:seed --class='Database\Seeders\ProductTypeIfraCategorySeed
 
 # Regulatory regimes (Canada release; run once, then re-comment)
 $FORGE_PHP artisan db:seed --class='Database\Seeders\RegulatoryRegimeSeeder' --force --no-interaction
+
+# COSING functions (CosIng functions alignment; run once, then re-comment)
+$FORGE_PHP artisan db:seed --class='Database\Seeders\IngredientFunctionSeeder' --force --no-interaction
 ```
 
 `ProductTaxonomySeeder` requires both product families to exist first, and `ProductTypeIfraCategorySeeder` requires the IFRA categories, amendments, and product types — hence the order above. All five are idempotent (`updateOrCreate`/`upsert`), so a one-off re-run is safe, but it is a deliberate act, never part of routine deploys.
 
 The `RegulatoryRegimeSeeder` shipped with the Canada labelling release and must also run once per environment: it expands the `canada_2026` allergen mapping to the full catalog, renames the US regime, re-points any recipe versions stored against the retired `canada_expanded_preview` regime before deleting it, and leaves EU rules untouched. It is idempotent (`updateOrCreate`), but like the taxonomy seeders it is a deliberate act — uncomment for this deploy, then re-comment afterwards. Canadian declaration names on ingredients are then provisioned through the admin panel (`market_labels`, market `ca`); they are data entry, not seeding.
+
+The `IngredientFunctionSeeder` aligns the COSING function vocabulary with the current CosIng functions list and must run once per environment for that release. It adds the post-2019 functions (for example `Fragrance` and the `Skin conditioning - …` and `Surfactant - …` sub-functions), moves ingredient assignments from the eight retired pre-2019 functions to their CosIng successor (for example `emollient` → `skin_conditioning_emollient`, `masking` → `fragrance`), and deactivates the retired rows. It is idempotent. Assignments made under the old mapping can still be imprecise (CosIng `FRAGRANCE` was stored as `perfuming`, and sub-functions such as `SKIN CONDITIONING - HUMECTANT` were stored as their base function), so re-run CosIng enrichment on affected ingredients afterwards.
 
 ## Release checks
 

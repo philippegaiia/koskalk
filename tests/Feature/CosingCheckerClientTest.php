@@ -1,5 +1,6 @@
 <?php
 
+use App\Data\IngredientSourceStageResult;
 use App\Models\IngredientFunction;
 use App\Services\IngredientEnrichment\Sources\CosingCheckerClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -19,7 +20,7 @@ beforeEach(function (): void {
 
 it('normalizes an argan CosIng Checker candidate with every published identifier', function (): void {
     IngredientFunction::factory()->create(['key' => 'skin_conditioning', 'name' => 'Skin conditioning']);
-    IngredientFunction::factory()->create(['key' => 'emollient', 'name' => 'Emollient']);
+    IngredientFunction::factory()->create(['key' => 'skin_conditioning_emollient', 'name' => 'Skin conditioning - emollient']);
     Http::preventStrayRequests();
     Http::fake([
         'cosingchecker.test/*' => Http::response(fixtureJson('cosing-argan.json')),
@@ -36,7 +37,7 @@ it('normalizes an argan CosIng Checker candidate with every published identifier
         'inci_name' => 'ARGANIA SPINOSA KERNEL OIL',
         'cas' => ['223747-87-3', '299184-75-1'],
         'ec' => [],
-        'functions' => ['skin_conditioning', 'emollient'],
+        'functions' => ['skin_conditioning', 'skin_conditioning_emollient'],
         'confidence' => 'supported',
     ])->and($result->evidence[0])->toMatchArray([
         'source_tier' => 'structured_mirror',
@@ -46,7 +47,7 @@ it('normalizes an argan CosIng Checker candidate with every published identifier
 });
 
 it('splits apricot identifiers and keeps only active known function keys', function (): void {
-    IngredientFunction::factory()->create(['key' => 'perfuming', 'name' => 'Perfuming']);
+    IngredientFunction::factory()->create(['key' => 'fragrance', 'name' => 'Fragrance']);
     IngredientFunction::factory()->create(['key' => 'skin_conditioning', 'name' => 'Skin conditioning']);
     Http::preventStrayRequests();
     Http::fake([
@@ -63,45 +64,38 @@ it('splits apricot identifiers and keeps only active known function keys', funct
         'cosing_ref' => '78931',
         'cas' => ['68650-44-2', '72869-69-3'],
         'ec' => ['272-046-1'],
-        'functions' => ['perfuming', 'skin_conditioning'],
+        'functions' => ['fragrance', 'skin_conditioning'],
     ])->and($result->warnings)->toBe([]);
 });
 
-it('maps CosIng compound and legacy function labels to the canonical vocabulary', function (): void {
+it('maps CosIng function labels to the vocabulary entry with the same name', function (): void {
     IngredientFunction::factory()->create(['key' => 'perfuming', 'name' => 'Perfuming']);
+    IngredientFunction::factory()->create(['key' => 'fragrance', 'name' => 'Fragrance']);
     IngredientFunction::factory()->create(['key' => 'skin_conditioning', 'name' => 'Skin conditioning']);
-    IngredientFunction::factory()->create(['key' => 'emollient', 'name' => 'Emollient']);
+    IngredientFunction::factory()->create(['key' => 'skin_conditioning_emollient', 'name' => 'Skin conditioning - emollient']);
     IngredientFunction::factory()->create(['key' => 'skin_protecting', 'name' => 'Skin protecting']);
-    Http::preventStrayRequests();
-    Http::fake([
-        'cosingchecker.test/*' => Http::response([
-            'count' => 1,
-            'results' => [[
-                'slug' => '60291-theobroma-cacao-seed-butter',
-                'ref_number' => '60291',
-                'inci_name' => 'THEOBROMA CACAO SEED BUTTER',
-                'cas_number' => '84649-99-0 / 8002-31-1',
-                'ec_number' => '283-480-6',
-                'description' => 'Cocoa seed butter.',
-                'restriction' => null,
-                'function' => 'FRAGRANCE, SKIN CONDITIONING, SKIN CONDITIONING - EMOLLIENT, SKIN PROTECTING',
-                'update_date' => '15/10/2010',
-            ]],
-        ]),
-    ]);
+    fakeCosingCheckerFunctions('FRAGRANCE, SKIN CONDITIONING, SKIN CONDITIONING - EMOLLIENT, SKIN PROTECTING, NOT REPORTED');
 
-    $result = app(CosingCheckerClient::class)->lookup([
-        'display_name' => 'Cocoa butter',
-        'inci_name' => 'THEOBROMA CACAO SEED BUTTER',
-        'identifiers' => [],
-    ]);
+    $result = lookUpCocoaButter();
 
     expect($result->data['candidates'][0]['functions'])->toBe([
-        'perfuming',
+        'fragrance',
         'skin_conditioning',
-        'emollient',
+        'skin_conditioning_emollient',
         'skin_protecting',
     ])->and($result->warnings)->toBe([]);
+});
+
+it('does not collapse a CosIng sub-function onto its base label', function (): void {
+    IngredientFunction::factory()->create(['key' => 'occlusive', 'name' => 'Occlusive']);
+    fakeCosingCheckerFunctions('SKIN CONDITIONING - OCCLUSIVE');
+
+    $result = lookUpCocoaButter();
+
+    expect($result->data['candidates'][0]['functions'])->toBe([])
+        ->and($result->warnings)->toBe([
+            __('ingredient_enrichment.warnings.unknown_cosing_function', ['function' => 'SKIN CONDITIONING - OCCLUSIVE']),
+        ]);
 });
 
 it('normalizes CosIng Checker day-first update dates to ISO format', function (): void {
@@ -258,4 +252,34 @@ function fixtureJson(string $name): array
     $contents = file_get_contents(base_path("tests/Fixtures/IngredientEnrichment/{$name}"));
 
     return json_decode((string) $contents, true, flags: JSON_THROW_ON_ERROR);
+}
+
+function fakeCosingCheckerFunctions(string $functions): void
+{
+    Http::preventStrayRequests();
+    Http::fake([
+        'cosingchecker.test/*' => Http::response([
+            'count' => 1,
+            'results' => [[
+                'slug' => '60291-theobroma-cacao-seed-butter',
+                'ref_number' => '60291',
+                'inci_name' => 'THEOBROMA CACAO SEED BUTTER',
+                'cas_number' => '84649-99-0 / 8002-31-1',
+                'ec_number' => '283-480-6',
+                'description' => 'Cocoa seed butter.',
+                'restriction' => null,
+                'function' => $functions,
+                'update_date' => '15/10/2010',
+            ]],
+        ]),
+    ]);
+}
+
+function lookUpCocoaButter(): IngredientSourceStageResult
+{
+    return app(CosingCheckerClient::class)->lookup([
+        'display_name' => 'Cocoa butter',
+        'inci_name' => 'THEOBROMA CACAO SEED BUTTER',
+        'identifiers' => [],
+    ]);
 }

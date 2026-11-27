@@ -161,6 +161,17 @@ Translate human-facing editorial fields separately:
 
 The initial resolution order should be requested locale, then English source value. User-entered private data should remain as authored unless a separate user translation feature is deliberately added later.
 
+### COSING function labels
+
+English function names follow the current CosIng functions list, which exists only in English. The only official translations of function names are in the language versions of Decision 2006/257/EC, which predates the current list. The `ingredients.functions.*.label` rows in the interface catalogue follow these rules:
+
+- German, Spanish, French, Italian, and Dutch use the 2006/257/EC term in sentence case, including its plurals and `Agent …` forms. Exceptions: a French typo is corrected (`Agent rafraîchissant`), and our own wording is kept where the official term is untranslated English (Dutch `opacifying`, `pearlescent`) or misleading (German `bulking`, officially `Quellend`).
+- CosIng sub-functions join the official base term and the official term for the suffix, for example `Entretien de la peau - émollient`. Suffixes with no 2006 equivalent (occlusive, miscellaneous, dispersing, solubilizing) are our own wording.
+- `Anti-seborrheic` keeps a literal translation, because the 2006 `ANTISEBORRHOEIC` meant sebum control, which is now `Anti-sebum`. Dutch `Anti-sebum` uses that old official term (`Sebumwerende stof`); the other languages use our own wording.
+- Functions added to CosIng after 2006 have no official translation and use our own wording.
+- Brazilian Portuguese uses our own wording. The official Portuguese text is European Portuguese.
+- Descriptions outside English are still English placeholders.
+
 ### Regulatory names are not ordinary translations
 
 Do not assume that an INCI label can simply be translated by locale. Different markets may require a specific official name or local script. For example, an ingredient may need canonical INCI, English, and Chinese inventory names at the same time.

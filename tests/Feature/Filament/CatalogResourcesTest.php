@@ -183,7 +183,14 @@ it('locks the classification of the canonical soap materials in the admin ingred
     Livewire::test(EditIngredient::class, ['record' => $water->public_id])
         ->assertFormFieldDisabled('category')
         ->assertFormFieldDisabled('subcategory')
-        ->assertSeeText('Locked: soap calculation and costing rely on this classification for this catalogue material.');
+        ->assertSeeText('Locked: soap calculation and costing rely on this classification for this catalogue material.')
+        ->fillForm(['category' => IngredientCategory::Other->value, 'subcategory' => null])
+        ->call('save')
+        ->assertHasNoFormErrors();
+
+    expect($water->refresh())
+        ->category->toBe(IngredientCategory::WaterSolventsCarriers)
+        ->subcategory->toBe(IngredientSubcategory::Water);
 
     Livewire::test(EditIngredient::class, ['record' => $glycerine->public_id])
         ->assertFormFieldEnabled('category')

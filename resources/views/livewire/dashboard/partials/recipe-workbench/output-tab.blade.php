@@ -56,20 +56,20 @@
  <tbody class="divide-y divide-[var(--color-line)]">
  <template x-for="row in cosmeticOutputIngredientRows" :key="row.id">
  <tr>
- <td class="px-4 py-3 align-top">
+ <td class="px-4 py-2 align-top">
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.label_name"></p>
  <p x-show="row.common_name && row.common_name !== row.label_name" class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.common_name"></p>
  </td>
- <td class="px-4 py-3 align-top text-[var(--color-ink-soft)]" x-text="row.phase"></td>
- <td class="numeric px-4 py-3 align-top font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.percentage)" x-text="`${format(row.percentage, 2)}%`"></span></td>
- <td class="numeric px-4 py-3 align-top text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.weight)" x-text="format(row.weight, 3)"></span></td>
+ <td class="px-4 py-2 align-top text-[var(--color-ink-soft)]" x-text="row.phase"></td>
+ <td class="numeric px-4 py-2 align-top font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.percentage)" x-text="`${format(row.percentage, 2)}%`"></span></td>
+ <td class="numeric px-4 py-2 align-top text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.weight)" x-text="format(row.weight, 3)"></span></td>
  </tr>
  </template>
  <tr class="bg-[var(--color-panel)]">
- <td class="px-4 py-3 font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.output.common.total') }}</td>
- <td class="px-4 py-3 text-[var(--color-ink-soft)]">{{ __('workbench.output.cosmetic.full_formula') }}</td>
- <td class="numeric px-4 py-3 font-semibold text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(cosmeticOutputIngredientTotalPercent)" x-text="`${formatPercentageTotal(cosmeticOutputIngredientTotalPercent)}%`"></span></td>
- <td class="numeric px-4 py-3 text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(cosmeticOutputIngredientTotalWeight)" x-text="format(cosmeticOutputIngredientTotalWeight, 3)"></span></td>
+ <td class="px-4 py-2 font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.output.common.total') }}</td>
+ <td class="px-4 py-2 text-[var(--color-ink-soft)]">{{ __('workbench.output.cosmetic.full_formula') }}</td>
+ <td class="numeric px-4 py-2 font-semibold text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(cosmeticOutputIngredientTotalPercent)" x-text="`${formatPercentageTotal(cosmeticOutputIngredientTotalPercent)}%`"></span></td>
+ <td class="numeric px-4 py-2 text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(cosmeticOutputIngredientTotalWeight)" x-text="format(cosmeticOutputIngredientTotalWeight, 3)"></span></td>
  </tr>
  </tbody>
  </table>
@@ -131,29 +131,25 @@
  <tbody class="divide-y divide-[var(--color-line)]">
  <template x-for="(row, index) in curedSoapIngredientRows" :key="row.label">
  <tr>
- <td class="numeric px-4 py-3 align-middle text-center text-xs text-[var(--color-ink-soft)]" x-text="index + 1"></td>
- <td class="px-4 py-3 align-middle">
- <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.display_label || row.label"></p>
- <p x-show="outputIngredientCommonName(row)" class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="outputIngredientCommonName(row)"></p>
- </td>
- <td class="px-4 py-3 align-middle text-[var(--color-ink-soft)]" x-text="outputRowKindLabel(row)"></td>
- <td class="numeric px-4 py-3 align-middle font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned block" :style="decimalAlignmentStyle(row.percent_of_cured_basis)" x-text="formatCompositionPercentage(row.percent_of_cured_basis)"></span></td>
- <td class="px-4 py-3 align-middle text-[var(--color-ink-soft)]">
-     <template x-for="(source, idx) in row.source_ingredients" :key="idx">
-         <span class="inline-flex items-center gap-1">
-             <span x-show="row.source_is_user_owned?.[idx]" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="{{ __('workbench.output.common.user_owned') }}"></span>
-             <span x-text="source"></span>
-         </span>
-     </template>
+ <td class="numeric px-4 py-2 align-middle text-center text-xs text-[var(--color-ink-soft)]" x-text="index + 1"></td>
+ <td class="px-4 py-2 align-middle font-medium text-[var(--color-ink-strong)]" x-text="row.display_label || row.label"></td>
+ <td class="px-4 py-2 align-middle text-[var(--color-ink-soft)]" x-text="outputRowKindLabel(row)"></td>
+ <td class="numeric px-4 py-2 align-middle font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned block" :style="decimalAlignmentStyle(row.percent_of_cured_basis)" x-text="formatCompositionPercentage(row.percent_of_cured_basis)"></span></td>
+ <td class="px-4 py-2 align-middle text-[var(--color-ink-soft)]">
+     <div data-composition-sources class="truncate" :title="(row.source_ingredients ?? []).join(', ')">
+         <template x-for="(source, idx) in row.source_ingredients" :key="idx">
+             <span><span x-text="idx > 0 ? ', ' : ''"></span><span x-show="row.source_is_user_owned?.[idx]" class="mr-1 inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] align-middle opacity-60" title="{{ __('workbench.output.common.user_owned') }}"></span><span x-text="source"></span></span>
+         </template>
+     </div>
  </td>
  </tr>
  </template>
  <tr class="bg-[var(--color-panel)]">
- <td class="px-4 py-3"></td>
- <td class="px-4 py-3 font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.output.common.total') }}</td>
- <td class="px-4 py-3 text-[var(--color-ink-soft)]">{{ ($isLiquidSoapWorkbench ?? false) ? __('workbench.output.soap.liquid_total_basis') : __('workbench.output.soap.cured_basis') }}</td>
- <td class="numeric px-4 py-3 font-semibold text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned block" :style="decimalAlignmentStyle(curedSoapIngredientTotalPercent)" x-text="`${formatPercentageTotal(curedSoapIngredientTotalPercent)}%`"></span></td>
- <td class="px-4 py-3"></td>
+ <td class="px-4 py-2"></td>
+ <td class="px-4 py-2 font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.output.common.total') }}</td>
+ <td class="px-4 py-2 text-[var(--color-ink-soft)]">{{ ($isLiquidSoapWorkbench ?? false) ? __('workbench.output.soap.liquid_total_basis') : __('workbench.output.soap.cured_basis') }}</td>
+ <td class="numeric px-4 py-2 font-semibold text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned block" :style="decimalAlignmentStyle(curedSoapIngredientTotalPercent)" x-text="`${formatPercentageTotal(curedSoapIngredientTotalPercent)}%`"></span></td>
+ <td class="px-4 py-2"></td>
  </tr>
  </tbody>
  </table>
@@ -195,24 +191,24 @@
  <tbody class="divide-y divide-[var(--color-line)]">
  <template x-for="(row, index) in incorporatedSoapIngredientRows" :key="row.label">
  <tr>
- <td class="numeric px-4 py-3 text-center text-xs text-[var(--color-ink-soft)]" x-text="index + 1"></td>
- <td class="px-4 py-3">
+ <td class="numeric px-4 py-2 text-center text-xs text-[var(--color-ink-soft)]" x-text="index + 1"></td>
+ <td class="px-4 py-2">
  <p class="flex items-center gap-1 font-medium text-[var(--color-ink-strong)]">
  <span x-text="outputIngredientCommonName(row) || row.display_label || row.label"></span>
  <span x-show="row.source_is_user_owned?.some(Boolean)" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="{{ __('workbench.output.common.user_owned') }}"></span>
  </p>
 
  </td>
- <td class="px-4 py-3 break-words text-[var(--color-ink-soft)]" x-text="row.display_label || row.label"></td>
- <td class="numeric px-4 py-3 font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned block" :style="decimalAlignmentStyle(row.percent_of_formula)" x-text="`${format(row.percent_of_formula, 3)}%`"></span></td>
- <td class="numeric px-4 py-3 font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned block" :style="decimalAlignmentStyle(incorporatedPercentOfOils(row))" x-text="incorporatedPercentOfOils(row) === null ? '—' : `${format(incorporatedPercentOfOils(row), 2)}%`"></span></td>
+ <td class="px-4 py-2 break-words text-[var(--color-ink-soft)]" x-text="row.display_label || row.label"></td>
+ <td class="numeric px-4 py-2 font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned block" :style="decimalAlignmentStyle(row.percent_of_formula)" x-text="`${format(row.percent_of_formula, 3)}%`"></span></td>
+ <td class="numeric px-4 py-2 font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned block" :style="decimalAlignmentStyle(incorporatedPercentOfOils(row))" x-text="incorporatedPercentOfOils(row) === null ? '—' : `${format(incorporatedPercentOfOils(row), 2)}%`"></span></td>
  </tr>
  </template>
  <tr class="bg-[var(--color-panel)]">
- <td class="px-4 py-3"></td>
- <td colspan="2" class="px-4 py-3 font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.output.common.total') }}</td>
- <td class="numeric px-4 py-3 font-semibold text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned block" :style="decimalAlignmentStyle(incorporatedSoapIngredientTotalPercent)" x-text="`${formatPercentageTotal(incorporatedSoapIngredientTotalPercent)}%`"></span></td>
- <td class="px-4 py-3"></td>
+ <td class="px-4 py-2"></td>
+ <td colspan="2" class="px-4 py-2 font-semibold text-[var(--color-ink-strong)]">{{ __('workbench.output.common.total') }}</td>
+ <td class="numeric px-4 py-2 font-semibold text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned block" :style="decimalAlignmentStyle(incorporatedSoapIngredientTotalPercent)" x-text="`${formatPercentageTotal(incorporatedSoapIngredientTotalPercent)}%`"></span></td>
+ <td class="px-4 py-2"></td>
  </tr>
  </tbody>
  </table>

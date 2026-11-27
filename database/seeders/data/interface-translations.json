@@ -51890,12 +51890,12 @@
       "group": "workbench",
       "key": "output.soap.composition_help",
       "text": {
-        "de": "Hauptbestandteile auf die gereifte Seifenmasse normiert, mit gebräuchlichen Inhaltsstoffnamen unter den INCI-Namen.",
-        "es": "Filas de ingredientes principales normalizadas sobre la base curada, con los nombres comunes debajo de los nombres INCI.",
-        "fr": "Principaux ingrédients normalisés sur la base après cure, avec leurs noms courants sous les noms INCI.",
-        "it": "Righe degli ingredienti principali normalizzate sulla base stagionata, con i nomi comuni sotto i nomi INCI.",
-        "nl": "De hoofdingrediënten genormaliseerd op basis van de gerijpte zeep, met gebruikelijke ingrediëntnamen onder de INCI-namen.",
-        "pt_BR": "Linhas dos ingredientes principais normalizadas sobre a base curada, com os nomes comuns abaixo dos nomes INCI."
+        "de": "Hauptbestandteile auf die gereifte Seifenmasse normiert, jeweils mit den Rezepturzutaten, aus denen sie stammen.",
+        "es": "Filas de ingredientes principales normalizadas sobre la base curada, cada una con los ingredientes de la fórmula de los que procede.",
+        "fr": "Principaux ingrédients normalisés sur la base après cure, chacun avec les ingrédients de la formule dont il provient.",
+        "it": "Righe degli ingredienti principali normalizzate sulla base stagionata, ciascuna con gli ingredienti della formula da cui deriva.",
+        "nl": "De hoofdingrediënten genormaliseerd op basis van de gerijpte zeep, elk met de formule-ingrediënten waaruit ze afkomstig zijn.",
+        "pt_BR": "Linhas dos ingredientes principais normalizadas sobre a base curada, cada uma com os ingredientes da fórmula de onde vem."
       }
     },
     {
@@ -52034,12 +52034,12 @@
       "group": "workbench",
       "key": "output.soap.liquid_composition_help",
       "text": {
-        "de": "Zutaten so, wie sie in der fertigen Charge vorliegen, mit den gebräuchlichen Namen unter den INCI-Namen.",
-        "es": "Ingredientes tal como quedan en el lote terminado, con los nombres comunes debajo de los nombres INCI.",
-        "fr": "Ingrédients tels qu’ils se trouvent dans le lot fini, avec les noms courants sous les noms INCI.",
-        "it": "Ingredienti così come si trovano nel lotto finito, con i nomi comuni sotto i nomi INCI.",
-        "nl": "Ingrediënten zoals ze in de afgewerkte batch zitten, met de gangbare namen onder de INCI-namen.",
-        "pt_BR": "Ingredientes como ficam no lote pronto, com os nomes comuns abaixo dos nomes INCI."
+        "de": "Zutaten so, wie sie in der fertigen Charge vorliegen, jeweils mit den Rezepturzutaten, aus denen sie stammen.",
+        "es": "Ingredientes tal como quedan en el lote terminado, cada uno con los ingredientes de la fórmula de los que procede.",
+        "fr": "Ingrédients tels qu’ils se trouvent dans le lot fini, chacun avec les ingrédients de la formule dont il provient.",
+        "it": "Ingredienti così come si trovano nel lotto finito, ciascuno con gli ingredienti della formula da cui deriva.",
+        "nl": "Ingrediënten zoals ze in de afgewerkte batch zitten, elk met de formule-ingrediënten waaruit ze afkomstig zijn.",
+        "pt_BR": "Ingredientes como ficam no lote pronto, cada um com os ingredientes da fórmula de onde vem."
       }
     },
     {

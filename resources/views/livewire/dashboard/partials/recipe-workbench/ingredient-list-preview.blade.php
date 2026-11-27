@@ -248,18 +248,18 @@
  <tbody class="divide-y divide-[var(--color-line)] bg-white text-[var(--color-ink-soft)]">
  <template x-for="row in curedSoapDeclarationRows" :key="row.label">
  <tr>
- <td class="px-4 py-3 font-medium text-[var(--color-ink-strong)]" x-text="row.label"></td>
- <td class="min-w-[10rem] px-4 py-3">
+ <td class="px-4 py-2 font-medium text-[var(--color-ink-strong)]" x-text="row.label"></td>
+ <td class="min-w-[10rem] px-4 py-2">
  <template x-for="(source, idx) in row.source_ingredients" :key="idx">
  <span class="mr-2 inline-flex items-center gap-1"><span x-show="row.source_is_user_owned?.[idx]" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="{{ __('workbench.output.common.user_owned') }}"></span><span x-text="source"></span></span>
  </template>
  </td>
- <td class="numeric px-4 py-3 font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.percent_of_cured_basis)" x-text="`${format(row.percent_of_cured_basis, 4)}%`"></span></td>
- <td class="numeric px-4 py-3"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.threshold_percent)" x-text="row.threshold_percent === null || row.threshold_percent === undefined ? '—' : `${format(row.threshold_percent, 3)}%`"></span></td>
- <td class="px-4 py-3 text-center">
+ <td class="numeric px-4 py-2 font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.percent_of_cured_basis)" x-text="`${format(row.percent_of_cured_basis, 4)}%`"></span></td>
+ <td class="numeric px-4 py-2"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.threshold_percent)" x-text="row.threshold_percent === null || row.threshold_percent === undefined ? '—' : `${format(row.threshold_percent, 3)}%`"></span></td>
+ <td class="px-4 py-2 text-center">
  <span :class="declarationStatusClasses(row)" class="inline-flex justify-center rounded-full border px-3 py-1 text-[0.6875rem] font-medium leading-5" x-text="row.status_label"></span>
  </td>
- <td class="max-w-60 px-4 py-3 text-xs leading-5 [overflow-wrap:anywhere]" x-text="row.notes"></td>
+ <td class="max-w-60 px-4 py-2 text-xs leading-5 [overflow-wrap:anywhere]" x-text="row.notes"></td>
  </tr>
  </template>
  </tbody>

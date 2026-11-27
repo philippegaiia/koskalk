@@ -162,6 +162,34 @@ it('curates typed identity aliases and declared substances from the admin ingred
         ->assertSet('data.substance_entries', fn (array $state): bool => (int) collect($state)->first()['substance_id'] === $substance->id);
 });
 
+it('locks the classification of the canonical soap materials in the admin ingredient form', function (): void {
+    $admin = User::factory()->admin()->create();
+    $water = Ingredient::factory()->create([
+        'catalog_key' => 'CH2',
+        'category' => IngredientCategory::WaterSolventsCarriers,
+        'subcategory' => IngredientSubcategory::Water,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+    ]);
+    $glycerine = Ingredient::factory()->create([
+        'category' => IngredientCategory::HumectantsPolyols,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+    ]);
+    $this->actingAs($admin);
+
+    Livewire::test(EditIngredient::class, ['record' => $water->public_id])
+        ->assertFormFieldDisabled('category')
+        ->assertFormFieldDisabled('subcategory')
+        ->assertSeeText('Locked: soap calculation and costing rely on this classification for this catalogue material.');
+
+    Livewire::test(EditIngredient::class, ['record' => $glycerine->public_id])
+        ->assertFormFieldEnabled('category')
+        ->assertFormFieldEnabled('subcategory');
+});
+
 it('generates an ingredient classification prompt from unsaved admin create state', function (): void {
     $admin = User::factory()->admin()->create();
     $this->actingAs($admin);

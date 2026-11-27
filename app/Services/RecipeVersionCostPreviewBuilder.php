@@ -72,14 +72,18 @@ class RecipeVersionCostPreviewBuilder
             ? $this->recipeWorkbenchService->versionSnapshot($recipe, (int) $version->id)
             : null;
 
-        // A soap batch also uses the calculated alkali and the plain water; a
-        // batch records ingredients, so a row without a catalog material is left out.
-        $syntheticRows = $snapshot === null
+        // A soap batch also uses the calculated alkali and the plain water. A
+        // batch records catalog materials, so a row without one is left out, and
+        // the batch is flagged instead of showing a cost that silently omits it.
+        $calculatedRows = $snapshot === null
             ? []
-            : array_values(array_filter(
-                $this->savedSyntheticRows($version, $costing, $snapshot['calculation'] ?? null, $snapshot['draft'] ?? []),
-                fn (array $row): bool => (int) ($row['ingredient_id'] ?? 0) > 0,
-            ));
+            : $this->savedSyntheticRows($version, $costing, $snapshot['calculation'] ?? null, $snapshot['draft'] ?? []);
+        $syntheticRows = array_values(array_filter(
+            $calculatedRows,
+            fn (array $row): bool => (int) ($row['ingredient_id'] ?? 0) > 0,
+        ));
+        $calculatedRowsMissing = $snapshot !== null
+            && $this->calculatedRowsMissing($snapshot['calculation'] ?? null, count($calculatedRows) !== count($syntheticRows));
 
         $preview = $this->buildFromTransientRows(
             formula: $this->transientFormulaForVersion(
@@ -97,8 +101,13 @@ class RecipeVersionCostPreviewBuilder
             ),
         );
 
+        if ($calculatedRowsMissing) {
+            $preview['has_unpriced_rows'] = true;
+        }
+
         return [
             ...$this->legacyPreviewShape($preview),
+            'calculated_rows_missing' => $calculatedRowsMissing,
             'product_size_id' => $selection->size?->id,
             'product_size_key' => $selection->size?->public_id,
             'product_size_label_snapshot' => $selection->size?->label($user->number_locale),
@@ -524,6 +533,25 @@ class RecipeVersionCostPreviewBuilder
     }
 
     /**
+     * Whether a soap batch cannot carry all of its calculated alkali and
+     * water: the saved calculation is gone, the liquid soap process did not
+     * resolve, or a calculated material is missing from the catalogue.
+     *
+     * @param  array<string, mixed>|null  $calculation
+     */
+    private function calculatedRowsMissing(?array $calculation, bool $hasRowWithoutMaterial): bool
+    {
+        if (! is_array($calculation)) {
+            return true;
+        }
+
+        $liquidProcess = $calculation['liquid_process'] ?? null;
+
+        return $hasRowWithoutMaterial
+            || (is_array($liquidProcess) && ($liquidProcess['status'] ?? null) !== 'ok');
+    }
+
+    /**
      * @param  array<string, mixed>|null  $calculation
      * @param  array<string, mixed>  $draft
      * @return list<array<string, mixed>>
@@ -604,18 +632,20 @@ class RecipeVersionCostPreviewBuilder
             $waterCostingItem = $costing->items->first(fn (RecipeVersionCostingItem $item): bool => $item->phase_key === 'implicit_water');
             $waterIngredient = $waterCostingItem?->ingredient ?? $this->waterResolver->resolve();
 
-            if ($waterIngredient instanceof Ingredient) {
-                $rows[] = [
-                    'ingredient_id' => (int) $waterIngredient->id,
-                    'position' => 1,
-                    'phase_key' => 'implicit_water',
-                    'phase_name' => __('workbench.costing.phases.implicit_water'),
-                    'name' => $waterIngredient->localizedDisplayName() ?? $waterIngredient->display_name,
-                    'percentage' => '0',
-                    'weight' => $waterWeight,
-                    'is_derived' => true,
-                ];
-            }
+            // Like a missing alkali, water missing from the catalogue keeps an
+            // unpriced placeholder so the cost reads as incomplete, never as whole.
+            $rows[] = [
+                'ingredient_id' => $waterIngredient instanceof Ingredient ? (int) $waterIngredient->id : 0,
+                'position' => 1,
+                'phase_key' => 'implicit_water',
+                'phase_name' => __('workbench.costing.phases.implicit_water'),
+                'name' => $waterIngredient instanceof Ingredient
+                    ? ($waterIngredient->localizedDisplayName() ?? $waterIngredient->display_name)
+                    : __('formula_documents.ingredients.water'),
+                'percentage' => '0',
+                'weight' => $waterWeight,
+                'is_derived' => true,
+            ];
         }
 
         return $rows;

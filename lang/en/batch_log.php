@@ -7,6 +7,8 @@ return [
         'intro' => 'Freeze the saved formula, current prices, packaging plan, and lot annotations into a production batch.',
         'size_help' => 'Apply the selected size to load its packaging for this batch.',
         'unpriced_allowed' => 'Some rows have no price. You can still record this batch; its cost will be marked incomplete.',
+        'calculated_rows_missing' => 'The lye or water of this batch could not be calculated. You can still record it; its cost will be marked incomplete.',
+        'free_water_hint' => 'Using free tap water? Enter 0 as the water price in costing.',
     ],
     'fields' => [
         'batch_number' => 'Production batch number',

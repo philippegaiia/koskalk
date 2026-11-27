@@ -9,6 +9,7 @@ use App\Models\ProductFamily;
 use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\User;
+use App\Services\CanonicalSoapWaterResolver;
 use App\Services\LyeLiquidAllocationService;
 use App\Services\RecipeVersionCostingSynchronizer;
 use App\Services\RecipeVersionCostPreviewBuilder;
@@ -67,6 +68,42 @@ it('finds the canonical water by catalog key when its subcategory drifted', func
 
     expect($payload['water_ingredient']['ingredient_id'])->toBe($water->id)
         ->and(collect($payload['item_prices'])->firstWhere('phase_key', 'implicit_water')['ingredient_id'])->toBe($water->id);
+});
+
+it('resolves no water when the canonical water is deactivated instead of pricing another water row', function () {
+    Ingredient::factory()->create([
+        'catalog_key' => 'CH2',
+        'category' => IngredientCategory::WaterSolventsCarriers,
+        'subcategory' => IngredientSubcategory::Water,
+        'is_active' => false,
+    ]);
+    $otherWater = makeCostingAlkaliWaterIngredient();
+
+    expect(app(CanonicalSoapWaterResolver::class)->resolve())->toBeNull();
+
+    Ingredient::query()->withoutGlobalScopes()->where('catalog_key', 'CH2')->delete();
+
+    expect(app(CanonicalSoapWaterResolver::class)->resolve()?->id)->toBe($otherWater->id);
+});
+
+it('never offers the canonical water as a liquid soap dilution liquid, even with a drifted subcategory', function () {
+    $water = Ingredient::factory()->create([
+        'catalog_key' => 'CH2',
+        'category' => IngredientCategory::WaterSolventsCarriers,
+        'subcategory' => IngredientSubcategory::OtherCarriers,
+        'owner_type' => null,
+        'owner_id' => null,
+        'workspace_id' => null,
+    ]);
+    $carrier = Ingredient::factory()->create([
+        'category' => IngredientCategory::WaterSolventsCarriers,
+        'subcategory' => IngredientSubcategory::OtherCarriers,
+    ]);
+
+    expect($water->isLiquidSoapDilutionLiquid())->toBeFalse()
+        ->and($water->hasLockedClassification())->toBeTrue()
+        ->and($carrier->isLiquidSoapDilutionLiquid())->toBeTrue()
+        ->and($carrier->hasLockedClassification())->toBeFalse();
 });
 
 it('does not persist an implicit water row when added liquids cover the full dilution', function () {

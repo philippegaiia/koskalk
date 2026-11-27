@@ -439,6 +439,7 @@ return [
             'subtotal' => 'Ingredient subtotal',
             'empty' => 'Add ingredients on the Formula tab to start costing them here.',
             'koh_with_purity' => ':name (KOH :purity%)',
+            'free_water_hint' => 'Free tap water? Enter 0.',
         ],
         'packaging' => [
             'title' => 'Packaging costs',

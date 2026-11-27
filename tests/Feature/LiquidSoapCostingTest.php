@@ -10,6 +10,7 @@ use App\Models\ProductType;
 use App\Models\Recipe;
 use App\Models\User;
 use App\Models\Workspace;
+use App\Services\LiquidSoapFormulaProcessor;
 use App\Services\ProductionSnapshotService;
 use App\Services\RecipeVersionCostingSynchronizer;
 use App\Services\RecipeVersionCostPreviewBuilder;
@@ -405,4 +406,31 @@ it('previews a liquid soap batch record with additions at their share of the rec
 
     expect((float) collect($preview['ingredient_rows'])->firstWhere('ingredient_id', $fragrance->id)['quantity'])
         ->toEqualWithDelta($finalWeight * 0.02, 0.001);
+});
+
+it('records the KOH and all plain water of a liquid soap batch', function () {
+    ['user' => $user, 'family' => $family, 'productType' => $productType, 'oil' => $oil, 'koh' => $koh, 'water' => $water] = liquidSoapCostingContext();
+    $version = app(RecipeWorkbenchService::class)->save($user, $family, [
+        'name' => 'Liquid castile', 'product_type_id' => $productType->id, 'oil_unit' => 'g', 'oil_weight' => 1000,
+        'manufacturing_mode' => 'saponify_in_formula', 'exposure_mode' => 'rinse_off', 'regulatory_regime' => 'none', 'editing_mode' => 'percentage',
+        'lye_type' => 'koh', 'koh_purity_percentage' => 90, 'dual_lye_koh_percentage' => 40, 'water_mode' => 'lye_concentration', 'water_value' => 28, 'superfat' => 0,
+        'liquid_process' => ['first_dilution_percentage' => 35, 'final_dilution_percentage' => 25, 'neutralizer_solution_percentage' => 20],
+        'phase_items' => [
+            'saponified_oils' => [['ingredient_id' => $oil->id, 'percentage' => 100, 'weight' => 1000, 'note' => null]],
+            'neutralization' => [], 'additives' => [], 'fragrance' => [],
+        ],
+    ]);
+    $recipe = Recipe::withoutGlobalScopes()->findOrFail($version->recipe_id);
+    $calculation = app(RecipeWorkbenchService::class)->versionSnapshot($recipe, $version->id)['calculation'];
+    $expectedWater = (float) $calculation['lye']['water']['weight']
+        + (float) app(LiquidSoapFormulaProcessor::class)->addedDilutionWaterWeight($calculation['liquid_process']);
+
+    $preview = app(ProductionSnapshotService::class)->preview($recipe, $version->fresh(), $user, ['batch_basis' => 1000]);
+    $rows = collect($preview['ingredient_rows']);
+
+    expect($preview['calculated_rows_missing'])->toBeFalse()
+        ->and($rows->firstWhere('phase_key', 'lye_alkali')['ingredient_id'])->toBe($koh->id)
+        ->and((float) $rows->firstWhere('phase_key', 'lye_alkali')['quantity'])->toEqualWithDelta((float) $calculation['lye']['selected']['koh_to_weigh'], 0.001)
+        ->and($rows->firstWhere('phase_key', 'implicit_water')['ingredient_id'])->toBe($water->id)
+        ->and((float) $rows->firstWhere('phase_key', 'implicit_water')['quantity'])->toEqualWithDelta($expectedWater, 0.001);
 });

@@ -102,7 +102,10 @@ class IngredientForm
                             ->label(__('ingredients.editor.admin.classification.category'))
                             ->options(IngredientCategory::options())
                             ->searchable()
-                            ->helperText(__('ingredients.editor.admin.classification.category_helper'))
+                            ->helperText(fn (?Ingredient $record): string => $record?->hasLockedClassification()
+                                ? __('ingredients.editor.admin.classification.canonical_locked')
+                                : __('ingredients.editor.admin.classification.category_helper'))
+                            ->disabled(fn (?Ingredient $record): bool => $record?->hasLockedClassification() ?? false)
                             ->live()
                             ->required()
                             ->rules([Rule::enum(IngredientCategory::class)]),
@@ -112,7 +115,10 @@ class IngredientForm
                             ->searchable()
                             ->live()
                             ->required(fn (Get $get): bool => ! static::isCategory($get('category'), IngredientCategory::Other))
-                            ->helperText(__('ingredients.editor.admin.classification.subcategory_helper')),
+                            ->disabled(fn (?Ingredient $record): bool => $record?->hasLockedClassification() ?? false)
+                            ->helperText(fn (?Ingredient $record): string => $record?->hasLockedClassification()
+                                ? __('ingredients.editor.admin.classification.canonical_locked')
+                                : __('ingredients.editor.admin.classification.subcategory_helper')),
                         Select::make('liquid_soap_neutralizer')
                             ->label(__('ingredients.editor.admin.classification.liquid_soap_neutralizer'))
                             ->options(LiquidSoapNeutralizer::options())

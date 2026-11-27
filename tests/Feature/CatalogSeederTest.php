@@ -42,7 +42,7 @@ afterEach(function () {
 });
 
 it('seeds the initial catalog from both csv files', function () {
-    [$allergenPath, $ingredientPath] = writeCatalogFixtures(
+    [, $ingredientPath] = writeCatalogFixtures(
         $this->catalogFixtureDirectory,
         allergenRows: [
             ['Intro title', '', '', '', ''],
@@ -57,7 +57,6 @@ it('seeds the initial catalog from both csv files', function () {
         ],
     );
 
-    config()->set('catalog-imports.allergens.path', $allergenPath);
     config()->set('catalog-imports.ingredients.path', $ingredientPath);
 
     $this->seed([
@@ -67,7 +66,7 @@ it('seeds the initial catalog from both csv files', function () {
     ]);
 
     expect(ProductFamily::query()->where('slug', 'soap')->exists())->toBeTrue()
-        ->and(Allergen::query()->count())->toBe(2)
+        ->and(Allergen::query()->count())->toBe(81)
         ->and(Ingredient::query()->count())->toBe(2);
 
     $oliveOil = Ingredient::query()->where('catalog_key', 'OB1')->firstOrFail();
@@ -79,7 +78,7 @@ it('seeds the initial catalog from both csv files', function () {
 });
 
 it('updates existing ingredient rows without duplicating them on reseed', function () {
-    [$allergenPath, $ingredientPath] = writeCatalogFixtures(
+    [, $ingredientPath] = writeCatalogFixtures(
         $this->catalogFixtureDirectory,
         allergenRows: [
             ['Nom INCI (à étiqueter)', 'Numéro CAS (International)', 'Numéro CE (Européen)', '', ''],
@@ -91,7 +90,6 @@ it('updates existing ingredient rows without duplicating them on reseed', functi
         ],
     );
 
-    config()->set('catalog-imports.allergens.path', $allergenPath);
     config()->set('catalog-imports.ingredients.path', $ingredientPath);
 
     $this->seed([
@@ -325,27 +323,18 @@ it('uses canonical metadata for known botanicals and leaves unknown imports for 
         ->and(Ingredient::query()->where('catalog_key', 'AR1')->firstOrFail()->category)->toBe(IngredientCategory::Other);
 });
 
-it('preserves multi-value cas strings and keeps allergen imports out of ingredient tables', function () {
-    [$allergenPath] = writeCatalogFixtures(
-        $this->catalogFixtureDirectory,
-        allergenRows: [
-            ['EU LIST', '', '', '', ''],
-            ['Nom INCI (à étiqueter)', 'Numéro CAS (International)', 'Numéro CE (Européen)', '', ''],
-            ['ANETHOLE', '104-46-1 / 4180-23-8', '203-205-5', 'Anethole', 'Anéthole'],
-        ],
-        ingredientRows: [
-            ['Code', 'Name', 'Category', 'Unit', 'Prix (€)', 'Min stock', 'Active', 'Fabriqué', 'INCI', 'INCI NaOH', 'INCI KOH', 'CAS', 'CAS EINECS', 'EINECS', 'Nom EN'],
-        ],
-    );
-
-    config()->set('catalog-imports.allergens.path', $allergenPath);
-
+it('seeds one allergen per labelled annex III entry of Regulation (EU) 2023/1545', function () {
     $this->seed(AllergenCatalogSeeder::class);
 
-    $allergen = Allergen::query()->firstOrFail();
+    $pinene = Allergen::query()->where('inci_name', 'PINENE')->sole();
+    $citrusPeel = Allergen::query()->where('inci_name', 'CITRUS AURANTIUM PEEL OIL')->sole();
 
-    expect(Allergen::query()->count())->toBe(1)
-        ->and($allergen->cas_number)->toBe('104-46-1 / 4180-23-8')
+    expect(Allergen::query()->count())->toBe(81)
+        ->and($pinene->cas_number)->toBe('80-56-8 / 7785-70-8 / 127-91-3 / 18172-67-3')
+        ->and($pinene->source_data['annex_ref'])->toBe('III/371')
+        ->and($citrusPeel->source_data['glossary_names'])->toContain('Citrus Sinensis Peel Oil')
+        ->and(Allergen::query()->where('inci_name', 'SCLAREOL')->value('cas_number'))->toBe('515-03-7')
+        ->and(Allergen::query()->whereIn('inci_name', ['MENTHONE', 'ALPHA-DAMASCONE', 'CITRUS SINENSIS PEEL OIL'])->exists())->toBeFalse()
         ->and(Ingredient::query()->count())->toBe(0);
 });
 

@@ -12,12 +12,4 @@ return [
             database_path('seeders/data/carrier_oil_chemistry.json')
         ),
     ],
-
-    'allergens' => [
-        'path' => env(
-            'CATALOG_IMPORT_ALLERGENS_PATH',
-            '/Users/philippe/Downloads/Allergènes et Huiles Essentielles _ Étiquetage Cosmétique - Allergènes et Huiles Essentielles _ Étiquetage Cosmétique.csv'
-        ),
-        'source_name' => env('CATALOG_IMPORT_ALLERGENS_SOURCE', 'EU allergen list'),
-    ],
 ];

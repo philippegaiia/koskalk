@@ -973,6 +973,7 @@ return [
                 'category' => 'Ingredient category',
                 'category_helper' => 'Choose the material family. Specialist functions, soap trust, and aromatic compliance are managed separately.',
                 'subcategory_helper' => 'Optional refinement that keeps beginner-friendly names alongside professional classification.',
+                'canonical_locked' => 'Locked: soap calculation and costing rely on this classification for this catalogue material.',
                 'soap_trusted_helper' => 'Requires a verified KOH SAP value. The material category does not control this capability.',
                 'liquid_soap_neutralizer' => 'Liquid soap neutralizer',
                 'liquid_soap_neutralizer_helper' => 'Lets the liquid soap bench offer this platform material to neutralize free KOH. A fatty acid also needs trusted soap chemistry.',

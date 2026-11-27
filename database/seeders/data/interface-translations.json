@@ -1524,6 +1524,18 @@
     },
     {
       "group": "batch_log",
+      "key": "record.calculated_rows_missing",
+      "text": {
+        "de": "Lauge oder Wasser dieser Charge konnten nicht berechnet werden. Sie können sie trotzdem erfassen; ihre Kosten werden als unvollständig markiert.",
+        "es": "No se pudo calcular la sosa o el agua de este lote. Puedes registrarlo igualmente; su coste se marcará como incompleto.",
+        "fr": "La soude ou l’eau de ce lot n’ont pas pu être calculées. Vous pouvez quand même l’enregistrer ; son coût sera indiqué comme incomplet.",
+        "it": "Non è stato possibile calcolare la soda o l’acqua di questo lotto. Puoi comunque registrarlo; il suo costo sarà segnato come incompleto.",
+        "nl": "De loog of het water van deze batch kon niet worden berekend. Je kunt de batch toch vastleggen; de kosten worden als onvolledig gemarkeerd.",
+        "pt_BR": "Não foi possível calcular a soda ou a água deste lote. Você ainda pode registrá-lo; o custo será marcado como incompleto."
+      }
+    },
+    {
+      "group": "batch_log",
       "key": "record.eyebrow",
       "text": {
         "de": "Produktion",
@@ -1532,6 +1544,18 @@
         "it": "Produzione",
         "nl": "Productie",
         "pt_BR": "Produção"
+      }
+    },
+    {
+      "group": "batch_log",
+      "key": "record.free_water_hint",
+      "text": {
+        "de": "Verwenden Sie kostenloses Leitungswasser? Geben Sie in der Kalkulation 0 als Wasserpreis ein.",
+        "es": "¿Usas agua del grifo gratuita? Introduce 0 como precio del agua en los costes.",
+        "fr": "Vous utilisez l’eau du robinet gratuite ? Saisissez 0 comme prix de l’eau dans le coût de revient.",
+        "it": "Usi acqua del rubinetto gratuita? Inserisci 0 come prezzo dell’acqua nei costi.",
+        "nl": "Gebruik je gratis kraanwater? Vul 0 in als waterprijs bij de kostprijs.",
+        "pt_BR": "Usa água da torneira gratuita? Informe 0 como preço da água nos custos."
       }
     },
     {
@@ -9836,6 +9860,18 @@
         "it": "Mantiene attivi i dati su allergeni e IFRA anche se l’ingrediente è temporaneamente classificato come Altro.",
         "nl": "Houdt allergenen- en IFRA-gegevens actief, ook als het ingrediënt tijdelijk als Overig is ingedeeld.",
         "pt_BR": "Mantenha os dados de alérgenos e IFRA ativos mesmo quando o ingrediente estiver temporariamente classificado como Outro."
+      }
+    },
+    {
+      "group": "ingredients",
+      "key": "editor.admin.classification.canonical_locked",
+      "text": {
+        "de": "Gesperrt: Seifenberechnung und Kalkulation stützen sich auf diese Klassifizierung dieses Katalogmaterials.",
+        "es": "Bloqueado: el cálculo de jabón y los costes dependen de esta clasificación para este material del catálogo.",
+        "fr": "Verrouillé : le calcul du savon et le coût de revient s’appuient sur cette classification pour cette matière du catalogue.",
+        "it": "Bloccato: il calcolo del sapone e i costi si basano su questa classificazione per questo materiale del catalogo.",
+        "nl": "Vergrendeld: de zeepberekening en de kostprijs steunen op deze classificatie voor dit catalogusmateriaal.",
+        "pt_BR": "Bloqueado: o cálculo do sabão e os custos dependem desta classificação para este material do catálogo."
       }
     },
     {
@@ -47456,6 +47492,18 @@
         "it": "Aggiungi gli ingredienti nella scheda Formula per iniziare a calcolarne qui i costi.",
         "nl": "Voeg ingrediënten toe op het tabblad Formule om hier de kosten te berekenen.",
         "pt_BR": "Adicione ingredientes na aba Fórmula para começar a calcular seus custos aqui."
+      }
+    },
+    {
+      "group": "workbench",
+      "key": "costing.ingredients.free_water_hint",
+      "text": {
+        "de": "Kostenloses Leitungswasser? 0 eingeben.",
+        "es": "¿Agua del grifo gratuita? Introduce 0.",
+        "fr": "Eau du robinet gratuite ? Saisissez 0.",
+        "it": "Acqua del rubinetto gratuita? Inserisci 0.",
+        "nl": "Gratis kraanwater? Vul 0 in.",
+        "pt_BR": "Água da torneira gratuita? Informe 0."
       }
     },
     {

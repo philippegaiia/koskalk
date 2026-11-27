@@ -279,8 +279,11 @@
 
                     @if ($productionPreview['has_unpriced_rows'] ?? false)
                         <p class="mt-3 rounded-lg border border-[var(--color-warning-soft)] bg-[var(--color-warning-soft)]/35 px-3 py-2 text-sm font-medium text-[var(--color-warning-strong)]">
-                            {{ $productionPreview['calculation_error'] ?? __('batch_log.record.unpriced_allowed') }}
+                            {{ $productionPreview['calculation_error'] ?? (($productionPreview['calculated_rows_missing'] ?? false) ? __('batch_log.record.calculated_rows_missing') : __('batch_log.record.unpriced_allowed')) }}
                         </p>
+                        @if (collect($productionPreview['ingredient_rows'] ?? [])->contains(fn (array $row): bool => ($row['phase_key'] ?? null) === 'implicit_water' && ($row['is_unpriced'] ?? false)))
+                            <p class="mt-2 text-sm text-[var(--color-ink-soft)]">{{ __('batch_log.record.free_water_hint') }}</p>
+                        @endif
                     @endif
 
                     @unless ($productionPreview['size_selection_required'] ?? false)

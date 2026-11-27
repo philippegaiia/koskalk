@@ -113,6 +113,7 @@
  <div class="flex items-center bg-white px-4 py-2">
  <div>
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.name"></p>
+ <p x-show="row.phaseKey === 'implicit_water' && !hasKnownCostingPrice(costingPriceForRow(row))" x-cloak class="mt-0.5 text-xs text-[var(--color-ink-soft)]" x-text="t('costing.ingredients.free_water_hint')"></p>
  </div>
  </div>
  <div class="numeric flex items-center bg-white px-4 py-2 text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.percentage)" x-text="`${format(row.percentage, 2)}${row.percentageLabel}`"></span></div>

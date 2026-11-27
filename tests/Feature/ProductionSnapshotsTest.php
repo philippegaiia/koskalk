@@ -59,6 +59,14 @@ beforeEach(function () {
             'is_active' => true,
         ]);
     }
+
+    Ingredient::factory()->create([
+        'catalog_key' => 'CH2',
+        'category' => IngredientCategory::WaterSolventsCarriers,
+        'subcategory' => IngredientSubcategory::Water,
+        'display_name' => 'Water',
+        'is_active' => true,
+    ]);
 });
 
 it('stores production snapshot headers with frozen ingredient and packaging rows', function (): void {
@@ -218,7 +226,7 @@ it('builds numeric production cost preview rows from live costing data', functio
         'position' => 1,
         'price_per_kg' => 8.5,
     ]);
-    productionSnapshotPriceAlkali($costing);
+    productionSnapshotPriceCalculatedRows($costing);
 
     RecipeVersionCostingPackagingItem::query()->create([
         'recipe_version_costing_id' => $costing->id,
@@ -280,7 +288,7 @@ it('prices production ingredient quantities using the saved batch unit', functio
         'position' => 1,
         'price_per_kg' => 10,
     ]);
-    productionSnapshotPriceAlkali($costing);
+    productionSnapshotPriceCalculatedRows($costing);
 
     $batch = app(ProductionSnapshotService::class)->record($recipe, $version->fresh(), $user, [
         'production_batch_number' => 'B-2026-LB',
@@ -495,7 +503,7 @@ it('records a soap production snapshot and freezes current prices', function ():
         ->and($batch->units_produced)->toBe(12)
         ->and($batch->packaging_total)->toBe('3.0000')
         ->and($batch->has_unpriced_rows)->toBeFalse()
-        ->and($batch->ingredients)->toHaveCount(2);
+        ->and($batch->ingredients)->toHaveCount(3);
 
     $oilRow = $batch->ingredients->firstWhere('phase_key', 'saponified_oils');
     $alkaliRow = $batch->ingredients->firstWhere('phase_key', 'lye_alkali');
@@ -536,22 +544,9 @@ it('records a soap production snapshot and freezes current prices', function ():
 });
 
 it('records the calculated alkali and plain water in a soap batch', function (): void {
-    $water = Ingredient::factory()->create([
-        'catalog_key' => 'CH2',
-        'category' => IngredientCategory::WaterSolventsCarriers,
-        'subcategory' => IngredientSubcategory::Water,
-        'display_name' => 'Water',
-        'is_active' => true,
-    ]);
+    $water = Ingredient::query()->withoutGlobalScopes()->where('catalog_key', 'CH2')->firstOrFail();
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
-    $costingRows = productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25);
-    RecipeVersionCostingItem::query()->create([
-        'recipe_version_costing_id' => $costingRows['costing_item']->recipe_version_costing_id,
-        'ingredient_id' => $water->id,
-        'phase_key' => 'implicit_water',
-        'position' => 1,
-        'price_per_kg' => 0.5,
-    ]);
+    productionSnapshotAttachCosting($user, $version, $ingredient, ingredientPrice: 8.5, packagingPrice: 0.25, waterPrice: 0.5);
 
     $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
         'manufacture_date' => '2026-06-10',
@@ -573,6 +568,82 @@ it('records the calculated alkali and plain water in a soap batch', function ():
         ->and($waterRow->line_cost)->toBe('0.1900')
         ->and($waterRow->ingredient_lot_number)->toBe('RO-TANK-3')
         ->and($batch->ingredient_total)->toBe('8.6900');
+});
+
+it('records the weighed KOH of a koh-only or dual-lye soap batch', function (string $lyeType, array $expectedRows): void {
+    [$user, $recipe, $version] = productionSnapshotSoapRecipe(['lye_type' => $lyeType, 'koh_purity_percentage' => 90]);
+    $selected = app(RecipeWorkbenchService::class)->versionSnapshot($recipe, $version->id)['calculation']['lye']['selected'];
+
+    $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'manufacture_date' => '2026-06-10',
+        'batch_basis' => 1000,
+        'units_produced' => 10,
+    ]);
+
+    $alkaliRows = $batch->ingredients->where('phase_key', 'lye_alkali')->sortBy('position')->values();
+
+    expect($alkaliRows->map(fn (ProductionBatchIngredient $row): array => [$row->position, $row->ingredient_name])->all())->toBe($expectedRows);
+
+    foreach ($alkaliRows as $row) {
+        $weight = str_starts_with($row->ingredient_name, 'Potassium') ? $selected['koh_to_weigh'] : $selected['naoh_weight'];
+
+        expect((float) $row->quantity)->toEqualWithDelta((float) $weight, 0.0001);
+    }
+})->with([
+    'koh only' => ['koh', [[1, 'Potassium hydroxide (KOH 90%)']]],
+    'dual lye' => ['dual', [[1, 'Sodium hydroxide'], [2, 'Potassium hydroxide (KOH 90%)']]],
+]);
+
+it('adds no calculated alkali or water to a cosmetic batch', function (): void {
+    [$user, $recipe, $version] = productionSnapshotCosmeticRecipe();
+
+    $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
+        'manufacture_date' => '2026-06-10',
+        'batch_basis' => 500,
+        'units_produced' => 5,
+    ]);
+
+    expect($batch->ingredients->pluck('phase_key')->unique()->values()->all())->toBe(['saponified_oils']);
+});
+
+it('records a soap batch whose water is missing from the catalogue as incomplete', function (): void {
+    Ingredient::query()->withoutGlobalScopes()->where('catalog_key', 'CH2')->update(['is_active' => false]);
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    rememberIngredientPriceForWorkspace($user, $ingredient, '8.5');
+    rememberIngredientPriceForWorkspace($user, Ingredient::query()->withoutGlobalScopes()->where('catalog_key', 'CH1')->firstOrFail(), '2');
+    $input = ['manufacture_date' => '2026-06-10', 'batch_basis' => 1000, 'units_produced' => 10];
+
+    $preview = app(ProductionSnapshotService::class)->preview($recipe, $version, $user, $input);
+    $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, $input);
+
+    expect($preview['calculated_rows_missing'])->toBeTrue()
+        ->and($preview['has_unpriced_rows'])->toBeTrue()
+        ->and($batch->has_unpriced_rows)->toBeTrue()
+        ->and($batch->ingredients->pluck('phase_key')->sort()->values()->all())->toBe(['lye_alkali', 'saponified_oils']);
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', $recipe))
+        ->assertSuccessful()
+        ->assertSee('The lye or water of this batch could not be calculated. You can still record it; its cost will be marked incomplete.');
+});
+
+it('suggests a zero price for free tap water when the batch water is unpriced', function (): void {
+    [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
+    rememberIngredientPriceForWorkspace($user, $ingredient, '8.5');
+    rememberIngredientPriceForWorkspace($user, Ingredient::query()->withoutGlobalScopes()->where('catalog_key', 'CH1')->firstOrFail(), '2');
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', $recipe))
+        ->assertSuccessful()
+        ->assertSee('Some rows have no price. You can still record this batch; its cost will be marked incomplete.')
+        ->assertSee('Using free tap water? Enter 0 as the water price in costing.');
+
+    rememberIngredientPriceForWorkspace($user, Ingredient::query()->withoutGlobalScopes()->where('catalog_key', 'CH2')->firstOrFail(), '0');
+
+    $this->actingAs($user)
+        ->get(route('recipes.saved', $recipe))
+        ->assertSuccessful()
+        ->assertDontSee('Using free tap water? Enter 0 as the water price in costing.');
 });
 
 it('recalculates production costs on the formula sheet before recording', function (): void {
@@ -1024,7 +1095,7 @@ it('allows the owner to delete a production snapshot and its rows', function ():
     ]);
 
     expect(ProductionBatch::query()->count())->toBe(1)
-        ->and($batch->ingredients()->count())->toBe(2)
+        ->and($batch->ingredients()->count())->toBe(3)
         ->and($batch->packagingItems()->count())->toBe(1);
 
     $this->actingAs($user)
@@ -1374,7 +1445,7 @@ it('records production snapshots with unpriced packaging rows marked unpriced', 
         'position' => 1,
         'price_per_kg' => 8.5,
     ]);
-    productionSnapshotPriceAlkali($costing);
+    productionSnapshotPriceCalculatedRows($costing);
 
     $batch = app(ProductionSnapshotService::class)->record($recipe, $version, $user, [
         'manufacture_date' => '2026-06-10',
@@ -1405,7 +1476,7 @@ it('records production snapshots with unpriced ingredient rows without creating 
 
     expect($batch->has_unpriced_rows)->toBeTrue()
         ->and($batch->ingredient_total)->toBe('0.0000')
-        ->and($batch->ingredients->pluck('phase_key')->sort()->values()->all())->toBe(['lye_alkali', 'saponified_oils'])
+        ->and($batch->ingredients->pluck('phase_key')->sort()->values()->all())->toBe(['implicit_water', 'lye_alkali', 'saponified_oils'])
         ->and($batch->ingredients->pluck('price_per_kg')->filter()->all())->toBe([])
         ->and(RecipeVersionCosting::query()
             ->where('recipe_version_id', $version->id)
@@ -1544,7 +1615,7 @@ it('preserves deliberately saved zero cost unlinked packaging rows across repeat
         'position' => 1,
         'price_per_kg' => 8.5,
     ]);
-    productionSnapshotPriceAlkali($costing);
+    productionSnapshotPriceCalculatedRows($costing);
 
     RecipeVersionCostingPackagingItem::query()->create([
         'recipe_version_costing_id' => $costing->id,
@@ -1670,7 +1741,7 @@ it('does not mutate existing costing rows when building saved formula view data'
 });
 
 /** @return array{0: User, 1: Recipe, 2: RecipeVersion, 3: Ingredient} */
-function productionSnapshotSoapRecipe(): array
+function productionSnapshotSoapRecipe(array $draftOverrides = []): array
 {
     $user = User::factory()->create();
     $soapFamily = ProductFamily::factory()->create([
@@ -1684,14 +1755,14 @@ function productionSnapshotSoapRecipe(): array
     $draftVersion = $service->save(
         $user,
         $soapFamily,
-        productionSnapshotDraftPayload($ingredient, 'Snapshot Soap'),
+        [...productionSnapshotDraftPayload($ingredient, 'Snapshot Soap'), ...$draftOverrides],
     );
 
     $recipe = Recipe::withoutGlobalScopes()->findOrFail($draftVersion->recipe_id);
     $service->saveAsNewVersion(
         $user,
         $soapFamily,
-        productionSnapshotDraftPayload($ingredient, 'Snapshot Soap'),
+        [...productionSnapshotDraftPayload($ingredient, 'Snapshot Soap'), ...$draftOverrides],
         $recipe,
     );
 
@@ -1723,20 +1794,22 @@ function productionSnapshotIngredient(): Ingredient
     return $ingredient;
 }
 
-/** Price the calculated NaOH row of a soap costing, so a test can focus on its own rows. */
-function productionSnapshotPriceAlkali(RecipeVersionCosting $costing, float $pricePerKg = 0.0): RecipeVersionCostingItem
+/** Price the calculated NaOH and plain water rows of a soap costing, so a test can focus on its own rows. */
+function productionSnapshotPriceCalculatedRows(RecipeVersionCosting $costing, float $alkaliPrice = 0.0, float $waterPrice = 0.0): void
 {
-    return RecipeVersionCostingItem::query()->create([
-        'recipe_version_costing_id' => $costing->id,
-        'ingredient_id' => Ingredient::query()->withoutGlobalScopes()->where('catalog_key', 'CH1')->value('id'),
-        'phase_key' => 'lye_alkali',
-        'position' => 1,
-        'price_per_kg' => $pricePerKg,
-    ]);
+    foreach (['CH1' => ['lye_alkali', $alkaliPrice], 'CH2' => ['implicit_water', $waterPrice]] as $catalogKey => [$phaseKey, $price]) {
+        RecipeVersionCostingItem::query()->create([
+            'recipe_version_costing_id' => $costing->id,
+            'ingredient_id' => Ingredient::query()->withoutGlobalScopes()->where('catalog_key', $catalogKey)->value('id'),
+            'phase_key' => $phaseKey,
+            'position' => 1,
+            'price_per_kg' => $price,
+        ]);
+    }
 }
 
 /** @return array{packaging_item: PackagingItem, costing_item: RecipeVersionCostingItem, packaging_costing_item: RecipeVersionCostingPackagingItem} */
-function productionSnapshotAttachCosting(User $user, RecipeVersion $version, Ingredient $ingredient, float $ingredientPrice, float $packagingPrice, float $alkaliPrice = 0.0): array
+function productionSnapshotAttachCosting(User $user, RecipeVersion $version, Ingredient $ingredient, float $ingredientPrice, float $packagingPrice, float $alkaliPrice = 0.0, float $waterPrice = 0.0): array
 {
     $packagingItem = createPackagingItemForWorkspace([
         'user_id' => $user->id,
@@ -1773,7 +1846,7 @@ function productionSnapshotAttachCosting(User $user, RecipeVersion $version, Ing
         'position' => 1,
         'price_per_kg' => $ingredientPrice,
     ]);
-    productionSnapshotPriceAlkali($costing, $alkaliPrice);
+    productionSnapshotPriceCalculatedRows($costing, $alkaliPrice, $waterPrice);
 
     $packagingCostingItem = RecipeVersionCostingPackagingItem::query()->create([
         'recipe_version_costing_id' => $costing->id,
@@ -1899,6 +1972,7 @@ it('projects current prices without ambient authentication or saving costing and
     [$user, $recipe, $version, $ingredient] = productionSnapshotSoapRecipe();
     rememberIngredientPriceForWorkspace($user, $ingredient, '8.5');
     rememberIngredientPriceForWorkspace($user, Ingredient::query()->withoutGlobalScopes()->where('catalog_key', 'CH1')->firstOrFail(), '0');
+    rememberIngredientPriceForWorkspace($user, Ingredient::query()->withoutGlobalScopes()->where('catalog_key', 'CH2')->firstOrFail(), '0');
     $service = app(ProductionSnapshotService::class);
     $input = ['batch_basis' => 1000, 'units_produced' => 10, 'manufacture_date' => '2026-09-25'];
 

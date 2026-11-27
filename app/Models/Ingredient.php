@@ -12,6 +12,7 @@ use App\Enums\Visibility;
 use App\Models\Concerns\HasMediaAssetUsages;
 use App\Models\Concerns\HasPublicId;
 use App\Models\Concerns\HasTenantOwnership;
+use App\Services\CanonicalSoapWaterResolver;
 use App\Services\MediaStorage;
 use App\Services\WorkspaceAuthorization;
 use App\Support\InciName;
@@ -67,6 +68,14 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 #[Hidden(['share_lineage_key'])]
 class Ingredient extends Model
 {
+    /**
+     * Catalogue keys of the platform materials that soap math and costing
+     * resolve by identity: NaOH (CH1), plain water (CH2) and KOH (CH3).
+     *
+     * @var list<string>
+     */
+    public const array CANONICAL_SOAP_CATALOG_KEYS = ['CH1', 'CH2', 'CH3'];
+
     /** @use HasFactory<IngredientFactory> */
     use HasFactory;
 
@@ -431,6 +440,18 @@ class Ingredient extends Model
     }
 
     /**
+     * Whether this is a canonical soap material whose category and
+     * subcategory stay fixed, so admin edits cannot drift the classification
+     * the soap calculation and costing rely on.
+     */
+    public function hasLockedClassification(): bool
+    {
+        return $this->owner_type === null
+            && $this->workspace_id === null
+            && in_array($this->catalog_key, self::CANONICAL_SOAP_CATALOG_KEYS, true);
+    }
+
+    /**
      * Liquids a liquid soap paste may be diluted with: solvents and carriers
      * other than plain water (the step remainder), humectants such as
      * glycerine, hydrosols and aqueous extracts, and Other, which holds milks
@@ -439,7 +460,8 @@ class Ingredient extends Model
      */
     public function isLiquidSoapDilutionLiquid(): bool
     {
-        if ($this->liquid_soap_neutralizer !== null) {
+        // The canonical water is the step remainder whatever its classification says.
+        if ($this->liquid_soap_neutralizer !== null || $this->catalog_key === CanonicalSoapWaterResolver::CATALOG_KEY) {
             return false;
         }
 

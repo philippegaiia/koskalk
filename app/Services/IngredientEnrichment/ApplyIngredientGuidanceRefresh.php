@@ -194,6 +194,10 @@ class ApplyIngredientGuidanceRefresh
                             && ($beforeGuidance['localization_prompt_version'] ?? null) !== ($guidance['localization_prompt_version'] ?? null));
                     data_set($sourceData, 'enrichment.guidance', $guidance);
                     $ingredient->source_data = $sourceData;
+                    if ($changed) {
+                        // Applied AI guidance or translations reopen the administrator sign-off.
+                        $ingredient->requires_admin_review = true;
+                    }
                     $ingredient->save();
 
                     $item->update([

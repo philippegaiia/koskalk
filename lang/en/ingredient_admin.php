@@ -85,4 +85,36 @@ return [
             'intake_audit' => 'ingredient intake audit row|ingredient intake audit rows',
         ],
     ],
+    'catalog_review' => [
+        'columns' => [
+            'enriched' => 'Enriched',
+            'guidance' => 'Guidance',
+            'translated' => 'Translated',
+            'reviewed' => 'Reviewed',
+        ],
+        'translated_state' => ':translated/:expected',
+        'translated_stale' => ':count stale',
+        'not_reviewed' => 'Not yet',
+        'reviewed_without_date' => 'Reviewed',
+        'reviewed_by' => 'by :name',
+        'filters' => [
+            'step' => 'Review step',
+            'enriched' => 'Enriched',
+        ],
+        'steps' => [
+            'missing_guidance' => 'Missing English guidance',
+            'translations_incomplete' => 'Translations missing or stale',
+            'awaiting_review' => 'Ready for my review',
+            'reviewed' => 'Reviewed',
+        ],
+        'actions' => [
+            'mark_reviewed' => 'Mark reviewed',
+            'mark_reviewed_heading' => 'Mark the selected ingredients reviewed?',
+            'mark_reviewed_description' => 'Records you and today as the sign-off. Ingredients already reviewed keep their original date. Active status is not changed.',
+            'mark_reviewed_single_description' => 'Records you and today as the sign-off. Active status is not changed. Unsaved edits on this page are kept in the form.',
+            'marked' => ':count ingredient marked reviewed.|:count ingredients marked reviewed.',
+        ],
+        'signed_off' => 'Signed off :date by :name.',
+        'signed_off_without_reviewer' => 'Signed off :date.',
+    ],
 ];

@@ -48,6 +48,11 @@ class IngredientPolicy
                 && $user->accessibleWorkspaceIds() === [];
     }
 
+    public function markCatalogReviewed(User $user, Ingredient $ingredient): bool
+    {
+        return $user->is_admin && $ingredient->isPlatformCatalogRecord();
+    }
+
     public function delete(User $user, Ingredient $ingredient): bool
     {
         if ($ingredient->visibility !== Visibility::Private) {

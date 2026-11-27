@@ -9938,12 +9938,12 @@
       "group": "ingredients",
       "key": "editor.admin.classification.needs_review_helper",
       "text": {
-        "de": "Aktiv lassen, solange importierte Kategorie, Seifenfreigabe oder Konformitätsstatus noch bestätigt werden müssen.",
-        "es": "Déjalo activo mientras deban confirmarse la categoría importada, la aptitud para jabón o el estado de conformidad.",
-        "fr": "Laissez activé tant que la catégorie importée, la validation savon ou le statut de conformité doivent être confirmés.",
-        "it": "Lascialo attivo finché categoria importata, idoneità al sapone o stato di conformità devono essere confermati.",
-        "nl": "Laat dit actief zolang de geïmporteerde categorie, zeepvalidatie of nalevingsstatus nog bevestigd moet worden.",
-        "pt_BR": "Mantenha ativado enquanto a categoria importada, a confiança para sabonetes ou o status de conformidade ainda precisarem de confirmação."
+        "de": "Bleibt aktiv, bis Sie diesen Rohstoff freigeben. Übernommene KI-Anreicherung, Hinweise oder Übersetzungen schalten es wieder ein.",
+        "es": "Permanece activo hasta que apruebes este ingrediente. Aplicar un enriquecimiento, una guía o traducciones generados por IA lo vuelve a activar.",
+        "fr": "Reste activé jusqu’à ce que vous validiez cet ingrédient. L’application d’un enrichissement, de conseils ou de traductions générés par l’IA le réactive.",
+        "it": "Resta attivo finché non approvi questo ingrediente. Applicare arricchimento, indicazioni o traduzioni generati dall’IA lo riattiva.",
+        "nl": "Blijft aan tot je deze grondstof goedkeurt. Het toepassen van AI-verrijking, richtlijnen of vertalingen zet het weer aan.",
+        "pt_BR": "Permanece ativado até você aprovar este ingrediente. Aplicar enriquecimento, orientações ou traduções gerados por IA o reativa."
       }
     },
     {

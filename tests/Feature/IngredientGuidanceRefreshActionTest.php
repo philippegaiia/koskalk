@@ -943,3 +943,63 @@ it('keeps English guidance read-only in localization-only review batches', funct
         ->mountAction(TestAction::make('editProposal')->table($item))
         ->assertFormFieldDisabled('info_markdown');
 });
+
+it('reopens the catalogue sign-off only when an applied guidance refresh changes the ingredient', function (string $proposedEnglish, bool $expectReopened): void {
+    $admin = User::factory()->admin()->create();
+    $english = "## Overview\n\nExisting English guidance.\n\n## Formulation use\n\nExisting formulation guidance.";
+    $ingredient = Ingredient::factory()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'info_markdown' => $english,
+        'requires_admin_review' => false,
+        'catalog_reviewed_at' => '2026-11-01 09:00:00',
+        'catalog_reviewed_by_user_id' => $admin->id,
+        'source_data' => ['enrichment' => ['guidance' => [
+            'evidence' => [],
+            'guidance_prompt_version' => 'ingredient-guidance-v3',
+            'research_prompt_version' => 'ingredient-guidance-research-v2',
+        ]]],
+    ]);
+    $batch = IngredientEnrichmentBatch::factory()->create([
+        'requested_by_user_id' => $admin->id,
+        'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh,
+        'status' => IngredientEnrichmentBatchStatus::ReadyForReview,
+    ]);
+    $sourceFingerprint = app(IngredientEnrichmentSnapshotBuilder::class)->fingerprint($ingredient);
+    IngredientEnrichmentBatchItem::factory()
+        ->for($batch, 'batch')
+        ->for($ingredient)
+        ->create([
+            'status' => IngredientEnrichmentItemStatus::Approved,
+            'source_fingerprint' => $sourceFingerprint,
+            'approved_by_user_id' => $admin->id,
+            'approved_at' => now(),
+            'result' => [
+                'format' => 'soapkraft-ingredient-guidance-refresh-result',
+                'schema_version' => 1,
+                'mode' => IngredientEnrichmentBatchMode::GuidanceRefresh->value,
+                'subject_public_id' => (string) $ingredient->public_id,
+                'source_fingerprint' => $sourceFingerprint,
+                'info_markdown' => $proposedEnglish,
+                'translations' => [],
+                'guidance_evidence' => [],
+                'prompt_versions' => [
+                    'research' => 'ingredient-guidance-research-v2',
+                    'guidance' => 'ingredient-guidance-v3',
+                    'localization' => 'ingredient-guidance-localization-v1',
+                ],
+                'warnings' => [],
+                'unresolved_questions' => [],
+            ],
+        ]);
+
+    app(ApplyApprovedIngredientGuidanceRefresh::class)->handle($admin, $batch);
+    $ingredient->refresh();
+
+    expect($ingredient->requires_admin_review)->toBe($expectReopened)
+        ->and($ingredient->catalog_reviewed_at?->toDateTimeString())->toBe($expectReopened ? null : '2026-11-01 09:00:00')
+        ->and($ingredient->catalog_reviewed_by_user_id)->toBe($expectReopened ? null : $admin->id);
+})->with([
+    'changed guidance' => ["## Overview\n\nRevised English guidance.\n\n## Formulation use\n\nRevised formulation guidance.", true],
+    'unchanged guidance' => ["## Overview\n\nExisting English guidance.\n\n## Formulation use\n\nExisting formulation guidance.", false],
+]);

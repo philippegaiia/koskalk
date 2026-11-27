@@ -4,16 +4,21 @@ namespace App\Filament\Resources\Ingredients\Tables;
 
 use App\Actions\IngredientEnrichment\StartIngredientEnrichmentBatch;
 use App\Actions\IngredientEnrichment\StartIngredientGuidanceRefresh;
+use App\Actions\Ingredients\MarkIngredientsCatalogReviewed;
+use App\Enums\IngredientCatalogReviewStep;
 use App\Enums\IngredientCategory;
 use App\Filament\Exports\IngredientExporter;
 use App\Filament\Resources\IngredientEnrichmentBatches\IngredientEnrichmentBatchResource;
 use App\Models\Ingredient;
+use App\Models\User;
+use App\Services\IngredientCatalogReviewService;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\EditAction;
 use Filament\Actions\ExportBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Checkbox;
+use Filament\Notifications\Notification;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -26,7 +31,13 @@ class IngredientsTable
 {
     public static function configure(Table $table): Table
     {
+        $reviews = app(IngredientCatalogReviewService::class);
+
         return $table
+            ->modifyQueryUsing(fn (Builder $query): Builder => $query->with([
+                ...$reviews->translationEagerLoad(),
+                'catalogReviewedBy:id,name',
+            ]))
             ->columns([
                 TextColumn::make('display_name')
                     ->label(__('Ingredient'))
@@ -44,9 +55,34 @@ class IngredientsTable
                 IconColumn::make('is_soap_saponification_trusted')
                     ->label('Soap oil')
                     ->boolean(),
-                IconColumn::make('requires_admin_review')
-                    ->label('Review')
+                IconColumn::make('catalog_enriched')
+                    ->label(__('ingredient_admin.catalog_review.columns.enriched'))
+                    ->state(fn (Ingredient $record): bool => $reviews->progress($record)['enriched'])
                     ->boolean(),
+                IconColumn::make('catalog_guidance')
+                    ->label(__('ingredient_admin.catalog_review.columns.guidance'))
+                    ->state(fn (Ingredient $record): bool => $reviews->progress($record)['has_guidance'])
+                    ->boolean(),
+                TextColumn::make('catalog_translated')
+                    ->label(__('ingredient_admin.catalog_review.columns.translated'))
+                    ->state(fn (Ingredient $record): string => self::translatedState($reviews->progress($record)))
+                    ->badge()
+                    ->color(fn (Ingredient $record): string => self::translatedColor($reviews->progress($record))),
+                TextColumn::make('catalog_reviewed_at')
+                    ->label(__('ingredient_admin.catalog_review.columns.reviewed'))
+                    ->state(fn (Ingredient $record): string => match (true) {
+                        $record->requires_admin_review => __('ingredient_admin.catalog_review.not_reviewed'),
+                        $record->catalog_reviewed_at === null => __('ingredient_admin.catalog_review.reviewed_without_date'),
+                        default => $record->catalog_reviewed_at->toFormattedDateString(),
+                    })
+                    ->description(fn (Ingredient $record): ?string => $record->requires_admin_review || $record->catalogReviewedBy === null
+                        ? null
+                        : __('ingredient_admin.catalog_review.reviewed_by', ['name' => $record->catalogReviewedBy->name]))
+                    ->badge()
+                    ->color(fn (Ingredient $record): string => $record->requires_admin_review ? 'gray' : 'success')
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query
+                        ->orderBy('requires_admin_review', $direction === 'asc' ? 'desc' : 'asc')
+                        ->orderBy('catalog_reviewed_at', $direction)),
                 IconColumn::make('is_active')
                     ->label('Active')
                     ->boolean(),
@@ -61,8 +97,19 @@ class IngredientsTable
                     ->options(IngredientCategory::options()),
                 TernaryFilter::make('is_soap_saponification_trusted')
                     ->label('Trusted for soap saponification'),
-                TernaryFilter::make('requires_admin_review')
-                    ->label('Requires review'),
+                SelectFilter::make('catalog_review_step')
+                    ->label(__('ingredient_admin.catalog_review.filters.step'))
+                    ->options(IngredientCatalogReviewStep::options())
+                    ->query(fn (Builder $query, array $data): Builder => ($step = IngredientCatalogReviewStep::tryFrom((string) ($data['value'] ?? ''))) === null
+                        ? $query
+                        : $reviews->constrainToStep($query, $step)),
+                TernaryFilter::make('catalog_enriched')
+                    ->label(__('ingredient_admin.catalog_review.filters.enriched'))
+                    ->queries(
+                        true: fn (Builder $query): Builder => $query->whereNotNull('source_data->enrichment->core'),
+                        false: fn (Builder $query): Builder => $query->whereNull('source_data->enrichment->core'),
+                        blank: fn (Builder $query): Builder => $query,
+                    ),
                 TernaryFilter::make('is_active')
                     ->label('Active'),
             ])
@@ -72,6 +119,25 @@ class IngredientsTable
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
+                    BulkAction::make('markCatalogReviewed')
+                        ->label(__('ingredient_admin.catalog_review.actions.mark_reviewed'))
+                        ->icon('heroicon-o-check-badge')
+                        ->requiresConfirmation()
+                        ->modalHeading(__('ingredient_admin.catalog_review.actions.mark_reviewed_heading'))
+                        ->modalDescription(__('ingredient_admin.catalog_review.actions.mark_reviewed_description'))
+                        ->action(function (Collection $records, MarkIngredientsCatalogReviewed $markReviewed): void {
+                            $actor = auth()->user();
+
+                            abort_unless($actor instanceof User, 403);
+
+                            $marked = $markReviewed->handle($actor, $records);
+
+                            Notification::make()
+                                ->title(trans_choice('ingredient_admin.catalog_review.actions.marked', $marked, ['count' => $marked]))
+                                ->success()
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
                     BulkAction::make('runAiEnrichment')
                         ->label(__('ingredient_enrichment_admin.actions.run'))
                         ->icon('heroicon-o-sparkles')
@@ -122,5 +188,33 @@ class IngredientsTable
             ->emptyStateHeading('No ingredients yet')
             ->emptyStateDescription('Seed the starter catalog or add a platform ingredient manually.')
             ->paginated([25, 50, 100, 'all']);
+    }
+
+    /** @param  array{translated: int, stale: int, expected: int, has_guidance: bool}  $progress */
+    private static function translatedState(array $progress): string
+    {
+        if ($progress['translated'] === 0 && ! $progress['has_guidance']) {
+            return '—';
+        }
+
+        if ($progress['stale'] > 0) {
+            return __('ingredient_admin.catalog_review.translated_stale', ['count' => $progress['stale']]);
+        }
+
+        return __('ingredient_admin.catalog_review.translated_state', [
+            'translated' => $progress['translated'],
+            'expected' => $progress['expected'],
+        ]);
+    }
+
+    /** @param  array{translated: int, stale: int, expected: int}  $progress */
+    private static function translatedColor(array $progress): string
+    {
+        return match (true) {
+            $progress['stale'] > 0 => 'danger',
+            $progress['translated'] === 0 => 'gray',
+            $progress['translated'] < $progress['expected'] => 'warning',
+            default => 'success',
+        };
     }
 }

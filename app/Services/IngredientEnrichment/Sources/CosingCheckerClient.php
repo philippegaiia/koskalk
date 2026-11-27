@@ -309,6 +309,10 @@ class CosingCheckerClient
     }
 
     /**
+     * Splits a CosIng function list. The mirror has separated functions with
+     * commas and, in earlier responses, semicolons; no function name contains
+     * either character.
+     *
      * @return list<string>
      */
     private function splitFunctions(mixed $functions): array
@@ -317,7 +321,7 @@ class CosingCheckerClient
             return [];
         }
 
-        return collect(preg_split('/\s*,\s*/u', $functions) ?: [])
+        return collect(preg_split('/\s*[,;]\s*/u', $functions) ?: [])
             ->map(fn (string $function): string => trim($function))
             ->filter(fn (string $function): bool => $function !== '' && $this->normalize($function) !== 'not reported')
             ->unique(fn (string $function): string => $this->normalize($function))

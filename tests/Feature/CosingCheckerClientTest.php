@@ -86,6 +86,19 @@ it('maps CosIng function labels to the vocabulary entry with the same name', fun
     ])->and($result->warnings)->toBe([]);
 });
 
+it('splits a CosIng function list separated by semicolons', function (): void {
+    IngredientFunction::factory()->create(['key' => 'nail_conditioning', 'name' => 'Nail conditioning']);
+    IngredientFunction::factory()->create(['key' => 'skin_conditioning_miscellaneous', 'name' => 'Skin conditioning - miscellaneous']);
+    fakeCosingCheckerFunctions('NAIL CONDITIONING; SKIN CONDITIONING - MISCELLANEOUS');
+
+    $result = lookUpCocoaButter();
+
+    expect($result->data['candidates'][0]['functions'])->toBe([
+        'nail_conditioning',
+        'skin_conditioning_miscellaneous',
+    ])->and($result->warnings)->toBe([]);
+});
+
 it('does not collapse a CosIng sub-function onto its base label', function (): void {
     IngredientFunction::factory()->create(['key' => 'occlusive', 'name' => 'Occlusive']);
     fakeCosingCheckerFunctions('SKIN CONDITIONING - OCCLUSIVE');

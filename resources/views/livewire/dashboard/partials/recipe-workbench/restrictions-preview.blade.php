@@ -39,17 +39,17 @@
  <tbody class="divide-y divide-[var(--color-line)] bg-[var(--color-panel)]">
  <template x-for="row in restrictionRows" :key="`${row.substance_id}-${row.rule_type}`">
  <tr>
- <td class="px-5 py-4 align-top">
+ <td class="px-5 py-2 align-top">
  <p class="font-medium text-[var(--color-ink-strong)]" x-text="row.substance_name"></p>
  <p class="mt-1 text-xs text-[var(--color-ink-soft)]" x-text="row.entity_type"></p>
  </td>
- <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]" x-text="row.rule_type"></td>
- <td class="numeric px-5 py-4 align-top font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.percent_of_formula)" x-text="`${format(row.percent_of_formula, 5)}%`"></span></td>
- <td class="numeric px-5 py-4 align-top text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.max_percent)" x-text="row.max_percent === null || row.max_percent === undefined ? '—' : `${format(row.max_percent, 5)}%`"></span></td>
- <td class="px-5 py-4 align-top">
+ <td class="px-5 py-2 align-top text-[var(--color-ink-soft)]" x-text="row.rule_type"></td>
+ <td class="numeric px-5 py-2 align-top font-medium text-[var(--color-ink-strong)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.percent_of_formula)" x-text="`${format(row.percent_of_formula, 5)}%`"></span></td>
+ <td class="numeric px-5 py-2 align-top text-[var(--color-ink-soft)]"><span class="sk-decimal-aligned" :style="decimalAlignmentStyle(row.max_percent)" x-text="row.max_percent === null || row.max_percent === undefined ? '—' : `${format(row.max_percent, 5)}%`"></span></td>
+ <td class="px-5 py-2 align-top">
  <span class="inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold" :class="restrictionStatusStyle(row.status)" x-text="row.status_label"></span>
  </td>
- <td class="px-5 py-4 align-top text-[var(--color-ink-soft)]">
+ <td class="px-5 py-2 align-top text-[var(--color-ink-soft)]">
  <template x-for="(source, idx) in row.source_ingredients" :key="`${source}-${idx}`">
  <span class="mr-2 inline-flex items-center gap-1"><span x-show="row.source_is_user_owned?.[idx]" class="inline-block size-1.5 rounded-full bg-[var(--color-ink-soft)] opacity-60" title="{{ __('workbench.output.common.user_owned') }}"></span><span x-text="source"></span></span>
  </template>

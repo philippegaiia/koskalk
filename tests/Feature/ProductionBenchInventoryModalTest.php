@@ -162,7 +162,7 @@ it('edits and searches finished product SKUs and filters inherited organization'
         ->assertSeeHtml(e($historyUrl))
         ->assertSee('Workshop · Signature')
         ->callAction('editSku', data: ['sku' => ' soap_100 '], arguments: ['sizeId' => $soapSize->id])
-        ->assertHasNoActionErrors()
+        ->assertHasNoFormErrors()
         ->assertSee('SOAP_100')
         ->set('search', 'soap_100')
         ->assertDontSee('Mint cleanser')
@@ -192,7 +192,7 @@ it('edits and searches finished product SKUs and filters inherited organization'
 
     $page->unmountAction()
         ->callAction('editSku', data: ['sku' => ''], arguments: ['sizeId' => $soapSize->id])
-        ->assertHasNoActionErrors();
+        ->assertHasNoFormErrors();
     expect($soapSize->fresh()->sku)->toBeNull();
 });
 

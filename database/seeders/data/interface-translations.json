@@ -16024,9 +16024,9 @@
       "text": {
         "de": "Abrasiv",
         "es": "Abrasivo",
-        "fr": "Abrasif",
+        "fr": "Agent abrasif",
         "it": "Abrasivo",
-        "nl": "Schurend",
+        "nl": "Schuurmiddel",
         "pt_BR": "Abrasivo"
       }
     },
@@ -16048,7 +16048,7 @@
       "text": {
         "de": "Absorbierend",
         "es": "Absorbente",
-        "fr": "Absorbant",
+        "fr": "Agent absorbant",
         "it": "Assorbente",
         "nl": "Absorberend",
         "pt_BR": "Absorvente"
@@ -16098,7 +16098,7 @@
         "es": "Antisebo",
         "fr": "Antisébum",
         "it": "Antisebo",
-        "nl": "Talgregulerend",
+        "nl": "Sebumwerende stof",
         "pt_BR": "Antissebo"
       }
     },
@@ -16118,11 +16118,11 @@
       "group": "ingredients",
       "key": "functions.anticaking.label",
       "text": {
-        "de": "Rieselhilfe",
-        "es": "Antiaglomerante",
-        "fr": "Antiagglomérant",
+        "de": "Antibackmittel",
+        "es": "Antiagregante",
+        "fr": "Agent antiagglomérant",
         "it": "Antiagglomerante",
-        "nl": "Antiklontermiddel",
+        "nl": "Antiklonter",
         "pt_BR": "Antiaglomerante"
       }
     },
@@ -16142,11 +16142,11 @@
       "group": "ingredients",
       "key": "functions.anticorrosive.label",
       "text": {
-        "de": "Korrosionsschutzmittel",
+        "de": "Korrosionshemmend",
         "es": "Anticorrosivo",
-        "fr": "Anticorrosif",
+        "fr": "Agent anticorrosion",
         "it": "Anticorrosivo",
-        "nl": "Anticorrosief",
+        "nl": "Anticorrosie",
         "pt_BR": "Anticorrosivo"
       }
     },
@@ -16190,9 +16190,9 @@
       "group": "ingredients",
       "key": "functions.antifoaming.label",
       "text": {
-        "de": "Entschäumer",
+        "de": "Schaumvermindernd",
         "es": "Antiespumante",
-        "fr": "Antimousse",
+        "fr": "Agent antimousse",
         "it": "Antischiuma",
         "nl": "Antischuim",
         "pt_BR": "Antiespumante"
@@ -16216,7 +16216,7 @@
       "text": {
         "de": "Antimikrobiell",
         "es": "Antimicrobiano",
-        "fr": "Antimicrobien",
+        "fr": "Agent antimicrobien",
         "it": "Antimicrobico",
         "nl": "Antimicrobieel",
         "pt_BR": "Antimicrobiano"
@@ -16238,7 +16238,7 @@
       "group": "ingredients",
       "key": "functions.antioxidant.label",
       "text": {
-        "de": "Antioxidans",
+        "de": "Antioxidant",
         "es": "Antioxidante",
         "fr": "Antioxydant",
         "it": "Antiossidante",
@@ -16262,9 +16262,9 @@
       "group": "ingredients",
       "key": "functions.antiperspirant.label",
       "text": {
-        "de": "Antitranspirant",
+        "de": "Schweißhemmend",
         "es": "Antitranspirante",
-        "fr": "Antiperspirant",
+        "fr": "Agent antiperspirant",
         "it": "Antitraspirante",
         "nl": "Antitranspirant",
         "pt_BR": "Antitranspirante"
@@ -16286,11 +16286,11 @@
       "group": "ingredients",
       "key": "functions.antiplaque.label",
       "text": {
-        "de": "Plaquehemmend",
+        "de": "Zahnbelagshemmend",
         "es": "Antiplaca",
-        "fr": "Antiplaque",
+        "fr": "Agent antiplaque",
         "it": "Antiplacca",
-        "nl": "Antiplaque",
+        "nl": "Plaquewerend",
         "pt_BR": "Antiplaca"
       }
     },
@@ -16336,7 +16336,7 @@
       "text": {
         "de": "Antistatisch",
         "es": "Antiestático",
-        "fr": "Antistatique",
+        "fr": "Agent antistatique",
         "it": "Antistatico",
         "nl": "Antistatisch",
         "pt_BR": "Antiestático"
@@ -16360,7 +16360,7 @@
       "text": {
         "de": "Adstringierend",
         "es": "Astringente",
-        "fr": "Astringent",
+        "fr": "Agent astringent",
         "it": "Astringente",
         "nl": "Adstringerend",
         "pt_BR": "Adstringente"
@@ -16382,8 +16382,8 @@
       "group": "ingredients",
       "key": "functions.binding.label",
       "text": {
-        "de": "Bindemittel",
-        "es": "Aglutinante",
+        "de": "Bindend",
+        "es": "Aglutinantes",
         "fr": "Liant",
         "it": "Legante",
         "nl": "Bindmiddel",
@@ -16406,10 +16406,10 @@
       "group": "ingredients",
       "key": "functions.bleaching.label",
       "text": {
-        "de": "Bleichmittel",
-        "es": "Blanqueador",
-        "fr": "Décolorant",
-        "it": "Decolorante",
+        "de": "Bleichend",
+        "es": "Blanqueante",
+        "fr": "Agent de blanchiment",
+        "it": "Depigmentante",
         "nl": "Bleekmiddel",
         "pt_BR": "Descolorante"
       }
@@ -16431,10 +16431,10 @@
       "key": "functions.buffering.label",
       "text": {
         "de": "Puffernd",
-        "es": "Regulador del pH",
-        "fr": "Tampon",
-        "it": "Tamponante",
-        "nl": "Bufferend",
+        "es": "Tamponante",
+        "fr": "Agent tampon",
+        "it": "Agente tampone",
+        "nl": "Buffer",
         "pt_BR": "Tamponante"
       }
     },
@@ -16455,10 +16455,10 @@
       "key": "functions.bulking.label",
       "text": {
         "de": "Füllstoff",
-        "es": "Relleno",
-        "fr": "Agent de charge",
-        "it": "Agente di carica",
-        "nl": "Vulmiddel",
+        "es": "Voluminador",
+        "fr": "Agent de foisonnement",
+        "it": "Volumizzante",
+        "nl": "Bulkmiddel",
         "pt_BR": "Agente de volume"
       }
     },
@@ -16478,11 +16478,11 @@
       "group": "ingredients",
       "key": "functions.chelating.label",
       "text": {
-        "de": "Chelatbildner",
+        "de": "Chelatbildend",
         "es": "Quelante",
-        "fr": "Chélatant",
+        "fr": "Agent de chélation",
         "it": "Chelante",
-        "nl": "Chelerend",
+        "nl": "Chelaatvormer",
         "pt_BR": "Quelante"
       }
     },
@@ -16504,9 +16504,9 @@
       "text": {
         "de": "Reinigend",
         "es": "Limpiador",
-        "fr": "Nettoyant",
+        "fr": "Agent nettoyant",
         "it": "Detergente",
-        "nl": "Reinigend",
+        "nl": "Reinigingsmiddel",
         "pt_BR": "Limpador"
       }
     },
@@ -16526,11 +16526,11 @@
       "group": "ingredients",
       "key": "functions.colorant.label",
       "text": {
-        "de": "Farbstoff",
-        "es": "Colorante",
-        "fr": "Colorant",
-        "it": "Colorante",
-        "nl": "Kleurstof",
+        "de": "Kosmetischer Farbstoff",
+        "es": "Colorante cosmético",
+        "fr": "Colorant cosmétique",
+        "it": "Colorante cosmetico",
+        "nl": "Cosmetische kleurstof",
         "pt_BR": "Corante"
       }
     },
@@ -16574,11 +16574,11 @@
       "group": "ingredients",
       "key": "functions.denaturant.label",
       "text": {
-        "de": "Vergällungsmittel",
+        "de": "Vergällend",
         "es": "Desnaturalizante",
         "fr": "Dénaturant",
         "it": "Denaturante",
-        "nl": "Denatureringsmiddel",
+        "nl": "Denaturant",
         "pt_BR": "Desnaturante"
       }
     },
@@ -16600,7 +16600,7 @@
       "text": {
         "de": "Desodorierend",
         "es": "Desodorante",
-        "fr": "Déodorant",
+        "fr": "Agent déodorant",
         "it": "Deodorante",
         "nl": "Deodorant",
         "pt_BR": "Desodorante"
@@ -16622,11 +16622,11 @@
       "group": "ingredients",
       "key": "functions.depilatory.label",
       "text": {
-        "de": "Enthaarungsmittel",
+        "de": "Enthaarend",
         "es": "Depilatorio",
-        "fr": "Dépilatoire",
-        "it": "Depilatorio",
-        "nl": "Ontharingsmiddel",
+        "fr": "Agent dépilatoire",
+        "it": "Depilante",
+        "nl": "Ontharende stof",
         "pt_BR": "Depilatório"
       }
     },
@@ -16646,11 +16646,11 @@
       "group": "ingredients",
       "key": "functions.detangling.label",
       "text": {
-        "de": "Entwirrend",
+        "de": "Kämmbarkeitsverbessernd",
         "es": "Desenredante",
-        "fr": "Démêlant",
+        "fr": "Agent démêlant",
         "it": "Districante",
-        "nl": "Ontklittend",
+        "nl": "Ontklitten",
         "pt_BR": "Desembaraçante"
       }
     },
@@ -16745,8 +16745,8 @@
         "de": "Emulsionsstabilisierend",
         "es": "Estabilizador de emulsiones",
         "fr": "Stabilisateur d’émulsion",
-        "it": "Stabilizzante dell’emulsione",
-        "nl": "Emulsiestabiliserend",
+        "it": "Stabilizzante delle emulsioni",
+        "nl": "Emulsiestabilisator",
         "pt_BR": "Estabilizante de emulsão"
       }
     },
@@ -16839,10 +16839,10 @@
       "key": "functions.film_forming.label",
       "text": {
         "de": "Filmbildend",
-        "es": "Formador de película",
-        "fr": "Filmogène",
+        "es": "Formadores de película",
+        "fr": "Agent filmogène",
         "it": "Filmogeno",
-        "nl": "Filmvormend",
+        "nl": "Filmvormer",
         "pt_BR": "Formador de filme"
       }
     },
@@ -16912,9 +16912,9 @@
       "text": {
         "de": "Schaumbildend",
         "es": "Espumante",
-        "fr": "Moussant",
+        "fr": "Agent moussant",
         "it": "Schiumogeno",
-        "nl": "Schuimvormend",
+        "nl": "Schuimer",
         "pt_BR": "Espumante"
       }
     },
@@ -16960,9 +16960,9 @@
       "text": {
         "de": "Gelbildend",
         "es": "Gelificante",
-        "fr": "Gélifiant",
+        "fr": "Agent de gélification",
         "it": "Gelificante",
-        "nl": "Gelvormend",
+        "nl": "Gelvormer",
         "pt_BR": "Gelificante"
       }
     },
@@ -16982,11 +16982,11 @@
       "group": "ingredients",
       "key": "functions.hair_conditioning.label",
       "text": {
-        "de": "Haarpflegend",
+        "de": "Haarkonditionierend",
         "es": "Acondicionador capilar",
         "fr": "Conditionneur capillaire",
         "it": "Condizionante per capelli",
-        "nl": "Haarconditioner",
+        "nl": "Hairconditioner",
         "pt_BR": "Condicionador capilar"
       }
     },
@@ -17006,11 +17006,11 @@
       "group": "ingredients",
       "key": "functions.hair_dyeing.label",
       "text": {
-        "de": "Haarfärbung",
-        "es": "Coloración capilar",
-        "fr": "Coloration capillaire",
-        "it": "Colorazione dei capelli",
-        "nl": "Haarkleuring",
+        "de": "Haarfärbend",
+        "es": "Tintes capilares",
+        "fr": "Colorant capillaire",
+        "it": "Colorante per capelli",
+        "nl": "Haarkleurstof",
         "pt_BR": "Coloração capilar"
       }
     },
@@ -17030,11 +17030,11 @@
       "group": "ingredients",
       "key": "functions.hair_fixing.label",
       "text": {
-        "de": "Haarfestigend",
-        "es": "Fijador capilar",
+        "de": "Haarfixierend",
+        "es": "Fijadores capilares",
         "fr": "Fixateur capillaire",
         "it": "Fissante per capelli",
-        "nl": "Haarfixerend",
+        "nl": "Haarversteviger",
         "pt_BR": "Fixador capilar"
       }
     },
@@ -17054,11 +17054,11 @@
       "group": "ingredients",
       "key": "functions.hair_waving_or_straightening.label",
       "text": {
-        "de": "Haarwellung oder -glättung",
-        "es": "Ondulación o alisado capilar",
-        "fr": "Ondulation ou lissage capillaire",
-        "it": "Ondulazione o stiratura dei capelli",
-        "nl": "Haarpermanent of -straightening",
+        "de": "Haarwellend oder -glättend",
+        "es": "Ondulador o alisador del cabello",
+        "fr": "Agent de frisage ou de défrisage",
+        "it": "Ondulante o stirante per capelli",
+        "nl": "Permanentvloeistof of ontkroezer",
         "pt_BR": "Ondulação ou alisamento capilar"
       }
     },
@@ -17078,11 +17078,11 @@
       "group": "ingredients",
       "key": "functions.humectant.label",
       "text": {
-        "de": "Feuchthaltemittel",
+        "de": "Feuchthaltend",
         "es": "Humectante",
         "fr": "Humectant",
         "it": "Umettante",
-        "nl": "Vochtinbrengend",
+        "nl": "Vochtvasthoudende stof",
         "pt_BR": "Umectante"
       }
     },
@@ -17128,9 +17128,9 @@
       "text": {
         "de": "Keratolytisch",
         "es": "Queratolítico",
-        "fr": "Kératolytique",
+        "fr": "Agent kératolytique",
         "it": "Cheratolitico",
-        "nl": "Keratolytisch",
+        "nl": "Keratolyse",
         "pt_BR": "Queratolítico"
       }
     },
@@ -17226,7 +17226,7 @@
         "es": "Hidratante",
         "fr": "Hydratant",
         "it": "Idratante",
-        "nl": "Hydraterend",
+        "nl": "Vochtinbrengend middel",
         "pt_BR": "Hidratante"
       }
     },
@@ -17246,9 +17246,9 @@
       "group": "ingredients",
       "key": "functions.nail_conditioning.label",
       "text": {
-        "de": "Nagelpflegend",
+        "de": "Nagelpflege",
         "es": "Acondicionador de uñas",
-        "fr": "Conditionneur des ongles",
+        "fr": "Entretien des ongles",
         "it": "Condizionante per unghie",
         "nl": "Nagelconditioner",
         "pt_BR": "Condicionador de unhas"
@@ -17343,10 +17343,10 @@
       "key": "functions.oral_care.label",
       "text": {
         "de": "Mundpflege",
-        "es": "Cuidado bucal",
-        "fr": "Soin bucco-dentaire",
-        "it": "Cura orale",
-        "nl": "Mondverzorging",
+        "es": "Cuidado oral",
+        "fr": "Hygiène buccale",
+        "it": "Igiene bocca",
+        "nl": "Mondverzorger",
         "pt_BR": "Cuidado oral"
       }
     },
@@ -17368,9 +17368,9 @@
       "text": {
         "de": "Oxidierend",
         "es": "Oxidante",
-        "fr": "Oxydant",
+        "fr": "Agent d’oxydation",
         "it": "Ossidante",
-        "nl": "Oxiderend",
+        "nl": "Oxidatiemiddel",
         "pt_BR": "Oxidante"
       }
     },
@@ -17390,9 +17390,9 @@
       "group": "ingredients",
       "key": "functions.pearlescent.label",
       "text": {
-        "de": "Perlglanz",
-        "es": "Nacarado",
-        "fr": "Nacrant",
+        "de": "Perlglanzgebend",
+        "es": "Nacarante",
+        "fr": "Agent nacrant",
         "it": "Perlescente",
         "nl": "Parelmoer",
         "pt_BR": "Perolizante"
@@ -17462,7 +17462,7 @@
       "group": "ingredients",
       "key": "functions.plasticiser.label",
       "text": {
-        "de": "Weichmacher",
+        "de": "Weichmachend",
         "es": "Plastificante",
         "fr": "Plastifiant",
         "it": "Plastificante",
@@ -17486,8 +17486,8 @@
       "group": "ingredients",
       "key": "functions.preservative.label",
       "text": {
-        "de": "Konservierungsmittel",
-        "es": "Conservante",
+        "de": "Konservierungsstoff",
+        "es": "Conservantes",
         "fr": "Conservateur",
         "it": "Conservante",
         "nl": "Conserveermiddel",
@@ -17511,7 +17511,7 @@
       "key": "functions.propellant.label",
       "text": {
         "de": "Treibmittel",
-        "es": "Propulsor",
+        "es": "Propelente",
         "fr": "Propulseur",
         "it": "Propellente",
         "nl": "Drijfgas",
@@ -17535,10 +17535,10 @@
       "key": "functions.reducing.label",
       "text": {
         "de": "Reduzierend",
-        "es": "Reductor",
-        "fr": "Réducteur",
+        "es": "Reductores",
+        "fr": "Agent de réduction",
         "it": "Riducente",
-        "nl": "Reducerend",
+        "nl": "Reductiemiddel",
         "pt_BR": "Redutor"
       }
     },
@@ -17560,9 +17560,9 @@
       "text": {
         "de": "Rückfettend",
         "es": "Reengrasante",
-        "fr": "Régénérant lipidique",
-        "it": "Rilubrificante",
-        "nl": "Herinvettend",
+        "fr": "Agent de restauration lipidique",
+        "it": "Seborestitutivo",
+        "nl": "Vetinbrenger",
         "pt_BR": "Reengordurante"
       }
     },
@@ -17584,9 +17584,9 @@
       "text": {
         "de": "Erfrischend",
         "es": "Refrescante",
-        "fr": "Rafraîchissant",
+        "fr": "Agent rafraîchissant",
         "it": "Rinfrescante",
-        "nl": "Verfrissend",
+        "nl": "Verfrisser",
         "pt_BR": "Refrescante"
       }
     },
@@ -17608,9 +17608,9 @@
       "text": {
         "de": "Hautpflegend",
         "es": "Acondicionador de la piel",
-        "fr": "Conditionneur cutané",
+        "fr": "Entretien de la peau",
         "it": "Condizionante cutaneo",
-        "nl": "Huidconditionerend",
+        "nl": "Huidverzorger",
         "pt_BR": "Condicionador da pele"
       }
     },
@@ -17630,11 +17630,11 @@
       "group": "ingredients",
       "key": "functions.skin_conditioning_emollient.label",
       "text": {
-        "de": "Hautpflegend - Emolliens",
+        "de": "Hautpflegend - geschmeidig machend",
         "es": "Acondicionador de la piel - emoliente",
-        "fr": "Conditionneur cutané - émollient",
+        "fr": "Entretien de la peau - émollient",
         "it": "Condizionante cutaneo - emolliente",
-        "nl": "Huidconditionerend - verzachtend",
+        "nl": "Huidverzorger - verzachtend middel",
         "pt_BR": "Condicionador da pele - emoliente"
       }
     },
@@ -17654,11 +17654,11 @@
       "group": "ingredients",
       "key": "functions.skin_conditioning_humectant.label",
       "text": {
-        "de": "Hautpflegend - Feuchthaltemittel",
+        "de": "Hautpflegend - feuchthaltend",
         "es": "Acondicionador de la piel - humectante",
-        "fr": "Conditionneur cutané - humectant",
+        "fr": "Entretien de la peau - humectant",
         "it": "Condizionante cutaneo - umettante",
-        "nl": "Huidconditionerend - vochtinbrengend",
+        "nl": "Huidverzorger - vochtvasthoudende stof",
         "pt_BR": "Condicionador da pele - umectante"
       }
     },
@@ -17678,11 +17678,11 @@
       "group": "ingredients",
       "key": "functions.skin_conditioning_miscellaneous.label",
       "text": {
-        "de": "Hautpflegend - Sonstige",
+        "de": "Hautpflegend - sonstige",
         "es": "Acondicionador de la piel - varios",
-        "fr": "Conditionneur cutané - divers",
+        "fr": "Entretien de la peau - divers",
         "it": "Condizionante cutaneo - vari",
-        "nl": "Huidconditionerend - overig",
+        "nl": "Huidverzorger - overig",
         "pt_BR": "Condicionador da pele - diversos"
       }
     },
@@ -17704,9 +17704,9 @@
       "text": {
         "de": "Hautpflegend - okklusiv",
         "es": "Acondicionador de la piel - oclusivo",
-        "fr": "Conditionneur cutané - occlusif",
+        "fr": "Entretien de la peau - occlusif",
         "it": "Condizionante cutaneo - occlusivo",
-        "nl": "Huidconditionerend - occlusief",
+        "nl": "Huidverzorger - occlusief",
         "pt_BR": "Condicionador da pele - oclusivo"
       }
     },
@@ -17728,9 +17728,9 @@
       "text": {
         "de": "Hautschützend",
         "es": "Protector de la piel",
-        "fr": "Protecteur cutané",
+        "fr": "Agent de protection de la peau",
         "it": "Protettivo cutaneo",
-        "nl": "Huidbeschermend",
+        "nl": "Huidbeschermer",
         "pt_BR": "Protetor da pele"
       }
     },
@@ -17775,10 +17775,10 @@
       "key": "functions.smoothing.label",
       "text": {
         "de": "Glättend",
-        "es": "Alisador",
-        "fr": "Lissant",
+        "es": "Alisante",
+        "fr": "Agent lissant",
         "it": "Levigante",
-        "nl": "Gladmakend",
+        "nl": "Huidverzachter",
         "pt_BR": "Suavizante"
       }
     },
@@ -17798,7 +17798,7 @@
       "group": "ingredients",
       "key": "functions.solvent.label",
       "text": {
-        "de": "Lösungsmittel",
+        "de": "Lösemittel",
         "es": "Disolvente",
         "fr": "Solvant",
         "it": "Solvente",
@@ -17822,11 +17822,11 @@
       "group": "ingredients",
       "key": "functions.soothing.label",
       "text": {
-        "de": "Beruhigend",
+        "de": "Lindernd",
         "es": "Calmante",
-        "fr": "Apaisant",
+        "fr": "Agent apaisant",
         "it": "Lenitivo",
-        "nl": "Kalmerend",
+        "nl": "Verzachten",
         "pt_BR": "Calmante"
       }
     },
@@ -17895,10 +17895,10 @@
       "key": "functions.surfactant.label",
       "text": {
         "de": "Tensid",
-        "es": "Tensioactivo",
+        "es": "Tensoactivo",
         "fr": "Tensioactif",
         "it": "Tensioattivo",
-        "nl": "Oppervlakteactief",
+        "nl": "Oppervlakteactieve stof",
         "pt_BR": "Tensoativo"
       }
     },
@@ -17919,10 +17919,10 @@
       "key": "functions.surfactant_cleansing.label",
       "text": {
         "de": "Tensid - reinigend",
-        "es": "Tensioactivo - limpiador",
+        "es": "Tensoactivo - limpiador",
         "fr": "Tensioactif - nettoyant",
         "it": "Tensioattivo - detergente",
-        "nl": "Oppervlakteactief - reinigend",
+        "nl": "Oppervlakteactieve stof - reinigingsmiddel",
         "pt_BR": "Tensoativo - limpador"
       }
     },
@@ -17943,10 +17943,10 @@
       "key": "functions.surfactant_dispersing.label",
       "text": {
         "de": "Tensid - dispergierend",
-        "es": "Tensioactivo - dispersante",
+        "es": "Tensoactivo - dispersante",
         "fr": "Tensioactif - dispersant",
         "it": "Tensioattivo - disperdente",
-        "nl": "Oppervlakteactief - dispergerend",
+        "nl": "Oppervlakteactieve stof - dispergerend",
         "pt_BR": "Tensoativo - dispersante"
       }
     },
@@ -17967,10 +17967,10 @@
       "key": "functions.surfactant_emulsifying.label",
       "text": {
         "de": "Tensid - emulgierend",
-        "es": "Tensioactivo - emulsionante",
+        "es": "Tensoactivo - emulsificante",
         "fr": "Tensioactif - émulsifiant",
         "it": "Tensioattivo - emulsionante",
-        "nl": "Oppervlakteactief - emulgerend",
+        "nl": "Oppervlakteactieve stof - emulgator",
         "pt_BR": "Tensoativo - emulsionante"
       }
     },
@@ -17991,10 +17991,10 @@
       "key": "functions.surfactant_foam_boosting.label",
       "text": {
         "de": "Tensid - schaumverstärkend",
-        "es": "Tensioactivo - potenciador de espuma",
-        "fr": "Tensioactif - booster de mousse",
-        "it": "Tensioattivo - potenziatore della schiuma",
-        "nl": "Oppervlakteactief - schuimversterkend",
+        "es": "Tensoactivo - acrecentador de espuma",
+        "fr": "Tensioactif - synergiste de mousse",
+        "it": "Tensioattivo - sostenitore di schiuma",
+        "nl": "Oppervlakteactieve stof - schuimversterker",
         "pt_BR": "Tensoativo - potencializador de espuma"
       }
     },
@@ -18015,10 +18015,10 @@
       "key": "functions.surfactant_hydrotrope.label",
       "text": {
         "de": "Tensid - hydrotrop",
-        "es": "Tensioactivo - hidrotropo",
+        "es": "Tensoactivo - hidrótropo",
         "fr": "Tensioactif - hydrotrope",
         "it": "Tensioattivo - idrotropo",
-        "nl": "Oppervlakteactief - hydrotroop",
+        "nl": "Oppervlakteactieve stof - hydrotroop middel",
         "pt_BR": "Tensoativo - hidrotropo"
       }
     },
@@ -18039,10 +18039,10 @@
       "key": "functions.surfactant_solubilizing.label",
       "text": {
         "de": "Tensid - lösungsvermittelnd",
-        "es": "Tensioactivo - solubilizante",
+        "es": "Tensoactivo - solubilizante",
         "fr": "Tensioactif - solubilisant",
         "it": "Tensioattivo - solubilizzante",
-        "nl": "Oppervlakteactief - oplosbaarheidsbevorderend",
+        "nl": "Oppervlakteactieve stof - oplosbaarheidsbevorderend",
         "pt_BR": "Tensoativo - solubilizante"
       }
     },
@@ -18062,11 +18062,11 @@
       "group": "ingredients",
       "key": "functions.tanning.label",
       "text": {
-        "de": "Bräunungsmittel",
+        "de": "Bräunend",
         "es": "Bronceador",
-        "fr": "Agent bronzant",
+        "fr": "Agent de bronzage",
         "it": "Abbronzante",
-        "nl": "Bruinmakend",
+        "nl": "Huidbruinende stof",
         "pt_BR": "Bronzeador"
       }
     },
@@ -18086,11 +18086,11 @@
       "group": "ingredients",
       "key": "functions.tonic.label",
       "text": {
-        "de": "Tonisierend",
+        "de": "Kräftigend",
         "es": "Tónico",
         "fr": "Tonifiant",
-        "it": "Tonico",
-        "nl": "Toniserend",
+        "it": "Tonificante",
+        "nl": "Tonic",
         "pt_BR": "Tônico"
       }
     },
@@ -18111,10 +18111,10 @@
       "key": "functions.uv_absorber.label",
       "text": {
         "de": "UV-Absorber",
-        "es": "Absorbente de UV",
-        "fr": "Absorbeur UV",
-        "it": "Assorbitore UV",
-        "nl": "UV-absorbeerder",
+        "es": "Absorbente UV",
+        "fr": "Absorbant UV",
+        "it": "Assorbente UV",
+        "nl": "UV-absorber",
         "pt_BR": "Absorvedor de UV"
       }
     },
@@ -18158,11 +18158,11 @@
       "group": "ingredients",
       "key": "functions.viscosity_controlling.label",
       "text": {
-        "de": "Viskositätsregulierend",
-        "es": "Controlador de la viscosidad",
-        "fr": "Contrôleur de viscosité",
-        "it": "Regolatore della viscosità",
-        "nl": "Viscositeitsregelend",
+        "de": "Viskositätsregelnd",
+        "es": "Controladores de viscosidad",
+        "fr": "Agent de contrôle de la viscosité",
+        "it": "Additivo reologico",
+        "nl": "Viscositeitregelaar",
         "pt_BR": "Controlador de viscosidade"
       }
     },

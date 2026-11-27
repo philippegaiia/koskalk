@@ -9,9 +9,12 @@ use Illuminate\Support\Facades\DB;
 /**
  * Seeds the COSING function vocabulary.
  *
- * The list mirrors the European Commission CosIng functions reference
- * (glossary of Commission Decision (EU) 2019/701), checked on 2026-11-27 at
+ * The list mirrors the European Commission CosIng functions reference,
+ * checked on 2026-11-27 at
  * https://ec.europa.eu/growth/tools-databases/cosing/reference/functions.
+ * The last legally published function definitions are those of Decision
+ * 2006/257/EC; CosIng has revised the list since, and the current version
+ * exists only in CosIng, in English.
  * Names match CosIng case-insensitively because enrichment maps CosIng
  * function strings to keys by name; descriptions keep the CosIng wording with
  * obvious spelling slips corrected. "NOT REPORTED" is left out: it marks a

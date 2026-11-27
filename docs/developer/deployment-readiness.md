@@ -40,7 +40,7 @@ $FORGE_PHP artisan db:seed --class='Database\Seeders\ProductTypeIfraCategorySeed
 # Regulatory regimes (Canada release; run once, then re-comment)
 $FORGE_PHP artisan db:seed --class='Database\Seeders\RegulatoryRegimeSeeder' --force --no-interaction
 
-# COSING functions (CosIng 2019/701 alignment; run once, then re-comment)
+# COSING functions (CosIng functions alignment; run once, then re-comment)
 $FORGE_PHP artisan db:seed --class='Database\Seeders\IngredientFunctionSeeder' --force --no-interaction
 ```
 

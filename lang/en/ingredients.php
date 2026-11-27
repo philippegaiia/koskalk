@@ -122,103 +122,340 @@ return [
     'functions' => [
         'abrasive' => [
             'label' => 'Abrasive',
-            'description' => 'Removes material from body surfaces, aids mechanical tooth cleaning, or improves gloss.',
+            'description' => 'Removing unwanted tissue or foreign materials from various body surfaces, including mechanical tooth cleaning and/or gloss improvement.',
         ],
         'absorbent' => [
             'label' => 'Absorbent',
-            'description' => 'Takes up water-soluble or oil-soluble dissolved and finely dispersed substances.',
+            'description' => 'Taking up water- and/or oil-soluble (dissolved or finely dispersed) substances.',
+        ],
+        'adhesive' => [
+            'label' => 'Adhesive',
+            'description' => 'Tending to unite/bind/bond surfaces together.',
+        ],
+        'antiseborrhoeic' => [
+            'label' => 'Anti-seborrheic',
+            'description' => 'Preventing or relieving the symptoms of seborrhea and/or seborrheic dermatitis, including dandruff.',
+        ],
+        'anti_sebum' => [
+            'label' => 'Anti-sebum',
+            'description' => 'Helping control sebum production.',
         ],
         'anticaking' => [
             'label' => 'Anticaking',
-            'description' => 'Keeps solid particles free flowing and helps prevent lump formation.',
+            'description' => 'Preventing agglomeration of particulate solids into lumps or hard masses (cohesive cake), thus allowing free flow of particles.',
         ],
         'anticorrosive' => [
             'label' => 'Anticorrosive',
-            'description' => 'Helps prevent corrosion of the packaging.',
+            'description' => 'Preventing and/or inhibiting the corrosion of the packaging material.',
         ],
+        'antifoaming' => [
+            'label' => 'Antifoaming',
+            'description' => 'Suppressing foam during manufacturing or reducing the tendency of finished products to generate foam.',
+        ],
+        'antimicrobial' => [
+            'label' => 'Antimicrobial',
+            'description' => 'Preventing and/or slowing down microbial growth.',
+        ],
+        'antioxidant' => [
+            'label' => 'Antioxidant',
+            'description' => 'Inhibiting reactions promoted by oxygen, thus avoiding oxidation and rancidity.',
+        ],
+        'antiperspirant' => [
+            'label' => 'Antiperspirant',
+            'description' => 'Reducing perspiration.',
+        ],
+        'antiplaque' => [
+            'label' => 'Antiplaque',
+            'description' => 'Helping protect against plaque.',
+        ],
+        'antistatic' => [
+            'label' => 'Antistatic',
+            'description' => 'Preventing and/or reducing static electricity by neutralising electrical charge on surfaces.',
+        ],
+        'astringent' => [
+            'label' => 'Astringent',
+            'description' => 'Contracting and/or tightening the skin.',
+        ],
+        'binding' => [
+            'label' => 'Binding',
+            'description' => 'Providing adhesive properties during and after compression in cosmetic tablets and/or cakes.',
+        ],
+        'bleaching' => [
+            'label' => 'Bleaching',
+            'description' => 'Bleaching or lightening the shade of hair and/or skin.',
+        ],
+        'buffering' => [
+            'label' => 'Buffering',
+            'description' => 'Stabilising the pH of an aqueous medium in a narrow range even if an acid or base is added. Altering and/or maintaining a cosmetic product\'s pH at the desired level.',
+        ],
+        'bulking' => [
+            'label' => 'Bulking',
+            'description' => 'Non-reactive (chemically inert), solid ingredients that dilute other solids and/or increase the volume of cosmetic products.',
+        ],
+        'chelating' => [
+            'label' => 'Chelating',
+            'description' => 'Forming complexes with metal ions which could affect the stability and/or appearance of cosmetics.',
+        ],
+        'cleansing' => [
+            'label' => 'Cleansing',
+            'description' => 'Helping to keep the body surface clean.',
+        ],
+        'colorant' => [
+            'label' => 'Colorant',
+            'description' => 'Exclusively or mainly intended to colour the cosmetic product, the body as a whole or certain parts thereof, by absorption or reflection of visible light; (precursors of oxidative hair colorants shall be deemed colorants). All authorised colorants are substances in the positive list of Annex IV to the Cosmetics Regulation 1223/2009.',
+        ],
+        'denaturant' => [
+            'label' => 'Denaturant',
+            'description' => 'Rendering cosmetics unpalatable. Mostly added to cosmetics containing ethyl alcohol to make it unsuitable for ingestion.',
+        ],
+        'deodorant' => [
+            'label' => 'Deodorant',
+            'description' => 'Reducing and/or eliminating unpleasant odour. Contributing against the formation of malodour on body surfaces.',
+        ],
+        'depilatory' => [
+            'label' => 'Depilatory',
+            'description' => 'Breaking down the mechanical strength of hair fibers so that they can be removed by mild scraping/rubbing.',
+        ],
+        'detangling' => [
+            'label' => 'Detangling',
+            'description' => 'Reducing or eliminating hair intertwining due to hair surface alteration or damage and, thus, helping combing.',
+        ],
+        'dispersing_non_surfactant' => [
+            'label' => 'Dispersing non-surfactant',
+            'description' => 'Facilitating the dispersion of solids in liquids. They function primarily by coating the solid through the process of adsorption, thus changing the surface characteristic of the suspended solid.',
+        ],
+        'emulsion_stabilising' => [
+            'label' => 'Emulsion stabilising',
+            'description' => 'Helping the process of emulsification and improving emulsion stability and shelf-life.',
+        ],
+        'epilating' => [
+            'label' => 'Epilating',
+            'description' => 'Applied to the skin, and stripped off quickly to remove hair. With epilation the entire hair is removed from the follicle, whereas with depilation the hair is removed only to the surface of the skin.',
+        ],
+        'exfoliating' => [
+            'label' => 'Exfoliating',
+            'description' => 'Initiating and/or accelerating removal of the layers of dead skin cells from the skin surface.',
+        ],
+        'eyelash_conditioning' => [
+            'label' => 'Eyelash conditioning',
+            'description' => 'Conditioning and enhancing the appearance of eyelashes. Improving the gloss or sheen of eyelashes, coating the eyelash hair to increase the appearance of its diameter and length, or helping with the separation of the eyelash hair.',
+        ],
+        'film_forming' => [
+            'label' => 'Film forming',
+            'description' => 'Producing (upon application) a continuous film on the skin, hair or nails.',
+        ],
+        'flavouring' => [
+            'label' => 'Flavouring',
+            'description' => 'Imparting taste and/or flavour to a cosmetic product.',
+        ],
+        'foaming' => [
+            'label' => 'Foaming',
+            'description' => 'Trapping numerous small bubbles of air or other gas within a small volume of liquid by modifying the surface tension of the liquid.',
+        ],
+        'fragrance' => [
+            'label' => 'Fragrance',
+            'description' => 'Imparting an odour or taste. Creating a perceivable pleasant smell and/or masking a bad smell.',
+        ],
+        'gel_forming' => [
+            'label' => 'Gel forming',
+            'description' => 'Giving the consistency of a gel (a semi-solid preparation with some elasticity) to a liquid preparation.',
+        ],
+        'hair_conditioning' => [
+            'label' => 'Hair conditioning',
+            'description' => 'Enhancing the appearance and feel of hair. Leaving the hair easy to comb, supple, soft and shiny and/or imparting volume, lightness, gloss, texture, etc.',
+        ],
+        'hair_dyeing' => [
+            'label' => 'Hair dyeing',
+            'description' => 'Imparting color to hair. Hair dyeing preparations may be temporary, semi-permanent, permanent, depending on the length of time the colorant remains on the hair.',
+        ],
+        'hair_fixing' => [
+            'label' => 'Hair fixing',
+            'description' => 'Permitting physical control of hair style.',
+        ],
+        'hair_waving_or_straightening' => [
+            'label' => 'Hair waving or straightening',
+            'description' => 'Modifying the chemical structure of the hair, allowing it to be set in the style required (permanent waves or hair straightening).',
+        ],
+        'humectant' => [
+            'label' => 'Humectant',
+            'description' => 'Retaining and/or preserving the moisture in a product during use.',
+        ],
+        'keratolytic' => [
+            'label' => 'Keratolytic',
+            'description' => 'Helping to eliminate the dead cells of the stratum corneum.',
+        ],
+        'light_stabilizer' => [
+            'label' => 'Light stabilizer',
+            'description' => 'Protecting the cosmetic product from deterioration effects of light.',
+        ],
+        'lytic' => [
+            'label' => 'Lytic',
+            'description' => 'Helping to break down lipids, proteins, and polysaccharides into smaller components, usually by the action of enzymes.',
+        ],
+        'moisturising' => [
+            'label' => 'Moisturising',
+            'description' => 'Increasing the water content of the skin and keeping it soft and smooth.',
+        ],
+        'nail_conditioning' => [
+            'label' => 'Nail conditioning',
+            'description' => 'Improving and/or enhancing the cosmetic characteristics of the nail (moisturizing, increasing sheen, reducing brittleness and flaking, etc.).',
+        ],
+        'nail_sculpting' => [
+            'label' => 'Nail sculpting',
+            'description' => 'Forming a hard structure that resembles the nail plate.',
+        ],
+        'occlusive' => [
+            'label' => 'Occlusive',
+            'description' => 'Preventing and/or slowing down the evaporation of water from the skin surface.',
+        ],
+        'opacifying' => [
+            'label' => 'Opacifying',
+            'description' => 'Reducing transparency or translucency of cosmetics.',
+        ],
+        'oral_care' => [
+            'label' => 'Oral care',
+            'description' => 'Providing cosmetic effects to the oral cavity, e.g. cleansing, deodorising, protecting.',
+        ],
+        'oxidising' => [
+            'label' => 'Oxidising',
+            'description' => 'Changing the chemical nature of another ingredient by adding oxygen (or removing hydrogen).',
+        ],
+        'pearlescent' => [
+            'label' => 'Pearlescent',
+            'description' => 'Imparting a nacreous appearance to cosmetics.',
+        ],
+        'perfuming' => [
+            'label' => 'Perfuming',
+            'description' => 'Used for perfume and aromatic raw materials.',
+        ],
+        'plasticiser' => [
+            'label' => 'Plasticiser',
+            'description' => 'Softening and making supple synthetic polymers that otherwise could not be easily deformed, spread or worked out.',
+        ],
+        'preservative' => [
+            'label' => 'Preservative',
+            'description' => 'Exclusively or mainly intended to inhibit the development of micro-organisms in the cosmetic product. All authorised preservatives are substances in the positive list of Annex V to the Cosmetics Regulation 1223/2009.',
+        ],
+        'propellant' => [
+            'label' => 'Propellant',
+            'description' => 'Generating pressure in an aerosol pack, expelling contents when the valve is opened. Some liquefied propellants can act as solvents.',
+        ],
+        'reducing' => [
+            'label' => 'Reducing',
+            'description' => 'Changing the chemical nature of another ingredient by adding hydrogen (or removing oxygen).',
+        ],
+        'refatting' => [
+            'label' => 'Refatting',
+            'description' => 'Replenishing the lipids of the hair or of the top layers of the skin.',
+        ],
+        'refreshing' => [
+            'label' => 'Refreshing',
+            'description' => 'Imparting a pleasant freshness to the skin.',
+        ],
+        'skin_conditioning' => [
+            'label' => 'Skin conditioning',
+            'description' => 'Maintaining the skin in good condition.',
+        ],
+        'skin_conditioning_emollient' => [
+            'label' => 'Skin conditioning - emollient',
+            'description' => 'Acting as lubricants on the skin surface providing the skin with a soft and smooth appearance.',
+        ],
+        'skin_conditioning_humectant' => [
+            'label' => 'Skin conditioning - humectant',
+            'description' => 'Increasing the water content of the top layers of the skin. Humectants are primarily hygroscopic agents drawing moisture from the surrounding air.',
+        ],
+        'skin_conditioning_miscellaneous' => [
+            'label' => 'Skin conditioning - miscellaneous',
+            'description' => 'Enhancing the appearance of dry and/or damaged skin by reducing flaking and restoring suppleness.',
+        ],
+        'skin_conditioning_occlusive' => [
+            'label' => 'Skin conditioning - occlusive',
+            'description' => 'Retarding the evaporation of water from the skin surface. Occlusives are generally lipids which tend to remain on the skin surface and thus increase the water content of skin.',
+        ],
+        'skin_protecting' => [
+            'label' => 'Skin protecting',
+            'description' => 'Helping to avoid harmful effects to the skin from external factors.',
+        ],
+        'slip_modifier' => [
+            'label' => 'Slip modifier',
+            'description' => 'Enhancing the flow properties of other ingredients without reacting chemically with them.',
+        ],
+        'smoothing' => [
+            'label' => 'Smoothing',
+            'description' => 'Seeking to achieve an even skin surface by decreasing roughness or irregularities.',
+        ],
+        'solvent' => [
+            'label' => 'Solvent',
+            'description' => 'Dissolving other components of cosmetics. Solvents are usually liquids (aqueous and nonaqueous).',
+        ],
+        'soothing' => [
+            'label' => 'Soothing',
+            'description' => 'Lightening discomfort of the skin or of the scalp.',
+        ],
+        'surface_modifier' => [
+            'label' => 'Surface modifier',
+            'description' => 'Applied to other cosmetic components to make them more hydrophilic or hydrophobic, or to modify their physical/chemical properties (in some cases, surface modifiers may form a covalent bond with substrates).',
+        ],
+        'surfactant' => [
+            'label' => 'Surfactant',
+            'description' => 'Helping other ingredients that normally do not mix to dissolve or disperse in one another. Surfactants are also called surface active agents as they lower the surface tension of water or reduce the interfacial tension between immiscible components.',
+        ],
+        'surfactant_cleansing' => [
+            'label' => 'Surfactant - cleansing',
+            'description' => 'Wetting body surfaces, emulsifying or solubilizing oils, and suspending soil (generally, such ingredients contribute to the foaming and lathering properties of cleansing products).',
+        ],
+        'surfactant_dispersing' => [
+            'label' => 'Surfactant - dispersing',
+            'description' => 'Helping distribute an insoluble solid in a liquid phase.',
+        ],
+        'surfactant_emulsifying' => [
+            'label' => 'Surfactant - emulsifying',
+            'description' => 'Helping suspensions or dispersions of liquids in a second liquid by reducing the surface tension of the substances to be emulsified.',
+        ],
+        'surfactant_foam_boosting' => [
+            'label' => 'Surfactant - foam boosting',
+            'description' => 'Increasing foaming capacity and/or stabilising foams in general.',
+        ],
+        'surfactant_hydrotrope' => [
+            'label' => 'Surfactant - hydrotrope',
+            'description' => 'Enhancing the water solubility of another surfactant.',
+        ],
+        'surfactant_solubilizing' => [
+            'label' => 'Surfactant - solubilizing',
+            'description' => 'Helping another component (solute) to dissolve in a medium in which it is not normally soluble.',
+        ],
+        'tanning' => [
+            'label' => 'Tanning',
+            'description' => 'Darkening the skin with or without exposure to UV.',
+        ],
+        'tonic' => [
+            'label' => 'Tonic',
+            'description' => 'Producing a feeling of well-being on skin and hair.',
+        ],
+        'uv_absorber' => [
+            'label' => 'UV absorber',
+            'description' => 'Protecting the cosmetic product from the effects of UV-light.',
+        ],
+        'uv_filter' => [
+            'label' => 'UV filter',
+            'description' => 'Exclusively or mainly intended to protect the skin and/or hair against certain UV radiation by absorbing, reflecting or scattering UV radiation. All authorised UV filters are substances in the positive list of Annex VI to the Cosmetics Regulation 1223/2009.',
+        ],
+        'viscosity_controlling' => [
+            'label' => 'Viscosity controlling',
+            'description' => 'Increasing or decreasing the viscosity (thickness) of cosmetics.',
+        ],
+        'ph_adjusters' => [
+            'label' => 'pH adjusters',
+            'description' => 'Controlling the pH of cosmetic products.',
+        ],
+        // Retired pre-2019 CosIng functions, kept so historic assignments still render.
         'antidandruff' => [
             'label' => 'Antidandruff',
             'description' => 'Helps control dandruff.',
         ],
-        'antifoaming' => [
-            'label' => 'Antifoaming',
-            'description' => 'Suppresses foam during manufacturing or reduces foaming in the finished product.',
-        ],
-        'antimicrobial' => [
-            'label' => 'Antimicrobial',
-            'description' => 'Helps control the growth of microorganisms on the skin.',
-        ],
-        'antioxidant' => [
-            'label' => 'Antioxidant',
-            'description' => 'Inhibits oxygen-driven reactions and helps prevent oxidation or rancidity.',
-        ],
-        'antiperspirant' => [
-            'label' => 'Antiperspirant',
-            'description' => 'Reduces perspiration.',
-        ],
-        'antiplaque' => [
-            'label' => 'Antiplaque',
-            'description' => 'Helps protect against plaque.',
-        ],
-        'antiseborrhoeic' => [
-            'label' => 'Antiseborrhoeic',
-            'description' => 'Helps control sebum production.',
-        ],
-        'antistatic' => [
-            'label' => 'Antistatic',
-            'description' => 'Reduces static electricity by neutralising electrical charge on a surface.',
-        ],
-        'astringent' => [
-            'label' => 'Astringent',
-            'description' => 'Contracts the skin.',
-        ],
-        'binding' => [
-            'label' => 'Binding',
-            'description' => 'Provides cohesion in cosmetics.',
-        ],
-        'bleaching' => [
-            'label' => 'Bleaching',
-            'description' => 'Lightens the shade of hair or skin.',
-        ],
-        'buffering' => [
-            'label' => 'Buffering',
-            'description' => 'Stabilises the pH of cosmetics.',
-        ],
-        'bulking' => [
-            'label' => 'Bulking',
-            'description' => 'Reduces bulk density.',
-        ],
-        'chelating' => [
-            'label' => 'Chelating',
-            'description' => 'Forms complexes with metal ions that could affect stability or appearance.',
-        ],
-        'cleansing' => [
-            'label' => 'Cleansing',
-            'description' => 'Helps keep the body, teeth, or hair clean.',
-        ],
-        'colorant' => [
-            'label' => 'Colorant',
-            'description' => 'Colours the cosmetic product or imparts colour to skin, hair, or nails.',
-        ],
         'cosmetic_biocide' => [
             'label' => 'Cosmetic biocide',
             'description' => 'Helps preserve the cosmetic product by controlling harmful organisms in the formula.',
-        ],
-        'denaturant' => [
-            'label' => 'Denaturant',
-            'description' => 'Makes the product unpleasant to taste, commonly for alcohol-containing products.',
-        ],
-        'deodorant' => [
-            'label' => 'Deodorant',
-            'description' => 'Reduces or masks unpleasant body odours.',
-        ],
-        'depilatory' => [
-            'label' => 'Depilatory',
-            'description' => 'Removes unwanted body hair.',
-        ],
-        'detangling' => [
-            'label' => 'Detangling',
-            'description' => 'Reduces tangling of the hair and helps combing.',
         ],
         'emollient' => [
             'label' => 'Emollient',
@@ -228,157 +465,21 @@ return [
             'label' => 'Emulsifying',
             'description' => 'Promotes formation of fine mixtures of otherwise immiscible liquids.',
         ],
-        'emulsion_stabilising' => [
-            'label' => 'Emulsion stabilising',
-            'description' => 'Supports emulsification and improves emulsion stability and shelf life.',
-        ],
-        'film_forming' => [
-            'label' => 'Film forming',
-            'description' => 'Forms a continuous film after application on skin, hair, or nails.',
-        ],
-        'foaming' => [
-            'label' => 'Foaming',
-            'description' => 'Generates or supports foam formation.',
-        ],
         'foam_boosting' => [
             'label' => 'Foam boosting',
             'description' => 'Improves foam volume, texture, or stability.',
-        ],
-        'gel_forming' => [
-            'label' => 'Gel forming',
-            'description' => 'Gives a liquid preparation a gel-like consistency.',
-        ],
-        'hair_conditioning' => [
-            'label' => 'Hair conditioning',
-            'description' => 'Improves the cosmetic feel, manageability, softness, or shine of hair.',
-        ],
-        'hair_dyeing' => [
-            'label' => 'Hair dyeing',
-            'description' => 'Colours the hair.',
-        ],
-        'hair_fixing' => [
-            'label' => 'Hair fixing',
-            'description' => 'Provides physical control of the hairstyle.',
-        ],
-        'hair_waving_or_straightening' => [
-            'label' => 'Hair waving or straightening',
-            'description' => 'Changes hair structure to produce waving, curling, or straightening.',
-        ],
-        'humectant' => [
-            'label' => 'Humectant',
-            'description' => 'Helps maintain and retain moisture.',
         ],
         'hydrotrope' => [
             'label' => 'Hydrotrope',
             'description' => 'Increases the solubility of ingredients that are only slightly soluble in water.',
         ],
-        'keratolytic' => [
-            'label' => 'Keratolytic',
-            'description' => 'Helps remove dead cells from the stratum corneum.',
-        ],
         'masking' => [
             'label' => 'Masking',
             'description' => 'Reduces or inhibits the base odour or taste of the product.',
         ],
-        'moisturising' => [
-            'label' => 'Moisturising',
-            'description' => 'Increases the water content of the skin and helps keep it soft and smooth.',
-        ],
-        'nail_conditioning' => [
-            'label' => 'Nail conditioning',
-            'description' => 'Improves the cosmetic characteristics of nails.',
-        ],
-        'opacifying' => [
-            'label' => 'Opacifying',
-            'description' => 'Reduces transparency or translucency.',
-        ],
-        'oral_care' => [
-            'label' => 'Oral care',
-            'description' => 'Provides cosmetic effects to the oral cavity such as cleaning, deodorising, or protecting.',
-        ],
-        'oxidising' => [
-            'label' => 'Oxidising',
-            'description' => 'Changes the chemical nature of another substance by adding oxygen or removing hydrogen.',
-        ],
-        'pearlescent' => [
-            'label' => 'Pearlescent',
-            'description' => 'Gives a pearly appearance.',
-        ],
-        'perfuming' => [
-            'label' => 'Perfuming',
-            'description' => 'Imparts or modifies odour and gives the product a pleasant scent.',
-        ],
-        'plasticiser' => [
-            'label' => 'Plasticiser',
-            'description' => 'Softens and improves flexibility of another substance.',
-        ],
-        'preservative' => [
-            'label' => 'Preservative',
-            'description' => 'Primarily inhibits the development of microorganisms in the cosmetic product.',
-        ],
-        'propellant' => [
-            'label' => 'Propellant',
-            'description' => 'Provides pressure in an aerosol package to expel the contents.',
-        ],
-        'reducing' => [
-            'label' => 'Reducing',
-            'description' => 'Changes the chemical nature of another substance by adding hydrogen or removing oxygen.',
-        ],
-        'refatting' => [
-            'label' => 'Refatting',
-            'description' => 'Restores lipids to the skin or hair.',
-        ],
-        'refreshing' => [
-            'label' => 'Refreshing',
-            'description' => 'Creates an immediate sensation of freshness.',
-        ],
-        'skin_conditioning' => [
-            'label' => 'Skin conditioning',
-            'description' => 'Maintains the skin in good condition.',
-        ],
-        'skin_protecting' => [
-            'label' => 'Skin protecting',
-            'description' => 'Helps protect the skin from harmful external factors.',
-        ],
-        'smoothing' => [
-            'label' => 'Smoothing',
-            'description' => 'Helps create a more even skin surface by reducing roughness or irregularities.',
-        ],
-        'soothing' => [
-            'label' => 'Soothing',
-            'description' => 'Helps relieve discomfort of the skin or scalp.',
-        ],
-        'solvent' => [
-            'label' => 'Solvent',
-            'description' => 'Dissolves other substances.',
-        ],
         'stabilising' => [
             'label' => 'Stabilising',
             'description' => 'Improves ingredient or formulation stability and shelf life.',
-        ],
-        'surfactant' => [
-            'label' => 'Surfactant',
-            'description' => 'Lowers surface tension and helps even product distribution.',
-        ],
-        'tanning' => [
-            'label' => 'Tanning',
-            'description' => 'Darkens the skin with or without UV exposure.',
-        ],
-        'tonic' => [
-            'label' => 'Tonic',
-            'description' => 'Provides a feeling of well-being on skin or hair.',
-        ],
-        'uv_absorber' => [
-            'label' => 'UV absorber',
-            'description' => 'Protects the cosmetic product from the effects of UV light.',
-        ],
-        'uv_filter' => [
-            'label' => 'UV filter',
-            'description' => 'Filters UV rays to help protect skin or hair from their harmful effects.',
-        ],
-        'viscosity_controlling' => [
-            'label' => 'Viscosity controlling',
-            'description' => 'Increases or decreases viscosity.',
         ],
     ],
     'page' => [

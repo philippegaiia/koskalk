@@ -355,13 +355,13 @@ it('seeds official ingredient functions and ifra product categories', function (
         IfraProductCategorySeeder::class,
     ]);
 
-    $emollient = IngredientFunction::query()->where('key', 'emollient')->firstOrFail();
+    $emollient = IngredientFunction::query()->where('key', 'skin_conditioning_emollient')->firstOrFail();
     $category7A = IfraProductCategory::query()->where('code', '7A')->firstOrFail();
     $category9 = IfraProductCategory::query()->where('code', '9')->firstOrFail();
 
     expect(IngredientFunction::query()->count())->toBeGreaterThan(20)
-        ->and($emollient->name)->toBe('Emollient')
-        ->and($emollient->description)->toContain('Softens')
+        ->and($emollient->name)->toBe('Skin conditioning - emollient')
+        ->and($emollient->description)->toContain('lubricants on the skin surface')
         ->and(IfraProductCategory::query()->count())->toBe(18)
         ->and($category7A->short_name)->toBe('Rinse-off hair chemical treatments')
         ->and($category7A->description)->toBe('Rinse-off hair permanent or other chemical treatments, including rinse-off hair dyes.')

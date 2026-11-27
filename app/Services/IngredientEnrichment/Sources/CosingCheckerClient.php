@@ -319,26 +319,20 @@ class CosingCheckerClient
 
         return collect(preg_split('/\s*,\s*/u', $functions) ?: [])
             ->map(fn (string $function): string => trim($function))
-            ->filter()
+            ->filter(fn (string $function): bool => $function !== '' && $this->normalize($function) !== 'not reported')
             ->unique(fn (string $function): string => $this->normalize($function))
             ->values()
             ->all();
     }
 
-    /** @param Collection<string, string> $functionKeysByName */
+    /**
+     * Maps a CosIng function label to the vocabulary key with exactly that name.
+     *
+     * @param  Collection<string, string>  $functionKeysByName
+     */
     private function functionKey(string $function, Collection $functionKeysByName): ?string
     {
-        $normalized = $this->normalize($function);
-        $canonicalName = match ($normalized) {
-            'fragrance' => 'perfuming',
-            default => $normalized,
-        };
-        $suffix = str($normalized)->afterLast(' - ')->value();
-
-        return collect([$canonicalName, $normalized, $suffix])
-            ->unique()
-            ->map(fn (string $name): ?string => $functionKeysByName->get($name))
-            ->first(fn (?string $key): bool => is_string($key));
+        return $functionKeysByName->get($this->normalize($function));
     }
 
     private function normalize(string $value): string

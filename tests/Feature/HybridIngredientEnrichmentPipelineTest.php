@@ -194,7 +194,7 @@ it('assembles precise argan facts from deterministic eu and us sources before ed
             'confidence' => 'supported',
         ])
         ->and(collect($proposal['cosing_functions'])->pluck('key')->all())->toBe([
-            'skin_conditioning', 'emollient',
+            'skin_conditioning', 'skin_conditioning_emollient',
         ])
         ->and($response->structuredSourceCalls)->toBe(7)
         ->and($response->webSearchCalls)->toBe(0)
@@ -223,7 +223,7 @@ it('retains all apricot identifiers and keeps eu and us declarations distinct', 
             'us' => 'Prunus Armeniaca (Apricot) Kernel Oil',
         ])
         ->and(collect($proposal['cosing_functions'])->pluck('key')->all())->toBe([
-            'perfuming', 'skin_conditioning',
+            'fragrance', 'skin_conditioning',
         ])
         ->and($response->structuredSourceCalls)->toBe(8)
         ->and($response->webSearchCalls)->toBe(0)
@@ -388,10 +388,10 @@ it('passes trusted soap chemistry through to the editorial facts', function (): 
 function seedHybridCosingFunctions(): void
 {
     foreach ([
-        ['key' => 'perfuming', 'name' => 'Perfuming', 'sort_order' => 10],
+        ['key' => 'fragrance', 'name' => 'Fragrance', 'sort_order' => 10],
         ['key' => 'colorant', 'name' => 'Colorant', 'sort_order' => 15],
         ['key' => 'skin_conditioning', 'name' => 'Skin conditioning', 'sort_order' => 20],
-        ['key' => 'emollient', 'name' => 'Emollient', 'sort_order' => 30],
+        ['key' => 'skin_conditioning_emollient', 'name' => 'Skin conditioning - emollient', 'sort_order' => 30],
     ] as $function) {
         IngredientFunction::factory()->create($function);
     }
